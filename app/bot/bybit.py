@@ -5,8 +5,8 @@ se prueba intentando una orden: sus permisos se leen de /v5/user/query-api.
 Firma v5 de un GET: HMAC-SHA256(secreto, timestamp + clave + recv_window + query) en hexadecimal, con la query
 EXACTA que se envia. Medido por el OPERADOR en la doc publica (2026-10-24, remate 1 de BOT-2): query-api trae «readOnly»
 entero (0 lectura y escritura, 1 solo lectura) e «ips» (lista); 10003 «API key is invalid», 10004 «Error sign», 10010
-«Unmatched IP». ponytail: el resto (position/list, closed-pnl y sus parametros) sigue de memoria; un campo que falta se
-juzga en contra (la clave se apaga), nunca a favor.
+«Unmatched IP» (R10: la clave va SIN IP; un 10010 dice que vuelve a estar atada). ponytail: el resto (position/list,
+closed-pnl y sus parametros) sigue de memoria; un campo que falta se juzga en contra (la clave se apaga), nunca a favor.
 """
 
 from __future__ import annotations
@@ -15,6 +15,7 @@ import hashlib
 import hmac
 import time
 import urllib.parse
+from datetime import UTC, datetime
 
 import httpx
 
@@ -27,7 +28,7 @@ ERRORES = {
     10003: "Bybit dice que la clave no es valida",
     10004: "Bybit rechaza la firma",
     10005: "la clave no tiene permiso para esta lectura",
-    10010: "Bybit rechaza la IP de salida de 140 (¿ha cambiado?)",
+    10010: "Bybit rechaza la IP de salida de 140: la clave esta atada a una IP y tiene que ir SIN IP (solo lectura)",
     33004: "la clave ha caducado",
 }
 
@@ -52,21 +53,40 @@ def error(d: dict) -> str | None:
     return ERRORES.get(d.get("retCode"), f"Bybit retCode={d.get('retCode')}: {str(d.get('retMsg'))[:80]}")
 
 
-def juzga_clave(d: dict, ip: str) -> dict:
-    """La respuesta de /v5/user/query-api -> lo que el bot publica en su estado. activo solo con solo lectura Y la IP."""
+def caducidad(r: dict, ahora: datetime | None = None) -> dict | None:
+    """deadlineDay/expiredAt de query-api -> {"expira", "dias"} o None si no hay dato. La doc los da «Only for those api key
+    with no IP bound or the password has been changed», y su propio ejemplo trae deadlineDay -2 con expiredAt 1970-01-01:
+    lo que no tiene sentido (sin fecha, fecha ilegible o ya pasada, deadlineDay negativo) es SIN DATO, nunca «caducada»
+    (una clave caducada de verdad la rechaza Bybit con 33004)."""
+    ahora = ahora or datetime.now(UTC)
+    try:
+        expira = datetime.fromisoformat(str(r["expiredAt"]).replace("Z", "+00:00"))
+    except (KeyError, ValueError):
+        return None
+    if expira.tzinfo is None:
+        expira = expira.replace(tzinfo=UTC)
+    dl = r.get("deadlineDay")
+    if expira <= ahora or (isinstance(dl, int | float) and dl < 0):
+        return None
+    return {"expira": expira.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "dias": (expira - ahora).total_seconds() / 86400}
+
+
+def juzga_clave(d: dict, ahora: datetime | None = None) -> dict:
+    """La respuesta de /v5/user/query-api -> lo que el bot publica en su estado. activo = SOLO LECTURA (BOT-2 R10): la
+    clave va sin IP atada, porque la salida de 140 cambia (CGNAT: 2026-10-27, 10010 durante 5 dias). La IP ya no la
+    condiciona: ips ["*"], [] o sin el campo valen igual. ip_ok = Bybit contesto, o sea que acepto la IP de salida (K117 lo
+    lee). La guarda de seguridad es readOnly: una clave que puede operar se apaga, este o no atada."""
     e = error(d)
     if e:
-        return {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None, "ip_salida": ip, "error": e}
+        return {"activo": False, "solo_lectura": None, "ip_ok": False if d.get("retCode") == 10010 else None, "ips": None,
+                "dias_clave": None, "expira": None, "error": e}
     r = d.get("result") or {}
     solo = r.get("readOnly") == 1
     ips = r.get("ips") if isinstance(r.get("ips"), list) else []
-    ip_ok = ip in ips and "*" not in ips
-    # las IPs atadas no son secretas: van en el estado al lado de la de salida de 140, para ver que falta sin abrir Bybit
-    atadas = ", ".join(map(str, ips)) or "ninguna"
-    motivo = None if solo and ip_ok else ("la clave PUEDE OPERAR" if not solo else
-                                          f"la clave admite cualquier IP (*): tiene que estar atada solo a {ip}" if "*" in ips else
-                                          f"la clave no esta atada a {ip} (Bybit tiene atadas: {atadas})")
-    return {"activo": solo and ip_ok, "solo_lectura": solo, "ip_ok": ip_ok, "ips": ips, "ip_salida": ip, "error": motivo}
+    c = caducidad(r, ahora)
+    return {"activo": solo, "solo_lectura": solo, "ip_ok": True, "ips": ips,
+            "dias_clave": int(c["dias"]) if c else None, "expira": c["expira"] if c else None,
+            "error": None if solo else "la clave PUEDE OPERAR"}
 
 
 def posiciones(d: dict) -> list[dict]:

@@ -8,7 +8,7 @@ bot cae es otro proceso: app/bot/vigia.py).
 Entorno (EnvironmentFile de systemd; el bot recibe las claves y no las imprime: limpia() las borra de cada mensaje y
 de cada linea de log): ANTHROPIC_API_KEY, BYBIT_API_KEY, BYBIT_API_SECRET, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
 API_INTERNAL_TOKEN (el de la API local: la API pide X-Internal-Token tambien desde 127.0.0.1). Opcionales:
-BOT_TOPE_USD_DIA (3), BOT_IP_SALIDA (138.186.31.141), BOT_PG_DSN (rol coinalyze-ai por el socket, sin contrasena:
+BOT_TOPE_USD_DIA (3), BOT_PG_DSN (rol coinalyze-ai por el socket, sin contrasena:
 pg_hba de 140 tiene `local all all peer`), BOT_API (http://127.0.0.1:8000), BOT_INFORMES (/var/lib/coinalyze-bot/
 informes, donde la tarea semanal de 143 deja el texto), y el ESFUERZO de cada ruta: BOT_EFFORT_ESCALA (low: manda la
 latencia), BOT_EFFORT_PREGUNTA (medium), BOT_EFFORT_EVALUA (high); max no se acepta en tiempo real.
@@ -42,7 +42,8 @@ SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_
 VEREDICTOS = ("A FAVOR", "EN CONTRA", "NO EVALUABLE")
 PARTE_HORA_UTC = calidad.PARTE_HORA_UTC  # 13: 07:00 en Ciudad de Mexico; vive en calidad, que cuenta los partes que tocaban
 # lo de bot_estado que solo el bot sabe y carga() recupera: sin cargar no se escribe encima (remate 9)
-GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes")
+GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avisada")
+UMBRALES_CLAVE = (14, 7, 3, 1)  # dias que le quedan a la clave de Bybit: Telegram avisa una vez al cruzar cada uno (R10)
 RUTAS = {"escala": "low", "pregunta": "medium", "evalua": "high"}  # de partida (Alejandro, 2026-10-24); se cambia por entorno
 ESTABLE = """Eres el asistente de mesa de Alejandro para perpetuos lineales USDT de BTC, ETH y SOL en Bybit. Trabajas dentro
 de un bot de Telegram que vive en su laboratorio (Coinalyze). En cada mensaje te llegan DATOS servidos por el laboratorio
@@ -322,7 +323,6 @@ class Bot:
         e = entorno
         self.e, self.db, self.http = e, db, http
         self.tope = float(e.get("BOT_TOPE_USD_DIA") or 3)
-        self.ip = e.get("BOT_IP_SALIDA") or "138.186.31.141"
         self.api_base = e.get("BOT_API") or "http://127.0.0.1:8000"
         self.informes = e.get("BOT_INFORMES") or "/var/lib/coinalyze-bot/informes"
         self.tg = Telegram(e["TELEGRAM_BOT_TOKEN"], e["TELEGRAM_CHAT_ID"], http) if e.get("TELEGRAM_BOT_TOKEN") and e.get("TELEGRAM_CHAT_ID") else None
@@ -341,6 +341,7 @@ class Bot:
         self.suspensas: set = set()  # claves en suspenso por una excepcion de la identidad (nada pagado sobre ellas)
         self.cierres_pendientes: dict = {}  # id -> resultado que la base aun no apunto (remate 7: CERRADA una vez)
         self.correcciones_pendientes: dict = {}  # id|orden -> la CORRECCION de una cifra que la base aun no apunto (remate 8)
+        self.clave_avisada: dict = {}  # expiredAt de la clave -> umbrales de UMBRALES_CLAVE ya avisados (R10)
         self.cargado = True  # (remate 8) False si carga() fallo al arrancar: la seguridad sigue y se reintenta cada tic
         self.cargando = asyncio.Lock()
         self.crudo_visto: dict = {}  # clave -> lo ultimo guardado en bot_crudo
@@ -357,7 +358,7 @@ class Bot:
         self.estado = {
             "arranque": ahora_iso(), "version": os.path.basename(os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))),
             "telegram": "ok" if self.tg else "sin Telegram (faltan TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID)",
-            "bybit": {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None, "ip_salida": self.ip,
+            "bybit": {"activo": False, "solo_lectura": None, "ip_ok": None, "ips": None, "dias_clave": None, "expira": None,
                       "error": None if self.bybit else "sin BYBIT_API_KEY/BYBIT_API_SECRET"},
             "anthropic": {"clave": bool(e.get("ANTHROPIC_API_KEY")), "tope_usd": self.tope, "esfuerzo": self.esfuerzo},
             "datos": None, "api": None, "validacion": None, "informe": None, "errores": {},
@@ -470,6 +471,9 @@ class Bot:
         self.correcciones_pendientes = {k: x for k, x in pend.items() if isinstance(x, dict) and {"id", "pnl", "pnl_antes", "orden",
                                                                                                     "ordenes", "nota"} <= set(x)} \
             if isinstance(pend, dict) else {}
+        av = guardado.get("clave_avisada") if isinstance(guardado, dict) else None
+        self.clave_avisada = {k: [u for u in x if u in UMBRALES_CLAVE] for k, x in av.items() if isinstance(x, list)} \
+            if isinstance(av, dict) else {}
         self.parte_hoy = await self.db.fetchval("SELECT max((ts AT TIME ZONE 'UTC')::date) FROM bot_evento WHERE tipo = 'parte'")
         self.informes_enviados = {r[0] for r in await self.db.fetch(
             "SELECT detalle->>'semana' FROM bot_evento WHERE tipo = 'informe' AND ts >= now() - interval '60 days'")}
@@ -502,7 +506,7 @@ class Bot:
         # el vigia y K117 leen) y lo guardado se queda como estaba, para que la carga lo recupere identico. Si lo guardado no
         # es un objeto, entero: lo que no se entiende tampoco se pisa
         propio = {"libro": self.libro.estado(), "cierres_pendientes": self.cierres_pendientes,
-                  "correcciones_pendientes": self.correcciones_pendientes}
+                  "correcciones_pendientes": self.correcciones_pendientes, "clave_avisada": self.clave_avisada}
         for k in GUARDADO:
             if self.cargado:
                 self.estado[k] = propio[k]
@@ -657,21 +661,45 @@ class Bot:
         primera, self.clave_juzgada = not self.clave_juzgada, True
         self.clave_proxima, self.clave_espera = time.time() + 3600, 30.0
         tic = self.estado["bybit"].get("tic")  # (remate 8, R2: releer la clave borraba el ultimo tic y el interruptor lo daba por sano)
-        b = self.estado["bybit"] = bb.juzga_clave(d, self.ip) | {"leida": ahora_iso()} | ({"tic": tic} if tic else {})
+        b = self.estado["bybit"] = bb.juzga_clave(d) | {"leida": ahora_iso()} | ({"tic": tic} if tic else {})
         if b["activo"]:
             self.bien("query-api")
         else:
             self.anota("BYBIT_IP" if "IP" in str(b["error"]) else "BYBIT", f"Bybit apagado: {b['error']}", "query-api")
         if b["activo"] != antes or (primera and not b["activo"]):
-            txt = "Bybit ACTIVO: clave de solo lectura atada a la IP de 140" if b["activo"] else \
+            txt = "Bybit ACTIVO: clave de solo lectura" if b["activo"] else \
                 f"Bybit APAGADO en el bot: {b['error']}. No leo posiciones hasta que se arregle."
             await self.evento("bybit", None, None, await self.manda(txt), detalle=b)
+
+    async def avisa_caducidad(self):
+        """(R10) La clave sin IP caduca (Bybit: 3 meses). Con dato de caducidad, Telegram avisa UNA vez por umbral de
+        UMBRALES_CLAVE al cruzarlo (uno solo, el mas urgente, si se cruzan varios a la vez), con la instruccion de renovarla.
+        Lo avisado va en lo GUARDADO por expiredAt: tras reiniciar no se repite, y una clave renovada (otra fecha) empieza de
+        cero. Sin cargar no se avisa (no se sabe que ya se aviso); sin dato, nada. Si Telegram no lo entrega, se reintenta."""
+        expira = self.estado["bybit"].get("expira")
+        if not expira or not self.cargado:
+            return
+        dias = (datetime.fromisoformat(expira.replace("Z", "+00:00")) - datetime.now(UTC)).total_seconds() / 86400
+        self.estado["bybit"]["dias_clave"] = max(int(dias), 0)
+        hechos = self.clave_avisada.get(expira, [])
+        cruzados = [u for u in UMBRALES_CLAVE if dias <= u and u not in hechos]
+        if not cruzados:
+            return
+        u = min(cruzados)
+        quedan = f"{int(dias)} dias" if dias >= 1 else "MENOS DE UN DIA"
+        txt = (f"La clave de Bybit caduca en {quedan} ({expira}). Renuevala en Bybit (API management) de SOLO LECTURA y SIN IP,"
+               " y cambia BYBIT_API_KEY/BYBIT_API_SECRET en 140: si caduca, el bot deja de ver la cuenta.")
+        if not await self.manda(txt):  # manda ya anota la causa; al registro solo lo entregado (no una fila por tic)
+            return
+        self.clave_avisada = {expira: sorted(set(hechos) | {x for x in UMBRALES_CLAVE if x >= u}, reverse=True)}
+        await self.evento("bybit", None, None, True, detalle={"caducidad": expira, "umbral_dias": u, "dias": round(dias, 2)})
 
     async def tic_bybit(self):
         if self.bybit is None:
             return
         if time.time() >= self.clave_proxima:
             await self.lee_clave()
+        await self.avisa_caducidad()
         if not self.estado["bybit"]["activo"]:
             return
         try:
@@ -1058,8 +1086,9 @@ class Bot:
         fuentes = ", ".join(f"{k} {edad(x)}" for k, x in f.items()) if isinstance(f, dict) else f
         datos = s["datos"]
         velas = f"velas 1 min: la ultima {datos['ultima_vela']} ({datos['retraso_min']} min de retraso)" if isinstance(datos, dict) else f"velas 1 min: {datos}"
-        ips = f"IPs de la clave en Bybit: {', '.join(map(str, b['ips'])) if b.get('ips') else 'sin dato'} · 140 sale por {b.get('ip_salida', self.ip)}"
-        bybit = (f"solo lectura e IP ok (leida {str(b.get('leida', '?'))[11:16]}Z) · {ips}" if b["activo"] else f"APAGADO: {b['error']} · {ips}")
+        dias = b.get("dias_clave")
+        caduca = f"la clave caduca en {dias} dias ({b['expira']})" if dias is not None and b.get("expira") else "caducidad de la clave: sin dato"
+        bybit = (f"solo lectura (leida {str(b.get('leida', '?'))[11:16]}Z) · {caduca}" if b["activo"] else f"APAGADO: {b['error']} · {caduca}")
         if b.get("activo") and b.get("tic"):  # el ultimo tic de Bybit completo (remate 7: si se para, se dice)
             parado = (datetime.now(UTC) - datetime.fromisoformat(b["tic"].replace("Z", "+00:00"))).total_seconds()
             bybit += f" · ultima lectura completa {b['tic'][11:16]}Z" + (f" (SIN LEER BYBIT DESDE HACE {int(parado // 60)} MIN)" if parado > 300 else "")

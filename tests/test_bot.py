@@ -67,14 +67,14 @@ def _clave(**r):
     return {"retCode": 0, "retMsg": "", "result": {"readOnly": 1, "ips": ["138.186.31.141"], **r}}
 
 
-def test_la_clave_solo_se_activa_de_solo_lectura_y_atada_a_la_ip():
-    ip = "138.186.31.141"
-    assert bb.juzga_clave(_clave(), ip)["activo"] is True
-    assert bb.juzga_clave(_clave(readOnly=0), ip)["error"] == "la clave PUEDE OPERAR"
-    assert bb.juzga_clave(_clave(ips=["*"]), ip)["activo"] is False
-    sin = {"retCode": 0, "result": {"ips": [ip]}}  # sin readOnly: en contra, nunca a favor
-    assert bb.juzga_clave(sin, ip)["activo"] is False and bb.juzga_clave(sin, ip)["solo_lectura"] is False
-    ipmal = bb.juzga_clave({"retCode": 10010, "retMsg": "Unmatched IP"}, ip)
+def test_la_clave_se_activa_de_solo_lectura_con_ip_o_sin_ella():
+    # (R10) la IP ya no condiciona: la clave va SIN IP (CGNAT); lo que la apaga es poder operar
+    assert bb.juzga_clave(_clave())["activo"] is True
+    assert bb.juzga_clave(_clave(readOnly=0))["error"] == "la clave PUEDE OPERAR"
+    assert bb.juzga_clave(_clave(ips=["*"]))["activo"] is True
+    sin = {"retCode": 0, "result": {"ips": ["*"]}}  # sin readOnly: en contra, nunca a favor
+    assert bb.juzga_clave(sin)["activo"] is False and bb.juzga_clave(sin)["solo_lectura"] is False
+    ipmal = bb.juzga_clave({"retCode": 10010, "retMsg": "Unmatched IP"})
     assert ipmal["activo"] is False and "IP" in ipmal["error"] and ipmal["solo_lectura"] is None
 
 
@@ -631,7 +631,7 @@ async def test_el_bot_y_el_interruptor_escriben_y_leen_cada_tabla_en_sql_ascii(b
 
 async def test_k117_lee_una_base_sql_ascii_con_tildes(base_ascii, tmp_path):
     c, dsn = base_ascii
-    b = {"activo": True, "solo_lectura": True, "ip_ok": True, "ips": ["138.186.31.141"], "ip_salida": "138.186.31.141", "error": None}
+    b = {"activo": True, "solo_lectura": True, "ip_ok": True, "ips": ["*"], "error": None}
     await c.execute("INSERT INTO bot_estado VALUES ('bot', now(), $1::jsonb), ('vigia', now(), $2::jsonb)",
                     sv.js({"bybit": b, "errores": {"BYBIT_IP": {"texto": NO_ASCII}}}),
                     sv.js({"problemas": {}, "notificados": {}, "envio": {"ok": None}, "canal": "puente", "nota": NO_ASCII}))
@@ -666,13 +666,13 @@ async def test_un_paso_del_minuto_que_falla_no_se_lleva_el_latido(base, monkeypa
     assert estado["errores"]["BASE parte"]["texto"].startswith("parte: UntranslatableCharacterError")  # causa y operacion (R4)
 
 
-def test_el_estado_de_bybit_dice_las_ips_de_la_clave_y_la_de_salida():
-    j = bb.juzga_clave(_clave(ips=["1.2.3.4", "5.6.7.8"]), "138.186.31.141")
-    assert j["ip_salida"] == "138.186.31.141" and j["ips"] == ["1.2.3.4", "5.6.7.8"]
-    assert j["error"] == "la clave no esta atada a 138.186.31.141 (Bybit tiene atadas: 1.2.3.4, 5.6.7.8)"
-    assert "ninguna" in bb.juzga_clave(_clave(ips=[]), "138.186.31.141")["error"]
-    assert "cualquier IP (*)" in bb.juzga_clave(_clave(ips=["*"]), "138.186.31.141")["error"]
-    assert bb.juzga_clave({"retCode": 10010}, "138.186.31.141")["ip_salida"] == "138.186.31.141"
+def test_el_estado_de_bybit_dice_las_ips_de_la_clave_sin_afirmar_la_de_salida():
+    # (R10) las IPs atadas siguen en el estado (no son secretas), pero no juzgan; ip_salida sale (nadie la lee)
+    j = bb.juzga_clave(_clave(ips=["1.2.3.4", "5.6.7.8"]))
+    assert j["ips"] == ["1.2.3.4", "5.6.7.8"] and j["activo"] is True and j["error"] is None and "ip_salida" not in j
+    assert j["ip_ok"] is True  # Bybit contesto: acepto la IP de salida (K117 lo lee)
+    mal = bb.juzga_clave({"retCode": 10010})
+    assert mal["ip_ok"] is False and "SIN IP" in mal["error"] and "ip_salida" not in mal
 
 
 class _BaseQueRechaza(_NoCierra):
