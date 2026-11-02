@@ -39,9 +39,10 @@ CASOS = [
     # 2 · pre-despliegue dentro de su vida -> sobrevive
     ("predeploy-bbbb2222-20260907000000.sql.gz", 1, True),
     ("predeploy-dddd4444-20260908000000.sql.gz", 0, True),
-    # 3 · cifrado dentro de SU vida, que son 14 y no 3: dos vidas distintas a proposito
-    ("coinalyze-full-20260906T031500Z.tar.gz.enc", 5, True),
-    ("coinalyze-full-20260906T031500Z.tar.gz.enc.sha256", 5, True),
+    # 3 · cifrado dentro de SU vida, que son 4 y no 3: dos vidas distintas a proposito (a los 4 dias
+    #     el pre-despliegue ya cae y el cifrado no)
+    ("coinalyze-full-20260906T031500Z.tar.gz.enc", 4, True),
+    ("coinalyze-full-20260906T031500Z.tar.gz.enc.sha256", 4, True),
     ("coinalyze-full-20260801T031500Z.tar.gz.enc", 40, False),
     # 4 · AJENOS de cualquier edad: la poda no puede llevarselos por delante. Los tres del medio
     #     estan elegidos para que se parezcan: llevan «predeploy» o «.sql.gz» o «coinalyze-full»
@@ -74,7 +75,7 @@ def podar(directorio: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["bash", str(BACKUP), "--solo-podar"],
         env={**os.environ, "BACKUP_DIR": str(directorio),
-             "PREDEPLOY_RETENTION_DAYS": "3", "BACKUP_RETENTION_DAYS": "14"},
+             "PREDEPLOY_RETENTION_DAYS": "3", "BACKUP_RETENTION_DAYS": "4"},
         capture_output=True, text=True, check=False,
     )
 
@@ -123,7 +124,7 @@ def test_las_dos_vidas_estan_declaradas_por_separado():
     fue lo que dejo a los pre-despliegue sin podar."""
     fuente = BACKUP.read_text(encoding="utf-8")
     assert "PREDEPLOY_RETENTION_DAYS=${PREDEPLOY_RETENTION_DAYS:-3}" in fuente
-    assert "BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-14}" in fuente
+    assert "BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-4}" in fuente
 
 
 def test_podar_el_directorio_de_produccion_sigue_exigiendo_root():
