@@ -934,9 +934,9 @@ del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
 - `bot_crudo` — la escriben 2: `app/bot/servicio.py:849`, `app/bot/servicio.py:857`
-- `bot_estado` — la escriben 2: `app/bot/servicio.py:524`, `app/bot/vigia.py:218`
+- `bot_estado` — la escriben 2: `app/bot/servicio.py:524`, `app/bot/vigia.py:280`
 - `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1012`, `app/bot/servicio.py:942`, `app/bot/servicio.py:977`
-- `bot_evento` — la escriben 2: `app/bot/servicio.py:409`, `app/bot/vigia.py:213`
+- `bot_evento` — la escriben 2: `app/bot/servicio.py:409`, `app/bot/vigia.py:273`
 - `bot_llamada` — la escriben 1: `app/bot/servicio.py:579`
 - `bot_operacion` — la escriben 1: `app/bot/servicio.py:884`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
