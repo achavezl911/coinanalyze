@@ -18,7 +18,7 @@ import json
 import lzma
 import os
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal as D
 from pathlib import Path
 
@@ -54,7 +54,7 @@ def cubo_de(ps: list[D]) -> D | None:
     exp = min(p.as_tuple().exponent for p in ps)
     ns = sorted({int(p.scaleb(-exp)) for p in ps})
     g = 0
-    for a, b in zip(ns, ns[1:]):
+    for a, b in zip(ns, ns[1:], strict=False):
         g = g if b - a == 0 else (b - a if g == 0 else __import__("math").gcd(g, b - a))
     return D(g).scaleb(exp) if g else None
 
@@ -79,7 +79,7 @@ def verdad(c: dict) -> dict:
             ls.sort(reverse=True)
         else:
             ls = [L for L in (paso * n for n in range(int(vivo // paso) - 1, int(max(ps) // paso) + 1))
-                  if vivo < L + paso <= max(ps) and L <= precio * (1 + TOPE)]
+                  if vivo < L + paso <= max(ps) and precio * (1 + TOPE) >= L]
         ls = [L for i, L in enumerate(ls) if not i or abs(L - ls[i - 1]) == paso]  # contiguos desde el borde
         out[k] = (ls[0], [sum((q for p, q in pq if L <= p < L + paso), D(0)) for L in ls],
                   min(ps) if k == "b" else max(ps)) if ls else None
@@ -100,7 +100,7 @@ def lado_de(f: dict | tuple | None, k: str):
 def igual(x, y) -> bool:
     if x is None or y is None:
         return x is y
-    return x[0] == y[0] and x[2] == y[2] and len(x[1]) == len(y[1]) and all(a == b for a, b in zip(x[1], y[1]))
+    return x[0] == y[0] and x[2] == y[2] and len(x[1]) == len(y[1]) and all(a == b for a, b in zip(x[1], y[1], strict=True))
 
 
 def corto(x) -> str:
