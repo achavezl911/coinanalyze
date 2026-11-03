@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `orderflow_footprint` · `app/api.py:3742` (cuerpo hasta la 3755) · decorador en la linea 3741.
+Handler `orderflow_footprint` · `app/api.py:3745` (cuerpo hasta la 3763) · decorador en la linea 3744.
 
 ## Parametros de entrada
 
@@ -55,12 +55,21 @@ Llamadas directas del handler:
 
 </details>
 
+<details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
+
+Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para aqui.
+
+- `HTTPException`
+
+</details>
+
 ## Fallos que puede devolver
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 422 | — | `app/api.py:2596` | una funcion de su cierre |
 | 422 | — | `app/api.py:3732` | una funcion de su cierre |
+| 503 | — | `app/api.py:3763` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
