@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 from pathlib import Path
 
@@ -152,18 +151,15 @@ def p_circular(m, y, v, S, t0=None):
     cu = np.rint(np.fft.irfft(Fm * np.fft.rfft(v.astype(float)), len(m)))
     if t0 is None:
         if cu[0] == 0:
-            return None, None, 0
+            return None, None, 0, None
         t0 = su[0] / cu[0]
     with np.errstate(invalid="ignore", divide="ignore"):
         st = su[S] / cu[S]
     st = st[np.isfinite(st)]
     if not len(st):
-        return None, t0, int(cu[0])
-    k = int(np.sum(st >= t0 - 1e-12))
-    p = (1 + k) / (1 + len(S))
-    if k < C.P_COLA_NORMAL and len(st) > 1 and st.std() > 0:
-        p = 0.5 * math.erfc((t0 - st.mean()) / st.std() / math.sqrt(2))
-    return p, t0, int(cu[0])
+        return None, t0, int(cu[0]), None
+    p, via = C.p_desplazado(t0, st, len(S))
+    return p, t0, int(cu[0]), via
 
 
 def desplazamientos(n, semilla, k=C.DESPLAZAMIENTOS):
@@ -245,12 +241,12 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
                 v_[JJ[jj]], y_[JJ[jj]] = va0, e0
             mm = arm & okf & va
             t0 = ex[mm].sum() / mm.sum() if mm.sum() else None
-            p, t0, nt = (p_circular(mm[JJ], y_[JJ], v_[JJ], desplazamientos(len(JJ), sem), t0)
-                         if t0 is not None and len(JJ) else (None, t0, 0))
+            p, t0, nt, via = (p_circular(mm[JJ], y_[JJ], v_[JJ], desplazamientos(len(JJ), sem), t0)
+                              if t0 is not None and len(JJ) else (None, t0, 0, None))
         else:
             J = np.flatnonzero(I & fin)
-            p, t0, nt = p_circular(m[J], (ex & va)[J], va[J], desplazamientos(len(J), sem))
-        celda.update(p=p, tasa_todas=t0, n_todas=nt)
+            p, t0, nt, via = p_circular(m[J], (ex & va)[J], va[J], desplazamientos(len(J), sem))
+        celda.update(p=p, p_via=via, tasa_todas=t0, n_todas=nt)
     tr = {"ts": tsg[ops], "exito": ex[ops], "R": ne[ops] / (sl[ops] + c_in + C.TAKER), "stop": sl[ops],
           "com": c_in + C.TAKER, "mae": mae[ops]}
     return celda, tr
@@ -334,7 +330,7 @@ def descubre(D, X, cands, hasta=C.CORTE_DESCUBRIMIENTO):
     for c, qi, tr in zip(celdas, q, trs):
         c["q"] = qi
         c["estado"] = "SIN N" if c["n"] < C.N_MIN_CONFIRMA else \
-            ("PASA" if qi is not None and qi <= C.FDR_Q else "NO")
+            ("PASA" if qi is not None and qi <= C.FDR_Q and C.gana(c["tasa"], c["neto"], c["empate"]) else "NO")
         if c["n"] >= C.N_MIN_CONFIRMA:
             c["cuenta"], c["apalancamiento"] = cuenta(tr), apalancamiento(tr)
     ok = [c for c in celdas if c["n"] >= C.N_MIN_CONFIRMA and c["empate"] is not None]

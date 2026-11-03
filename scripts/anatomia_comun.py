@@ -166,6 +166,9 @@ P_COLA_NORMAL = 10                  # p = (1 + k) / (1 + S), k = desplazamientos
                                     # k < 10, 2000 desplazamientos no resuelven p < 5e-4 y BH sobre miles de
                                     # celdas no puede pasar ninguna: entonces p = cola normal de z frente a la
                                     # media y la desviacion de los desplazamientos (decidido antes de medir).
+P_COLA_DISTINTOS = 20               # REMATE 2: la cola normal SOLO si los desplazamientos dan >= 20 valores
+                                    # distintos; si no (distribucion degenerada, muy asimetrica), p = (1 + k) /
+                                    # (1 + S). Cada celda dice que via dio su p: p_via = "normal" o "conteo".
 SEMILLA = 20261102
 FDR_Q = 0.10                        # Benjamini-Hochberg sobre TODAS las celdas de una corrida
 N_MIN_MECANISMO = 10                # n sin solape < 10 = SIN N
@@ -206,6 +209,26 @@ def benjamini_hochberg(ps):
         previo = min(previo, ps[i] * m / rango)
         q[i] = previo
     return q
+
+
+def p_desplazado(t0: float, st, S: int) -> tuple[float, str]:
+    """p de una tasa observada t0 frente a las tasas desplazadas st (finitas), de S desplazamientos. Devuelve (p, via)."""
+    k = int(sum(1 for v in st if v >= t0 - 1e-12))
+    p, via = (1 + k) / (1 + S), "conteo"
+    if k < P_COLA_NORMAL and len(set(float(v) for v in st)) >= P_COLA_DISTINTOS:
+        m = sum(st) / len(st)
+        sd = math.sqrt(sum((v - m) ** 2 for v in st) / len(st))
+        if sd > 0:
+            p, via = 0.5 * math.erfc((t0 - m) / sd / math.sqrt(2)), "normal"
+    return p, via
+
+
+def gana(tasa, neto, empate_, azar_=None) -> bool:
+    """REMATE 2: PASA exige ademas el signo, sobre las operaciones SIN solape: tasa >= empate (y >= azar si se da)
+    y neto > 0. Un q bajo con tasa bajo el empate o neto <= 0 es NO."""
+    if tasa is None or neto is None or empate_ is None or not math.isfinite(neto):
+        return False
+    return tasa >= empate_ and neto > 0 and (azar_ is None or tasa >= azar_)
 
 
 def veredicto_confirma(exitos: int, n: int, esquema: str) -> str:
@@ -378,6 +401,8 @@ def apertura_eeuu_utc(dia: datetime) -> int:
 # decisiones es el de una orden fija a la distancia mediana (c_t -> limite) de las armadas de la celda bajo c_t; la
 # tasa observada, aciertos / llenadas de las ordenes del nivel; la de un desplazamiento, aciertos / llenadas de la
 # orden fija. BH (FDR_Q) sobre TODAS las celdas de gestion de la corrida.
+# PASA (REMATE 2) = q <= FDR_Q Y n >= N_MIN_CONFIRMA Y gana(): tasa >= empate y neto > 0 sobre las operaciones SIN
+# solape. Si falta el signo, NO. Mismo hueco en el estudio: alli gana() con empate(esquema) y azar_tasa.
 # LA MEJOR = entre celdas con n >= N_MIN_CONFIRMA, mayor tasa - empate (empate a eso: menor q). NO es un resultado:
 # va a congeladas.json con su definicion exacta; solo vale su --confirma en dias >= la fecha, con veredicto_con.
 GESTION_ENTRADAS = (("M1", "A"), ("M1e", "A"), ("M1", "B"), ("M1e", "B"), ("M2", "B"), ("M2e", "B"),

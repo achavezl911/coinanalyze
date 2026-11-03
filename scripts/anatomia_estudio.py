@@ -3,6 +3,7 @@
 
 USO:  python anatomia_estudio.py SALIDA OUT.json                 descubrimiento; escribe OUT.json y candidatas.json
       python anatomia_estudio.py SALIDA OUT.json --control       primero el control positivo; si no ve, para
+            con --control las candidatas van a candidatas-control.json: no pisan las del modo normal.
       python anatomia_estudio.py SALIDA OUT.json --confirma AAAA-MM-DD [--candidatas RUTA]
             solo mide candidatas.json (por defecto, junto a OUT.json) en dias >= FECHA, sin reelegir nada.
 """
@@ -476,14 +477,11 @@ def mide(D, desde, hasta, extra=(), desplazamientos=C.DESPLAZAMIENTOS, esquema="
                         st = su[S] / cu[S]
                     t0 = su[0] / cu[0]
                     st = st[np.isfinite(st)]
-                    k = int(np.sum(st >= t0 - 1e-12))
-                    p = (1 + k) / (1 + len(S))
-                    if k < C.P_COLA_NORMAL and len(st) > 1 and st.std() > 0:
-                        p = 0.5 * math.erfc((t0 - st.mean()) / st.std() / math.sqrt(2))
+                    p, via = C.p_desplazado(t0, st, len(S))
                     n, exitos, neto = operaciones(m, ex, ne, sa, va, Gi)
                     celdas.append({**extra_celda, **base, "n_todas": int(cu[0]), "tasa_todas": float(t0),
                                    "n": n, "exitos": exitos, "tasa": (exitos / n if n else None), "neto": neto,
-                                   "p": p})
+                                   "p": p, "p_via": via})
 
                 for nom in nombres:
                     x = d["V"][nom][I]
@@ -509,7 +507,8 @@ def mide(D, desde, hasta, extra=(), desplazamientos=C.DESPLAZAMIENTOS, esquema="
     q = C.benjamini_hochberg([c["p"] for c in celdas])
     for c, qi in zip(celdas, q):
         c["q"] = qi
-        c["estado"] = "SIN N" if c["n"] < C.N_MIN_MECANISMO else ("PASA" if qi <= C.FDR_Q else "NO")
+        c["estado"] = "SIN N" if c["n"] < C.N_MIN_MECANISMO else (
+            "PASA" if qi <= C.FDR_Q and C.gana(c["tasa"], c["neto"], C.empate(c["esquema"]), c["azar_tasa"]) else "NO")
     return celdas
 
 
@@ -670,7 +669,8 @@ def corre(salida, out, control_pos=False, fecha=None, cand_ruta=None, desplazami
           barajados=C.HGB_BARAJADOS, hgb=True, hgb_params=None):
     B, ts = carga(salida)
     out = Path(out)
-    cand_ruta = Path(cand_ruta) if cand_ruta else out.parent / "candidatas.json"
+    cand_ruta = Path(cand_ruta) if cand_ruta else out.parent / (
+        "candidatas-control.json" if control_pos and not fecha else "candidatas.json")
     res = {"criterio": "scripts/anatomia_comun.py", "salida": str(salida)}
     if fecha:
         cands = json.loads(cand_ruta.read_text())["candidatas"]
