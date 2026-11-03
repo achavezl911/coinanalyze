@@ -1307,7 +1307,8 @@ def juzga() -> int:
         pin = vio.get("pintado") or {}
         if "hasta=" in vista:
             mapa = {k: v for k, v in (pin.get("mapa") or {}).items() if k != "cuadro"}
-            esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms", "ms")}
+            # (149 r3) sin «piezas»: son los ms de cada pieza de pinta() (U7b), cambian en cada corrida
+            esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms", "ms", "piezas")}
             huella.update(json.dumps([vista, mapa, esc, vio.get("filas"), [p["url"].split("?", 1)[-1] for p in vio["fotos"]],
                                       [p.get("cuerpo") and {k: v for k, v in p["cuerpo"].items() if k != "as_of"}
                                        for p in vio["fotos"]], sorted((vio.get("pixeles") or {}).items()),
@@ -1315,9 +1316,11 @@ def juzga() -> int:
                                       hashlib.sha256(vio.get("rgb") or b"").hexdigest()],
                                      sort_keys=True, default=str).encode())
         elif [ancho, alto] == [ANCHO, ALTO]:  # (149 r2) la vista viva chica solo esta por el raton: no repite el vivo
+            # (149 r3) del vivo, solo lo que no depende de la hora del aviso reproducido: el canal y QUE venues. El
+            # estado de cada uno y el tipo de su ultimo mensaje si dependen, y movian la huella de un escenario igual
+            # (escenario_restaurado, K111-control); lo que condenan ya entra por los rotulos de lo condenado
             huella.update(json.dumps([vista, (vio.get("canal") or {}).get("dice"),
-                                      [(x.get("venue"), x.get("estado")) for x in vio.get("ven") or []],
-                                      sorted(vio.get("ultimos_tipos") or [])]).encode())
+                                      sorted(str(x.get("venue")) for x in vio.get("ven") or [])]).encode())
         if not x or "hasta=" not in vista:
             continue
         try:

@@ -296,16 +296,37 @@
   color: var(--acento);
   box-shadow: inset 0 0 0 1px var(--acento);
 }
-/* el tamano de la ultima, a la IZQUIERDA del precio (el precio va a la derecha: no monta encima) */
+/* (149 r3) el tamano de la ultima, ENTERO, en una franja reservada a la IZQUIERDA del precio: en 80 px no caben
+ * marca + tamano + precio en una linea (16 + 33 + 43 px medidos), asi que en la fila de la ultima la marca (arriba) y
+ * el tamano (abajo) se apilan a 8 px, media fila cada uno, en el hueco que el precio (a la derecha) deja a su izquierda.
+ * Fuera del flujo: ni el relleno ni el ancho del td cambian (un relleno distinto le cambia el ancho a la columna en
+ * esa fila), ni el alto de la fila. Cabe un tamano de 6 cifras («0.0034») con un precio de 6 («2262.5»). */
+#esc-filas td.nivel.ultima {
+  position: relative;
+}
+#esc-filas td.nivel.ultima::after,
+#esc-filas td.nivel.ultima.max-sesion::before,
+#esc-filas td.nivel.ultima.min-sesion::before {
+  position: absolute;
+  left: 1px;
+  top: 0;
+  font-size: 8px;
+  letter-spacing: -0.2px;
+  line-height: 18px;
+  white-space: nowrap;
+}
 #esc-filas td.nivel.ultima::after {
   content: attr(data-ultima);
-  order: -1;
-  margin-right: auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 9px;
   color: var(--acento);
+}
+#esc-filas td.nivel.ultima.max-sesion::before,
+#esc-filas td.nivel.ultima.min-sesion::before {
+  line-height: 9px;
+}
+#esc-filas td.nivel.ultima.max-sesion::after,
+#esc-filas td.nivel.ultima.min-sesion::after {
+  top: 9px;
+  line-height: 9px;
 }
 #esc-filas td.nivel.max-sesion::before,
 #esc-filas td.nivel.min-sesion::before {
