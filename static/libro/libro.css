@@ -61,6 +61,7 @@
   overflow-y: auto;
   overflow-anchor: none; /* las filas se compensan a mano: sin el anclaje del navegador */
   min-height: 0;
+  contain: strict; /* P1: lo que cambia dentro no relayouta la pagina, ni la pagina a la escalera */
 }
 
 .escalera table {
@@ -122,6 +123,11 @@
 #esc-filas tr.desconocido td {
   color: var(--tx-debil);
   font-style: italic;
+}
+
+/* el relleno de la rejilla: niveles fuera del libro, vacios (solo su precio) */
+#esc-filas tr.relleno td {
+  color: var(--tx-debil);
 }
 
 .esc-venues {
@@ -195,6 +201,9 @@
   font-size: 10.5px;
   line-height: 1.3;
   text-align: right;
+  /* (149 r1) alto FIJO: un aviso que pasa de una linea a tres empujaba la escalera bajo el raton */
+  height: calc(4 * 1.3em);
+  overflow-y: auto;
 }
 .esc-aviso[data-falta],
 .esc-aviso[data-cinta='caida'] {
@@ -251,10 +260,11 @@
   color: var(--acento);
   box-shadow: inset 0 0 0 1px var(--acento);
 }
+/* el tamano de la ultima, a la IZQUIERDA del precio (el precio va a la derecha: no monta encima) */
 #esc-filas td.nivel.ultima::after {
   content: attr(data-ultima);
   position: absolute;
-  right: 2px;
+  left: 2px;
   font-size: 9px;
   color: var(--acento);
 }
@@ -267,6 +277,10 @@
 }
 #esc-filas td.nivel.max-sesion::before {
   content: 'máx';
+}
+#esc-filas td.nivel.ultima.max-sesion::after,
+#esc-filas td.nivel.ultima.min-sesion::after {
+  left: 26px;
 }
 #esc-filas td.nivel.min-sesion::before {
   content: 'mín';

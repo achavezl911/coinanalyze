@@ -13,6 +13,12 @@
  * precio, en UNA escala (el p95 de lo visible); las grandes, con borde y negrita. Lo reciente sale de la cinta
  * (sumaReciente); la ultima operacion y el maximo y minimo de la sesion UTC se marcan en la columna del precio.
  * Las filas se REUTILIZAN: una por nivel, que se anaden y quitan por los extremos.
+ * LA REJILLA ANCLADA (remate 1): la caja siempre tiene filas de sobra por encima y por debajo del precio (RELLENO: niveles
+ * fuera del libro, vacios y con su clase) para que haya scroll en los dos sentidos; lo que entra o sale por arriba se
+ * compensa con el scroll. Con el raton encima las filas solo se anaden: un nivel no cambia de y. Fuera del raton solo el
+ * recentrado (>= 10 filas del centro, boton, tecla C) mueve la rejilla.
+ * P1: la geometria se lee UNA vez, al empezar y con el layout limpio; despues todo es aritmetica (filas de alto fijo).
+ * Solo un recentrado o un cambio de filas por arriba escriben el scroll (y fuerzan un layout).
  */
 
 const ESC_RANCIO_S = 10;
@@ -21,6 +27,8 @@ const ESC_FILA_MIN = 14;
 const ESC_FILA_MAX = 28;
 const ESC_RECENTRA_FILAS = 10;
 const ESC_DESTELLO_MS = 1000;
+const ESC_ANCLA = true;  // la rejilla anclada: relleno fuera del libro y compensacion del scroll
+const ESC_HOLGURA = 8;   // filas de relleno de mas, para no rehacer el rango con cada nivel que se mueve el precio
 const ESC_CLASES = ['acum c', 'rec b', 'c', 'nivel', 'v', 'rec a', 'acum v', 'n'];
 // lo que se escribe donde no hay dato: NADA (ni un cero, ni la palabra en cada celda)
 const AUSENTE = '';
@@ -176,15 +184,15 @@ function creaEscalera(raiz, opciones) {
     return tr;
   }
 
-  /* Deja en el cuerpo una fila por nivel de kTop a kBot (de arriba abajo), quitando y anadiendo por los extremos y
-   * compensando el desplazamiento para que lo que se ve no salte. Devuelve true si tuvo que rehacerlo entero. */
+  /* Deja en el cuerpo una fila por nivel de kTop a kBot (de arriba abajo), quitando y anadiendo por los extremos.
+   * Devuelve lo que hay que mover el scroll para que lo que se ve no salte, o null si tuvo que rehacerlo entero. */
   function sincroniza(kTop, kBot) {
     const primero = cuerpo.firstChild;
     if (!primero || primero._k < kBot || cuerpo.lastChild._k > kTop) {
       vaciar(cuerpo);
       porK.clear();
       for (let k = kTop; k >= kBot; k--) cuerpo.appendChild(nueva(k));
-      return true;
+      return null;
     }
     const h = altoMedido || alto;
     let mueve = 0;
@@ -202,8 +210,7 @@ function creaEscalera(raiz, opciones) {
       mueve += h;
     }
     for (let k = cuerpo.lastChild._k - 1; k >= kBot; k--) cuerpo.appendChild(nueva(k));
-    if (mueve) caja.scrollTop += mueve;
-    return false;
+    return ESC_ANCLA ? mueve : 0;
   }
 
   function vaciaRec(tr) {
@@ -216,6 +223,10 @@ function creaEscalera(raiz, opciones) {
    * 'caida' | 'fija'), motivo (por que esta caida), perfil ({ dia, niveles } de /api/orderflow/perfil, o null) }. */
   function pinta(vista, venues, libros, canal, ahoraMs, extra) {
     const t0 = performance.now();
+    // lo que tarda cada pieza (P1): modelo, filas, recentra (el layout), visibles, barras, textos, venues
+    const piezas = {};
+    let tm = t0;
+    const marca = (n) => { const a = performance.now(); piezas[n] = a - tm; tm = a; };
     const x = extra || {};
     const P = vista.paso;
     const M = modeloEscalera(venues, libros, P, vista.unidad, ahoraMs);
@@ -233,9 +244,48 @@ function creaEscalera(raiz, opciones) {
     const ext = cinta === 'fija' ? null : extremosSesion(x.perfil || null, rec, P);
     if (!destello) destello = getComputedStyle(raiz).getPropertyValue('--esc-destello').trim() || 'rgba(242, 204, 96, 0.45)';
 
+    // la geometria, ANTES de escribir nada (el layout esta limpio): despues, aritmetica
+    const cajaR = caja.getBoundingClientRect();
+    const arriba = cajaR.top + caja.clientTop;
+    const thH = cabezaT ? cabezaT.getBoundingClientRect().height : 0;
+    const altoCaja = caja.clientHeight;
+    const zonaC = thH + (altoCaja - thH) / 2;
+    let st = caja.scrollTop;
+    let y0 = thH;  // donde empieza la primera fila, en el contenido de la caja
+    if (cuerpo.firstChild) {
+      const r0 = cuerpo.firstChild.getBoundingClientRect();
+      y0 = r0.top - arriba + st;
+      if (!altoMedido && r0.height) altoMedido = r0.height;
+    }
+    const h = altoMedido || alto;
+    marca('modelo');
     const modelo = new Map();
+    let kPrecio = null;
+    let mueve = 0;
     if (s) {
-      if (sincroniza(s.hi + 1, s.lo - 1)) centrar = true;
+      // el rango de filas: el libro con su frontera y, con el ancla, el precio +- media caja + 10 filas (+ holgura)
+      const rMin = ESC_ANCLA ? Math.ceil((altoCaja - thH) / h / 2) + ESC_RECENTRA_FILAS + 2 : 0;
+      const kc = Math.floor(Number(s.mejorCompra) / Number(P) + 1e-9);
+      kPrecio = ultima && ultima.k <= s.hi + rMin && ultima.k >= s.lo - rMin ? ultima.k : kc;
+      const quiere = (r) => [Math.max(s.hi + 1, kPrecio + r), Math.min(s.lo - 1, kPrecio - r)];
+      let [kTop, kBot] = quiere(rMin);
+      const p0 = cuerpo.firstChild;
+      if (ESC_ANCLA) {
+        const a = p0 ? p0._k : null;
+        const b = p0 ? cuerpo.lastChild._k : null;
+        const [aMax, bMin] = quiere(rMin + 2 * ESC_HOLGURA);
+        if (p0 && encima && !centrar) {  // con el raton encima la rejilla solo crece: ningun nivel cambia de y
+          kTop = Math.max(kTop, a);
+          kBot = Math.min(kBot, b);
+        } else if (p0 && !centrar && a >= kTop && b <= kBot && a <= aMax && b >= bMin) {
+          kTop = a;
+          kBot = b;
+        } else {
+          [kTop, kBot] = quiere(rMin + ESC_HOLGURA);
+        }
+      }
+      mueve = sincroniza(kTop, kBot);
+      if (mueve === null) centrar = true;
       M.filas.forEach((f) => modelo.set(f.k, f));
       modelo.set(s.hi + 1, { k: s.hi + 1, n: 0, frontera: 'arriba' });
       modelo.set(s.lo - 1, { k: s.lo - 1, n: 0, frontera: 'abajo' });
@@ -245,11 +295,28 @@ function creaEscalera(raiz, opciones) {
     }
 
     const acum = (q, parcial) => (q === null || q === undefined ? '' : (parcial ? '≥' : '') + cifra(q));
+    const lleno = (q) => (Number(q) > 0 ? cifra(q) : '');  // una cantidad 0 en un lado: VACIA, como en una escalera
     porK.forEach((tr, k) => {
-      const f = modelo.get(k);
+      let f = modelo.get(k);
+      if (!f) {  // RELLENO: un nivel fuera del libro, vacio
+        f = { k, n: 0, relleno: true };
+        modelo.set(k, f);
+      }
       const c = tr._c;
+      const r = recOk ? recienteEn(rec, k, vista.unidad) : null;
+      const nr = recOk ? rec.niveles.get(k) : null;
+      const esUlt = !!ultima && ultima.k === k;
+      // P1: una fila cuyo dato no cambio no se toca
+      const llave = [P, vista.unidad, N, f.n, f.N, f.compra, f.venta, f.acum_compra, f.acum_venta, f.acum_parcial_compra,
+        f.acum_parcial_venta, f.mejor_compra, f.mejor_venta, f.frontera, f.relleno, recOk, r ? r[0] : '', r ? r[1] : '',
+        nr ? nr.nb : '', nr ? nr.na : '', esUlt ? (vista.unidad === 'usd' ? ultima.usd : ultima.base) + ultima.agresor : '',
+        ext && ext.hi === k, ext && ext.lo === k].join('|');
+      if (tr._llave === llave) return;
+      tr._llave = llave;
+      piezas.tocadas = (piezas.tocadas || 0) + 1;
       clase(tr, [f.mejor_compra ? 'mejor-compra' : '', f.mejor_venta ? 'mejor-venta' : '',
-        !f.n ? 'desconocido' : f.n < f.N ? 'parcial' : '', f.frontera ? 'frontera' : ''].filter(Boolean).join(' '));
+        !f.n ? (f.relleno ? 'relleno' : 'desconocido') : f.n < f.N ? 'parcial' : '', f.frontera ? 'frontera' : '']
+        .filter(Boolean).join(' '));
       dato(tr, 'k', String(k));
       dato(tr, 'nivel', nivelTexto(k, P));
       dato(tr, 'n', String(f.n));
@@ -258,16 +325,14 @@ function creaEscalera(raiz, opciones) {
       dato(tr, 'acumCompra', f.n && f.acum_compra !== null ? String(f.acum_compra) : null);
       dato(tr, 'acumVenta', f.n && f.acum_venta !== null ? String(f.acum_venta) : null);
       pon(c[0], f.n ? acum(f.acum_compra, f.acum_parcial_compra) : '');
-      pon(c[2], f.n ? cifra(f.compra) : AUSENTE);
+      pon(c[2], f.n ? lleno(f.compra) : AUSENTE);
       pon(c[3], nivelTexto(k, P));
-      pon(c[4], f.n ? cifra(f.venta) : AUSENTE);
+      pon(c[4], f.n ? lleno(f.venta) : AUSENTE);
       pon(c[6], f.n ? acum(f.acum_venta, f.acum_parcial_venta) : '');
-      pon(c[7], f.n ? (f.n < f.N ? f.n + '/' + f.N : '') : '0/' + N);
+      pon(c[7], f.n ? (f.n < f.N ? f.n + '/' + f.N : '') : f.relleno ? '' : '0/' + N);
       dato(c[4], 'rotulo', f.frontera === 'arriba' ? 'desconocido ↑' : null);
       dato(c[2], 'rotulo', f.frontera === 'abajo' ? 'desconocido ↓' : null);
       // lo reciente @bid / @ask de este nivel, y un destello cuando entra una operacion nueva
-      const r = recOk ? recienteEn(rec, k, vista.unidad) : null;
-      const nr = recOk ? rec.niveles.get(k) : null;
       [[c[1], 0, 'nb', '_nb'], [c[5], 1, 'na', '_na']].forEach(([td, i, cuenta, mio]) => {
         dato(td, 'rec', r ? String(r[i]) : null);
         pon(td, r ? (r[i] > 0 ? cifra(r[i]) : '') : recOk ? '' : SIN_CINTA);
@@ -278,61 +343,74 @@ function creaEscalera(raiz, opciones) {
         tr[mio] = nn;
       });
       if (!recOk) vaciaRec(tr);
-      const esUlt = !!ultima && ultima.k === k;
       clase(c[3], ['nivel', esUlt ? 'ultima' : '', ext && ext.hi === k ? 'max-sesion' : '',
         ext && ext.lo === k ? 'min-sesion' : ''].filter(Boolean).join(' '));
       dato(c[3], 'ultima', esUlt ? cifra(vista.unidad === 'usd' ? ultima.usd : ultima.base) : null);
       dato(c[3], 'agresor', esUlt ? ultima.agresor : null);
     });
 
+    marca('filas');
+    // lo que entro o salio por arriba se compensa con el scroll; si se rehizo entero, se mide (raro: fuerza un layout)
+    if (s && mueve === null) {
+      st = caja.scrollTop;
+      y0 = cuerpo.firstChild.getBoundingClientRect().top - arriba + st;
+    } else if (mueve) {
+      caja.scrollTop = st + mueve;
+      st = caja.scrollTop;
+    }
     // recentrado: el nivel del precio (la ultima operacion; si no, la mejor compra) a 10 filas o mas del centro
-    const cajaR = caja.getBoundingClientRect();
-    const arriba = cajaR.top + caja.clientTop;
-    const thH = cabezaT ? cabezaT.getBoundingClientRect().height : 0;
-    const zonaC = thH + (caja.clientHeight - thH) / 2;
     if (centro) {
       const top = Math.round(zonaC) + 'px';
       if (centro.style.top !== top) centro.style.top = top;
     }
-    let kPrecio = null;
     if (s) {
-      kPrecio = ultima && porK.has(ultima.k) ? ultima.k : Math.floor(Number(s.mejorCompra) / Number(P) + 1e-9);
-      const tr = porK.get(kPrecio);
-      if (tr) {
-        const r = tr.getBoundingClientRect();
-        altoMedido = r.height;
-        const dist = (r.top + r.bottom) / 2 - arriba - zonaC;
-        if (centrar || (!encima && Math.abs(dist) >= ESC_RECENTRA_FILAS * r.height)) caja.scrollTop += dist;
+      if (porK.has(kPrecio)) {
+        const dist = y0 - st + (cuerpo.firstChild._k - kPrecio + 0.5) * h - zonaC;
+        if (centrar || (!encima && Math.abs(dist) >= ESC_RECENTRA_FILAS * h)) {
+          caja.scrollTop = st + dist;
+          st = caja.scrollTop;
+        }
       }
       centrar = false;
     }
 
+    marca('recentra');
     // las filas VISIBLES (su centro dentro de la caja, bajo la cabecera fija): de ellas salen el tope, las grandes y
     // los totales
     const vis = [];
     const lim0 = arriba + thH;
-    const lim1 = arriba + caja.clientHeight;
-    porK.forEach((tr, k) => {
-      const r = tr.getBoundingClientRect();
-      const m = (r.top + r.bottom) / 2;
-      if (m > lim0 && m < lim1) vis.push(modelo.get(k));
-    });
+    const lim1 = arriba + altoCaja;
+    if (cuerpo.firstChild) {
+      const k0 = cuerpo.firstChild._k;
+      const base = arriba + y0 - st;
+      porK.forEach((tr, k) => {
+        const m = base + (k0 - k + 0.5) * h;
+        if (m > lim0 && m < lim1) vis.push(modelo.get(k));
+      });
+    }
     const med = medidasVisibles(vis);
+    marca('visibles');
     porK.forEach((tr, k) => {
       const f = modelo.get(k);
+      if (!f.n && tr._sinBarra) return;  // P1: lo vacio ya esta sin barra
       [[tr._c[2], f.compra, med.media_compra], [tr._c[4], f.venta, med.media_venta]].forEach(([td, q, media]) => {
         const fr = f.n ? fraccionBarra(q, med.tope) : null;
-        dato(td, 'barra', fr === null ? null : String(fr));
         if (td._f !== fr) {
           td._f = fr;
+          dato(td, 'barra', fr === null ? null : String(fr));
           if (fr === null) td.style.removeProperty('--f');
           else td.style.setProperty('--f', String(fr));
         }
         const g = !!f.n && esGrande(q, media);
-        if (td.classList.contains('grande') !== g) td.classList.toggle('grande', g);
+        if (!!td._g !== g) {
+          td._g = g;
+          td.classList.toggle('grande', g);
+        }
       });
+      tr._sinBarra = !f.n;
     });
 
+    marca('barras');
     let tot = null;
     if (s) {
       tot = totalesVisibles(vis, s.mejorCompra, s.mejorVenta);
@@ -374,6 +452,7 @@ function creaEscalera(raiz, opciones) {
       dato(aviso, 'falta', rec && rec.falta && cinta !== 'fija' ? rec.falta.motivo : null);
     }
 
+    marca('textos');
     vaciar(venuesT);
     M.venues.forEach((f) => {
       const tr = el('tr');
@@ -405,11 +484,13 @@ function creaEscalera(raiz, opciones) {
       linea(noSe('ausente', 'ningún venue de la familia tiene un libro vivo ahora mismo'));
     }
 
+    marca('venues');
     const reciente = {};
     if (recOk) rec.niveles.forEach((_, k) => { reciente[k] = recienteEn(rec, k, vista.unidad); });
     const reg = { cuadro: ++cuadros, ahora_ms: ahoraMs, canal, activo: vista.activo, familia: vista.familia,
                   paso: vista.paso, unidad: vista.unidad, N, venues: M.venues,
                   mejor_compra: s ? s.mejorCompra : null, mejor_venta: s ? s.mejorVenta : null,
+                  libro_hi: s ? s.hi : null, libro_lo: s ? s.lo : null,
                   filas: cuerpo.children.length, fila: alto, tope: med.tope, media_compra: med.media_compra,
                   media_venta: med.media_venta, visibles: vis.map((f) => f.k), precio_k: kPrecio,
                   ultima: ultima ? { k: ultima.k, ts: ultima.ts, venue: ultima.venue, id: ultima.id, precio: ultima.precio,
@@ -417,6 +498,8 @@ function creaEscalera(raiz, opciones) {
                   reciente, cinta, cinta_motivo: x.motivo || null,
                   falta_cinta: rec && rec.falta && cinta !== 'fija' ? rec.falta.motivo : null,
                   totales: tot, extremos: ext };
+    marca('registro');
+    reg.piezas = piezas;
     reg.ms = performance.now() - t0;
     return reg;
   }

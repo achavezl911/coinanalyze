@@ -70,6 +70,7 @@ DB = os.environ.get("K111_DB", "")  # con K111_BASE: la base de las fotos del ba
 HASTA = os.environ.get("K111_HASTA", "")
 HASTA_R1 = os.environ.get("K111_HASTA_R1", "")  # el final de las vistas de R1 (por omision, el de las otras)
 ESPERA_VIVO_S = float(os.environ.get("K111_ESPERA_VIVO", "25"))
+RATON_S = float(os.environ.get("K111_RATON", "20"))  # (149 r1) el raton quieto sobre la escalera, en vivo
 ANCHO, ALTO = 1920, 1080
 EJE_P, EJE_T = 76, 20  # los margenes de los ejes del mapa (el de los precios a la derecha, el de las horas debajo)
 RUTA_CINTA = "/api" + "/orderflow/cinta"
@@ -326,6 +327,59 @@ PIXELES = r"""
 """
 
 
+# (149 r1) la fila bajo un raton QUIETO: cada segundo, que fila hay bajo el puntero, a que altura esta la del principio,
+# y los bordes del libro que la pagina declara (si no se mueven, no se juzga nada)
+RATON = r"""
+(([x, y]) => {
+  const e = document.elementFromPoint(x, y), tr = e && e.closest('#esc-filas tbody tr');
+  const r = (window.LIBRO_PINTADO || {}).escalera || {};
+  if (!tr) return null;
+  if (!window.__k111h) window.__k111h = tr;
+  const h = window.__k111h;
+  return {k: tr.dataset.k, k0: h.dataset.k, top: Math.round(h.getBoundingClientRect().top * 10) / 10, misma: tr === h,
+          vivo: h.isConnected, hover: h.matches(':hover'), hi: r.libro_hi === undefined ? null : r.libro_hi,
+          lo: r.libro_lo === undefined ? null : r.libro_lo};
+})
+"""
+
+
+async def raton_quieto(K, s) -> list:
+    xy = await s.evalua("(() => { const b = document.querySelector('.esc-tabla').getBoundingClientRect();"
+                        " return [Math.round(b.left + b.width / 2), Math.round(b.top + b.height / 2 + 40)]; })()")
+    await s.pide("Input.dispatchMouseEvent", type="mouseMoved", x=xy[0], y=xy[1])
+    await s.drena(0.3)
+    muestras = []
+    for i in range(int(RATON_S) + 1):
+        with contextlib.suppress(K.SystemExit2):
+            muestras.append(await s.evalua(f"{RATON}({json.dumps(xy)})"))
+        if i < int(RATON_S):
+            await s.drena(1.0)
+    await s.pide("Input.dispatchMouseEvent", type="mouseMoved", x=1, y=1)
+    return muestras
+
+
+def juzga_raton(vio: dict, rojos: list, info: list, pref: str) -> None:
+    """Con el raton encima, un nivel no cambia de y (+-1 px) aunque el libro crezca o encoja por arriba o por abajo."""
+    m = vio.get("raton")
+    if m is None:
+        return
+    ok = [x for x in m if x]
+    if len(ok) < 2:
+        rojos.append(f"(F) {pref} raton quieto: no hay fila de la escalera bajo el puntero ({len(ok)} de {len(m)} muestras)")
+        return
+    bordes = len({(x["hi"], x["lo"]) for x in ok})
+    a = ok[0]
+    malo = next((x for x in ok if x["k"] != a["k"] or not x["misma"] or not x["vivo"] or not x["hover"]
+                 or abs(x["top"] - a["top"]) > 1), None)
+    if malo:
+        rojos.append(f"(F) {pref} la fila se mueve bajo el raton quieto: nivel {a['k']} a y {a['top']} y luego bajo el "
+                     f"puntero {malo['k']} (la de antes a y {malo['top']}, {'en' if malo['hover'] else 'sin'} :hover) · "
+                     f"{bordes} bordes del libro en {RATON_S:.0f} s")
+    else:
+        info.append(f"(F) {pref} raton quieto {RATON_S:.0f} s: el nivel {a['k']} no se movio · {bordes} bordes del libro"
+                    + ("" if bordes > 1 else " (el borde no se movio: no ejercita la rejilla)"))
+
+
 async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: int = ALTO, dpr: float = 1) -> dict:
     out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "cinta": [], "perfil": [], "ws": [], "ws_abiertos": 0,
            "pantalla": [ancho, alto, dpr]}
@@ -351,6 +405,8 @@ async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: i
                                            ("window.LIBRO_HITOS.vivo_listo" if vivo else "true") + "))")
                 if listo:
                     break
+            if vivo and listo and RATON_S > 0:
+                out["raton"] = await raton_quieto(K, s)
             if vivo:  # lo que llegue despues no lo usa la pantalla: se congela, y se cuenta lo que proceso
                 await s.drena(2.0)
                 with contextlib.suppress(K.SystemExit2):
@@ -738,6 +794,20 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
     vivos = [libros_por_venue[v] for v in e["venues"] if estados.get(v) == "vivo"]
     esp = escalera(vivos, len(e["venues"]), e["paso"], e["unidad"])
     filas, malos = vio.get("filas") or [], []
+    todas = filas
+    # (149 r1) el RELLENO: niveles fuera del libro por encima y por debajo, VACIOS, para que la rejilla tenga scroll
+    no_rel = [i for i, f in enumerate(filas) if "relleno" not in f["cls"].split()]
+    i0, i1 = (no_rel[0], no_rel[-1] + 1) if no_rel else (0, 0)
+    relleno, filas = filas[:i0] + filas[i1:], filas[i0:i1]
+    ks = [int(f["d"].get("k", "0")) for f in todas]
+    if relleno and ks != list(range(ks[0], ks[0] - len(ks), -1)):
+        malos.append(f"las filas no son niveles seguidos ({ks[0]} .. {ks[-1]}, {len(ks)} filas)")
+    for f in relleno:
+        d, t, c = f["d"], f["t"], f.get("c") or []
+        if (d.get("n") != "0" or any(t[i] for i in (0, 2, 4, 6, 7)) or d.get("compra") is not None
+                or d.get("venta") is not None or any(c[i]["d"].get("barra") is not None for i in (2, 4))):
+            malos.append(f"fila {d.get('nivel')} (relleno, fuera del libro) no esta vacia: «{'|'.join(t)}»")
+            break
     ven = {x.get("venue"): x for x in vio.get("ven") or []}
     for v in e["venues"]:
         if (ven.get(v) or {}).get("estado") != estados.get(v):
@@ -764,7 +834,7 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
             val = float(d.get(campo, "nan"))
             if not abs(val - x[clave]) <= 1e-9 * max(1.0, abs(x[clave])):
                 malos.append(f"fila {d.get('nivel')}: {campo} pintada {d.get(campo)} y recalculada {x[clave]}")
-            elif not casa(t[col], repr(x[clave])):
+            elif not (t[col] == "" if x[clave] == 0 else casa(t[col], repr(x[clave]))):  # un 0 se pinta vacio
                 malos.append(f"fila {d.get('nivel')}: escribe {campo} «{t[col]}» y vale {x[clave]}")
         for campo, clave, parcial, col in (("acumCompra", "ac", "pc", 0), ("acumVenta", "av", "pv", 6)):
             if (d.get(campo) is None) != (x[clave] is None):
@@ -784,7 +854,7 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
     if len(filas) == len(esp):
         try:  # una pagina sin la forma profesional es ROJO de este brazo y no tumba a los demas (el R1 de e0fb3fb)
             juzga_pro(vio, e, esp, rojos, nomed if nomed is not None else [], info, pref, casa,
-                      suma(vivos, len(e["venues"])))
+                      suma(vivos, len(e["venues"])), filas, todas)
         except (KeyError, TypeError, AttributeError, IndexError, ValueError) as exc:
             rojos.append(f"(F) {pref} la escalera no tiene la forma profesional: {type(exc).__name__} {str(exc)[:80]}")
     info.append(f"(F) {pref} escalera: {len(filas)} filas, {sum(1 for x in esp if x['n'])} niveles conocidos, "
@@ -867,8 +937,9 @@ def _igual(a, b: float) -> bool:
 
 
 def juzga_pro(vio: dict, e: dict, esp: list[dict], rojos: list, nomed: list, info: list, pref: str, casa,
-              s: dict | None) -> None:
-    filas, z = vio.get("filas") or [], vio.get("zona")
+              s: dict | None, filas: list, todas: list) -> None:
+    """`filas` las del libro (con su frontera), parejas de `esp`; `todas`, con el relleno (lo reciente y las marcas)."""
+    z = vio.get("zona")
     if not z:
         rojos.append(f"(F) {pref} la escalera no deja ver su caja: no se sabe que filas son visibles")
         return
@@ -914,7 +985,7 @@ def juzga_pro(vio: dict, e: dict, esp: list[dict], rojos: list, nomed: list, inf
         rojos.append(f"(F) {pref} los totales son de otra cosa: {mal[0]}")
     # lo reciente, la ultima operacion y la sesion
     reg = (vio.get("pintado") or {}).get("escalera") or {}  # el modo que declara; lo que pidio lo dice la red
-    cinta, rec_t = reg.get("cinta"), [(f, i) for f in filas for i in (1, 5)]
+    cinta, rec_t = reg.get("cinta"), [(f, i) for f in todas for i in (1, 5)]
     rcb = vio.get("recibidos") or {}
     pintado = [f"{f['d'].get('nivel')}:«{f['t'][i]}»" for f, i in rec_t if f["t"][i] or "rec" in f["c"][i]["d"]]
     if cinta == "fija":
@@ -960,9 +1031,9 @@ def juzga_pro(vio: dict, e: dict, esp: list[dict], rojos: list, nomed: list, inf
         if (rec["falta"] or {}).get("motivo") != reg.get("falta_cinta"):
             rojos.append(f"(F) {pref} faltan operaciones: la pagina dice {reg.get('falta_cinta')} y la cinta "
                          f"{(rec['falta'] or {}).get('motivo')}")
-        ult = {int(f["d"]["k"]) for f in filas if "ultima" in f["c"][3]["cl"].split()}
+        ult = {int(f["d"]["k"]) for f in todas if "ultima" in f["c"][3]["cl"].split()}
         ku = rec["ultima"]["k"] if rec["ultima"] else None
-        if ult != ({ku} & {int(f["d"]["k"]) for f in filas}):
+        if ult != ({ku} & {int(f["d"]["k"]) for f in todas}):
             rojos.append(f"(F) {pref} la ultima operacion se marca en {sorted(ult)} y fue en el nivel {ku}")
     if len(resp_p) < npf:
         nomed.append(f"(C) {pref} la pagina uso {npf} respuestas del perfil y se capturaron {len(resp_p)}: la sesion no se juzga")
@@ -979,8 +1050,8 @@ def juzga_pro(vio: dict, e: dict, esp: list[dict], rojos: list, nomed: list, inf
             lo = rec["kmin"] if lo is None else min(lo, rec["kmin"])
             hi = rec["kmax"] if hi is None else max(hi, rec["kmax"])
         for clase, kx in (("max-sesion", hi), ("min-sesion", lo)):
-            mar = {int(f["d"]["k"]) for f in filas if clase in f["c"][3]["cl"].split()}
-            if mar != ({kx} & {int(f["d"]["k"]) for f in filas}):
+            mar = {int(f["d"]["k"]) for f in todas if clase in f["c"][3]["cl"].split()}
+            if mar != ({kx} & {int(f["d"]["k"]) for f in todas}):
                 rojos.append(f"(F) {pref} el {clase} de la sesion UTC se marca en {sorted(mar)} y es el nivel {kx}")
     info.append(f"(F) {pref} pro: {len(vis)} filas visibles, tope {tope}, {n} paginas de cinta ({estado}), "
                 f"{len(rec['niveles'])} niveles con reciente, faltan {(rec['falta'] or {}).get('motivo')}")
@@ -994,6 +1065,11 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
     pin = vio.get("pintado") or {}
     if vio["excepciones"]:
         rojos.append(f"(P) {pref} la pagina lanzo {len(vio['excepciones'])} excepcion(es): {vio['excepciones'][0]}")
+    falta = [n for n, x in (("#esc-totales", vio.get("totales")), ("#esc-aviso", vio.get("aviso"))) if x is None]
+    cortas = [f for f in vio.get("filas") or [] if len(f["t"]) != 8]
+    if falta or cortas:  # de su html, no de lo que pinto: se condena aunque la pagina no llegue a listo
+        rojos.append(f"(F) {pref} la escalera no tiene la forma profesional: "
+                     + (f"falta {', '.join(falta)}" if falta else f"{len(cortas[0]['t'])} columnas y son 8"))
     if not vio.get("listo") or not pin.get("mapa"):
         rojos.append(f"(P) {pref} la pagina no pinto su vista (listo={vio.get('listo')}, contrato "
                      f"{'sin mapa' if pin else 'ausente'})")
@@ -1036,6 +1112,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
             juzga_escalera(vio, e, libros, estados, rojos, info, pref, casa, nomed)
     else:
         juzga_vivo(vio, e, rojos, nomed, info, pref, casa)
+        juzga_raton(vio, rojos, info, pref)
     return {"e": e, "q": q, "d": esp["d"], "K110": K110}
 
 

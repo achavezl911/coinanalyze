@@ -21,8 +21,9 @@
 #   (F) acumulada_sin_minimo      la acumulada que pasa por niveles parciales, escrita sin su «≥»
 #   (P) cada_fuera_de_regla       la historia pedida con un cada que no es el de la regla
 #   (P) pagina_rota               una excepcion al arrancar
-#   (F) pagina_de_e0fb3fb         R1: la pagina de antes del remate (libro.html y static/libro/* de e0fb3fb, por git show):
-#                                 720 columnas en 1420 px, el vecino mas cercano ensena unas celdas y esconde otras
+#   (F) pagina_de_e0fb3fb         la pagina de antes del remate (libro.html y static/libro/* de e0fb3fb, por git show): sin
+#                                 la forma profesional (#esc-totales) en su html, llegue o no a listo (149 r1)
+#   (F) rejilla_sin_ancla         sin relleno ni compensacion: la fila bajo un raton quieto cambia con el borde (149 r1)
 # Y tres escenarios BUENOS mas que tienen que salir VERDE: vivo_por_sondeo (el websocket rechazado), hueco_en_medio (la
 # base con el hueco y la pagina buena) y sin_libro_dicho (el venue sin libro y la pagina buena: lo dice y no suma).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina («FALTA DESPLEGAR») · sin_chromium · sin_fotos (la base vacia) · sin_canal.
@@ -173,8 +174,8 @@ juzga_plantado cada_fuera_de_regla P "pide lo que su hash no dice: cada=10 \\(su
 planta_pagina libro/libro-app.js 's/^function arranca() {$/function arranca() { throw new Error("plantado por K111-control");/' 1; m=$?
 juzga_plantado pagina_rota P "lanzo 1 excepcion|no pinto su vista" $m "una excepcion al arrancar"
 planta_e0fb3fb; m=$?
-juzga_plantado pagina_de_e0fb3fb F "\[BTC binance_usdm\] el mapa no pinta lo servido: R1: ensena 720 columnas en 1420 px y caben 710" $m \
-  "R1: la pagina de e0fb3fb y la vista del operador"
+juzga_plantado pagina_de_e0fb3fb F "\[BTC [a-z_]+\] la escalera no tiene la forma profesional: falta #esc-totales" $m \
+  "la pagina de e0fb3fb: su html no tiene la forma profesional, llegue o no a listo"
 
 echo "== la escalera profesional (campana 149): barras, grandes, totales, ausente y el volumen reciente de la cinta"
 planta_pagina libro/libro-calculo.js 's/  return tope > 0 ? Math\.min(1, q \/ tope) : 0;/  return tope > 0 ? Math.min(1, q \/ (2 * tope)) : 0;/' 1; m=$?
@@ -189,6 +190,8 @@ planta_pagina libro/libro-calculo.js 's/^const ESC_GRANDE_X = 3;/const ESC_GRAND
 juzga_plantado grande_con_otro_umbral F "una orden grande con otro umbral: fila" $m "grande a 2x la media y no a 3x"
 planta_pagina libro/libro-escalera.js 's/      tot = totalesVisibles(vis, /      tot = totalesVisibles([...modelo.values()], /' 1; m=$?
 juzga_plantado totales_de_otra_cosa F "los totales son de otra cosa" $m "los totales de todo el modelo y no de lo visible"
+planta_pagina libro/libro-escalera.js 's/^const ESC_ANCLA = true;/const ESC_ANCLA = false;/' 1; m=$?
+juzga_plantado rejilla_sin_ancla F "\[BTC perp vivo\] la fila se mueve bajo el raton quieto" $m "sin relleno ni compensacion: la rejilla resbala con el borde"
 planta_pagina libro/libro-escalera.js "s/^const SIN_CINTA = '';/const SIN_CINTA = '0';/" 1; m=$?
 echo sin_cinta > "$T/plantado"
 juzga_plantado sin_cinta_como_cero F "la cinta caída se pinta como cifras" $m "la cinta caida pintada como ceros"

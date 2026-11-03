@@ -342,6 +342,9 @@ function apuntaPinta(reg) {
   window.LIBRO_PINTADO.escalera = reg;
   const ts = window.LIBRO_HITOS.tiempos;
   ts.push(reg.ms);
+  const pz = window.LIBRO_HITOS.piezas || (window.LIBRO_HITOS.piezas = []);
+  pz.push(reg.piezas);
+  if (pz.length > TIEMPOS_MAX) pz.splice(0, pz.length - TIEMPOS_MAX);
   if (ts.length > TIEMPOS_MAX) ts.splice(0, ts.length - TIEMPOS_MAX);
 }
 
