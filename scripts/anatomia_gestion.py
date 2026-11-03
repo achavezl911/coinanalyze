@@ -24,7 +24,7 @@ H = C.HORIZONTE
 
 
 # ---------------------------------------------------------------- salidas (primer toque, gana el stop)
-def salidas(o, h, l, c, ini, e, lado, sl, tp, solo_stop0=False, bloque=2048):
+def salidas(o, h, lo, c, ini, e, lado, sl, tp, solo_stop0=False, bloque=2048):
     """Camino desde el minuto ini (H minutos; con solo_stop0, ini + H y en ini solo cuenta el stop). e precio de
     entrada, sl distancia de stop (escalar o por operacion). Devuelve (exito, bruto, salida, valida, mae a la salida)."""
     ini, e = np.asarray(ini, np.int64), np.asarray(e, float)
@@ -39,7 +39,7 @@ def salidas(o, h, l, c, ini, e, lado, sl, tp, solo_stop0=False, bloque=2048):
         g, ee, ss = ini[s_], e[s_], sl[s_]
         ok0 = (g + nc - 1 < len(o)) & (g >= 0)
         f = np.where(ok0[:, None], g[:, None] + paso, 0)
-        Hh, Ll = h[f], l[f]
+        Hh, Ll = h[f], lo[f]
         ok = ok0 & np.isfinite(ee) & np.isfinite(ss) & (ss > 0) & np.isfinite(Hh).all(1) & np.isfinite(Ll).all(1)
         ok &= np.isfinite(c[np.where(ok0, g + nc - 1, 0)])
         with np.errstate(invalid="ignore", divide="ignore"):
@@ -65,15 +65,15 @@ def salidas(o, h, l, c, ini, e, lado, sl, tp, solo_stop0=False, bloque=2048):
     return ex, br, sa, va, mae
 
 
-def mae_mfe(o, h, l, G, lado):
+def mae_mfe(o, h, lo, G, lado):
     """MAE hasta tocar +MAE_OBJ (o 240) y MFE en 240, desde la apertura de t+1. NaN si falta un minuto."""
     f = G[:, None] + 1 + np.arange(H)
     f = np.minimum(f, len(o) - 1)
     e = o[np.minimum(G + 1, len(o) - 1)][:, None]
     with np.errstate(invalid="ignore", divide="ignore"):
-        fav = (h[f] / e - 1) if lado > 0 else (1 - l[f] / e)
-        adv = (1 - l[f] / e) if lado > 0 else (h[f] / e - 1)
-    ok = np.isfinite(fav).all(1) & np.isfinite(adv).all(1) & (G + H < len(o))
+        fav = (h[f] / e - 1) if lado > 0 else (1 - lo[f] / e)
+        adv = (1 - lo[f] / e) if lado > 0 else (h[f] / e - 1)
+    ok = np.isfinite(fav).all(1) & np.isfinite(adv).all(1) & (len(o) > G + H)
     toca = (fav >= C.MAE_OBJ).any(1)
     hasta = np.where(toca, (fav >= C.MAE_OBJ).argmax(1), H - 1)
     mae = np.take_along_axis(np.maximum.accumulate(np.nan_to_num(adv), 1), hasta[:, None], 1)[:, 0]
@@ -92,17 +92,17 @@ def contexto(B, ts):
     X = {}
     for s in C.SIMBOLOS:
         b = B[s]
-        o, h, l, c = b["o"], b["h"], b["l"], E.ff(b["c"], 10)
-        H60, L60, cp = E.rmax(h, 60), E.rmin(l, 60), E.shift(c, 60)
+        o, h, lo, c = b["o"], b["h"], b["l"], E.ff(b["c"], 10)
+        H60, L60, cp = E.rmax(h, 60), E.rmin(lo, 60), E.shift(c, 60)
         tr = np.fmax(H60, cp) - np.fmin(L60, cp)
         atr = sum(E.shift(tr, 60 * k) for k in range(C.ATR1H_VELAS)) / C.ATR1H_VELAS / c
-        niv = {"largo": {"24h": E.rmin(l, 1440), "sem": E.rmin(l, 10080)},
+        niv = {"largo": {"24h": E.rmin(lo, 1440), "sem": E.rmin(lo, 10080)},
                "corto": {"24h": E.rmax(h, 1440), "sem": E.rmax(h, 10080)}}
         for d in (3, 9):
-            mx, mn = E.vela_anterior(h, l, ts, ts + 60, d)
+            mx, mn = E.vela_anterior(h, lo, ts, ts + 60, d)
             niv["largo"][f"{d}d"], niv["corto"][f"{d}d"] = mn, mx
-        X[s] = {"o": o, "h": h, "l": l, "c": c, "atr": atr, "niv": niv,
-                "mecha": {"largo": E.rmin(l, C.STOP_MECHA_MIN) * (1 - C.STOP_MECHA_MARGEN),
+        X[s] = {"o": o, "h": h, "l": lo, "c": c, "atr": atr, "niv": niv,
+                "mecha": {"largo": E.rmin(lo, C.STOP_MECHA_MIN) * (1 - C.STOP_MECHA_MARGEN),
                           "corto": E.rmax(h, C.STOP_MECHA_MIN) * (1 + C.STOP_MECHA_MARGEN)}}
     return D, X
 
@@ -140,7 +140,7 @@ def llenado(x, G, lado, lim):
     fin = np.where(hay, pos, C.LIM_CADUCA - 1)
     sano = np.isfinite(x["l"][f]) & np.isfinite(x["h"][f])
     ok = np.take_along_axis(np.cumsum(~sano, 1), fin[:, None], 1)[:, 0] == 0
-    ok &= G + C.LIM_CADUCA < len(x["l"])
+    ok &= len(x["l"]) > G + C.LIM_CADUCA
     return np.where(hay, G + 1 + pos, -1), ok
 
 
@@ -184,20 +184,20 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
     s, lado, tp = defn["simbolo"], defn["lado"], defn["objetivo"]
     d, x, sg = D[s], X[s], C.LADOS[lado]
     G, tsg = d["G"], d["ts"]
-    I = (tsg >= max(desde, C.CAPA_A_DESDE if defn["capa"] == "A" else C.CAPA_B_DESDE)) & d["capa"][defn["capa"]]
+    idx = (tsg >= max(desde, C.CAPA_A_DESDE if defn["capa"] == "A" else C.CAPA_B_DESDE)) & d["capa"][defn["capa"]]
     sl = dist_stop(x, G, lado, defn["stop"])
     cache = {} if cache is None else cache
     lim = defn["tipo"] == "limite"
     c_in = C.MAKER if lim else C.TAKER
     if lim:
         arm, L = armadas(x, G, lado, defn["nivel"])
-        arm &= I
+        arm &= idx
         f, okf = llenado(x, G, lado, L)
         ex, br, sa, va, mae = (np.zeros(len(G), bool), np.full(len(G), NAN), G + C.LIM_CADUCA,
                                np.zeros(len(G), bool), np.full(len(G), NAN))
         j = np.flatnonzero(arm & okf & (f >= 0))
         r = salidas(x["o"], x["h"], x["l"], x["c"], f[j], L[j], sg, sl[j], tp, solo_stop0=True)
-        for a, v in zip((ex, br, sa, va, mae), r):
+        for a, v in zip((ex, br, sa, va, mae), r, strict=True):
             a[j] = v
         cad = arm & okf & (f < 0)
         fin =(tsg + (np.where(va, sa, G + C.LIM_CADUCA) - G + 1) * 60) <= hasta
@@ -209,7 +209,7 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
                                    sg, sl, tp)
         ex, br, sa, va, mae = cache[clave]
         fin = tsg + (H + 1) * 60 <= hasta
-        va = va & I & fin
+        va = va & idx & fin
         mk = entrada_mascara(D, s, defn)
         if mk is None:
             return None, None
@@ -229,7 +229,7 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
     if con_p:
         sem = C.SEMILLA + 11 * C.SIMBOLOS.index(s)
         if lim:
-            JJ = np.flatnonzero(I & (tsg + (2 * H + 2) * 60 <= hasta))
+            JJ = np.flatnonzero(idx & (tsg + (2 * H + 2) * 60 <= hasta))
             dd = np.nanmedian(np.abs(1 - L[arm] / x["c"][G[arm]])) if arm.any() else NAN
             v_ = np.zeros(len(G), bool)
             y_ = np.zeros(len(G), bool)
@@ -244,7 +244,7 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
             p, t0, nt, via = (p_circular(mm[JJ], y_[JJ], v_[JJ], desplazamientos(len(JJ), sem), t0)
                               if t0 is not None and len(JJ) else (None, t0, 0, None))
         else:
-            J = np.flatnonzero(I & fin)
+            J = np.flatnonzero(idx & fin)
             p, t0, nt, via = p_circular(m[J], (ex & va)[J], va[J], desplazamientos(len(J), sem))
         celda.update(p=p, p_via=via, tasa_todas=t0, n_todas=nt)
     tr = {"ts": tsg[ops], "exito": ex[ops], "R": ne[ops] / (sl[ops] + c_in + C.TAKER), "stop": sl[ops],
@@ -327,7 +327,7 @@ def descubre(D, X, cands, hasta=C.CORTE_DESCUBRIMIENTO):
             celdas.append(ce)
             trs.append(tr)
     q = C.benjamini_hochberg([c.get("p") for c in celdas])
-    for c, qi, tr in zip(celdas, q, trs):
+    for c, qi, tr in zip(celdas, q, trs, strict=True):
         c["q"] = qi
         c["estado"] = "SIN N" if c["n"] < C.N_MIN_CONFIRMA else \
             ("PASA" if qi is not None and qi <= C.FDR_Q and C.gana(c["tasa"], c["neto"], c["empate"]) else "NO")

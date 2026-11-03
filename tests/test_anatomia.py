@@ -21,21 +21,21 @@ def _camino(n=260, p=100.0):
 
 
 def test_etiqueta_primer_toque_y_empate_gana_el_stop():
-    o, h, l, c = _camino()
+    o, h, lo, c = _camino()
     h[5] = 101.0                                           # objetivo E1 largo (+1 %) en el minuto 5
-    l[9] = 99.0                                            # stop despues: no cuenta
-    ex, neto, sal = C.etiqueta(o, h, l, c, 0, 1, "E1")
+    lo[9] = 99.0                                            # stop despues: no cuenta
+    ex, neto, sal = C.etiqueta(o, h, lo, c, 0, 1, "E1")
     assert ex and sal == 5 and neto == pytest.approx(0.01 - 2 * C.COMISION)
-    o, h, l, c = _camino()
-    h[5], l[5] = 101.0, 99.4                               # los dos en el mismo minuto: gana el stop
-    ex, neto, sal = C.etiqueta(o, h, l, c, 0, 1, "E1")
+    o, h, lo, c = _camino()
+    h[5], lo[5] = 101.0, 99.4                               # los dos en el mismo minuto: gana el stop
+    ex, neto, sal = C.etiqueta(o, h, lo, c, 0, 1, "E1")
     assert not ex and sal == 5 and neto == pytest.approx(-0.006 - 2 * C.COMISION)
-    o, h, l, c = _camino()
-    l[3] = 99.0                                            # corto: el objetivo esta abajo
-    assert C.etiqueta(o, h, l, c, 0, -1, "E1")[0]
-    o, h, l, c = _camino()
+    o, h, lo, c = _camino()
+    lo[3] = 99.0                                            # corto: el objetivo esta abajo
+    assert C.etiqueta(o, h, lo, c, 0, -1, "E1")[0]
+    o, h, lo, c = _camino()
     c[240] = 100.5                                         # sin toque: cierra en el 240
-    ex, neto, sal = C.etiqueta(o, h, l, c, 0, 1, "E1")
+    ex, neto, sal = C.etiqueta(o, h, lo, c, 0, 1, "E1")
     assert not ex and sal == 240 and neto == pytest.approx(0.005 - 2 * C.COMISION)
     assert C.empate("E1") == pytest.approx(0.444, abs=1e-3) and C.empate("E2") == pytest.approx(0.273, abs=1e-3)
 
@@ -113,9 +113,9 @@ def sintetico(dias=23, semilla=1, inmersiones=True):
         c = 100 * np.exp(np.cumsum(r))
         o = np.concatenate([[c[0]], c[:-1]])
         h = np.maximum(o, c) * (1 + np.abs(rng.normal(0, 0.0002, N)))
-        l = np.minimum(o, c) * (1 - np.abs(rng.normal(0, 0.0002, N)))
+        lo = np.minimum(o, c) * (1 - np.abs(rng.normal(0, 0.0002, N)))
         b = {k: rng.standard_normal(N) for k in C.COLUMNAS_BASE}
-        b.update(ts=ts.astype(float), fuente=np.ones(N), o=o, h=h, l=l, c=c, c_cb=c * (1 + rng.normal(0, 1e-4, N)),
+        b.update(ts=ts.astype(float), fuente=np.ones(N), o=o, h=h, l=lo, c=c, c_cb=c * (1 + rng.normal(0, 1e-4, N)),
                  vol_ref=rng.exponential(1e6, N), liq_l=liq_l, liq_s=rng.exponential(1000, N))
         for lado in "ls":
             b[f"liq_{lado}_n"] = rng.poisson(2, N).astype(float)
@@ -148,15 +148,15 @@ def test_etiquetas_vectorizadas_como_el_criterio():
     for _ in range(N - 1):
         c.append(c[-1] * (1 + rng.gauss(0, 0.002)))
     o = [c[0]] + c[:-1]
-    h = [max(a, b) * (1 + abs(rng.gauss(0, 0.001))) for a, b in zip(o, c)]
-    l = [min(a, b) * (1 - abs(rng.gauss(0, 0.001))) for a, b in zip(o, c)]
+    h = [max(a, b) * (1 + abs(rng.gauss(0, 0.001))) for a, b in zip(o, c, strict=True)]
+    lo = [min(a, b) * (1 - abs(rng.gauss(0, 0.001))) for a, b in zip(o, c, strict=True)]
     G = np.arange(0, N - 241, 7)
-    A = [np.array(v) for v in (o, h, l, c)]
+    A = [np.array(v) for v in (o, h, lo, c)]
     for lado, sg in C.LADOS.items():
         for e in C.ESQUEMAS:
             ex, ne, sa, va = E.etiquetas(*A, G, sg, e)
             for k, t in enumerate(G):
-                r = C.etiqueta(o, h, l, c, int(t), sg, e)
+                r = C.etiqueta(o, h, lo, c, int(t), sg, e)
                 assert va[k] and (bool(ex[k]), round(ne[k], 12), int(sa[k])) == \
                     (bool(r[0]), round(r[1], 12), r[2]), (lado, e, t)
 
@@ -173,7 +173,7 @@ def test_sin_mirar_adelante_en_ninguna_variable():
     esperadas = {n for n, (_c, _t, _d) in C.VARIABLES.items()}
     for s in C.SIMBOLOS:
         assert esperadas <= set(D0[s]["V"]), esperadas - set(D0[s]["V"])
-        k = G <= t
+        k = t >= G
         for n in esperadas:
             a, b = D0[s]["V"][n][k], D1[s]["V"][n][k]
             assert np.array_equal(a, b, equal_nan=True), (s, n)
@@ -224,7 +224,8 @@ def test_confirma_no_reelige(grande, tmp_path):
     cands = json.loads((tmp_path / "candidatas.json").read_text())["candidatas"]
     assert cands and len(cands) <= C.MAX_CANDIDATAS
     r = E.corre(tmp_path / "base", tmp_path / "conf.json", fecha="2026-11-03")["candidatas"]
-    quita = lambda k: {a: b for a, b in k.items() if a != "confirmacion"}
+    def quita(k):
+        return {a: b for a, b in k.items() if a != "confirmacion"}
     assert [quita(k) for k in r] == cands                 # las mismas, en el mismo orden, sin tocar el umbral
     assert all(k["confirmacion"]["veredicto"] in ("CONFIRMA", "CONTEXTO", "RUIDO", "SIN N") for k in r)
     # el umbral es el guardado: si se cambia en el fichero, la confirmacion lo obedece

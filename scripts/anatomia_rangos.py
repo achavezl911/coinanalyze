@@ -55,14 +55,14 @@ def horas(hist: Path, s: str) -> dict:
 
 
 # ---------------------------------------------------------------- piezas (barra k: solo barras <= k)
-def atr_diario(ts, h, l, c):
+def atr_diario(ts, h, lo, c):
     """Por barra: media del rango verdadero de los RANGO_ATR_DIAS dias UTC completos anteriores."""
     dk = ts // 86400
     k0 = dk[0]
     nd = int(dk[-1] - k0 + 1)
     Hd, Ld, Cd = np.full(nd, -np.inf), np.full(nd, np.inf), np.full(nd, NAN)
     np.maximum.at(Hd, dk - k0, np.where(np.isfinite(h), h, -np.inf))
-    np.minimum.at(Ld, dk - k0, np.where(np.isfinite(l), l, np.inf))
+    np.minimum.at(Ld, dk - k0, np.where(np.isfinite(lo), lo, np.inf))
     Cd[dk - k0] = c                                    # el ultimo de cada dia queda (orden de ts)
     cp = np.concatenate([[NAN], Cd[:-1]])
     tr = np.fmax(Hd, cp) - np.fmin(Ld, cp)
@@ -80,11 +80,11 @@ def grupos(idx):
     return 0 if not len(idx) else 1 + int(np.sum(np.diff(idx) >= C.RANGO_SEP))
 
 
-def cumple(h, l, c, atr, k, W):
+def cumple(h, lo, c, atr, k, W):
     """(alto, bajo, toques_alto, toques_bajo) si en k hay rango de ventana W; si no, None."""
     if k - W + 1 < 0 or not np.isfinite(atr[k]):
         return None
-    hw, lw = h[k - W + 1:k + 1], l[k - W + 1:k + 1]
+    hw, lw = h[k - W + 1:k + 1], lo[k - W + 1:k + 1]
     if not (np.isfinite(hw).all() and np.isfinite(lw).all()):
         return None
     alto, bajo = hw.max(), lw.min()
@@ -98,7 +98,7 @@ def cumple(h, l, c, atr, k, W):
     return alto, bajo, grupos(ta), grupos(tb)
 
 
-def final(h, l, c, k, alto, bajo):
+def final(h, lo, c, k, alto, bajo):
     """Clase, lado_final, barra en que acaba y si llega a 1 altura mas alla; None si la historia no alcanza."""
     alt = alto - bajo
     fin = k + 24 * C.RANGO_DIAS
@@ -126,7 +126,7 @@ def final(h, l, c, k, alto, bajo):
         clase = clase or "SIN SALIDA"
     return {"clase": clase, "lado_final": lado, "acaba": int(acaba),
             "mas_alla_arriba": bool(np.nanmax(h[k + 1:fin + 1]) > alto + alt),
-            "mas_alla_abajo": bool(np.nanmin(l[k + 1:fin + 1]) < bajo - alt)}
+            "mas_alla_abajo": bool(np.nanmin(lo[k + 1:fin + 1]) < bajo - alt)}
 
 
 def estado(Hd, k, W, alto, bajo, ta, tb):
@@ -154,12 +154,12 @@ def rangos(Hd, control=False, semilla=C.SEMILLA):
     """Lista de rangos con estado y final. Con control, cada rango con planta > 2/3 recibe la deriva plantada en
     las barras siguientes (se copian las series: Hd no se toca)."""
     Hd = {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in Hd.items()}
-    h, l, c, o, ts = Hd["h"], Hd["l"], Hd["c"], Hd["o"], Hd["ts"]
-    atr = atr_diario(ts, h, l, c)
+    h, lo, c, o, ts = Hd["h"], Hd["l"], Hd["c"], Hd["o"], Hd["ts"]
+    atr = atr_diario(ts, h, lo, c)
     rng = np.random.default_rng(semilla)
     ev, k = [], max(C.RANGO_W) - 1
     while k < len(c):
-        hit = next(((W, r) for W in C.RANGO_W if (r := cumple(h, l, c, atr, k, W)) is not None), None)
+        hit = next(((W, r) for W in C.RANGO_W if (r := cumple(h, lo, c, atr, k, W)) is not None), None)
         if hit is None:
             k += 1
             continue
@@ -171,10 +171,10 @@ def rangos(Hd, control=False, semilla=C.SEMILLA):
             if e["planta"] > 2 / 3:
                 j = np.arange(1, len(c) - k)
                 f = 1 + C.RANGO_PLANTA * (alto - bajo) / c[k] * np.minimum(j, 24) / 24
-                for x in (o, h, l, c):
+                for x in (o, h, lo, c):
                     x[k + 1:] *= f
-                atr = atr_diario(ts, h, l, c)
-        fi = final(h, l, c, k, alto, bajo)
+                atr = atr_diario(ts, h, lo, c)
+        fi = final(h, lo, c, k, alto, bajo)
         if fi is None:
             break
         e.update(fi, ts_acaba=int(ts[fi["acaba"]]))
@@ -200,7 +200,7 @@ def celdas(ev_por_sim, estados=ESTADOS):
             if len(xa) < 3:
                 continue
             q1, q2 = np.quantile(xa, [1 / 3, 2 / 3])
-            def ter(e):
+            def ter(e, est=est, q1=q1, q2=q2):
                 x = e.get(est, NAN)
                 return None if not np.isfinite(x) else (0 if x <= q1 else (1 if x <= q2 else 2))
             for t in range(3):

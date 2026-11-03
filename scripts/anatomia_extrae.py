@@ -22,7 +22,7 @@ import json
 import os
 import sys
 from collections import deque
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -36,7 +36,7 @@ COL = {n: i for i, n in enumerate(C.COLUMNAS_BASE)}
 def epoch(ts: str) -> float:
     if ts.endswith("+00"):
         ts = ts[:-3]
-        return datetime.fromisoformat(ts).replace(tzinfo=timezone.utc).timestamp()
+        return datetime.fromisoformat(ts).replace(tzinfo=UTC).timestamp()
     return datetime.fromisoformat(ts).timestamp()
 
 
@@ -75,7 +75,7 @@ def arr(s):
 class Dia:
     def __init__(self, archivo: Path, dia: str):
         self.archivo, self.dia = archivo, dia
-        self.t0 = int(datetime.fromisoformat(dia).replace(tzinfo=timezone.utc).timestamp())
+        self.t0 = int(datetime.fromisoformat(dia).replace(tzinfo=UTC).timestamp())
         self.m = {s: [[None] * NCOL for _ in range(1440)] for s in C.SIMBOLOS}
         self.huecos: dict[str, list[str]] = {}
         self.ignorados: dict[str, list[str]] = {}
@@ -260,7 +260,7 @@ class Dia:
                 if r is None:
                     previo.pop(s, None)
                     continue
-                for col, banda in zip(("deseq01", "deseq05"), C.LIBRO_BANDAS):
+                for col, banda in zip(("deseq01", "deseq05"), C.LIBRO_BANDAS, strict=True):
                     b, a = profundidad(r, banda)
                     f[COL[col]] = (b - a) / (b + a) if b + a > 0 else None
                 f[COL["alc_c"]] = 1 - r["alc_c"] / r["medio"]
@@ -303,7 +303,7 @@ class Dia:
                     if m < 1440:
                         for c, i in cols:
                             self.m[s][m][COL[c]] = num(x[i])
-        for h, p in self.horas("spot-agregado"):
+        for _h, p in self.horas("spot-agregado"):
             for x in lineas(p):
                 if x[2] != "combined" or x[1] not in self.m:
                     continue

@@ -14,7 +14,7 @@ import gzip
 import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -176,7 +176,7 @@ def cond(mascara, *insumos):
 
 
 # ---------------------------------------------------------------- etiquetas
-def etiquetas(o, h, l, c, G, lado, esquema, bloque=4096):
+def etiquetas(o, h, lo, c, G, lado, esquema, bloque=4096):
     """Para cada decision t en G: (exito, neto, minuto de salida, valida). Igual que anatomia_comun.etiqueta."""
     tp, sl = C.ESQUEMAS[esquema]
     N, H = len(o), C.HORIZONTE
@@ -191,7 +191,7 @@ def etiquetas(o, h, l, c, G, lado, esquema, bloque=4096):
         k = slice(a, a + len(g))
         filas = g[:, None] + paso
         e = o[g + 1]
-        Hh, Ll, Cc = h[filas], l[filas], c[filas]
+        Hh, Ll, Cc = h[filas], lo[filas], c[filas]
         ok = np.isfinite(e) & np.isfinite(Hh).all(1) & np.isfinite(Ll).all(1) & np.isfinite(Cc).all(1)
         with np.errstate(invalid="ignore"):
             if lado > 0:
@@ -223,7 +223,7 @@ def horario(ts1):
     sem = (dia + 3) % 7                       # lunes = 0 (el 1-ene-1970 fue jueves)
     hora = md // 60
     du, inv = np.unique(dia, return_inverse=True)
-    ap = np.array([C.apertura_eeuu_utc(datetime.fromtimestamp(int(d) * 86400, timezone.utc)) for d in du])[inv]
+    ap = np.array([C.apertura_eeuu_utc(datetime.fromtimestamp(int(d) * 86400, UTC)) for d in du])[inv]
     return {
         "sesion": np.select([md < 480, md < 780, md < 1260], [0.0, 1.0, 2.0], 3.0),
         "min_a_funding": ((480 - md % 480) % 480).astype(float),
@@ -234,14 +234,14 @@ def horario(ts1):
     }
 
 
-def vela_anterior(h, l, ts, ts1, D):
+def vela_anterior(h, lo, ts, ts1, D):
     """Maximo y minimo de la vela de D dias ANTERIOR a la que contiene t+1 (velas en dias Unix multiplos de D)."""
     dk = (ts // 86400) // D
     k0 = dk.min()
     mx = np.full(dk.max() - k0 + 1, -np.inf)
     mn = np.full(dk.max() - k0 + 1, np.inf)
     np.maximum.at(mx, dk - k0, np.where(np.isfinite(h), h, -np.inf))
-    np.minimum.at(mn, dk - k0, np.where(np.isfinite(l), l, np.inf))
+    np.minimum.at(mn, dk - k0, np.where(np.isfinite(lo), lo, np.inf))
     prev = (ts1 // 86400) // D - 1 - k0
     ok = (prev >= 0) & (prev < len(mx))
     p = np.clip(prev, 0, len(mx) - 1)
@@ -264,7 +264,7 @@ def prepara(B, ts, oraculo=False):
         b = B[s]
         V = {}
         c = ff(b["c"], 10)
-        h, l = b["h"], b["l"]
+        h, lo = b["h"], b["l"]
         for w in (5, 15, 60):
             V[f"r_{w}"] = ret(c, w)
         r1 = ret(c, 1)
@@ -313,16 +313,16 @@ def prepara(B, ts, oraculo=False):
             V[f"rsi_{nom}"] = rsi_fase(c, k)
         cp = shift(c, 1)
         with np.errstate(invalid="ignore", divide="ignore"):
-            tr = (np.fmax(h, cp) - np.fmin(l, cp)) / c
+            tr = (np.fmax(h, cp) - np.fmin(lo, cp)) / c
         atr = rsum(tr, 60) / 60
         for nom, w in (("24h", 1440), ("sem", W7)):
             V[f"dist_max_{nom}"] = c / rmax(h, w) - 1
-            V[f"dist_min_{nom}"] = c / rmin(l, w) - 1
+            V[f"dist_min_{nom}"] = c / rmin(lo, w) - 1
         for d in (3, 9):
-            mx, mn = vela_anterior(h, l, ts, ts + 60, d)
+            mx, mn = vela_anterior(h, lo, ts, ts + 60, d)
             V[f"dist_max_{d}d"], V[f"dist_min_{d}d"] = c / mx - 1, c / mn - 1
         vol = np.where(np.isfinite(b["vol_ref"]), b["vol_ref"], 0.0)
-        pv = np.where(np.isfinite(h + l + c), (h + l + c) / 3 * vol, 0.0)
+        pv = np.where(np.isfinite(h + lo + c), (h + lo + c) / 3 * vol, 0.0)
         dia = ts // 86400
         i0 = np.searchsorted(dia, dia)
         cpv, cv = _acum(pv), _acum(vol)
@@ -331,8 +331,8 @@ def prepara(B, ts, oraculo=False):
         V["dist_vwap_dia"] = c / vwap - 1
         # mecanismos al minuto
         M = {}
-        bajo15, alto15 = rmin(l, C.M1_VENTANA), rmax(h, C.M1_VENTANA)
-        bajo_prev = shift(rmin(l, C.M1_MIN_NUEVO), C.M1_VENTANA)
+        bajo15, alto15 = rmin(lo, C.M1_VENTANA), rmax(h, C.M1_VENTANA)
+        bajo_prev = shift(rmin(lo, C.M1_MIN_NUEVO), C.M1_VENTANA)
         alto_prev = shift(rmax(h, C.M1_MIN_NUEVO), C.M1_VENTANA)
         for capa, zl, zs in (("B", "liq_l_15_z", "liq_s_15_z"), ("A", "liq5_l_15_z", "liq5_s_15_z")):
             M[("M1", capa)] = cond((bajo15 < bajo_prev) & (V[zl] >= C.M1_Z) & (c >= bajo15 * (1 + C.M1_REBOTE)),
@@ -356,7 +356,7 @@ def prepara(B, ts, oraculo=False):
                                      ((casc == 1) & (calma >= C.CASCADA_CALMA_S)
                                       & (calma < C.CASCADA_CALMA_S + 60 * C.REJILLA)).astype(float), NAN)
         vol5z = z7(rsum(b["vol_ref"], 5))
-        rup_a, rup_b = c > shift(rmax(h, C.M1_MIN_NUEVO), 1), c < shift(rmin(l, C.M1_MIN_NUEVO), 1)
+        rup_a, rup_b = c > shift(rmax(h, C.M1_MIN_NUEVO), 1), c < shift(rmin(lo, C.M1_MIN_NUEVO), 1)
         # a la rejilla
         VG = {k: v[G] for k, v in V.items()}
         MG = {k: v[G] for k, v in M.items()}
@@ -381,7 +381,7 @@ def prepara(B, ts, oraculo=False):
                for lado, sg in C.LADOS.items() for e in C.ESQUEMAS}
         cinta = _acum((b["fuente"] == C.FUENTE_CINTA).astype(float))
         Gc = np.minimum(G, len(ts) - C.HORIZONTE - 1)
-        camino_cinta = (cinta[Gc + C.HORIZONTE + 1] - cinta[Gc + 1] == C.HORIZONTE) & (G + C.HORIZONTE < len(ts))
+        camino_cinta = (cinta[Gc + C.HORIZONTE + 1] - cinta[Gc + 1] == C.HORIZONTE) & (len(ts) > G + C.HORIZONTE)
         va = lab[("largo", "E1")][3]
         capas = {"A": va & (tsg >= C.CAPA_A_DESDE), "B": va & camino_cinta & (tsg >= C.CAPA_B_DESDE)}
         if oraculo:
@@ -444,19 +444,19 @@ def mide(D, desde, hasta, extra=(), desplazamientos=C.DESPLAZAMIENTOS, esquema="
         for si, s in enumerate(C.SIMBOLOS):
             d = D[s]
             fin_ok = d["ts"] + (C.HORIZONTE + 1) * 60 <= hasta
-            I = np.flatnonzero((d["ts"] >= max(desde, capa_desde)) & fin_ok)
-            if len(I) < 2 * smin + 2:
+            idx = np.flatnonzero((d["ts"] >= max(desde, capa_desde)) & fin_ok)
+            if len(idx) < 2 * smin + 2:
                 continue
-            Gi = d["G"][I]
+            Gi = d["G"][idx]
             rng = np.random.default_rng(C.SEMILLA + 7 * si + (0 if capa == "A" else 3))
-            S = np.arange(smin, len(I) - smin)
+            S = np.arange(smin, len(idx) - smin)
             S = rng.choice(S, size=min(desplazamientos, len(S)), replace=False)
             for lado in C.LADOS:
-                ex, ne, sa, va = (a[I] for a in d["lab"][(lado, esquema)])
-                va = va & d["capa"][capa][I]
+                ex, ne, sa, va = (a[idx] for a in d["lab"][(lado, esquema)])
+                va = va & d["capa"][capa][idx]
                 if va.sum() == 0:
                     continue
-                def una(m, extra_celda, x):
+                def una(m, extra_celda, x, *, capa=capa, s=s, lado=lado, S=S, Gi=Gi, ex=ex, ne=ne, sa=sa, va=va):
                     # el azar y los desplazamientos, solo sobre las decisiones donde la variable EXISTE: si no,
                     # un tramo sin variable (los 2 primeros dias de un z, un hueco) con otro regimen se lleva el p
                     vx = va & np.isfinite(x)
@@ -484,7 +484,7 @@ def mide(D, desde, hasta, extra=(), desplazamientos=C.DESPLAZAMIENTOS, esquema="
                                    "p": p, "p_via": via})
 
                 for nom in nombres:
-                    x = d["V"][nom][I]
+                    x = d["V"][nom][idx]
                     if not np.isfinite(x).any():
                         continue
                     tipo = C.VARIABLES[nom][1] if nom in C.VARIABLES else "cont"
@@ -503,9 +503,9 @@ def mide(D, desde, hasta, extra=(), desplazamientos=C.DESPLAZAMIENTOS, esquema="
                                                                   "cola": "valor", "umbral": float(v)}, x)
                 for (nom, cp), x in d["M"].items():
                     if cp == capa and C.MECANISMOS[nom][0] == lado:
-                        una(condicion(x[I], "si"), {"tipo": "mecanismo", "nombre": nom, "cola": "si"}, x[I])
+                        una(condicion(x[idx], "si"), {"tipo": "mecanismo", "nombre": nom, "cola": "si"}, x[idx])
     q = C.benjamini_hochberg([c["p"] for c in celdas])
-    for c, qi in zip(celdas, q):
+    for c, qi in zip(celdas, q, strict=True):
         c["q"] = qi
         c["estado"] = "SIN N" if c["n"] < C.N_MIN_MECANISMO else (
             "PASA" if qi <= C.FDR_Q and C.gana(c["tasa"], c["neto"], C.empate(c["esquema"]), c["azar_tasa"]) else "NO")
@@ -539,14 +539,14 @@ def todo_junto(D, hasta, barajados=C.HGB_BARAJADOS, params=None):
             X, y, t, sim = [], [], [], []
             for si, s in enumerate(C.SIMBOLOS):
                 d = D[s]
-                I = np.flatnonzero(d["capa"][capa] & (d["ts"] >= desde)
+                idx = np.flatnonzero(d["capa"][capa] & (d["ts"] >= desde)
                                    & (d["ts"] + (C.HORIZONTE + 1) * 60 <= hasta))
-                if not len(I):
+                if not len(idx):
                     continue
-                X.append(np.column_stack([d["V"][c][I] for c in cols] + [np.full(len(I), si)]))
-                y.append(d["lab"][(lado, "E1")][0][I])
-                t.append(d["ts"][I])
-                sim.append(np.full(len(I), si))
+                X.append(np.column_stack([d["V"][c][idx] for c in cols] + [np.full(len(idx), si)]))
+                y.append(d["lab"][(lado, "E1")][0][idx])
+                t.append(d["ts"][idx])
+                sim.append(np.full(len(idx), si))
             if not X or sum(len(a) for a in y) < 50:
                 out[f"{capa}_{lado}"] = {"estado": "SIN N"}
                 continue
@@ -554,7 +554,7 @@ def todo_junto(D, hasta, barajados=C.HGB_BARAJADOS, params=None):
             bordes = np.quantile(t, np.linspace(0, 1, C.HGB_TRAMOS + 1))
             purga = C.HGB_PURGA_MIN * 60
 
-            def fuera(yv):
+            def fuera(yv, *, X=X, t=t, bordes=bordes, purga=purga):
                 pr = np.full(len(yv), NAN)
                 for f in range(C.HGB_TRAMOS):
                     a, b = bordes[f], bordes[f + 1]
@@ -623,8 +623,9 @@ def control(B, ts, desplazamientos=C.DESPLAZAMIENTOS):
     orc = [c for c in pasan if c["nombre"] == "oraculo" and c["cola"] == "alto" and c["lado"] == "largo"]
     ruido = [c for c in pasan if c["nombre"].startswith("ruido_")]
     ve = bool(m1) and bool(orc) and len(ruido) <= C.FDR_Q * len(pasan)
-    resumen = lambda cs: [{k: c.get(k) for k in ("nombre", "cola", "capa", "simbolo", "lado", "n", "tasa",
-                                                 "azar_tasa", "p", "q")} for c in cs]
+    def resumen(cs):
+        return [{k: c.get(k) for k in ("nombre", "cola", "capa", "simbolo", "lado", "n", "tasa",
+                                       "azar_tasa", "p", "q")} for c in cs]
     return {"ve": ve, "m1_encontrado": resumen(m1), "oraculo_encontrado": resumen(orc),
             "ruido_que_pasa": resumen(ruido), "celdas_que_pasan": len(pasan),
             "pasan": sorted({c["nombre"] for c in pasan})}, celdas
@@ -637,12 +638,9 @@ def confirma(D, cands, fecha_ts, hasta=None):
         d = D[k["simbolo"]]
         ex, ne, sa, va = d["lab"][(k["lado"], k["esquema"])]
         fin = d["ts"] + (C.HORIZONTE + 1) * 60 <= (hasta if hasta is not None else np.inf)
-        I = (d["ts"] >= fecha_ts) & d["capa"][k["capa"]] & fin
-        if k["tipo"] == "mecanismo":
-            x = d["M"][(k["nombre"], k["capa"])]
-        else:
-            x = d["V"][k["nombre"]]
-        m = condicion(x, k["cola"], k.get("umbral"), bool(k.get("estricto"))) & I
+        idx = (d["ts"] >= fecha_ts) & d["capa"][k["capa"]] & fin
+        x = d["M"][(k["nombre"], k["capa"])] if k["tipo"] == "mecanismo" else d["V"][k["nombre"]]
+        m = condicion(x, k["cola"], k.get("umbral"), bool(k.get("estricto"))) & idx
         n, exitos, neto = operaciones(m, ex, ne, sa, va, d["G"])
         res.append({**k, "confirmacion": {"n": n, "exitos": exitos, "tasa": exitos / n if n else None,
                                           "neto": neto, "wilson90_inf": C.wilson_inferior(exitos, n),
@@ -674,7 +672,7 @@ def corre(salida, out, control_pos=False, fecha=None, cand_ruta=None, desplazami
     res = {"criterio": "scripts/anatomia_comun.py", "salida": str(salida)}
     if fecha:
         cands = json.loads(cand_ruta.read_text())["candidatas"]
-        fts = int(datetime.fromisoformat(fecha).replace(tzinfo=timezone.utc).timestamp())
+        fts = int(datetime.fromisoformat(fecha).replace(tzinfo=UTC).timestamp())
         res.update(modo="confirma", desde=fecha, candidatas=confirma(prepara(B, ts), cands, fts))
         out.write_text(json.dumps(limpia(res), indent=1))
         return res

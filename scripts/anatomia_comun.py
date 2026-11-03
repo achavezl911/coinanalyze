@@ -24,7 +24,7 @@ t + 240 < 2026-11-03 00:00Z. CONFIRMACION: decisiones con t >= la fecha de --con
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # ---------------------------------------------------------------- universo
 SIMBOLOS = ("BTC", "ETH", "SOL")
@@ -35,7 +35,7 @@ VENUE_PRIMA = "coinbase_spot"       # la prima de contado
 
 # ---------------------------------------------------------------- calendario (UTC)
 def _ts(s: str) -> int:
-    return int(datetime.fromisoformat(s).replace(tzinfo=timezone.utc).timestamp())
+    return int(datetime.fromisoformat(s).replace(tzinfo=UTC).timestamp())
 
 ARCHIVO_DESDE = "2026-08-04"
 CAPA_A_DESDE = _ts("2026-08-05")
@@ -120,7 +120,7 @@ def azar(esquema: str) -> float:
     return sl / (tp + sl)
 
 
-def etiqueta(o, h, l, c, t: int, lado: int, esquema: str):
+def etiqueta(o, h, lo, c, t: int, lado: int, esquema: str):
     """Operacion decidida al cierre del minuto t: (exito, neto, minuto de salida) o None si falta un minuto.
     o h l c: secuencias por minuto (None = sin precio)."""
     tp, sl = ESQUEMAS[esquema]
@@ -130,10 +130,10 @@ def etiqueta(o, h, l, c, t: int, lado: int, esquema: str):
     obj = e * (1 + tp) if lado > 0 else e * (1 - tp)
     stop = e * (1 - sl) if lado > 0 else e * (1 + sl)
     for m in range(t + 1, t + HORIZONTE + 1):
-        if h[m] is None or l[m] is None or c[m] is None:
+        if h[m] is None or lo[m] is None or c[m] is None:
             return None
-        toca_stop = l[m] <= stop if lado > 0 else h[m] >= stop
-        toca_obj = h[m] >= obj if lado > 0 else l[m] <= obj
+        toca_stop = lo[m] <= stop if lado > 0 else h[m] >= stop
+        toca_obj = h[m] >= obj if lado > 0 else lo[m] <= obj
         if toca_stop:
             return (0, -sl - 2 * COMISION, m)
         if toca_obj:
@@ -366,9 +366,9 @@ def apertura_eeuu_utc(dia: datetime) -> int:
     """Minuto del dia (UTC) de las 09:30 de Nueva York: horario de verano del segundo domingo de marzo al primer
     domingo de noviembre (13:30Z), si no 14:30Z."""
     y = dia.year
-    mar = datetime(y, 3, 8, tzinfo=timezone.utc)
+    mar = datetime(y, 3, 8, tzinfo=UTC)
     ini = mar.replace(day=8 + (6 - mar.weekday()) % 7)
-    nov = datetime(y, 11, 1, tzinfo=timezone.utc)
+    nov = datetime(y, 11, 1, tzinfo=UTC)
     fin = nov.replace(day=1 + (6 - nov.weekday()) % 7)
     d = dia.replace(hour=12, minute=0, second=0, microsecond=0)
     return 13 * 60 + 30 if ini <= d < fin else 14 * 60 + 30

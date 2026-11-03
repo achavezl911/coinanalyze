@@ -26,22 +26,22 @@ def camino(n=H + 10, base=100.0):
 
 
 def test_rejilla_a_mano():
-    o, h, l, c = camino()
+    o, h, lo, c = camino()
     h[5] = 102.05                                  # objetivo 2 % en el minuto 5
-    l[8] = 98.9                                    # el stop despues: no cuenta
-    ex, br, sa, va, _ = G.salidas(o, h, l, c, [0], [100.0], 1, 0.01, 0.02)
+    lo[8] = 98.9                                    # el stop despues: no cuenta
+    ex, br, sa, va, _ = G.salidas(o, h, lo, c, [0], [100.0], 1, 0.01, 0.02)
     assert va[0] and ex[0] and br[0] == pytest.approx(0.02) and sa[0] == 5
-    o, h, l, c = camino()
-    h[3], l[3] = 102.5, 98.9                       # los dos en el mismo minuto: gana el stop
-    ex, br, *_ = G.salidas(o, h, l, c, [0], [100.0], 1, 0.01, 0.02)
+    o, h, lo, c = camino()
+    h[3], lo[3] = 102.5, 98.9                       # los dos en el mismo minuto: gana el stop
+    ex, br, *_ = G.salidas(o, h, lo, c, [0], [100.0], 1, 0.01, 0.02)
     assert not ex[0] and br[0] == pytest.approx(-0.01)
-    o, h, l, c = camino()
+    o, h, lo, c = camino()
     c[H - 1] = 100.5                               # nada toca: vence al cierre del minuto H
-    ex, br, sa, *_ = G.salidas(o, h, l, c, [0], [100.0], 1, 0.01, 0.02)
+    ex, br, sa, *_ = G.salidas(o, h, lo, c, [0], [100.0], 1, 0.01, 0.02)
     assert not ex[0] and br[0] == pytest.approx(0.005) and sa[0] == H - 1
-    o, h, l, c = camino()
-    l[7] = 97.9                                    # corto: el objetivo esta abajo
-    ex, br, *_ = G.salidas(o, h, l, c, [0], [100.0], -1, 0.01, 0.02)
+    o, h, lo, c = camino()
+    lo[7] = 97.9                                    # corto: el objetivo esta abajo
+    ex, br, *_ = G.salidas(o, h, lo, c, [0], [100.0], -1, 0.01, 0.02)
     assert ex[0] and br[0] == pytest.approx(0.02)
 
 
@@ -53,18 +53,18 @@ def test_empate_taker_y_maker():
 
 def test_limite_que_solo_toca_no_llena():
     n = C.LIM_CADUCA + 20
-    l, h = np.full(n, 101.0), np.full(n, 102.0)
-    x = {"l": l, "h": h}
+    lo, h = np.full(n, 101.0), np.full(n, 102.0)
+    x = {"l": lo, "h": h}
     lim = np.array([100.0])
-    l[10] = 100.0                                  # toca el limite, no lo cruza
-    l[11] = 100.0 * (1 - C.LIM_CRUCE / 2)          # lo cruza por menos del minimo
+    lo[10] = 100.0                                  # toca el limite, no lo cruza
+    lo[11] = 100.0 * (1 - C.LIM_CRUCE / 2)          # lo cruza por menos del minimo
     f, ok = G.llenado(x, np.array([0]), "largo", lim)
     assert f[0] == -1 and ok[0]
-    l[30] = 100.0 * (1 - C.LIM_CRUCE) - 1e-9       # lo cruza por el minimo
+    lo[30] = 100.0 * (1 - C.LIM_CRUCE) - 1e-9       # lo cruza por el minimo
     f, ok = G.llenado(x, np.array([0]), "largo", lim)
     assert f[0] == 30
     h[:] = 99.0
-    l[:] = 98.0
+    lo[:] = 98.0
     h[12] = 100.0                                  # corto, espejo
     f, _ = G.llenado(x, np.array([0]), "corto", lim)
     assert f[0] == -1
@@ -81,8 +81,8 @@ def test_stop_bajo_la_mecha_sin_mirar_adelante(mercado):
     _, X = G.contexto(B, ts)
     g = np.array([len(ts) // 2])
     d = G.dist_stop(X["BTC"], g, "largo", "mecha")
-    l = X["BTC"]["l"]
-    esperado = 1 - np.min(l[g[0] - C.STOP_MECHA_MIN + 1:g[0] + 1]) * (1 - C.STOP_MECHA_MARGEN) / X["BTC"]["o"][g[0] + 1]
+    lo = X["BTC"]["l"]
+    esperado = 1 - np.min(lo[g[0] - C.STOP_MECHA_MIN + 1:g[0] + 1]) * (1 - C.STOP_MECHA_MARGEN) / X["BTC"]["o"][g[0] + 1]
     assert d[0] == pytest.approx(esperado)
     B2 = copy.deepcopy(B)
     B2["BTC"]["l"][g[0] + 1:] *= 0.5               # el futuro se hunde
@@ -124,9 +124,9 @@ def serie_h(desde="2018-01-01", hasta="2030-01-01", semilla=3):
     c = 100 * np.exp(x)
     o = np.concatenate([[c[0]], c[:-1]])
     h = np.maximum(o, c) * (1 + np.abs(rng.normal(0, 0.004, n)))
-    l = np.minimum(o, c) * (1 - np.abs(rng.normal(0, 0.004, n)))
+    lo = np.minimum(o, c) * (1 - np.abs(rng.normal(0, 0.004, n)))
     qv = np.full(n, 1e6)
-    return {"ts": t0 + 3600 * np.arange(n, dtype=np.int64), "o": o, "h": h, "l": l, "c": c, "qv": qv,
+    return {"ts": t0 + 3600 * np.arange(n, dtype=np.int64), "o": o, "h": h, "l": lo, "c": c, "qv": qv,
             "dp": rng.normal(0, 1e5, n), "sqv": qv, "ds": rng.normal(0, 1e5, n), "oi": 1e9 * (1 + 0.01 * x),
             "top": 1 + x}
 
@@ -140,9 +140,9 @@ def test_rango_sin_mirar_adelante():
     ev = R.rangos(Hd)
     assert ev
     k, W = ev[0]["k"], ev[0]["W"]
-    h, l, c, ts = (corta(Hd, k + 1)[a] for a in ("h", "l", "c", "ts"))
-    atr = R.atr_diario(ts, h, l, c)
-    assert R.cumple(h, l, c, atr, k, W) == R.cumple(Hd["h"], Hd["l"], Hd["c"], R.atr_diario(
+    h, lo, c, ts = (corta(Hd, k + 1)[a] for a in ("h", "l", "c", "ts"))
+    atr = R.atr_diario(ts, h, lo, c)
+    assert R.cumple(h, lo, c, atr, k, W) == R.cumple(Hd["h"], Hd["l"], Hd["c"], R.atr_diario(
         Hd["ts"], Hd["h"], Hd["l"], Hd["c"]), k, W)
     Hd2 = corta(Hd, k + 24 * C.RANGO_DIAS + C.RANGO_VUELTA + 2)
     Hd2 = {a: (v.copy() if isinstance(v, np.ndarray) else v) for a, v in Hd2.items()}
