@@ -1242,6 +1242,8 @@ def juzga() -> int:
             juzga_servido(x, rojos, nomed, info)
         except (Canal, IndexError) as exc:
             nomed.append(f"(S) [{vista}] sin canal a libro_foto: {str(exc)[:160]}")
+    # el vivo no entra en la huella (no se repite): entran los rotulos de lo condenado, que si
+    huella.update(json.dumps(sorted({r.split(":", 1)[0] for r in rojos})).encode())
     cola = f" · sujeto: {sujeto} · {declara} · huella {huella.hexdigest()[:16]}"
     if rojos:
         print(f"ROJO  K111 · el libro pintado no es el servido, o lo servido no es libro_foto · {len(rojos)} hallazgo(s)" + cola)
