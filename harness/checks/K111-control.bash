@@ -81,6 +81,9 @@ k111() {  # puerto base [env extra...] -> rc; la salida en $T/sal
   env "$@" K111_BASE="http://127.0.0.1:$p" K111_DB="$(dsn "$b")" K111_HASTA="$HASTA" K111_HASTA_R1="$HASTA_R1" \
     /bin/bash "$CHK" > "$T/sal" 2>&1; echo $?
 }
+GUARDA=${K111_CTL_GUARDA:-/tmp/k111-control-salidas}
+rm -rf "$GUARDA"; mkdir -p "$GUARDA"
+guarda() { cp "$T/sal" "$GUARDA/$1.sal"; }  # la salida ENTERA de cada escenario, aparte: la siguiente corrida de K111 la pisa
 huella_k111() { head -1 "$T/sal" | grep -o 'huella [0-9a-f]*' | cut -d' ' -f2; }
 escenario() {  # [base] -> lo que el banco sirve distinto del arbol, y los sujetos de los que parte
   { sha256sum < "$AQUI/K111-fotos.tsv.xz"; sha256sum < "$AQUI/K111-avisos.jsonl.xz"; echo "base ${1:-buena}"
@@ -111,7 +114,7 @@ for p in $P1 $P2; do
   ss -ltn 2>/dev/null | grep -q ":$p " || { echo "control: el banco de $p no arranco: $(tail -1 "$T/banco1.log") $(tail -1 "$T/banco2.log")"; exit 2; }
 done
 BUENO=$(escenario)
-rc=$(k111 $P1 "$DB"); HK_BUENA=$(huella_k111)
+rc=$(k111 $P1 "$DB"); HK_BUENA=$(huella_k111); guarda el_bueno_es_verde
 comprueba el_bueno_es_verde "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K111' && echo 0 || echo 1)" \
   "rc=$rc · escenario $BUENO · $(head -1 "$T/sal" | cut -c1-60) · huella $HK_BUENA"
 grep -E '^   · \((S|F|C)' "$T/sal" | cut -c1-170 | sed 's/^/        /'
@@ -134,7 +137,7 @@ planta_e0fb3fb() {  # la pagina de e0fb3fb entera en el sobre -> 0 si salio de g
 juzga_plantado() {  # nombre brazo patron mordio(0/1) que [puerto] [base] [etiqueta de la base]
   local antes despues rc visto hk p=${6:-$P1} b=${7:-$DB}
   antes=$BUENO; despues=$(escenario "${8:-buena}")
-  rc=$(k111 "$p" "$b"); hk=$(huella_k111)
+  rc=$(k111 "$p" "$b"); hk=$(huella_k111); guarda "$1"
   visto=$(grep -E "\\($2\\) .*($3)" "$T/sal" | head -1 | cut -c1-150)
   comprueba "$1" "$([ "$4" = 0 ] && [ "$rc" = 1 ] && [ -n "$visto" ] && [ "$antes" != "$despues" ] && [ "$hk" != "$HK_BUENA" ] && echo 0 || echo 1)" \
     "rc=$rc · escenario $antes -> $despues · huella $hk · ${visto:-NO SALE ($2) $3: $(grep -m1 '^   · ' "$T/sal" | cut -c1-110)} · $5"
@@ -143,7 +146,7 @@ juzga_plantado() {  # nombre brazo patron mordio(0/1) que [puerto] [base] [etiqu
 juzga_bueno() {  # nombre patron-de-info que [puerto] [base] [etiqueta]
   local despues rc visto hk p=${4:-$P1} b=${5:-$DB}
   despues=$(escenario "${6:-buena}")
-  rc=$(k111 "$p" "$b"); hk=$(huella_k111)
+  rc=$(k111 "$p" "$b"); hk=$(huella_k111); guarda "$1"
   visto=$(grep -E "$2" "$T/sal" | head -1 | cut -c1-150)
   comprueba "$1" "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K111' && [ -n "$visto" ] && [ "$BUENO" != "$despues" ] && echo 0 || echo 1)" \
     "rc=$rc · escenario $BUENO -> $despues · huella $hk · ${visto:-NO SALE: $2 · $(head -1 "$T/sal" | cut -c1-90)} · $3"
@@ -157,7 +160,9 @@ planta_pagina libro/libro-calculo.js 's/    const fotos = porTs\.get(t) || \[\];
 juzga_plantado hueco_rellenado F "el mapa no pinta lo servido: columna .*pintada foto y lo servido dice hueco" $m "el hueco con la foto anterior" "$P2" "${DB}_hueco" hueco
 planta_pagina libro/libro-app.js "s/\['libro', 'sin_libro', 'sin_dato'\]\.includes(m\.tipo)/['libro', 'sin_dato'].includes(m.tipo)/" 1; m=$?
 echo sin_libro:okx_swap > "$T/plantado"
-juzga_plantado sin_libro_con_su_ultimo F "la escalera no pinta lo servido: venue okx_swap: la escalera dice vivo y su ultimo mensaje sin_libro" $m "el aviso sin libro ignorado"
+# (149 r2) vivo O rancio: la pagina que ignora el sin_libro se queda con su ultimo libro, y su propio reloj lo vuelve
+# rancio a los pocos segundos; cual de los dos lee la sonda depende de la hora del aviso. Las dos son el mismo defecto
+juzga_plantado sin_libro_con_su_ultimo F "la escalera no pinta lo servido: venue okx_swap: la escalera dice (vivo|rancio) y su ultimo mensaje sin_libro" $m "el aviso sin libro ignorado"
 planta_pagina libro/libro-app.js "s/  if (VIVO\.canal === 'websocket') return 'vivo por WEBSOCKET' + hora;/  if (VIVO.canal !== 'ninguno') return 'vivo por WEBSOCKET' + hora;/" 1; m=$?
 echo sin_ws > "$T/plantado"
 juzga_plantado canal_mal_declarado C "escribe .vivo por WEBSOCKET" $m "va por sondeo y escribe websocket"

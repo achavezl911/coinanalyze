@@ -218,6 +218,55 @@ function creaEscalera(raiz, opciones) {
     tr._na = 0;
   }
 
+  /* Los venues: una fila por venue que se REUTILIZA (la hora del libro cambia en cada aviso: solo se reescribe su
+   * texto). La tabla se rehace solo si cambia la lista. */
+  function pintaVenues(filas) {
+    const lista = filas.map((f) => f.venue).join();
+    if (venuesT._lista !== lista) {
+      venuesT._lista = lista;
+      vaciar(venuesT);
+      filas.forEach((f) => {
+        const tr = el('tr');
+        tr.dataset.venue = f.venue;
+        tr._c = [0, 1, 2, 3].map(() => { const td = celda(tr, null, ''); td._t = ''; return td; });
+        pon(tr._c[0], f.venue);
+        venuesT.appendChild(tr);
+      });
+    }
+    filas.forEach((f, i) => {
+      const tr = venuesT.children[i];
+      const c = tr._c;
+      dato(tr, 'estado', f.estado);
+      clase(c[1], f.estado);
+      pon(c[1], f.estado === 'vivo' ? 'vivo' : f.estado.replace('_', ' ') + ': ' + f.motivo);
+      if (c[1].title !== (f.motivo || '')) c[1].title = f.motivo || '';
+      pon(c[2], horaMs(f.ts_libro_ms));
+      pon(c[3], f.conoce_compra === null ? '—' : 'c ' + f.conoce_compra + ' · v ' + f.conoce_venta);
+    });
+  }
+
+  function pintaCabeza(M, s, vista, venues) {
+    vaciar(cabeza);
+    const linea = (...trozos) => {
+      const p = el('div');
+      trozos.forEach((t) => p.appendChild(typeof t === 'string' ? document.createTextNode(t) : t));
+      cabeza.appendChild(p);
+    };
+    if (s) {
+      const quien = (campo, valor) => M.venues.filter((f) => f.estado === 'vivo' && f[campo] === valor)
+        .map((f) => f.venue).join(', ');
+      const bps = ((Number(s.mejorVenta) - Number(s.mejorCompra)) / Number(s.mejorCompra)) * 1e4;
+      linea(el('b', null, 'mejor compra ' + s.mejorCompra), ' (' + quien('compra', s.mejorCompra) + ') · ',
+        el('b', null, 'mejor venta ' + s.mejorVenta), ' (' + quien('venta', s.mejorVenta) + ') · '
+          + (bps < 0 ? 'cruzado entre venues ' : 'diferencia ') + bps.toFixed(2) + ' bps');
+      linea(s.venues.length + ' de ' + venues.length + ' venues vivos · paso ' + vista.paso + ' · '
+        + (vista.unidad === 'usd' ? 'en USD (al centro de cada nivel)' : 'en ' + vista.activo));
+    } else {
+      linea(noSe('ausente', 'ningún venue de la familia tiene un libro vivo ahora mismo'));
+    }
+
+  }
+
   /* Pinta y devuelve el contrato: `vista` (activo, familia, paso, unidad, hasta), `venues` de la familia, `libros` por
    * venue ({ m, llegadaMs }), `canal` (lo que dice el vivo), `extra` = { rec (sumaReciente), cinta ('ok' | 'pendiente' |
    * 'caida' | 'fija'), motivo (por que esta caida), perfil ({ dia, niveles } de /api/orderflow/perfil, o null) }. */
@@ -453,37 +502,21 @@ function creaEscalera(raiz, opciones) {
     }
 
     marca('textos');
-    vaciar(venuesT);
-    M.venues.forEach((f) => {
-      const tr = el('tr');
-      tr.dataset.venue = f.venue;
-      tr.dataset.estado = f.estado;
-      celda(tr, null, f.venue);
-      const e = celda(tr, f.estado, f.estado === 'vivo' ? 'vivo' : f.estado.replace('_', ' ') + ': ' + f.motivo);
-      e.title = f.motivo || '';
-      celda(tr, null, horaMs(f.ts_libro_ms));
-      celda(tr, null, f.conoce_compra === null ? '—' : 'c ' + f.conoce_compra + ' · v ' + f.conoce_venta);
-      venuesT.appendChild(tr);
-    });
-    vaciar(cabeza);
-    const linea = (...trozos) => {
-      const p = el('div');
-      trozos.forEach((t) => p.appendChild(typeof t === 'string' ? document.createTextNode(t) : t));
-      cabeza.appendChild(p);
-    };
-    if (s) {
-      const quien = (campo, valor) => M.venues.filter((f) => f.estado === 'vivo' && f[campo] === valor)
-        .map((f) => f.venue).join(', ');
-      const bps = ((Number(s.mejorVenta) - Number(s.mejorCompra)) / Number(s.mejorCompra)) * 1e4;
-      linea(el('b', null, 'mejor compra ' + s.mejorCompra), ' (' + quien('compra', s.mejorCompra) + ') · ',
-        el('b', null, 'mejor venta ' + s.mejorVenta), ' (' + quien('venta', s.mejorVenta) + ') · '
-          + (bps < 0 ? 'cruzado entre venues ' : 'diferencia ') + bps.toFixed(2) + ' bps');
-      linea(s.venues.length + ' de ' + venues.length + ' venues vivos · paso ' + vista.paso + ' · '
-        + (vista.unidad === 'usd' ? 'en USD (al centro de cada nivel)' : 'en ' + vista.activo));
-    } else {
-      linea(noSe('ausente', 'ningún venue de la familia tiene un libro vivo ahora mismo'));
+    // P1 (149 r2): los venues y la cabeza se rehacen solo si cambia lo que dicen (antes, en cada pinta: un layout)
+    const llaveV = JSON.stringify(M.venues.map((f) => [f.venue, f.estado, f.motivo, f.ts_libro_ms, f.conoce_compra,
+      f.conoce_venta]));
+    if (llaveV !== venuesT._llave) {
+      venuesT._llave = llaveV;
+      pintaVenues(M.venues);
+    }
+    const llaveC = s ? [s.mejorCompra, s.mejorVenta, s.venues.length, venues.length, vista.paso, vista.unidad, vista.activo,
+      M.venues.map((f) => f.estado + f.compra + '/' + f.venta).join()].join('|') : '';
+    if (llaveC !== cabeza._llave) {
+      cabeza._llave = llaveC;
+      pintaCabeza(M, s, vista, venues);
     }
 
+    marca('venues');
     marca('venues');
     const reciente = {};
     if (recOk) rec.niveles.forEach((_, k) => { reciente[k] = recienteEn(rec, k, vista.unidad); });

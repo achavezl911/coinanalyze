@@ -1061,7 +1061,9 @@ def juzga_pro(vio: dict, e: dict, esp: list[dict], rojos: list, nomed: list, inf
 def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, casa, K110) -> dict | None:
     e = lee_vista(vista)
     vivo = not e["hasta"]
-    pref = f"[{e['activo']} {e['familia']}{' vivo' if vivo else ''}]"
+    pan = vio.get("pantalla") or [ANCHO, ALTO, 1]
+    pref = f"[{e['activo']} {e['familia']}{' vivo' if vivo else ''}" \
+        + (f" {pan[0]}x{pan[1]}" if vivo and pan[:2] != [ANCHO, ALTO] else "") + "]"
     pin = vio.get("pintado") or {}
     if vio["excepciones"]:
         rojos.append(f"(P) {pref} la pagina lanzo {len(vio['excepciones'])} excepcion(es): {vio['excepciones'][0]}")
@@ -1251,6 +1253,9 @@ def juzga() -> int:
     vistas = [(f"#BTC/perp/hasta={h}/ver=90", ANCHO, ALTO, 1, ""),
               (f"#ETH/okx_swap/1/30m/unidad=usd/hasta={h}/ver=90", ANCHO, ALTO, 1, ""),
               ("#BTC/perp/ver=90", ANCHO, ALTO, 1, ""),
+              # (149 r2) el raton quieto tambien en la pantalla chica: alli la cabecera pasaba de 3 a 4 lineas y la fila bajaba
+              # 18 px. En vivo, BTC: el banco solo trae avisos de BTC; contra produccion esta vista puede ser de ETH
+              ("#BTC/perp/ver=90", 1366, 768, 1, ""),
               (f"#BTC/binance_usdm/hasta={h1}", ANCHO, ALTO, 1, "x"),
               (f"#BTC/perp/4h/hasta={h1}", 1280, 720, 1, "x"),
               (f"#BTC/coinbase/30m/hasta={h1}", 1280, 720, 0.5, "xy")]
@@ -1309,7 +1314,7 @@ def juzga() -> int:
                                       vio.get("pantalla"), vio.get("lienzo"), vio.get("encaje"),
                                       hashlib.sha256(vio.get("rgb") or b"").hexdigest()],
                                      sort_keys=True, default=str).encode())
-        else:
+        elif [ancho, alto] == [ANCHO, ALTO]:  # (149 r2) la vista viva chica solo esta por el raton: no repite el vivo
             huella.update(json.dumps([vista, (vio.get("canal") or {}).get("dice"),
                                       [(x.get("venue"), x.get("estado")) for x in vio.get("ven") or []],
                                       sorted(vio.get("ultimos_tipos") or [])]).encode())

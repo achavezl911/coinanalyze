@@ -48,6 +48,11 @@
   border-bottom: 1px solid var(--borde);
   color: var(--tx-mudo);
   line-height: 1.5;
+  /* (149 r2) alto FIJO, cuatro lineas: con otros nombres de venues pasaba de 3 a 4 y empujaba la caja bajo el raton */
+  box-sizing: border-box;
+  height: calc(4 * 1.5em + 13px);
+  overflow-y: auto;
+  contain: size layout paint;
 }
 
 .esc-marco {
@@ -70,8 +75,6 @@
 }
 
 .escalera th {
-  position: sticky;
-  top: 0;
   background: var(--bg-strip);
   color: var(--tx-debil);
   font-weight: 400;
@@ -204,23 +207,51 @@
   /* (149 r1) alto FIJO: un aviso que pasa de una linea a tres empujaba la escalera bajo el raton */
   height: calc(4 * 1.3em);
   overflow-y: auto;
+  contain: size layout paint; /* (149 r2) su texto cambia en cada pinta: que no relayoute la escalera */
 }
 .esc-aviso[data-falta],
 .esc-aviso[data-cinta='caida'] {
   color: var(--ambar);
 }
-#esc-filas {
-  table-layout: fixed;
+/* (149 r2) EL FOTOGRAMA: la escalera no se maqueta como tabla. Cada fila es una caja flex de alto fijo con contencion
+ * estricta: lo que cambia en una fila no relayouta las otras ni la caja. Las columnas van por peso (15/19/22/19/15/10,
+ * con las acumuladas 15 cuando se ven), igual en la cabecera y en las filas. La cabecera es UNA caja pegada y opaca
+ * por encima de las filas (z-index: la celda del precio es position: relative y se pintaba encima). */
+#esc-filas,
+#esc-filas thead,
+#esc-filas tbody {
+  display: block;
+}
+#esc-filas thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-strip);
+}
+#esc-filas tr {
+  display: flex;
 }
 #esc-filas tbody tr {
   height: var(--fila, 18px);
   line-height: calc(var(--fila, 18px) - 2px);
+  contain: strict;
 }
-#esc-filas th.rec { width: 15%; }
-#esc-filas th.q { width: 19%; }
-#esc-filas th.nivel { width: 22%; }
-#esc-filas th.n { width: 10%; }
-#esc-filas th.acum { width: 15%; }
+#esc-filas th,
+#esc-filas td {
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#esc-filas .q,
+#esc-filas td.c,
+#esc-filas td.v { flex: 19 1 0; }
+#esc-filas .rec { flex: 15 1 0; }
+#esc-filas .nivel { flex: 22 1 0; }
+#esc-filas .n { flex: 10 1 0; }
+#esc-filas .acum { flex: 15 1 0; }
 .escalera:not(.con-acum) #esc-filas .acum {
   display: none;
 }
@@ -253,8 +284,13 @@
 #esc-filas td.rec.b {
   text-align: left;
 }
+/* (149 r2) el precio y sus marcas EN FLUJO: [máx|mín] [tamano de la ultima] ... precio, a la derecha. Nada va
+ * absoluto, asi que nada puede pisar el precio: si no cabe, el tamano se corta con «…», nunca el precio */
 #esc-filas td.nivel {
-  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
 }
 #esc-filas td.nivel.ultima {
   color: var(--acento);
@@ -263,24 +299,27 @@
 /* el tamano de la ultima, a la IZQUIERDA del precio (el precio va a la derecha: no monta encima) */
 #esc-filas td.nivel.ultima::after {
   content: attr(data-ultima);
-  position: absolute;
-  left: 2px;
+  order: -1;
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 9px;
   color: var(--acento);
 }
 #esc-filas td.nivel.max-sesion::before,
 #esc-filas td.nivel.min-sesion::before {
-  position: absolute;
-  left: 2px;
+  order: -2;
+  flex: 0 0 auto;
   font-size: 9px;
   color: var(--tx-mudo);
 }
+#esc-filas td.nivel.max-sesion:not(.ultima)::before,
+#esc-filas td.nivel.min-sesion:not(.ultima)::before {
+  margin-right: auto;
+}
 #esc-filas td.nivel.max-sesion::before {
   content: 'máx';
-}
-#esc-filas td.nivel.ultima.max-sesion::after,
-#esc-filas td.nivel.ultima.min-sesion::after {
-  left: 26px;
 }
 #esc-filas td.nivel.min-sesion::before {
   content: 'mín';
@@ -303,4 +342,20 @@
   border-top: 1px solid var(--borde);
   color: var(--tx-mudo);
   font-size: 11px;
+  /* (149 r2) una linea de alto fijo, contenida: cambia en cada pinta */
+  box-sizing: border-box;
+  height: calc(1.3em + 7px);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  contain: size layout paint;
+}
+/* (149 r2) la linea de estado de la pagina, ENCIMA de la escalera: alto fijo de cuatro lineas. Pasar de 3 lineas a 4
+ * (el canal o «sin escribir aun») bajaba la caja 18 px bajo un raton quieto: el ROJO del bueno de K111-control. */
+.estado {
+  box-sizing: border-box;
+  height: 80px;
+  overflow-y: auto;
+  contain: size layout paint;
 }
