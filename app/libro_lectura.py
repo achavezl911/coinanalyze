@@ -21,6 +21,7 @@ import asyncpg
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
+from app import libro_honda
 from app.config import get_settings
 from app.libro import BANDA, CANAL, FOTO_S, PASOS, RELEVO_NIVELES, RELEVO_S, VENUES
 from app.orderflow import nivel_de
@@ -169,6 +170,58 @@ async def cobertura(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
                         "huecos_declarados": huecos.get(v, [])} for v in vs]}
 
 
+HONDA_ULTIMA_SQL = """SELECT DISTINCT ON (venue) * FROM libro_honda
+                        WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts > $3 - interval '1 day' AND ts <= $3
+                        ORDER BY venue, ts DESC"""
+HONDA_RANGO_SQL = """SELECT * FROM libro_honda WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4
+                      ORDER BY ts, venue LIMIT $5"""
+
+
+def honda_fila(f: Any, ahora: datetime) -> dict[str, Any]:
+    """Una foto honda servida. Rancia (mas de RANCIA_S entre la hora del venue y `ahora`): su hora y su alcance, SIN
+    niveles: no cuenta como conocida."""
+    r = libro_honda.rancia(f["ts_libro"], ahora)
+    lado = {k: None if r or f[f"{k}_nivel"] is None else _lado(f[f"{k}_nivel"], list(f[f"{k}s"]))
+            for k in ("compra", "venta")}
+    return {"ts": iso(f["ts"]), "venue": f["venue"], "ts_libro": iso(f["ts_libro"]),
+            "edad_s": round((ahora - f["ts_libro"]).total_seconds(), 3), "rancia": r, "fuente": f["fuente"],
+            "paso": texto(f["paso"]), "cubo": texto(f["cubo"]), "precio": texto(f["precio"]),
+            "vivo": {"compra": texto(f["vivo_compra"]), "venta": texto(f["vivo_venta"])},
+            "alcance": {k: None if f[f"alcance_{k}"] is None else texto(f[f"alcance_{k}"]) for k in ("compra", "venta")},
+            "compras": lado["compra"], "ventas": lado["venta"]}
+
+
+async def honda(conn: Any, *, symbol: str, venues: str | None, desde: str | None, hasta: str | None,
+                ahora: datetime | None = None) -> dict[str, Any]:
+    """Sin rango: la ULTIMA foto honda de cada venue, rancia contra el reloj de la base. Con rango: las fotos del rango,
+    cada una juzgada contra su propia hora de foto (ts)."""
+    activo = activo_de(symbol)
+    vs = [v for v in venues_de(venues) if v in {x.venue for x in libro_honda.FUENTES}]
+    if (desde is None) != (hasta is None):
+        raise Peticion("desde y hasta van juntos (o ninguno: la ultima foto de cada venue)")
+    if desde is None:
+        reloj = ahora or await conn.fetchval("SELECT now()")
+        filas = await conn.fetch(HONDA_ULTIMA_SQL, activo, vs, reloj)
+        salida = [honda_fila(f, reloj) for f in filas]
+    else:
+        a, b = instante(desde, "desde"), instante(hasta, "hasta")
+        if b <= a or b - a > RANGO_FOTOS:
+            raise Peticion(f"hasta tiene que ser posterior a desde, y la ventana maxima es {RANGO_FOTOS.days} dias")
+        filas = await conn.fetch(HONDA_RANGO_SQL, activo, vs, a, b, TOPE_FOTOS + 1)
+        if len(filas) > TOPE_FOTOS:
+            raise Peticion(f"mas de {TOPE_FOTOS} fotos hondas: pide un rango menor o menos venues")
+        salida = [honda_fila(f, f["ts"]) for f in filas]
+    return {"que": "la capa HONDA del libro, aparte de lo vivo: por venue, la escalera al paso guardado desde el borde "
+                   "del alcance vivo (vivo) hacia fuera, hasta +-2 % o el alcance de la foto REST (alcance)",
+            "symbol": activo, "venues": vs, "rancia_s": libro_honda.RANCIA_S, "nivel": NIVEL, "orden": ORDEN,
+            "unidad": "base", "frontera": HONDA_FRONTERA, "fotos": salida}
+
+
+HONDA_FRONTERA = ("dentro del alcance vivo manda el websocket: compras.desde es el primer nivel por debajo de lo que "
+                  "el vivo conocia entero, ventas.desde el primero por encima; si el vivo de ahora llega mas lejos, "
+                  "se quitan los niveles que ya conoce (app/libro_honda.py: junta)")
+
+
 async def referencia(conn: Any) -> dict[str, Any]:
     return {
         "que": "la referencia del libro: venues, canales, numeracion, foto, alcance, retencion, topes y relevo en vivo",
@@ -192,6 +245,16 @@ async def referencia(conn: Any) -> dict[str, Any]:
                                f"{RELEVO_NIVELES}, por omision {NIVELES_VIVO})",
                  "horas": "ts_libro_ms (hora del venue), recibido_ms (llego al colector), emitido_ms (salio del "
                           "colector), api_ms (llego a la API): epoch en ms"},
+        "honda": {"ruta": "/api/libro/honda (symbol, venues; desde y hasta para un rango)", "tabla": "libro_honda",
+                  "cada_s": libro_honda.HONDA_S, "escalonadas": True, "rancia_s": libro_honda.RANCIA_S,
+                  "tope_precio": f"+-{texto(libro_honda.TOPE * 100)} %", "frontera": HONDA_FRONTERA,
+                  "cubo": "un cubo agrupado vale si PARTE el paso: [P, P + cubo), el cubo divide al paso y cada "
+                          "precio es multiplo del cubo (medido en cada foto: mcd de las diferencias de sus precios)",
+                  "fuentes": [{"venue": x.venue, "activo": x.activo, "url": x.url, "lados": [
+                      {"b": "compra", "a": "venta"}[k] for k, g in x.agrupa.items() if g != "techo"]}
+                      for x in libro_honda.FUENTES],
+                  "fuera": libro_honda.FUERA, "retencion_dias": get_settings().LIBRO_RETENTION_DAYS,
+                  "topes": {"fotos": TOPE_FOTOS, "rango_dias": RANGO_FOTOS.days}},
         "aviso": AVISO,
     }
 

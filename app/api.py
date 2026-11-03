@@ -3923,6 +3923,21 @@ async def libro_fotos(
     )
 
 
+# 151-A · la capa HONDA del libro (libro_honda), aparte de lo vivo.
+@app.get("/api/libro/honda")
+async def libro_honda(
+    request: Request,
+    symbol: str,
+    venues: str | None = None,
+    desde: str | None = None,
+    hasta: str | None = None,
+) -> dict[str, Any]:
+    return await _orderflow(
+        request, ("symbol", "venues", "desde", "hasta"), libro_lectura.honda,
+        symbol=symbol, venues=venues, desde=desde, hasta=hasta,
+    )
+
+
 @app.get("/api/libro/cobertura")
 async def libro_cobertura(
     request: Request,
