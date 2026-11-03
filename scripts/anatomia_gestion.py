@@ -184,14 +184,14 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
     s, lado, tp = defn["simbolo"], defn["lado"], defn["objetivo"]
     d, x, sg = D[s], X[s], C.LADOS[lado]
     G, tsg = d["G"], d["ts"]
-    idx = (tsg >= max(desde, C.CAPA_A_DESDE if defn["capa"] == "A" else C.CAPA_B_DESDE)) & d["capa"][defn["capa"]]
+    en_capa = (tsg >= max(desde, C.CAPA_A_DESDE if defn["capa"] == "A" else C.CAPA_B_DESDE)) & d["capa"][defn["capa"]]
     sl = dist_stop(x, G, lado, defn["stop"])
     cache = {} if cache is None else cache
     lim = defn["tipo"] == "limite"
     c_in = C.MAKER if lim else C.TAKER
     if lim:
         arm, L = armadas(x, G, lado, defn["nivel"])
-        arm &= idx
+        arm &= en_capa
         f, okf = llenado(x, G, lado, L)
         ex, br, sa, va, mae = (np.zeros(len(G), bool), np.full(len(G), NAN), G + C.LIM_CADUCA,
                                np.zeros(len(G), bool), np.full(len(G), NAN))
@@ -209,7 +209,7 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
                                    sg, sl, tp)
         ex, br, sa, va, mae = cache[clave]
         fin = tsg + (H + 1) * 60 <= hasta
-        va = va & idx & fin
+        va = va & en_capa & fin
         mk = entrada_mascara(D, s, defn)
         if mk is None:
             return None, None
@@ -229,7 +229,7 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
     if con_p:
         sem = C.SEMILLA + 11 * C.SIMBOLOS.index(s)
         if lim:
-            JJ = np.flatnonzero(idx & (tsg + (2 * H + 2) * 60 <= hasta))
+            JJ = np.flatnonzero(en_capa & (tsg + (2 * H + 2) * 60 <= hasta))
             dd = np.nanmedian(np.abs(1 - L[arm] / x["c"][G[arm]])) if arm.any() else NAN
             v_ = np.zeros(len(G), bool)
             y_ = np.zeros(len(G), bool)
@@ -244,7 +244,7 @@ def mide_celda(D, X, defn, desde, hasta, con_p=False, cache=None):
             p, t0, nt, via = (p_circular(mm[JJ], y_[JJ], v_[JJ], desplazamientos(len(JJ), sem), t0)
                               if t0 is not None and len(JJ) else (None, t0, 0, None))
         else:
-            J = np.flatnonzero(idx & fin)
+            J = np.flatnonzero(en_capa & fin)
             p, t0, nt, via = p_circular(m[J], (ex & va)[J], va[J], desplazamientos(len(J), sem))
         celda.update(p=p, p_via=via, tasa_todas=t0, n_todas=nt)
     tr = {"ts": tsg[ops], "exito": ex[ops], "R": ne[ops] / (sl[ops] + c_in + C.TAKER), "stop": sl[ops],

@@ -192,3 +192,34 @@ def test_controles_de_rangos():
     assert v["ruido_que_pasa"] == 0 and v["ve"]
     sin = R.celdas({"BTC": R.rangos(serie_h())}, ("ruido",))
     assert not any(f[f"veredicto_{x}"] == "PASA" for f in sin for x in R.LADOS)
+
+
+# ---------------------------------------------------------------- mide_celda con p (remate 4: el renombre I -> idx)
+def celda_sintetica(n=200, semilla=5):
+    """n decisiones en la rejilla, todas en la capa A, y un camino aleatorio que da salidas validas."""
+    g = np.arange(n) * C.REJILLA
+    N = int(g[-1]) + 2 * H + C.LIM_CADUCA + 20
+    c = 100 * np.exp(np.cumsum(np.random.default_rng(semilla).normal(0, 0.001, N)))
+    o = np.r_[c[0], c[:-1]]
+    entra = np.zeros(n, bool)
+    entra[::7] = True                                  # pocas entradas: flatnonzero(m) no tiene la forma de G
+    niv = np.full(N, np.nan)                           # y pocas armadas: con todas, el indice mide len(G) y no cae
+    niv[g[entra]] = c[g[entra]] / (1 + C.LIM_ARMA / 2)
+    x = {"o": o, "h": np.maximum(o, c) * 1.0005, "l": np.minimum(o, c) * 0.9995, "c": c, "niv": {"largo": {"n1": niv}}}
+    d = {"G": g, "ts": C.CAPA_A_DESDE + g * 60, "capa": {"A": np.ones(n, bool)}, "M": {("m1", "A"): entra * 1.0}}
+    return {"BTC": d}, {"BTC": x}, entra
+
+
+@pytest.mark.parametrize("tipo", ["mecanismo", "limite"])
+def test_mide_celda_con_p_no_reusa_el_indice(tipo):
+    D, X, entra = celda_sintetica()
+    defn = {"simbolo": "BTC", "lado": "largo", "capa": "A", "stop": 0.002, "objetivo": 0.002, "tipo": tipo,
+            "nombre": "m1", "nivel": "n1"}
+    hasta = int(D["BTC"]["ts"][-1]) + 10 ** 6
+    celda, _ = G.mide_celda(D, X, defn, C.CAPA_A_DESDE, hasta, con_p=True)
+    assert "p" in celda and celda["n_todas"] > 0
+    if tipo == "mecanismo":
+        x, g = X["BTC"], D["BTC"]["G"]
+        va = G.salidas(x["o"], x["h"], x["l"], x["c"], g + 1, x["o"][g + 1], 1, 0.002, 0.002)[3]
+        assert celda["n_todas"] == int((entra & va).sum())     # la p cuenta TODAS las entradas validas de la capa
+        assert celda["p"] is not None
