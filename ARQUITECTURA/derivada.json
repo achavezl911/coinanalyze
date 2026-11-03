@@ -47966,10 +47966,10 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K111-libro.py:345",
-            "harness/checks/K111-libro.py:1195",
-            "harness/checks/K111-libro.py:1200",
-            "harness/checks/K111-libro.py:1203",
+            "harness/checks/K111-libro.py:399",
+            "harness/checks/K111-libro.py:1277",
+            "harness/checks/K111-libro.py:1282",
+            "harness/checks/K111-libro.py:1285",
             "harness/checks/K44-control.bash:1186",
             "harness/checks/K44-control.bash:1187",
             "harness/checks/K44-control.bash:1197",
