@@ -34,6 +34,10 @@ LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro m
   (G) la geometria  ningun panel tapa el footprint (lo que hay encima de cada punto suyo es el footprint), los paneles
                   van debajo y con el MISMO eje de tiempo (su eje == el del footprint, en el lienzo y en la pantalla),
                   y la cinta a la derecha
+  (C) las celdas  remate 3 (148): con el perfil compra-venta, cada barra recalculada de lo servido (escala de SU
+                  vela), la pastilla de cada desequilibrio escrito, la linea del POC en su fila, ninguna grande
+                  sobre una cifra, la franja de lo visible == las celdas a la vista; paso de color solo con relleno.
+                  Y (S): el footprint con la consulta cancelada por tiempo dice 503 con su porque, nunca 500
 NO MEDIDO: sin la pagina o sin las rutas de OF-5a (404: «FALTA DESPLEGAR») · sin Chromium · sin dato en la ventana ·
 sin canal a las tablas.
 Uso: K112-indicadores.py juzga (el entorno lo pone K112-los-indicadores-pintados-son-los-servidos.sh)
@@ -48,6 +52,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import math
 import netrc
 import os
 import pathlib
@@ -80,8 +85,10 @@ CIERRE_S, FILAS_CINTA, TOPE_GRANDES = 90, 200, 5000
 FILTRO = {"BTC": "200000", "ETH": "200000", "SOL": "50000"}
 INDICADORES = ["delta", "cvd", "oi", "oib", "funding", "ls", "liq", "grandes", "cinta"]
 # OF-6a (campana 148): lo que el hash de /flujo tambien acepta (flujo-calculo.js), para leerlo TODO
-CAPAS, CELDAS, FILAS_RESUMEN = ["perfil", "vwap", "dinamico"], ["bidask", "delta", "volumen", "trades", "perfil"], \
-    ["vol", "delta", "deltap", "cvd", "ops"]
+CAPAS, CELDAS, FILAS_RESUMEN = ["perfil", "vwap", "dinamico"], ["bidask", "delta", "volumen", "trades", "des"], \
+    ["vol", "compra", "venta", "delta", "deltap", "cvd", "ops"]
+# remate 3 (148): la frase de la ruta del footprint con la consulta cancelada (app/api.py)
+FOOTPRINT_TIEMPO_AGOTADO = "la consulta paso de 20 s: pide menos velas o un marco menor"
 DEFECTO = ["delta", "cvd", "grandes", "cinta"]
 PANELES = ["delta", "cvd", "oi", "oib", "funding", "ls", "liq"]
 SERIE = {"oi": ["oi_binance"], "oib": ["oi_bybit"], "funding": ["funding", "funding_predicho"], "ls": ["largos_cortos"],
@@ -192,7 +199,7 @@ def lee_vista(h: str) -> dict:
          "esconde": False, "grande": None, "hasta": None, "ver": None, "sesion": "dia", "capas": [], "compuesto": None,
          "fijo": None, "modo": "footprint", "sesiones": 3, "ind": list(DEFECTO), "cinta": None, "celda": "bidask",
          "color": "delta", "ref": "vela", "numeros": True, "filas": list(FILAS_RESUMEN), "rueda": "zoom", "x": None,
-         "y": None, "fila": None}
+         "y": None, "fila": None, "fondo": "perfil", "franja": True}
     if p and p[0].upper() in FILTRO:
         e["activo"] = p[0].upper()
     if len(p) > 1 and p[1] in MARCOS:
@@ -235,6 +242,10 @@ def lee_vista(h: str) -> dict:
             e["celda"] = v
         elif k == "color" and v == "volumen":
             e["color"] = v
+        elif k == "fondo" and v == "relleno":
+            e["fondo"] = v
+        elif k == "franja" and v == "no":
+            e["franja"] = False
         elif k == "ref" and v in ("visible", "sesion"):
             e["ref"] = v
         elif k == "numeros" and v == "no":
@@ -443,7 +454,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
     vivo = not e["hasta"]
     pref = f"[{e['activo']} {e['marco']} {e['familia']}{' VIVO' if vivo else ''} {vio['pantalla'][0]}x{vio['pantalla'][1]}" \
            f"{'@' + str(vio['pantalla'][2]) if vio['pantalla'][2] != 1 else ''}]"
-    pin, ind, malos = vio.get("pintado") or {}, vio.get("ind") or {}, {"P": [], "V": [], "F": [], "G": []}
+    pin, ind, malos = vio.get("pintado") or {}, vio.get("ind") or {}, {"P": [], "V": [], "F": [], "G": [], "C": []}
     if vio["excepciones"]:
         rojos.append(f"(P) {pref} la pagina lanzo {len(vio['excepciones'])} excepcion(es): {vio['excepciones'][0]}")
     if not vio.get("listo") or not pin.get("velas"):
@@ -475,6 +486,8 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
         if abs(r["x0"] + r["ancho"] / 2 - x_de(i)) > 1.01:
             malos["G"].append(f"vela {r['ts']}: su centro {r['x0'] + r['ancho'] / 2} no es el del eje ({x_de(i):.1f})")
         visibles.append((i, v, r))
+    # (C) remate 3: las celdas del footprint, sus barras, pastillas, POC, franja y que ninguna grande tape una cifra
+    celdas_ok = juzga_celdas(pin, e, visibles, malos["C"])
     # ---------------------------------------------------------------- (P) y (V): lo pedido
     paneles_pedidos = [c for c in PANELES if c in e["ind"]]
     red = {r: [x for x in vio["red"] if x["ruta"] == r] for r in (RUTA_IND, RUTA_GR, RUTA_ORD)}
@@ -596,11 +609,12 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
     for brazo, lista in malos.items():
         if lista:
             rojos.append(f"({brazo}) {pref} " + {"P": "pide lo que su hash no dice: ", "V": "dos familias: ",
-                                                 "F": "lo pintado no es lo servido: ", "G": "la geometria: "}[brazo]
+                                                 "F": "lo pintado no es lo servido: ", "G": "la geometria: ",
+                                                 "C": "las celdas no son las servidas: "}[brazo]
                          + lista[0] + (f" (y {len(lista) - 1} mas)" if len(lista) > 1 else ""))
     info.append(f"(F)(G) {pref} {len(visibles)} velas a la vista · paneles {paneles_pedidos or 'ninguno'} · "
                 f"{puntos_ok} puntos y huecos en su sitio ({sum(len(p['huecos']) for p in ind.get('paneles') or [])} "
-                f"huecos) · {grandes_ok} grandes en su vela · {filas_ok} filas de la cinta"
+                f"huecos) · {grandes_ok} grandes en su vela · {filas_ok} filas de la cinta · {celdas_ok} celdas con sus barras"
                 + (f" · {len(red[RUTA_ORD])} peticiones de la cinta" if vivo and "cinta" in e["ind"] else ""))
     return {"e": e, "w": w, "d": d, "vio": vio, "pref": pref} if not vivo else {}
 
@@ -778,11 +792,114 @@ def juzga_liq(caja: dict, d: dict, xT, ancho: float, y_de, malos: list) -> int:
     return n + len(pint & quiero)
 
 
+def _redondea(x: float) -> int:
+    """Math.round de JS (la mitad hacia arriba)."""
+    return math.floor(x + 0.5)
+
+
+def juzga_celdas(pin: dict, e: dict, visibles: list, malos: list) -> int:
+    """REMATE 3 (148): las celdas del footprint con el perfil compra-venta. Cada barra RECALCULADA de lo servido (largo =
+    volumen del lado / mayor volumen de un lado en SU vela x media vela - 2 px; alto = fila - 1 px, o 1 px), la pastilla
+    de cada desequilibrio escrito, la linea del POC servido en su fila, ninguna grande sobre una cifra, el perfil de lo
+    visible contra las celdas servidas, y el paso de color de F-04 solo con el relleno. Devuelve las filas que cuadran."""
+    esc = pin.get("escala") or {}
+    if not esc or esc.get("hi") == esc.get("lo"):
+        return 0
+    y = lambda p: esc["arriba"] + (esc["hi"] - float(p)) / (esc["hi"] - esc["lo"]) * (esc["abajo"] - esc["arriba"])  # noqa: E731
+    paso = float(pin.get("paso") or 0)
+    perfil = e["fondo"] == "perfil"
+    if perfil and pin.get("fondo") != "perfil":
+        malos.append(f"la vista pide el perfil compra-venta y se pinta el fondo «{pin.get('fondo')}»")
+        return 0
+    n, cajas = 0, []
+    for _i, v, r in visibles:
+        servidas = {D(ln["nivel"]): ln for ln in v.get("niveles") or []}
+        lado_max = max([max(float(ln["compra"]), float(ln["venta"])) for ln in servidas.values()] or [0])
+        if perfil and servidas and abs(float(r.get("lado_max") or 0) - lado_max) > 1e-9:
+            malos.append(f"vela {r['ts'][5:16]}: la escala de sus barras es {r.get('lado_max')} y el mayor volumen de un "
+                         f"lado en ESA vela es {lado_max:g}")
+        media = max(0, r["ancho"] // 2 - 2)
+        for f in r.get("niveles") or []:
+            if f.get("filtro") == "escondida" or f.get("y1", 0) < esc["arriba"] - 1 or f.get("y0", 0) > esc["abajo"] + 1:
+                continue
+            s = servidas.get(D(f["nivel"]))
+            if s is None:
+                continue
+            if not perfil:
+                n += 1
+                continue
+            if f.get("paso_color", -1) != -1:
+                malos.append(f"vela {r['ts'][5:16]} nivel {f['nivel']}: con el perfil compra-venta se pinta el paso de "
+                             f"color {f['paso_color']} (F-04 es solo del relleno)")
+            hb = f["y1"] - f["y0"] - 1 if f["y1"] - f["y0"] >= 3 else 1
+            lv = _redondea(media * float(s["venta"]) / lado_max) if lado_max > 0 else 0
+            lc = _redondea(media * float(s["compra"]) / lado_max) if lado_max > 0 else 0
+            if (f.get("barra_venta"), f.get("barra_compra"), f.get("barra_alto")) != (lv, lc, hb):
+                malos.append(f"vela {r['ts'][5:16]} nivel {f['nivel']}: barras venta {f.get('barra_venta')} / compra "
+                             f"{f.get('barra_compra')} px de alto {f.get('barra_alto')} y lo servido ({s['venta']} x "
+                             f"{s['compra']}, mayor lado {lado_max:g}, media {media}) da {lv} / {lc} de alto {hb}")
+                continue
+            sin = [lado for lado, fuerte, t in (("venta", f.get("dv"), f.get("texto_venta")),
+                                                ("compra", f.get("dc"), f.get("texto_compra")))
+                   if fuerte and t and not f.get("pastilla_" + lado)]
+            if f.get("texto") and (f.get("dc") or f.get("dv")) and e["celda"] == "delta" and not f.get("pastilla"):
+                sin.append("delta")
+            if sin:
+                malos.append(f"vela {r['ts'][5:16]} nivel {f['nivel']}: el desequilibrio de {sin[0]} se escribe sin su "
+                             f"pastilla")
+                continue
+            ym = (f["y0"] + f["y1"]) / 2
+            for k in ("caja_venta", "caja_compra", "caja"):
+                if f.get(k):
+                    cajas.append((r["ts"], f["nivel"], f[k][0], f[k][1], ym - pin.get("fuente", 10) / 2,
+                                  ym + pin.get("fuente", 10) / 2))
+            n += 1
+        # el POC servido: con el perfil, una linea en SU fila
+        if perfil and v.get("poc") is not None and servidas:
+            y0, y1 = _redondea(y(float(v["poc"]) + paso)), _redondea(y(float(v["poc"])))
+            linea = (r.get("poc") or {}).get("linea")
+            if not linea or not (min(y0, y1) <= linea["y"] < max(y0, y1, min(y0, y1) + 1)) \
+                    or linea["x0"] != r["x0"] or linea["x1"] != r["x0"] + r["ancho"]:
+                malos.append(f"vela {r['ts'][5:16]}: la linea del POC {v['poc']} esta en {linea} y su fila va de y {y0} a "
+                             f"{y1}, x {r['x0']} a {r['x0'] + r['ancho']}")
+    # ninguna grande tapa una cifra
+    if perfil:
+        for m in (pin.get("grandes") or {}).get("marcas") or []:
+            if m.get("fuera"):
+                continue
+            for ts, nivel, xa, xb, ya, yb in cajas:
+                if m["x"] + m["r"] > xa and m["x"] - m["r"] < xb and m["y"] + m["r"] > ya and m["y"] - m["r"] < yb:
+                    malos.append(f"la grande {m['ts'][11:19]} {m['venue']} (x {m['x']}, r {m['r']}) tapa la cifra de la "
+                                 f"vela {ts[5:16]} nivel {nivel} (x {xa:.1f} a {xb:.1f})")
+                    break
+    # el perfil de lo visible: sale de las celdas servidas de las velas a la vista
+    fr = pin.get("franja")
+    if e["franja"] and visibles:
+        suma = {}
+        for _i, v, _r in visibles:
+            for ln in v.get("niveles") or []:
+                suma[float(ln["nivel"])] = suma.get(float(ln["nivel"]), 0.0) + float(ln["total"])
+        mx = max(suma.values() or [0])
+        poc = min((k for k, t in suma.items() if t == mx), default=None)
+        if not fr:
+            malos.append("la franja del perfil de lo visible esta encendida y no se pinta")
+        else:
+            pint = {float(x["nivel"]): x for x in fr.get("niveles") or []}
+            malo = [k for k in suma if k not in pint or abs(pint[k]["total"] - suma[k]) > 1e-6 * max(1.0, suma[k])
+                    or pint[k]["largo"] != (_redondea((fr["ancho"] - 2) * suma[k] / mx) if mx > 0 else 0)]
+            if malo or set(pint) - set(suma) or fr.get("poc") != poc:
+                k = (malo or sorted(set(pint) - set(suma)) or [poc])[0]
+                malos.append(f"la franja de lo visible pinta en {k:g} {pint.get(k)} y las celdas a la vista suman "
+                             f"{suma.get(k)} (POC {fr.get('poc')} contra {poc})")
+    return n
+
+
 def juzga_grandes(pin: dict, dg: dict, visibles: list, t0: int, marco_ms: int, malos: list) -> int:
     esc = pin.get("escala") or {}
     y = lambda p: esc["arriba"] + (esc["hi"] - float(p)) / (esc["hi"] - esc["lo"]) * (esc["abajo"] - esc["arriba"])  # noqa: E731
     por_i = {i: r for i, _v, r in visibles}
     marcas = {(m["ts"], m["venue"], m.get("id")): m for m in (pin.get("grandes") or {}).get("marcas") or []}
+    usd_max = max([float(o["usd"]) for o in dg.get("operaciones") or []] or [0]) or 1.0
     n = 0
     for o in dg.get("operaciones") or []:
         t = ms(o["ts"])
@@ -796,7 +913,12 @@ def juzga_grandes(pin: dict, dg: dict, visibles: list, t0: int, marco_ms: int, m
         if m is None:
             malos.append(f"grande {o['ts'][11:19]} {o['venue']} {o['usd']} USD: servida en una vela a la vista y no pintada")
             continue
-        x = r["x0"] + r["ancho"] * (t - (t0 + i * marco_ms)) / marco_ms
+        # remate 3: en el carril de 8 px del borde izquierdo de su vela, radio 2-6 por la raiz del USD sobre la mayor
+        x = r["x0"] + 4
+        radio = 2 + 4 * math.sqrt(min(1.0, max(0.0, float(o["usd"]) / usd_max)))
+        if abs(m["r"] - radio) > 0.06:
+            malos.append(f"grande {o['ts'][11:19]} {o['venue']}: radio {m['r']} y su USD da {radio:.1f}")
+            continue
         if m["vela"] != r["ts"] or not r["x0"] - TOL <= m["x"] <= r["x0"] + r["ancho"] + TOL or abs(m["x"] - x) > TOL:
             malos.append(f"grande {o['ts'][11:19]} {o['venue']}: su marca esta en x {m['x']} (vela {m['vela'][11:16]}) y "
                          f"es de la vela {r['ts'][11:16]}, en x {x:.1f}")
@@ -847,6 +969,60 @@ def juzga_cinta(vio: dict, e: dict, fam: list, casa, malos: list) -> int:
 
 
 # --------------------------------------------------------------------------------------------- (S) lo servido
+def servido_tiempo_agotado(rojos: list, nomed: list, info: list) -> None:
+    """(S) REMATE 3 (148): la ruta del footprint con la consulta cancelada por el statement_timeout (app/db.py) dice 503
+    con su porque, nunca 500. Se llama a la ruta del app/ de K112_APP (por omision, el del repo) en un proceso aparte,
+    con una conexion que cancela; sin base ni red."""
+    repo = str(pathlib.Path(__file__).resolve().parents[2])
+    raiz_app = os.environ.get("K112_APP") or repo
+    prog = (
+        "import asyncio, sys\n"
+        f"sys.path.insert(0, {raiz_app!r})\n"
+        "from decimal import Decimal\n"
+        "import asyncpg\n"
+        "from fastapi import HTTPException\n"
+        "import app.api as api, app.orderflow_lectura as lec\n"
+        f"assert api.__file__.startswith({raiz_app!r}), api.__file__\n"
+        "class C:\n"
+        "    async def fetch(self, *a, **k):\n"
+        "        raise asyncpg.QueryCanceledError('canceling statement due to statement timeout')\n"
+        "    fetchrow = fetchval = execute = fetch\n"
+        "class A:\n"
+        "    async def __aenter__(self): return C()\n"
+        "    async def __aexit__(self, *a): return False\n"
+        "class P:\n"
+        "    def acquire(self): return A()\n"
+        "class Q:\n"
+        "    def __init__(self, **q): self.query_params = q\n"
+        "async def pasos(_c): return {'BTC': Decimal('0.1')}\n"
+        "lec.pasos = pasos\n"
+        "api.app.state.pool = P()\n"
+        "q = dict(symbol='BTC', marco='1d', desde='2026-10-20T00:00:00Z', hasta='2026-11-03T00:00:00Z', paso='auto')\n"
+        "async def main():\n"
+        "    try:\n"
+        "        await api.orderflow_footprint(Q(**q), **q)\n"
+        "        print('ESTADO 200')\n"
+        "    except HTTPException as exc:\n"
+        "        print('ESTADO', exc.status_code, exc.detail)\n"
+        "    except Exception as exc:\n"
+        "        print('ESTADO 500', type(exc).__name__)\n"
+        "asyncio.run(main())\n")
+    py = os.path.join(repo, ".venv", "bin", "python")
+    try:
+        p = subprocess.run([py, "-c", prog], cwd=raiz_app, capture_output=True, text=True, timeout=60,
+                           env=dict(os.environ, COINALYZE_ENV_FILE="/dev/null"))
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        nomed.append(f"(S) la ruta del footprint con tiempo agotado no se pudo llamar: {type(exc).__name__}")
+        return
+    linea = next((x for x in p.stdout.splitlines() if x.startswith("ESTADO")), None)
+    if linea is None:
+        nomed.append(f"(S) la ruta del footprint con tiempo agotado no contesto: {(p.stderr or '').strip()[-200:]}")
+    elif linea != f"ESTADO 503 {FOOTPRINT_TIEMPO_AGOTADO}":
+        rojos.append(f"(S) el footprint con la consulta cancelada por tiempo no dice 503 con su porque: {linea[7:120]}")
+    else:
+        info.append(f"(S) el footprint con la consulta cancelada por tiempo dice 503 «{FOOTPRINT_TIEMPO_AGOTADO}»")
+
+
 def juzga_servido(x: dict, rojos: list, nomed: list, info: list) -> None:
     e, d, vio, pref = x["e"], x["d"], x["vio"], x["pref"]
     malos = []
@@ -1099,6 +1275,9 @@ def juzga() -> int:
             juzga_servido(x, rojos, nomed, info)
         except (Canal, IndexError, KeyError, ValueError) as exc:
             nomed.append(f"(S) [{vista}] sin canal a las tablas: {type(exc).__name__}: {str(exc)[:160]}")
+    antes = len(rojos)
+    servido_tiempo_agotado(rojos, nomed, info)
+    huella.update(json.dumps(["tiempo agotado", rojos[antes:]]).encode())
     cola = f" · sujeto: {sujeto} · {declara} · huella {huella.hexdigest()[:16]}"
     if rojos:
         print(f"ROJO  K112 · los indicadores pintados no son los servidos, o lo servido no es lo de las tablas · "
