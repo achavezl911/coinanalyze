@@ -36,7 +36,11 @@
   min-height: 0;
   border: 1px solid var(--borde);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
+  /* E-02: las barras van en el color del comprador y del vendedor CON ALFA (el texto lleva el fuerte) */
+  --esc-barra-compra: color-mix(in srgb, var(--comprador) 24%, transparent);
+  --esc-barra-venta: color-mix(in srgb, var(--vendedor) 24%, transparent);
+  --esc-destello: color-mix(in srgb, var(--acento) 45%, transparent);
 }
 
 .esc-cabeza {
@@ -44,12 +48,25 @@
   border-bottom: 1px solid var(--borde);
   color: var(--tx-mudo);
   line-height: 1.5;
+  /* (149 r2) alto FIJO, cuatro lineas: con otros nombres de venues pasaba de 3 a 4 y empujaba la caja bajo el raton */
+  box-sizing: border-box;
+  height: calc(4 * 1.5em + 13px);
+  overflow-y: auto;
+  contain: size layout paint;
 }
 
+.esc-marco {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 .esc-tabla {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-anchor: none; /* las filas se compensan a mano: sin el anclaje del navegador */
   min-height: 0;
+  contain: strict; /* P1: lo que cambia dentro no relayouta la pagina, ni la pagina a la escalera */
 }
 
 .escalera table {
@@ -58,8 +75,6 @@
 }
 
 .escalera th {
-  position: sticky;
-  top: 0;
   background: var(--bg-strip);
   color: var(--tx-debil);
   font-weight: 400;
@@ -70,7 +85,7 @@
 
 .escalera td {
   text-align: right;
-  padding: 1px 6px;
+  padding: 0 6px;
   white-space: nowrap;
 }
 
@@ -111,6 +126,11 @@
 #esc-filas tr.desconocido td {
   color: var(--tx-debil);
   font-style: italic;
+}
+
+/* el relleno de la rejilla: niveles fuera del libro, vacios (solo su precio) */
+#esc-filas tr.relleno td {
+  color: var(--tx-debil);
 }
 
 .esc-venues {
@@ -156,4 +176,207 @@
 .muestra.pendiente {
   background: #1e242e;
   border: 1px dashed var(--borde-hueco);
+}
+/* ---------------------------------------------------------------- la escalera profesional (campana 149, ronda A) */
+.esc-mandos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--borde);
+}
+.esc-mandos button {
+  font: inherit;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  color: var(--tx-mudo);
+  background: var(--bg-strip);
+  border: 1px solid var(--borde);
+  cursor: pointer;
+}
+.esc-mandos button[aria-pressed='true'] {
+  color: var(--tx);
+  border-color: var(--acento);
+}
+.esc-aviso {
+  flex: 1 1 auto;
+  color: var(--tx-debil);
+  font-size: 10.5px;
+  line-height: 1.3;
+  text-align: right;
+  /* (149 r1) alto FIJO: un aviso que pasa de una linea a tres empujaba la escalera bajo el raton */
+  height: calc(4 * 1.3em);
+  overflow-y: auto;
+  contain: size layout paint; /* (149 r2) su texto cambia en cada pinta: que no relayoute la escalera */
+}
+.esc-aviso[data-falta],
+.esc-aviso[data-cinta='caida'] {
+  color: var(--ambar);
+}
+/* (149 r2) EL FOTOGRAMA: la escalera no se maqueta como tabla. Cada fila es una caja flex de alto fijo con contencion
+ * estricta: lo que cambia en una fila no relayouta las otras ni la caja. Las columnas van por peso (15/19/22/19/15/10,
+ * con las acumuladas 15 cuando se ven), igual en la cabecera y en las filas. La cabecera es UNA caja pegada y opaca
+ * por encima de las filas (z-index: la celda del precio es position: relative y se pintaba encima). */
+#esc-filas,
+#esc-filas thead,
+#esc-filas tbody {
+  display: block;
+}
+#esc-filas thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg-strip);
+}
+#esc-filas tr {
+  display: flex;
+}
+#esc-filas tbody tr {
+  height: var(--fila, 18px);
+  line-height: calc(var(--fila, 18px) - 2px);
+  contain: strict;
+}
+#esc-filas th,
+#esc-filas td {
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#esc-filas .q,
+#esc-filas td.c,
+#esc-filas td.v { flex: 19 1 0; }
+#esc-filas .rec { flex: 15 1 0; }
+#esc-filas .nivel { flex: 22 1 0; }
+#esc-filas .n { flex: 10 1 0; }
+#esc-filas .acum { flex: 15 1 0; }
+.escalera:not(.con-acum) #esc-filas .acum {
+  display: none;
+}
+#esc-filas tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+/* la mejor compra y la mejor venta: la fila entera, tenue */
+#esc-filas tr.mejor-compra td {
+  background-color: rgba(96, 165, 250, 0.08);
+}
+#esc-filas tr.mejor-venta td {
+  background-color: rgba(224, 90, 90, 0.08);
+}
+#esc-filas td.c {
+  color: var(--comprador-fuerte);
+  background-image: linear-gradient(to right, var(--esc-barra-compra) calc(var(--f, 0) * 100%), transparent 0);
+}
+#esc-filas td.v {
+  color: var(--vendedor-fuerte);
+  background-image: linear-gradient(to left, var(--esc-barra-venta) calc(var(--f, 0) * 100%), transparent 0);
+}
+#esc-filas td.c.grande,
+#esc-filas td.v.grande {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+#esc-filas td.rec {
+  color: var(--tx-mudo);
+}
+#esc-filas td.rec.b {
+  text-align: left;
+}
+/* (149 r2) el precio y sus marcas EN FLUJO: [máx|mín] [tamano de la ultima] ... precio, a la derecha. Nada va
+ * absoluto, asi que nada puede pisar el precio: si no cabe, el tamano se corta con «…», nunca el precio */
+#esc-filas td.nivel {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+}
+#esc-filas td.nivel.ultima {
+  color: var(--acento);
+  box-shadow: inset 0 0 0 1px var(--acento);
+}
+/* (149 r3) el tamano de la ultima, ENTERO, en una franja reservada a la IZQUIERDA del precio: en 80 px no caben
+ * marca + tamano + precio en una linea (16 + 33 + 43 px medidos), asi que en la fila de la ultima la marca (arriba) y
+ * el tamano (abajo) se apilan a 8 px, media fila cada uno, en el hueco que el precio (a la derecha) deja a su izquierda.
+ * Fuera del flujo: ni el relleno ni el ancho del td cambian (un relleno distinto le cambia el ancho a la columna en
+ * esa fila), ni el alto de la fila. Cabe un tamano de 6 cifras («0.0034») con un precio de 6 («2262.5»). */
+#esc-filas td.nivel.ultima {
+  position: relative;
+}
+#esc-filas td.nivel.ultima::after,
+#esc-filas td.nivel.ultima.max-sesion::before,
+#esc-filas td.nivel.ultima.min-sesion::before {
+  position: absolute;
+  left: 1px;
+  top: 0;
+  font-size: 8px;
+  letter-spacing: -0.2px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+#esc-filas td.nivel.ultima::after {
+  content: attr(data-ultima);
+  color: var(--acento);
+}
+#esc-filas td.nivel.ultima.max-sesion::before,
+#esc-filas td.nivel.ultima.min-sesion::before {
+  line-height: 9px;
+}
+#esc-filas td.nivel.ultima.max-sesion::after,
+#esc-filas td.nivel.ultima.min-sesion::after {
+  top: 9px;
+  line-height: 9px;
+}
+#esc-filas td.nivel.max-sesion::before,
+#esc-filas td.nivel.min-sesion::before {
+  order: -2;
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--tx-mudo);
+}
+#esc-filas td.nivel.max-sesion:not(.ultima)::before,
+#esc-filas td.nivel.min-sesion:not(.ultima)::before {
+  margin-right: auto;
+}
+#esc-filas td.nivel.max-sesion::before {
+  content: 'máx';
+}
+#esc-filas td.nivel.min-sesion::before {
+  content: 'mín';
+}
+#esc-filas td[data-rotulo]::after {
+  content: attr(data-rotulo);
+  font-size: 9.5px;
+  color: var(--tx-debil);
+}
+.esc-centro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed rgba(242, 204, 96, 0.25);
+  pointer-events: none;
+}
+.esc-totales {
+  padding: 3px 8px;
+  border-top: 1px solid var(--borde);
+  color: var(--tx-mudo);
+  font-size: 11px;
+  /* (149 r2) una linea de alto fijo, contenida: cambia en cada pinta */
+  box-sizing: border-box;
+  height: calc(1.3em + 7px);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  contain: size layout paint;
+}
+/* (149 r2) la linea de estado de la pagina, ENCIMA de la escalera: alto fijo de cuatro lineas. Pasar de 3 lineas a 4
+ * (el canal o «sin escribir aun») bajaba la caja 18 px bajo un raton quieto: el ROJO del bueno de K111-control. */
+.estado {
+  box-sizing: border-box;
+  height: 80px;
+  overflow-y: auto;
+  contain: size layout paint;
 }

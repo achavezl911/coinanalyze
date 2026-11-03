@@ -23,6 +23,11 @@ const RUTA_ULTIMO = '/api/libro/ultimo';
 const RUTA_VIVO = '/api/libro/vivo';
 const SONDEO_S = 1;
 const REINTENTO_WS_S = 30;
+const RUTA_CINTA = '/api/orderflow/cinta';
+const RUTA_PERFIL = '/api/orderflow/perfil';
+const CINTA_S = 1; // la cinta de la vista, una pagina por segundo (minutos=1, limit=1000), sin solapar
+const PERFIL_S = 60; // el maximo y minimo de la sesion UTC, del perfil desde las 00:00Z
+const TIEMPOS_MAX = 2000;
 const NIVELES_VIVO = 100; // lo maximo que trae el relevo al paso base: cuanto mas pide, mas conoce la escalera
 
 let VISTA = leeHashLibro(window.location.hash);
@@ -34,6 +39,9 @@ let CARGA = 0;
 let DESFASE = 0; // la hora del servidor menos la de esta pagina (de as_of)
 const VIVO = { canal: 'ninguno', ws: null, motivoWs: null, sondeo: null, pidiendo: false, reintento: null,
                columna: null, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
+// EL VOLUMEN RECIENTE (L-07): lo que la cinta ya conto (sumaReciente), si contesta, y el perfil de la sesion UTC
+const CINTA = { rec: recienteVacio(), estado: 'pendiente', fallo: null, pidiendo: false, latido: null,
+                perfil: null, perfilFallo: null, pidiendoPerfil: false, latidoPerfil: null };
 // LO QUE SE LEE DESDE FUERA (K111, por CDP): `listo` cuando la vista pedida ya esta pintada, `vivo_listo` cuando cada
 // venue de la familia ya dijo algo por el vivo, las peticiones, y `repinta()`, que vuelve a pintar AHORA el mapa y la
 // escalera (sincrono): asi LIBRO_PINTADO y lo pintado son del mismo fotograma.
@@ -41,7 +49,8 @@ window.LIBRO_HITOS = { listo: false, vivo_listo: false, vista: null, peticiones:
 // `congela()` (para K111): el vivo deja de tocar la pantalla -ni mensajes, ni sondeo, ni columnas- y se repinta; asi lo
 // pintado es lo de los mensajes ya procesados, que se cuentan por canal en `recibidos` (los primeros N marcos del
 // websocket, o las primeras N respuestas del sondeo, son exactamente los que la pantalla uso).
-Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0 }, congelado: false,
+Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0 },
+                                    congelado: false, tiempos: [],
                                     congela: () => congela() });
 window.LIBRO_PINTADO = { mapa: null, escalera: null };
 
@@ -244,9 +253,64 @@ function arrancaVivo() {
     pintaEstado();
   }, 1000);
   programaColumna();
+  CINTA.latido = setInterval(() => lateCinta(CARGA), CINTA_S * 1000);
+  CINTA.latidoPerfil = setInterval(() => lateSesion(CARGA), PERFIL_S * 1000);
+  lateCinta(CARGA);
+  lateSesion(CARGA);
+}
+
+function paraCinta() {
+  [CINTA.latido, CINTA.latidoPerfil].forEach((t) => { if (t !== null) clearInterval(t); });
+  CINTA.latido = CINTA.latidoPerfil = null;
+}
+
+/* Una pagina de la cinta: la escalera cuenta lo que trae de nuevo. Una caida se dice (columnas vacias), nunca ceros.
+ * Cada respuesta, buena o mala, se cuenta en `recibidos.cinta` (K111 rehace la cuenta con las primeras N). */
+async function lateCinta(mia) {
+  if (CINTA.pidiendo || document.hidden || VISTA.hasta || window.LIBRO_HITOS.congelado) return;
+  CINTA.pidiendo = true;
+  const sobre = await pedir(RUTA_CINTA, { symbol: VISTA.activo, venues: venuesVista().join(','), minutos: 1,
+                                         limit: 1000 });
+  CINTA.pidiendo = false;
+  if (mia !== CARGA || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.cinta += 1;
+  if (sobre.ok) {
+    CINTA.rec = sumaReciente(CINTA.rec, sobre.datos, VISTA.paso);
+    CINTA.estado = 'ok';
+    CINTA.fallo = null;
+  } else {
+    CINTA.estado = 'caida';
+    CINTA.fallo = 'HTTP ' + sobre.http + (sobre.motivo ? ': ' + sobre.motivo : '');
+  }
+  pideEscalera();
+}
+
+async function lateSesion(mia) {
+  if (CINTA.pidiendoPerfil || document.hidden || VISTA.hasta || window.LIBRO_HITOS.congelado) return;
+  CINTA.pidiendoPerfil = true;
+  const t = ahora();
+  const dia = isoZ(t).slice(0, 10);
+  const sobre = await pedir(RUTA_PERFIL, { symbol: VISTA.activo, desde: dia + 'T00:00:00Z', hasta: isoZ(t),
+                                          paso: VISTA.paso, venues: venuesVista().join(','), unidad: 'base' });
+  CINTA.pidiendoPerfil = false;
+  if (mia !== CARGA || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.perfil += 1;
+  if (sobre.ok) {
+    CINTA.perfil = { dia, niveles: sobre.datos.niveles || [] };
+    CINTA.perfilFallo = null;
+  } else {
+    CINTA.perfilFallo = 'HTTP ' + sobre.http;
+  }
+  pideEscalera();
+}
+
+function limpiaCinta() {
+  CINTA.rec = limpiaReciente(CINTA.rec);
 }
 
 function paraVivo() {
+  paraCinta();
+  Object.assign(CINTA, { rec: recienteVacio(), estado: 'pendiente', fallo: null, perfil: null, perfilFallo: null });
   paraSondeo();
   [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
@@ -265,10 +329,23 @@ function paraVivo() {
 function pintaEscaleraYa() {
   VIVO.pendiente = false;
   if (VISTA.hasta) {
-    window.LIBRO_PINTADO.escalera = LA_ESCALERA.pinta(VISTA, venuesVista(), ultimaFotoComoVivo(), 'ninguno', ahora());
+    apuntaPinta(LA_ESCALERA.pinta(VISTA, venuesVista(), ultimaFotoComoVivo(), 'ninguno', ahora(),
+                                  { rec: null, cinta: 'fija', perfil: null }));
     return;
   }
-  window.LIBRO_PINTADO.escalera = LA_ESCALERA.pinta(VISTA, venuesVista(), VIVO.libros, VIVO.canal, ahora());
+  apuntaPinta(LA_ESCALERA.pinta(VISTA, venuesVista(), VIVO.libros, VIVO.canal, ahora(),
+                                { rec: CINTA.rec, cinta: CINTA.estado, motivo: CINTA.fallo, perfil: CINTA.perfil }));
+}
+
+/* lo pintado, para K111, y lo que tardo cada pinta() (P1 de la campana 149) */
+function apuntaPinta(reg) {
+  window.LIBRO_PINTADO.escalera = reg;
+  const ts = window.LIBRO_HITOS.tiempos;
+  ts.push(reg.ms);
+  const pz = window.LIBRO_HITOS.piezas || (window.LIBRO_HITOS.piezas = []);
+  pz.push(reg.piezas);
+  if (pz.length > TIEMPOS_MAX) pz.splice(0, pz.length - TIEMPOS_MAX);
+  if (ts.length > TIEMPOS_MAX) ts.splice(0, ts.length - TIEMPOS_MAX);
 }
 
 function pideEscalera() {
@@ -296,6 +373,7 @@ function congela() {
   [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
   VIVO.reintento = VIVO.columna = VIVO.tic = null;
+  paraCinta();
   repinta();
 }
 
@@ -427,7 +505,7 @@ function aplicaHash() {
 
 function arranca() {
   EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'));
-  LA_ESCALERA = creaEscalera(document.getElementById('escalera'));
+  LA_ESCALERA = creaEscalera(document.getElementById('escalera'), { pide: pideEscalera, limpia: limpiaCinta });
   [['sel-activo', 'activo'], ['sel-familia', 'familia'], ['sel-ventana', 'ventana'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {
       document.getElementById(id).addEventListener('click', (ev) => {

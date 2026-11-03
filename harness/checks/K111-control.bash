@@ -21,8 +21,9 @@
 #   (F) acumulada_sin_minimo      la acumulada que pasa por niveles parciales, escrita sin su «≥»
 #   (P) cada_fuera_de_regla       la historia pedida con un cada que no es el de la regla
 #   (P) pagina_rota               una excepcion al arrancar
-#   (F) pagina_de_e0fb3fb         R1: la pagina de antes del remate (libro.html y static/libro/* de e0fb3fb, por git show):
-#                                 720 columnas en 1420 px, el vecino mas cercano ensena unas celdas y esconde otras
+#   (F) pagina_de_e0fb3fb         la pagina de antes del remate (libro.html y static/libro/* de e0fb3fb, por git show): sin
+#                                 la forma profesional (#esc-totales) en su html, llegue o no a listo (149 r1)
+#   (F) rejilla_sin_ancla         sin relleno ni compensacion: la fila bajo un raton quieto cambia con el borde (149 r1)
 # Y tres escenarios BUENOS mas que tienen que salir VERDE: vivo_por_sondeo (el websocket rechazado), hueco_en_medio (la
 # base con el hueco y la pagina buena) y sin_libro_dicho (el venue sin libro y la pagina buena: lo dice y no suma).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina («FALTA DESPLEGAR») · sin_chromium · sin_fotos (la base vacia) · sin_canal.
@@ -80,6 +81,9 @@ k111() {  # puerto base [env extra...] -> rc; la salida en $T/sal
   env "$@" K111_BASE="http://127.0.0.1:$p" K111_DB="$(dsn "$b")" K111_HASTA="$HASTA" K111_HASTA_R1="$HASTA_R1" \
     /bin/bash "$CHK" > "$T/sal" 2>&1; echo $?
 }
+GUARDA=${K111_CTL_GUARDA:-/tmp/k111-control-salidas}
+rm -rf "$GUARDA"; mkdir -p "$GUARDA"
+guarda() { cp "$T/sal" "$GUARDA/$1.sal"; }  # la salida ENTERA de cada escenario, aparte: la siguiente corrida de K111 la pisa
 huella_k111() { head -1 "$T/sal" | grep -o 'huella [0-9a-f]*' | cut -d' ' -f2; }
 escenario() {  # [base] -> lo que el banco sirve distinto del arbol, y los sujetos de los que parte
   { sha256sum < "$AQUI/K111-fotos.tsv.xz"; sha256sum < "$AQUI/K111-avisos.jsonl.xz"; echo "base ${1:-buena}"
@@ -110,7 +114,7 @@ for p in $P1 $P2; do
   ss -ltn 2>/dev/null | grep -q ":$p " || { echo "control: el banco de $p no arranco: $(tail -1 "$T/banco1.log") $(tail -1 "$T/banco2.log")"; exit 2; }
 done
 BUENO=$(escenario)
-rc=$(k111 $P1 "$DB"); HK_BUENA=$(huella_k111)
+rc=$(k111 $P1 "$DB"); HK_BUENA=$(huella_k111); guarda el_bueno_es_verde
 comprueba el_bueno_es_verde "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K111' && echo 0 || echo 1)" \
   "rc=$rc · escenario $BUENO · $(head -1 "$T/sal" | cut -c1-60) · huella $HK_BUENA"
 grep -E '^   · \((S|F|C)' "$T/sal" | cut -c1-170 | sed 's/^/        /'
@@ -133,7 +137,7 @@ planta_e0fb3fb() {  # la pagina de e0fb3fb entera en el sobre -> 0 si salio de g
 juzga_plantado() {  # nombre brazo patron mordio(0/1) que [puerto] [base] [etiqueta de la base]
   local antes despues rc visto hk p=${6:-$P1} b=${7:-$DB}
   antes=$BUENO; despues=$(escenario "${8:-buena}")
-  rc=$(k111 "$p" "$b"); hk=$(huella_k111)
+  rc=$(k111 "$p" "$b"); hk=$(huella_k111); guarda "$1"
   visto=$(grep -E "\\($2\\) .*($3)" "$T/sal" | head -1 | cut -c1-150)
   comprueba "$1" "$([ "$4" = 0 ] && [ "$rc" = 1 ] && [ -n "$visto" ] && [ "$antes" != "$despues" ] && [ "$hk" != "$HK_BUENA" ] && echo 0 || echo 1)" \
     "rc=$rc · escenario $antes -> $despues · huella $hk · ${visto:-NO SALE ($2) $3: $(grep -m1 '^   · ' "$T/sal" | cut -c1-110)} · $5"
@@ -142,7 +146,7 @@ juzga_plantado() {  # nombre brazo patron mordio(0/1) que [puerto] [base] [etiqu
 juzga_bueno() {  # nombre patron-de-info que [puerto] [base] [etiqueta]
   local despues rc visto hk p=${4:-$P1} b=${5:-$DB}
   despues=$(escenario "${6:-buena}")
-  rc=$(k111 "$p" "$b"); hk=$(huella_k111)
+  rc=$(k111 "$p" "$b"); hk=$(huella_k111); guarda "$1"
   visto=$(grep -E "$2" "$T/sal" | head -1 | cut -c1-150)
   comprueba "$1" "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K111' && [ -n "$visto" ] && [ "$BUENO" != "$despues" ] && echo 0 || echo 1)" \
     "rc=$rc · escenario $BUENO -> $despues · huella $hk · ${visto:-NO SALE: $2 · $(head -1 "$T/sal" | cut -c1-90)} · $3"
@@ -156,7 +160,9 @@ planta_pagina libro/libro-calculo.js 's/    const fotos = porTs\.get(t) || \[\];
 juzga_plantado hueco_rellenado F "el mapa no pinta lo servido: columna .*pintada foto y lo servido dice hueco" $m "el hueco con la foto anterior" "$P2" "${DB}_hueco" hueco
 planta_pagina libro/libro-app.js "s/\['libro', 'sin_libro', 'sin_dato'\]\.includes(m\.tipo)/['libro', 'sin_dato'].includes(m.tipo)/" 1; m=$?
 echo sin_libro:okx_swap > "$T/plantado"
-juzga_plantado sin_libro_con_su_ultimo F "la escalera no pinta lo servido: venue okx_swap: la escalera dice vivo y su ultimo mensaje sin_libro" $m "el aviso sin libro ignorado"
+# (149 r2) vivo O rancio: la pagina que ignora el sin_libro se queda con su ultimo libro, y su propio reloj lo vuelve
+# rancio a los pocos segundos; cual de los dos lee la sonda depende de la hora del aviso. Las dos son el mismo defecto
+juzga_plantado sin_libro_con_su_ultimo F "la escalera no pinta lo servido: venue okx_swap: la escalera dice (vivo|rancio) y su ultimo mensaje sin_libro" $m "el aviso sin libro ignorado"
 planta_pagina libro/libro-app.js "s/  if (VIVO\.canal === 'websocket') return 'vivo por WEBSOCKET' + hora;/  if (VIVO.canal !== 'ninguno') return 'vivo por WEBSOCKET' + hora;/" 1; m=$?
 echo sin_ws > "$T/plantado"
 juzga_plantado canal_mal_declarado C "escribe .vivo por WEBSOCKET" $m "va por sondeo y escribe websocket"
@@ -173,8 +179,27 @@ juzga_plantado cada_fuera_de_regla P "pide lo que su hash no dice: cada=10 \\(su
 planta_pagina libro/libro-app.js 's/^function arranca() {$/function arranca() { throw new Error("plantado por K111-control");/' 1; m=$?
 juzga_plantado pagina_rota P "lanzo 1 excepcion|no pinto su vista" $m "una excepcion al arrancar"
 planta_e0fb3fb; m=$?
-juzga_plantado pagina_de_e0fb3fb F "\[BTC binance_usdm\] el mapa no pinta lo servido: R1: ensena 720 columnas en 1420 px y caben 710" $m \
-  "R1: la pagina de e0fb3fb y la vista del operador"
+juzga_plantado pagina_de_e0fb3fb F "\[BTC [a-z_]+\] la escalera no tiene la forma profesional: falta #esc-totales" $m \
+  "la pagina de e0fb3fb: su html no tiene la forma profesional, llegue o no a listo"
+
+echo "== la escalera profesional (campana 149): barras, grandes, totales, ausente y el volumen reciente de la cinta"
+planta_pagina libro/libro-calculo.js 's/  return tope > 0 ? Math\.min(1, q \/ tope) : 0;/  return tope > 0 ? Math.min(1, q \/ (2 * tope)) : 0;/' 1; m=$?
+juzga_plantado barra_no_es_su_tamano F "la barra no es su tamaño: fila" $m "la barra a media escala del p95"
+planta_pagina libro/libro-calculo.js "s/      const lado = o\.agresor === 'venta' ? 'b' : o\.agresor === 'compra' ? 'a' : null;/      const lado = o.agresor === 'venta' ? 'a' : o.agresor === 'compra' ? 'b' : null;/" 1; m=$?
+juzga_plantado reciente_de_otro_lado F "el volumen reciente no es el de la cinta: fila" $m "la venta agresora en @ask"
+planta_pagina libro/libro-calculo.js 's/  const nuevas = ops\.filter((x) => !s\.vistos\.has(x\.clave));/  const nuevas = ops.filter(() => true);/' 1; m=$?
+juzga_plantado reciente_duplicado F "el volumen reciente no es el de la cinta: fila" $m "sin quitar lo ya contado de la pagina anterior"
+planta_pagina libro/libro-escalera.js "s/^const AUSENTE = '';/const AUSENTE = '0';/" 1; m=$?
+juzga_plantado ausente_como_cero F "lo ausente \\(DESCONOCIDO\\) se pinta «0»" $m "lo ausente escrito como cero"
+planta_pagina libro/libro-calculo.js 's/^const ESC_GRANDE_X = 3;/const ESC_GRANDE_X = 2;/' 1; m=$?
+juzga_plantado grande_con_otro_umbral F "una orden grande con otro umbral: fila" $m "grande a 2x la media y no a 3x"
+planta_pagina libro/libro-escalera.js 's/      tot = totalesVisibles(vis, /      tot = totalesVisibles([...modelo.values()], /' 1; m=$?
+juzga_plantado totales_de_otra_cosa F "los totales son de otra cosa" $m "los totales de todo el modelo y no de lo visible"
+planta_pagina libro/libro-escalera.js 's/^const ESC_ANCLA = true;/const ESC_ANCLA = false;/' 1; m=$?
+juzga_plantado rejilla_sin_ancla F "\[BTC perp vivo\] la fila se mueve bajo el raton quieto" $m "sin relleno ni compensacion: la rejilla resbala con el borde"
+planta_pagina libro/libro-escalera.js "s/^const SIN_CINTA = '';/const SIN_CINTA = '0';/" 1; m=$?
+echo sin_cinta > "$T/plantado"
+juzga_plantado sin_cinta_como_cero F "la cinta caída se pinta como cifras" $m "la cinta caida pintada como ceros"
 
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"
@@ -212,6 +237,7 @@ comprueba invocacion_ajena "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(h
 echo "== restaurado"
 FIN=$(escenario)
 rc=$(k111 $P1 "$DB"); HK_FIN=$(huella_k111)
+guarda escenario_restaurado  # (149 r2) su huella no repitio la del bueno en ctl1 y ctl2: la diferencia, contra el_bueno_es_verde.sal
 comprueba escenario_restaurado "$([ "$FIN" = "$BUENO" ] && [ "$rc" = 0 ] && [ "$HK_FIN" = "$HK_BUENA" ] && echo 0 || echo 1)" \
   "escenario $BUENO -> $FIN · huella de K111 $HK_BUENA -> $HK_FIN · rc=$rc"
 ARBOL_DESPUES=$(git -C "$REPO" status --porcelain 2>/dev/null | sha256sum | cut -c1-12)

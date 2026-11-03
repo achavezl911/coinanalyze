@@ -59,14 +59,25 @@
       </main>
       <aside class="escalera" id="escalera" aria-label="La escalera: el libro vivo por nivel">
         <div class="esc-cabeza" id="esc-cabeza"></div>
-        <div class="esc-tabla">
-          <table id="esc-filas">
-            <thead>
-              <tr><th>acum.</th><th>compra</th><th>nivel</th><th>venta</th><th>acum.</th><th>conocen</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div class="esc-mandos" id="esc-mandos">
+          <button type="button" id="esc-acum" aria-pressed="false" title="Enseña u oculta las acumuladas">ACUM</button>
+          <button type="button" id="esc-centrar" title="Lleva el precio al centro (tecla C)">Centrar</button>
+          <button type="button" id="esc-limpiar" title="Vacía el volumen reciente @bid / @ask">Limpiar</button>
+          <span class="esc-aviso" id="esc-aviso" role="status"></span>
         </div>
+        <div class="esc-marco">
+          <div class="esc-tabla">
+            <table id="esc-filas">
+              <thead>
+                <tr><th class="acum">acum.</th><th class="rec">@bid</th><th class="q">compra</th><th class="nivel">precio</th>
+                  <th class="q">venta</th><th class="rec">@ask</th><th class="acum">acum.</th><th class="n">n/N</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="esc-centro" aria-hidden="true"></div>
+        </div>
+        <div class="esc-totales" id="esc-totales"></div>
         <table class="esc-venues" id="esc-venues">
           <thead>
             <tr><th>venue</th><th>estado</th><th>hora del libro</th><th>conoce (niveles)</th></tr>
