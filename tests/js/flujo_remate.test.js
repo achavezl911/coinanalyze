@@ -60,14 +60,23 @@ test('LA MONOTONIA: con el mismo techo, ensanchar la vela no echa ninguna cifra'
 const T0 = Date.parse('2026-11-02T22:00:00Z');
 const dato = (o) => ({ venue: 'binance_usdm', precio: '81361.4', tsMs: T0 - 500, asOfMs: T0, recibidoMs: T0, ok: true, ...o });
 
-test('la etiqueta en vivo: el precio con los decimales del activo, el venue y la edad', () => {
-  const e = D.etiquetaVivo(dato(), 3, T0 + 1000);
-  assert.strictEqual(e.texto, '81361.400');
+test('la etiqueta en vivo: el precio con VIVO_DECIMALES (2, no los de volumen de E-04), el venue y la edad', () => {
+  assert.strictEqual(D.VIVO_DECIMALES, 2);
+  const e = D.etiquetaVivo(dato(), D.VIVO_DECIMALES, T0 + 1000);
+  assert.strictEqual(e.texto, '81361.40');
   assert.strictEqual(e.venue, 'binance_usdm');
   assert.strictEqual(e.estado, 'vivo');
   assert.strictEqual(e.edad_s, 1.5);
   assert.strictEqual(e.aviso, 'vivo 1s');
-  assert.strictEqual(D.etiquetaVivo(dato({ precio: 2510.456 }), 2, T0).texto, '2510.46');
+  assert.strictEqual(D.etiquetaVivo(dato({ precio: 2510.456 }), D.VIVO_DECIMALES, T0).texto, '2510.46');
+});
+
+test('la etiqueta en vivo, los dos casos del operador (2026-11-03 00:21Z): SOL no pierde el centavo, BTC sin el tercer cero', () => {
+  // con los decimales de E-04 salian «92.3» (SOL 1) y «76996.900» (BTC 3)
+  assert.strictEqual(D.etiquetaVivo(dato({ precio: '92.35' }), D.VIVO_DECIMALES, T0).texto, '92.35');
+  assert.strictEqual(D.etiquetaVivo(dato({ precio: '76996.9' }), D.VIVO_DECIMALES, T0).texto, '76996.90');
+  assert.strictEqual(D.etiquetaVivo(dato({ precio: '2258.22' }), D.VIVO_DECIMALES, T0).texto, '2258.22');
+  assert.strictEqual(D.etiquetaVivo(dato({ precio: '77028' }), D.VIVO_DECIMALES, T0).texto, '77028.00');
 });
 
 test('mas de 10 s sin operacion, o sin respuesta: «sin vivo» con su edad', () => {

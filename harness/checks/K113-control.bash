@@ -149,6 +149,9 @@ planta_pagina flujo/flujo-dibujo.js 's/^    const yv = Math\.round(y(e\.precio))
 juzga_plantado vivo_que_no_sigue_el_eje V "no se mueve con el eje" $m "la linea se queda en la y de su primer pintado"
 planta_pagina flujo/flujo-dibujo.js 's/^  const parado = !d\.ok || edad > VIVO_TOPE_S;$/  const parado = !d.ok;/' 1; m=$?
 juzga_plantado vivo_que_no_avisa V "no avisa" $m "la etiqueta no avisa de la cinta parada"
+# remate 2 (148): la regla de antes, los decimales de VOLUMEN de E-04 en el precio en vivo (BTC 3: 76996.900; SOL 1: 92.3)
+planta_pagina flujo/flujo-dibujo.js 's/etiquetaVivo(L\.vivo, VIVO_DECIMALES, Date\.now());/etiquetaVivo(L.vivo, DECIMALES[m.activo] ?? 2, Date.now());/' 1; m=$?
+juzga_plantado vivo_decimales_de_volumen V "la etiqueta dice .* y la ultima operacion de .* que llego es" $m "el precio en vivo con los decimales de E-04"
 
 echo "== lo que no se puede medir: NO MEDIDO, ni ROJO ni VERDE"
 echo sin_pagina > "$T/plantado"

@@ -16,7 +16,8 @@
  * arrastre sigue marcando el perfil fijo (flujo-app.js).
  *
  * NIVEL DE DETALLE (F-09): una cifra se escribe si la fila mide >= LZ.FILA_TEXTO px y cabe en su sitio con 4 px de
- * holgura (la semicelda en bid x ask, la celda en los demas modos); la fuente va de 9 a 13 px con el alto de fila. Las
+ * holgura (la semicelda en bid x ask, la celda en los demas modos); la fuente es UNA por vista, la mayor hasta el techo de
+ * fuenteDe (9 a 13 px con el alto de fila) con la que toda cifra que cabe a 9 px sigue cabiendo (fuenteVista). Las
  * marcas (POC, value area, desequilibrios, cobertura) se pintan siempre.
  *
  * EL CONTRATO DE LO PINTADO, que leen K109, K112 y K113: cada vez que pinta, el lienzo deja en `window.FLUJO_PINTADO` lo
@@ -81,8 +82,13 @@ function fuenteVista(celdas, tope, ancho) {
 /* ADENDA DEL REMATE 1: la etiqueta del precio en vivo. `d`: { venue, precio, tsMs, asOfMs, recibidoMs, ok } de la ultima
  * respuesta de la cinta (su ultima operacion, del venue de referencia); la edad es la de la operacion cuando el servidor
  * respondio mas lo que paso desde entonces. Mas de 10 s, o la ultima peticion sin respuesta: «sin vivo» con su edad (no
- * finge vivo). Sin ninguna operacion conocida, null: no se pinta un precio. */
+ * finge vivo). Sin ninguna operacion conocida, null: no se pinta un precio.
+ * El precio, con VIVO_DECIMALES fijos en los tres activos (remate 2), no con los decimales de VOLUMEN de E-04 (BTC 3,
+ * SOL 1: 76996.900 y 92.3 en produccion el 2026-11-03). Medido por el operador el 2026-11-03 00:26Z: /api/orderflow/cinta
+ * en BTC, ETH y SOL por binance_usdm, binance_spot, bybit_linear, okx_swap y coinbase_spot no trae mas de 2 decimales, y
+ * la cadena llega sin ceros finales («77028», «77028.01»): escrita tal cual la etiqueta cambiaria de ancho. */
 const VIVO_TOPE_S = 10;
+const VIVO_DECIMALES = 2;
 function edadTexto(s) {
   return s < 60 ? Math.floor(s) + 's' : s < 3600 ? Math.floor(s / 60) + 'm' : Math.floor(s / 3600) + 'h';
 }
@@ -230,7 +236,7 @@ function creaLienzo(canvas, op) {
    * etiqueta resaltada en el eje, despues de las demas etiquetas (la cruz va en su propio lienzo, encima: manda donde
    * esta el raton). Fuera de la escala, la etiqueta pegada al borde con su flecha. Lo pintado, en FLUJO_PINTADO.vivo. */
   function pintaVivo(ctx, g, y, lo, hi, m) {
-    const e = etiquetaVivo(L.vivo, DECIMALES[m.activo] ?? 2, Date.now());
+    const e = etiquetaVivo(L.vivo, VIVO_DECIMALES, Date.now());
     if (!e) return null;
     const fuera = e.precio > hi ? 'arriba' : e.precio < lo ? 'abajo' : null;
     const yv = Math.round(y(e.precio)) + 0.5;
@@ -1041,5 +1047,5 @@ function horaDe(t, marco) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { LZ, COLOR, creaLienzo, fuenteDe, fuenteVista, etiquetaVivo, alfaDe, horaDe };
+  module.exports = { LZ, COLOR, creaLienzo, fuenteDe, fuenteVista, etiquetaVivo, VIVO_DECIMALES, alfaDe, horaDe };
 }

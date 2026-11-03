@@ -30,7 +30,7 @@ LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro m
                  fillText; tras un gesto que solo acerca el precio o solo ensancha las velas (y 1-4 muescas de Ctrl+rueda en
                  la vista por omision y en BTC 15m y 1h) ninguna celda a la vista antes y despues pierde su cifra (remate 1)
   (V) el vivo    adenda del remate 1: la linea y la etiqueta del precio en vivo estan en la ULTIMA operacion de la cinta
-                 que la pagina recibio (por la red), del venue de referencia que declara, con los decimales de E-04, en la
+                 que la pagina recibio (por la red), del venue de referencia que declara, con 2 decimales (remate 2), en la
                  y de su precio tras cada gesto; «sin vivo» con la cinta parada; ninguna en una vista del pasado
   (R) el raton   cada gesto mueve lo que manda y nada mas (I-01, I-02, I-03, I-04, I-05, I-06, I-07, I-08)
   (E) el aspecto E-01 (fondo y contraste), E-02 (comprador y vendedor con dE2000 >= 20 en vision normal y en las tres
@@ -75,6 +75,7 @@ EJE_P, EJE_T, CABEZA, FILA_RES = 76, 20, 16, 16
 FILA_TEXTO, FILA_DEFECTO, ESPACIADO = 10, 12, 81
 PASOS, CORTE = 20, 0.98
 DECIMALES = {"BTC": 3, "ETH": 2, "SOL": 1}
+VIVO_DECIMALES = 2  # remate 2: el precio en vivo, 2 fijos (la cinta no trae mas, medido por el operador 2026-11-03)
 FAMILIAS = {"perp": ["binance_usdm", "bybit_linear", "okx_swap", "bitget_usdt"],
             "spot": ["binance_spot", "bybit_spot", "okx_spot"], "coinbase": ["coinbase_spot"],
             "deribit": ["deribit_perp"]}
@@ -904,10 +905,10 @@ def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un
     if vivo.get("venue") != ref or ult["q"].get("venues") != ref or o.get("venue") != ref:
         J.mal("V", pref, f"la linea esta en el precio de {o.get('venue')} (pedido venues={ult['q'].get('venues')}) y dice "
                          f"{vivo.get('venue')}: el venue de referencia de la vista es {ref}")
-    dec = DECIMALES.get(pin.get("activo"), 2)
-    validos = [to_fixed(float(x["cuerpo"]["operaciones"][0]["precio"]), dec) for x in llegadas[-2:]]
+    validos = [to_fixed(float(x["cuerpo"]["operaciones"][0]["precio"]), VIVO_DECIMALES) for x in llegadas[-2:]]
     if vivo.get("texto") not in validos:
-        J.mal("V", pref, f"la etiqueta dice {vivo.get('texto')} y la ultima operacion de {ref} que llego es {validos[-1]} (E-04)")
+        J.mal("V", pref, f"la etiqueta dice {vivo.get('texto')} y la ultima operacion de {ref} que llego es {validos[-1]} "
+                         f"({VIVO_DECIMALES} decimales)")
     esc = pin.get("escala") or {}
     p = float(vivo.get("precio") or 0)
     if esc and esc["hi"] > esc["lo"]:
