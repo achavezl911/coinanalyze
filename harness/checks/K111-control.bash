@@ -176,6 +176,23 @@ planta_e0fb3fb; m=$?
 juzga_plantado pagina_de_e0fb3fb F "\[BTC binance_usdm\] el mapa no pinta lo servido: R1: ensena 720 columnas en 1420 px y caben 710" $m \
   "R1: la pagina de e0fb3fb y la vista del operador"
 
+echo "== la escalera profesional (campana 149): barras, grandes, totales, ausente y el volumen reciente de la cinta"
+planta_pagina libro/libro-calculo.js 's/  return tope > 0 ? Math\.min(1, q \/ tope) : 0;/  return tope > 0 ? Math.min(1, q \/ (2 * tope)) : 0;/' 1; m=$?
+juzga_plantado barra_no_es_su_tamano F "la barra no es su tamaño: fila" $m "la barra a media escala del p95"
+planta_pagina libro/libro-calculo.js "s/      const lado = o\.agresor === 'venta' ? 'b' : o\.agresor === 'compra' ? 'a' : null;/      const lado = o.agresor === 'venta' ? 'a' : o.agresor === 'compra' ? 'b' : null;/" 1; m=$?
+juzga_plantado reciente_de_otro_lado F "el volumen reciente no es el de la cinta: fila" $m "la venta agresora en @ask"
+planta_pagina libro/libro-calculo.js 's/  const nuevas = ops\.filter((x) => !s\.vistos\.has(x\.clave));/  const nuevas = ops.filter(() => true);/' 1; m=$?
+juzga_plantado reciente_duplicado F "el volumen reciente no es el de la cinta: fila" $m "sin quitar lo ya contado de la pagina anterior"
+planta_pagina libro/libro-escalera.js "s/^const AUSENTE = '';/const AUSENTE = '0';/" 1; m=$?
+juzga_plantado ausente_como_cero F "lo ausente \\(DESCONOCIDO\\) se pinta «0»" $m "lo ausente escrito como cero"
+planta_pagina libro/libro-calculo.js 's/^const ESC_GRANDE_X = 3;/const ESC_GRANDE_X = 2;/' 1; m=$?
+juzga_plantado grande_con_otro_umbral F "una orden grande con otro umbral: fila" $m "grande a 2x la media y no a 3x"
+planta_pagina libro/libro-escalera.js 's/      tot = totalesVisibles(vis, /      tot = totalesVisibles([...modelo.values()], /' 1; m=$?
+juzga_plantado totales_de_otra_cosa F "los totales son de otra cosa" $m "los totales de todo el modelo y no de lo visible"
+planta_pagina libro/libro-escalera.js "s/^const SIN_CINTA = '';/const SIN_CINTA = '0';/" 1; m=$?
+echo sin_cinta > "$T/plantado"
+juzga_plantado sin_cinta_como_cero F "la cinta caída se pinta como cifras" $m "la cinta caida pintada como ceros"
+
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"
 juzga_bueno vivo_por_sondeo '^   · \(C\) .*vivo por sondeo' "el websocket rechazado: la pagina se va al sondeo y lo dice"

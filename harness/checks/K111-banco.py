@@ -53,6 +53,10 @@ CREATE TABLE libro_foto (ts timestamptz NOT NULL, venue text NOT NULL, symbol te
 """
 
 
+CINTA_CICLO_MS = 8000  # la cinta del banco: CINTA_POR_CICLO operaciones cada 8 s
+CINTA_POR_CICLO = 14
+
+
 def carga(dsn: str, sujeto: Path = FIXTURE) -> int:
     filas: dict[str, list[str]] = {"orderflow_paso": [], "libro_foto": []}
     with lzma.open(sujeto, "rt", encoding="utf-8") as f:
@@ -94,7 +98,7 @@ def sirve(a: argparse.Namespace) -> int:
     from app.orderflow_lectura import Peticion
 
     sobre = Path(a.sobre) if a.sobre else None
-    estado: dict = {"carga": 0.0}
+    estado: dict = {"carga": 0.0, "ref": {}, "ops": {}}
 
     def plantado() -> str:
         try:
@@ -115,6 +119,9 @@ def sirve(a: argparse.Namespace) -> int:
                     if espera > 0:
                         await asyncio.sleep(espera)
                     carga_ = x["aviso"]
+                    with contextlib.suppress(KeyError, TypeError, ValueError):
+                        d = json.loads(carga_)
+                        estado["ref"][d["s"]] = ((float(d["b"]) + float(d["a"])) / 2, float(d.get("p") or 1))
                     p = plantado()
                     if p.startswith("sin_libro:") and time.time() - estado["carga"] > 1.5:
                         d = json.loads(carga_)
@@ -193,6 +200,54 @@ def sirve(a: argparse.Namespace) -> int:
     async def vivo(ws: WebSocket) -> None:
         prohibido = "plantado por K111-control: el websocket no pasa" if plantado() == "sin_ws" else None
         await lec.vivo(ws, estado["pool"], a.db, prohibido)
+
+    def ops_ciclo(sym: str, venues: list[str], c: int) -> list[dict]:
+        """Las operaciones de un ciclo de CINTA_CICLO_MS, una vez y para siempre (el mismo id, el mismo precio)."""
+        clave = (sym, ",".join(venues), c)
+        if clave not in estado["ops"]:
+            ref = estado["ref"].get(sym)
+            out = []
+            for j in range(CINTA_POR_CICLO if ref and venues else 0):
+                mid, paso = ref
+                precio = round(mid + (((c * 7 + j * 5) % 9) - 4) * paso * 5, 2)
+                base = round(0.001 * (1 + (c * 13 + j * 29) % 50), 3)
+                ms = c * CINTA_CICLO_MS + (j * 571 + c * 37) % CINTA_CICLO_MS
+                out.append({"ts": datetime.fromtimestamp(ms / 1000, UTC).isoformat(timespec="milliseconds")
+                            .replace("+00:00", "Z"), "venue": venues[(c + j) % len(venues)], "precio": str(precio),
+                            "base": base, "usd": round(base * precio, 2), "agresor": "compra" if (c + j) % 3 else "venta",
+                            "id": f"{c}-{j}", "_ms": ms})
+            estado["ops"][clave] = out
+            if len(estado["ops"]) > 4000:
+                estado["ops"].pop(next(iter(estado["ops"])))
+        return estado["ops"][clave]
+
+    @api.get("/api/orderflow/cinta")
+    async def cinta(symbol: str, venues: str = "", minutos: int = 1, limit: int = 1000) -> Response:
+        """La cinta de un fixture pequeno RE-FECHADO a la hora de la peticion: ciclos fijos, ids estables."""
+        if plantado() == "sin_cinta":
+            return JSONResponse({"detail": "banco: cinta plantada como caida por K111-control"}, status_code=503)
+        vs = [v for v in venues.split(",") if v]
+        ahora = int(time.time() * 1000)
+        desde = ahora - minutos * 60000
+        ops = [o for c in range(desde // CINTA_CICLO_MS, ahora // CINTA_CICLO_MS + 1) for o in ops_ciclo(symbol, vs, c)
+               if desde < o["_ms"] <= ahora]
+        ops.sort(key=lambda o: (o["_ms"], o["id"]), reverse=True)
+        return JSONResponse({"symbol": symbol, "venues": vs, "minutos": minutos, "limit": limit,
+                             "truncada": len(ops) > limit,
+                             "operaciones": [{k: v for k, v in o.items() if k != "_ms"} for o in ops[:limit]],
+                             "as_of": as_of()})
+
+    @api.get("/api/orderflow/perfil")
+    async def perfil(symbol: str, paso: str, desde: str = "", hasta: str = "", venues: str = "",
+                     unidad: str = "base") -> Response:
+        """Lo negociado por nivel desde las 00:00Z, de mentira: trece niveles alrededor del precio del relevo."""
+        ref = estado["ref"].get(symbol)
+        P = Decimal(paso)
+        k0 = int(Decimal(str(ref[0])) // P) if ref else 0
+        niveles = [{"nivel": str((k0 + j) * P), "compra": 1.0, "venta": 1.0, "delta": 0.0, "total": 2.0, "operaciones": 2}
+                   for j in range(-6, 7)] if ref else []
+        return JSONResponse({"symbol": symbol, "desde": desde, "hasta": hasta, "paso": paso, "unidad": unidad,
+                             "niveles": niveles, "as_of": as_of()})
 
     @api.get("/api/{resto:path}")
     async def otra(resto: str) -> Response:

@@ -72,6 +72,8 @@ HASTA_R1 = os.environ.get("K111_HASTA_R1", "")  # el final de las vistas de R1 (
 ESPERA_VIVO_S = float(os.environ.get("K111_ESPERA_VIVO", "25"))
 ANCHO, ALTO = 1920, 1080
 EJE_P, EJE_T = 76, 20  # los margenes de los ejes del mapa (el de los precios a la derecha, el de las horas debajo)
+RUTA_CINTA = "/api" + "/orderflow/cinta"
+RUTA_PERFIL = "/api" + "/orderflow/perfil"
 RUTA_FOTOS, RUTA_ULTIMO, RUTA_VIVO = "/api" + "/libro/fotos", "/api" + "/libro/ultimo", "/api" + "/libro/vivo"
 # Lo DECIDIDO por el encargo y por P1/P2 de la campana, escrito aqui y no leido de la pagina:
 FAMILIAS = {"perp": ["binance_usdm", "bybit_linear", "okx_swap", "bitget_usdt"],
@@ -277,8 +279,19 @@ COSECHA = r"""
 (() => {
   const h = window.LIBRO_HITOS || {};
   if (h.repinta) h.repinta();
-  const filas = [...document.querySelectorAll('#esc-filas tbody tr')].map((tr) => ({cls: tr.className,
-    d: Object.assign({}, tr.dataset), t: [...tr.children].map((td) => td.textContent)}));
+  const filas = [...document.querySelectorAll('#esc-filas tbody tr')].map((tr) => {
+    const r = tr.getBoundingClientRect();
+    return {cls: tr.className, d: Object.assign({}, tr.dataset), t: [...tr.children].map((td) => td.textContent),
+            c: [...tr.children].map((td) => ({cl: td.className, d: Object.assign({}, td.dataset),
+                                              f: td.style.getPropertyValue('--f')})), m: (r.top + r.bottom) / 2};
+  });
+  const caja = document.querySelector('#escalera .esc-tabla');
+  const thd = document.querySelector('#esc-filas thead');
+  const cr = caja ? caja.getBoundingClientRect() : null;
+  const zona = caja ? {lo: cr.top + caja.clientTop + (thd ? thd.getBoundingClientRect().height : 0),
+                       hi: cr.top + caja.clientTop + caja.clientHeight} : null;
+  const tot = document.getElementById('esc-totales');
+  const av = document.getElementById('esc-aviso');
   const ven = [...document.querySelectorAll('#esc-venues tbody tr')].map((tr) => Object.assign({}, tr.dataset,
     {t: tr.children[1] ? tr.children[1].textContent : ''}));
   const canal = document.querySelector('#estado p[data-estado="canal"]');
@@ -288,7 +301,9 @@ COSECHA = r"""
   return {listo: h.listo, vivo_listo: h.vivo_listo, vista: h.vista, recibidos: h.recibidos, hash: location.hash,
           pintado: window.LIBRO_PINTADO || null, filas, ven, canal: canal ? {texto: canal.textContent,
           dice: canal.dataset.canal} : null, lienzo: r ? {w: r.width, h: r.height, pr: window.devicePixelRatio} : null,
-          encaje: encaje ? encaje.textContent : null};
+          encaje: encaje ? encaje.textContent : null, zona,
+          totales: tot ? Object.assign({t: tot.textContent}, tot.dataset) : null,
+          aviso: av ? Object.assign({t: av.textContent}, av.dataset) : null};
 })()
 """
 # todos los pixeles de un rectangulo del lienzo (en pixeles de pantalla), en RGB y en base64
@@ -312,7 +327,7 @@ PIXELES = r"""
 
 
 async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: int = ALTO, dpr: float = 1) -> dict:
-    out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "ws": [], "ws_abiertos": 0,
+    out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "cinta": [], "perfil": [], "ws": [], "ws_abiertos": 0,
            "pantalla": [ancho, alto, dpr]}
     with K.Chromium(ancho, alto) as c:
         req = urllib.request.Request(f"http://127.0.0.1:{c.puerto}/json/new?about:blank", method="PUT")
@@ -352,7 +367,8 @@ async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: i
                 p, m = e.get("params", {}), e.get("method")
                 if m == "Runtime.exceptionThrown":
                     out["excepciones"].append(json.dumps(p.get("exceptionDetails", {}))[:300])
-                elif m == "Network.requestWillBeSent" and "/api" + "/libro/" in p["request"]["url"]:
+                elif m == "Network.requestWillBeSent" and any(r in p["request"]["url"] for r in (
+                        "/api" + "/libro/", RUTA_CINTA, RUTA_PERFIL)):
                     porid[p["requestId"]] = {"url": p["request"]["url"], "estado": None, "t": p.get("timestamp")}
                 elif m == "Network.responseReceived" and p.get("requestId") in porid:
                     porid[p["requestId"]]["estado"] = p["response"]["status"]
@@ -373,7 +389,8 @@ async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: i
                         x["cuerpo"] = json.loads(base64.b64decode(r["body"]) if r.get("base64Encoded") else r["body"])
                     except (K.SystemExit2, ValueError, KeyError):
                         x["cuerpo"] = None
-                (out["fotos"] if RUTA_FOTOS in x["url"] else out["ultimo"] if RUTA_ULTIMO in x["url"] else []).append(x)
+                (out["fotos"] if RUTA_FOTOS in x["url"] else out["ultimo"] if RUTA_ULTIMO in x["url"]
+                 else out["cinta"] if RUTA_CINTA in x["url"] else out["perfil"] if RUTA_PERFIL in x["url"] else []).append(x)
             out["pixeles"] = {}
             pedir = juez_puntos(out) if not vivo else []
             if pedir:
@@ -716,7 +733,7 @@ def escalera(libros: list[dict], N: int, paso: str, u: str) -> list[dict]:
 
 
 def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, rojos: list, info: list, pref: str,
-                   casa) -> None:
+                   casa, nomed: list | None = None) -> None:
     """La escalera pintada (el DOM) contra la recalculada de los libros que la pagina tenia (los vivos)."""
     vivos = [libros_por_venue[v] for v in e["venues"] if estados.get(v) == "vivo"]
     esp = escalera(vivos, len(e["venues"]), e["paso"], e["unidad"])
@@ -734,16 +751,18 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
             malos.append(f"fila {d.get('nivel')}: nivel/conocen {d.get('k')}/{d.get('n')} y recalculados {x['k']}/{x['n']}")
             continue
         if not x["n"]:
-            if "desconocido" not in f["cls"] or "desconocido" not in " ".join(t) or d.get("compra") is not None:
-                malos.append(f"fila {d.get('nivel')}: DESCONOCIDO y se pinta {t}")
+            if "desconocido" not in f["cls"] or t[2] or t[4] or d.get("compra") is not None:
+                malos.append(f"fila {d.get('nivel')}: lo ausente (DESCONOCIDO) se pinta «{t[2]}» / «{t[4]}», no vacio")
+            elif t[7] != f"0/{len(e['venues'])}":
+                malos.append(f"fila {d.get('nivel')}: escribe conocen «{t[7]}» y son 0/{len(e['venues'])}")
             continue
-        for campo, clave, col in (("compra", "c", 1), ("venta", "v", 3)):
+        for campo, clave, col in (("compra", "c", 2), ("venta", "v", 4)):
             val = float(d.get(campo, "nan"))
             if not abs(val - x[clave]) <= 1e-9 * max(1.0, abs(x[clave])):
                 malos.append(f"fila {d.get('nivel')}: {campo} pintada {d.get(campo)} y recalculada {x[clave]}")
             elif not casa(t[col], repr(x[clave])):
                 malos.append(f"fila {d.get('nivel')}: escribe {campo} «{t[col]}» y vale {x[clave]}")
-        for campo, clave, parcial, col in (("acumCompra", "ac", "pc", 0), ("acumVenta", "av", "pv", 4)):
+        for campo, clave, parcial, col in (("acumCompra", "ac", "pc", 0), ("acumVenta", "av", "pv", 6)):
             if (d.get(campo) is None) != (x[clave] is None):
                 malos.append(f"fila {d.get('nivel')}: acumulada {campo} pintada {d.get(campo)} y recalculada {x[clave]}")
             elif x[clave] is not None and (not abs(float(d[campo]) - x[clave]) <= 1e-9 * max(1.0, abs(x[clave]))
@@ -751,12 +770,213 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
                 malos.append(f"fila {d.get('nivel')}: acumulada «{t[col]}» y recalculada {'≥' if x[parcial] else ''}{x[clave]}")
         if ("mejor-compra" in f["cls"]) != x["mc"] or ("mejor-venta" in f["cls"]) != x["mv"]:
             malos.append(f"fila {d.get('nivel')}: marcas {f['cls']} y la mejor compra/venta recalculada {x['mc']}/{x['mv']}")
-        if t[5] != f"{x['n']}/{len(e['venues'])}":
-            malos.append(f"fila {d.get('nivel')}: escribe conocen «{t[5]}» y son {x['n']}/{len(e['venues'])}")
+        nn = "" if x["n"] == len(e["venues"]) else f"{x['n']}/{len(e['venues'])}"
+        if t[7] != nn:
+            malos.append(f"fila {d.get('nivel')}: escribe conocen «{t[7]}» y le toca «{nn}»")
+    if filas and len(filas) == len(esp) and not (filas[0]["c"][4]["d"].get("rotulo") and filas[-1]["c"][2]["d"].get("rotulo")):
+        malos.append("la frontera de lo conocido no lleva su rotulo")
     if malos:
         rojos.append(f"(F) {pref} la escalera no pinta lo servido: {malos[0]}" + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+    if len(filas) == len(esp):
+        juzga_pro(vio, e, esp, rojos, nomed if nomed is not None else [], info, pref, casa,
+                  suma(vivos, len(e["venues"])))
     info.append(f"(F) {pref} escalera: {len(filas)} filas, {sum(1 for x in esp if x['n'])} niveles conocidos, "
                 f"{len(vivos)} de {len(e['venues'])} venues sumando ({', '.join(f'{v} {estados.get(v)}' for v in e['venues'])})")
+
+
+# --------------------------------------------------------------------------------------------- la escalera profesional
+# (campana 149, ronda A) Recalculado aqui, sin creer a la pagina: las barras (p95 de lo visible, una escala), las
+# grandes (3x la media del lado), los totales visibles, el volumen reciente de la cinta que la pagina uso (las primeras
+# recibidos.cinta respuestas capturadas), la ultima operacion y el maximo / minimo de la sesion UTC.
+RECIENTE_VUELVE_MS, RECIENTE_HUECO_MS, RECIENTE_OLVIDO_MS, GRANDE_X = 2500, 55000, 180000, 3
+
+
+def ms_de(ts: str) -> int:
+    d = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    return (d - datetime(1970, 1, 1, tzinfo=UTC)) // timedelta(milliseconds=1)
+
+
+def p95(xs: list[float]) -> float | None:
+    return sorted(xs)[math.ceil(0.95 * len(xs)) - 1] if xs else None
+
+
+def reciente_vacio() -> dict:
+    return {"primado": False, "corte": None, "vistos": {}, "niveles": {}, "ultimoK": None, "ultima": None,
+            "falta": None, "paginas": 0, "asOf": None, "dia": None, "kmin": None, "kmax": None, "maxMs": None}
+
+
+def suma_reciente(prev: dict, pag: dict, paso: str) -> dict:
+    """El mismo calculo que sumaReciente de libro-calculo.js, escrito aparte."""
+    P = float(paso)
+    s = dict(prev, primado=True, vistos=dict(prev["vistos"]), paginas=prev["paginas"] + 1,
+             niveles={k: dict(x) for k, x in prev["niveles"].items()})
+    ops = [(o, ms_de(o["ts"]), f"{o['venue']}|{o['id']}") for o in pag.get("operaciones") or []]
+    nuevas = [x for x in ops if x[2] not in s["vistos"]]
+    as_of = ms_de(pag["as_of"])
+    if prev["primado"] and not s["falta"]:
+        if pag.get("truncada") and len(nuevas) == len(ops):
+            s["falta"] = {"motivo": "truncada", "pagina": s["paginas"]}
+        elif prev["asOf"] is not None and as_of - prev["asOf"] > RECIENTE_HUECO_MS:
+            s["falta"] = {"motivo": "hueco", "pagina": s["paginas"]}
+    s["asOf"] = as_of
+    nuevas.sort(key=lambda x: (x[1], x[0]["venue"], str(x[0]["id"])))
+    for o, ms, clave in nuevas:
+        s["vistos"][clave] = ms
+        if s["maxMs"] is None or ms > s["maxMs"]:
+            s["maxMs"] = ms
+        k = math.floor(float(o["precio"]) / P + 1e-9)
+        dia = o["ts"][:10]
+        if s["dia"] is None or dia > s["dia"]:
+            s.update(dia=dia, kmin=k, kmax=k)
+        elif dia == s["dia"]:
+            s.update(kmin=min(s["kmin"], k), kmax=max(s["kmax"], k))
+        if not s["ultima"] or ms >= s["ultima"]["ms"]:
+            s["ultima"] = {"k": k, "ms": ms}
+        if prev["primado"] and (s["corte"] is None or ms > s["corte"]):
+            x = s["niveles"].get(k)
+            if x and s["ultimoK"] != k and ms - x["ultMs"] > RECIENTE_VUELVE_MS:
+                x.update(b=0.0, bu=0.0, a=0.0, au=0.0)
+            if not x:
+                x = s["niveles"][k] = {"b": 0.0, "bu": 0.0, "a": 0.0, "au": 0.0, "nb": 0, "na": 0, "ultMs": ms}
+            lado = "b" if o.get("agresor") == "venta" else "a" if o.get("agresor") == "compra" else None
+            if lado:
+                x[lado] += float(o["base"])
+                x[lado + "u"] += float(o["usd"])
+                x["n" + lado] += 1
+            x["ultMs"] = max(x["ultMs"], ms)
+        s["ultimoK"] = k
+    if not prev["primado"]:
+        s["corte"] = s["maxMs"]
+    if s["maxMs"] is not None:
+        s["vistos"] = {c: m for c, m in s["vistos"].items() if m >= s["maxMs"] - RECIENTE_OLVIDO_MS}
+    return s
+
+
+def _igual(a, b: float) -> bool:
+    try:
+        return abs(float(a) - b) <= 1e-9 * max(1.0, abs(b))
+    except (TypeError, ValueError):
+        return False
+
+
+def juzga_pro(vio: dict, e: dict, esp: list[dict], rojos: list, nomed: list, info: list, pref: str, casa,
+              s: dict | None) -> None:
+    filas, z = vio.get("filas") or [], vio.get("zona")
+    if not z:
+        rojos.append(f"(F) {pref} la escalera no deja ver su caja: no se sabe que filas son visibles")
+        return
+    vis = [x for f, x in zip(filas, esp, strict=True) if z["lo"] < f["m"] < z["hi"]]
+    qc = [x["c"] for x in vis if x["n"] and x["c"] > 0]
+    qv = [x["v"] for x in vis if x["n"] and x["v"] > 0]
+    tope = p95(qc + qv)
+    medias = {"c": sum(qc) / len(qc) if qc else None, "v": sum(qv) / len(qv) if qv else None}
+    barras, grandes = [], []
+    for f, x in zip(filas, esp, strict=True):
+        for lado, col in (("c", 2), ("v", 4)):
+            cel, niv = f["c"][col], f["d"].get("nivel")
+            b = cel["d"].get("barra")
+            if not x["n"]:
+                if b is not None or "grande" in cel["cl"].split():
+                    barras.append(f"fila {niv} (desconocida) lleva barra {b}")
+                continue
+            fr = min(1.0, x[lado] / tope) if tope else 0.0
+            if not (_igual(b, fr) and _igual(cel["f"], fr)):
+                barras.append(f"fila {niv} {lado}: data-barra {b} y --f {cel['f']!r}, y le toca {fr} (tope p95 {tope})")
+            g = medias[lado] is not None and x[lado] > 0 and x[lado] >= GRANDE_X * medias[lado]
+            if ("grande" in cel["cl"].split()) != g:
+                grandes.append(f"fila {niv} {lado}: {x[lado]} {'es' if g else 'no es'} >= {GRANDE_X}x la media "
+                               f"{medias[lado]} y la pagina dice {'grande' if not g else 'normal'}")
+    for nombre, malos in (("la barra no es su tamaño", barras), ("una orden grande con otro umbral", grandes)):
+        if malos:
+            rojos.append(f"(F) {pref} {nombre}: {malos[0]}" + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+    # los totales de lo visible
+    tot, conocidas = vio.get("totales") or {}, [x for x in vis if x["n"]]
+    c, v = sum(x["c"] for x in conocidas), sum(x["v"] for x in conocidas)
+    mc, mv = (s or {}).get("compra"), (s or {}).get("venta")  # las mejores de la suma recalculada
+    spread = None if mc is None or mv is None else Decimal(str(mv)) - Decimal(str(mc))
+    mal = []
+    if str(len(conocidas)) != tot.get("filas"):
+        mal.append(f"filas {tot.get('filas')} y visibles conocidas {len(conocidas)}")
+    if conocidas and not (_igual(tot.get("compra"), c) and _igual(tot.get("venta"), v)):
+        mal.append(f"compra/venta {tot.get('compra')}/{tot.get('venta')} y lo visible suma {c}/{v}")
+    if conocidas and c + v > 0 and not _igual(tot.get("pct"), 100 * c / (c + v)):
+        mal.append(f"proporcion {tot.get('pct')} % y le toca {100 * c / (c + v)}")
+    if spread is not None and (tot.get("spread") is None or Decimal(tot["spread"]) != spread):
+        mal.append(f"spread {tot.get('spread')} y le toca {spread}")
+    if mal:
+        rojos.append(f"(F) {pref} los totales son de otra cosa: {mal[0]}")
+    # lo reciente, la ultima operacion y la sesion
+    reg = (vio.get("pintado") or {}).get("escalera") or {}  # el modo que declara; lo que pidio lo dice la red
+    cinta, rec_t = reg.get("cinta"), [(f, i) for f in filas for i in (1, 5)]
+    rcb = vio.get("recibidos") or {}
+    pintado = [f"{f['d'].get('nivel')}:«{f['t'][i]}»" for f, i in rec_t if f["t"][i] or "rec" in f["c"][i]["d"]]
+    if cinta == "fija":
+        if rcb.get("cinta"):
+            rojos.append(f"(F) {pref} se declara vista fija y uso {rcb.get('cinta')} respuestas de la cinta")
+        if pintado:
+            rojos.append(f"(F) {pref} una vista fija pinta volumen reciente: {pintado[0]}")
+        info.append(f"(F) {pref} pro: {len(vis)} filas visibles, tope {tope}; vista fija: sin volumen reciente")
+        return
+    n, resp, npf, resp_p = rcb.get("cinta", 0), vio.get("cinta") or [], rcb.get("perfil", 0), vio.get("perfil") or []
+    if not n:
+        nomed.append(f"(C) {pref} la pagina no uso ninguna respuesta de la cinta: el volumen reciente no se juzga")
+        return
+    if len(resp) < n:
+        nomed.append(f"(C) {pref} la pagina uso {n} respuestas de la cinta y se capturaron {len(resp)}: no se juzga")
+        return
+    rec, estado = reciente_vacio(), "pendiente"
+    for x in resp[:n]:
+        if x.get("estado") == 200 and x.get("cuerpo"):
+            rec, estado = suma_reciente(rec, x["cuerpo"], e["paso"]), "ok"
+        else:
+            estado = "caida"
+    if estado == "caida":
+        if pintado or (vio.get("aviso") or {}).get("cinta") != "caida" or cinta != "caida":
+            rojos.append(f"(F) {pref} la cinta caída se pinta como cifras o no se dice: "
+                         f"{pintado[0] if pintado else 'aviso ' + str((vio.get('aviso') or {}).get('cinta'))}")
+    else:
+        mal, usd = [], e["unidad"] == "usd"
+        for f, i in rec_t:
+            x = rec["niveles"].get(int(f["d"]["k"]))
+            esp_v = None if x is None else (x["bu"] if usd else x["b"]) if i == 1 else (x["au"] if usd else x["a"])
+            d, tx = f["c"][i]["d"].get("rec"), f["t"][i]
+            lado = "@bid" if i == 1 else "@ask"
+            if (d is None) != (esp_v is None) or (esp_v is not None and not _igual(d, esp_v)):
+                mal.append(f"fila {f['d'].get('nivel')} {lado}: pinta {d} y la cinta da {esp_v}")
+            elif esp_v is not None and (casa(tx, repr(esp_v)) if esp_v > 0 else tx == "") is False:
+                mal.append(f"fila {f['d'].get('nivel')} {lado}: escribe «{tx}» y vale {esp_v}")
+            elif esp_v is None and tx:
+                mal.append(f"fila {f['d'].get('nivel')} {lado}: escribe «{tx}» sin ninguna operacion")
+        if mal:
+            rojos.append(f"(F) {pref} el volumen reciente no es el de la cinta: {mal[0]}"
+                         + (f" (y {len(mal) - 1} mas)" if len(mal) > 1 else ""))
+        if (rec["falta"] or {}).get("motivo") != reg.get("falta_cinta"):
+            rojos.append(f"(F) {pref} faltan operaciones: la pagina dice {reg.get('falta_cinta')} y la cinta "
+                         f"{(rec['falta'] or {}).get('motivo')}")
+        ult = {int(f["d"]["k"]) for f in filas if "ultima" in f["c"][3]["cl"].split()}
+        ku = rec["ultima"]["k"] if rec["ultima"] else None
+        if ult != ({ku} & {int(f["d"]["k"]) for f in filas}):
+            rojos.append(f"(F) {pref} la ultima operacion se marca en {sorted(ult)} y fue en el nivel {ku}")
+    if len(resp_p) < npf:
+        nomed.append(f"(C) {pref} la pagina uso {npf} respuestas del perfil y se capturaron {len(resp_p)}: la sesion no se juzga")
+    else:
+        P, lo, hi, dia = float(e["paso"]), None, None, None
+        for x in resp_p[:npf]:
+            if x.get("estado") == 200 and x.get("cuerpo"):
+                ks = [math.floor(float(nv["nivel"]) / P + 0.5) for nv in x["cuerpo"].get("niveles") or []]
+                q = urllib.parse.parse_qs(x["url"].split("?", 1)[-1])
+                lo, hi, dia = (min(ks), max(ks), q["desde"][0][:10]) if ks else (lo, hi, dia)
+        if rec["dia"] is not None and (dia is None or rec["dia"] >= dia):
+            if dia is not None and rec["dia"] > dia:
+                lo = hi = None
+            lo = rec["kmin"] if lo is None else min(lo, rec["kmin"])
+            hi = rec["kmax"] if hi is None else max(hi, rec["kmax"])
+        for clase, kx in (("max-sesion", hi), ("min-sesion", lo)):
+            mar = {int(f["d"]["k"]) for f in filas if clase in f["c"][3]["cl"].split()}
+            if mar != ({kx} & {int(f["d"]["k"]) for f in filas}):
+                rojos.append(f"(F) {pref} el {clase} de la sesion UTC se marca en {sorted(mar)} y es el nivel {kx}")
+    info.append(f"(F) {pref} pro: {len(vis)} filas visibles, tope {tope}, {n} paginas de cinta ({estado}), "
+                f"{len(rec['niveles'])} niveles con reciente, faltan {(rec['falta'] or {}).get('motivo')}")
 
 
 # --------------------------------------------------------------------------------------------- una vista
@@ -806,7 +1026,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
             libros = {f["venue"]: libro(f["venue"], f["compra"], f["venta"], f["compras"], f["ventas"], esp["d"]["paso"])
                       for f in col["fotos"]}
             estados = {v: "vivo" if v in libros else "sin_dato" for v in e["venues"]}
-            juzga_escalera(vio, e, libros, estados, rojos, info, pref, casa)
+            juzga_escalera(vio, e, libros, estados, rojos, info, pref, casa, nomed)
     else:
         juzga_vivo(vio, e, rojos, nomed, info, pref, casa)
     return {"e": e, "q": q, "d": esp["d"], "K110": K110}
@@ -871,7 +1091,7 @@ def juzga_vivo(vio: dict, e: dict, rojos: list, nomed: list, info: list, pref: s
                 rojos.append(f"(F) {pref} {v}: la escalera usa el aviso emitido {pv.get(v, {}).get('emitido_ms')} y el "
                              f"ultimo que proceso es {m.get('emitido_ms')}")
             libros[v] = libro(v, m["compra"], m["venta"], m["compras"], m["ventas"], e["paso"])
-    juzga_escalera(vio, e, libros, estados, rojos, info, pref, casa)
+    juzga_escalera(vio, e, libros, estados, rojos, info, pref, casa, nomed)
     hora = re.search(r"ltimo libro (\d\d:\d\d:\d\d\.\d{3})Z", (vio.get("canal") or {}).get("texto") or "")
     mx = max((m["ts_libro_ms"] for m in ultimo.values() if m.get("tipo") == "libro"), default=None)
     if mx is not None and (not hora or hora.group(1) != datetime.fromtimestamp(mx / 1000, UTC).strftime("%H:%M:%S.%f")[:12]):
