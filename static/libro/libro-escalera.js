@@ -115,6 +115,7 @@ function creaEscalera(raiz, opciones) {
   let alto = leeFila();
   let encima = false;
   let centrar = true;
+  let altoMedido = 0;  // la altura de fila que midio la pinta anterior: sincroniza no fuerza otro layout
   let vistaClave = null;
   let destello = null;
   raiz.style.setProperty('--fila', alto + 'px');
@@ -130,6 +131,7 @@ function creaEscalera(raiz, opciones) {
       const n = Math.min(ESC_FILA_MAX, Math.max(ESC_FILA_MIN, alto - d));
       if (n === alto) return;
       alto = n;
+      altoMedido = 0;
       guardaFila(n);
       raiz.style.setProperty('--fila', n + 'px');
       centrar = true;
@@ -184,7 +186,7 @@ function creaEscalera(raiz, opciones) {
       for (let k = kTop; k >= kBot; k--) cuerpo.appendChild(nueva(k));
       return true;
     }
-    const h = primero.getBoundingClientRect().height;
+    const h = altoMedido || alto;
     let mueve = 0;
     while (cuerpo.firstChild._k > kTop) {
       porK.delete(cuerpo.firstChild._k);
@@ -298,6 +300,7 @@ function creaEscalera(raiz, opciones) {
       const tr = porK.get(kPrecio);
       if (tr) {
         const r = tr.getBoundingClientRect();
+        altoMedido = r.height;
         const dist = (r.top + r.bottom) / 2 - arriba - zonaC;
         if (centrar || (!encima && Math.abs(dist) >= ESC_RECENTRA_FILAS * r.height)) caja.scrollTop += dist;
       }
