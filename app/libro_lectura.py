@@ -171,7 +171,7 @@ async def cobertura(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
 
 
 HONDA_ULTIMA_SQL = """SELECT DISTINCT ON (venue) * FROM libro_honda
-                        WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts > $3 - interval '1 day' AND ts <= $3
+                        WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts > $3::timestamptz - interval '1 day' AND ts <= $3::timestamptz
                         ORDER BY venue, ts DESC"""
 HONDA_RANGO_SQL = """SELECT * FROM libro_honda WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4
                       ORDER BY ts, venue LIMIT $5"""
