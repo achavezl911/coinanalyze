@@ -773,3 +773,25 @@ async def test_las_rutas_de_of5a_dicen_422_y_no_recortan_en_silencio(conn, monke
     with pytest.raises(HTTPException) as exc:
         await api.orderflow_ordenes(_Peticion(symbol="BTC"), symbol="BTC", desde=lec.iso(_m(-120)), limit=5)
     assert exc.value.status_code == 422 and "60 min" in exc.value.detail
+
+
+class _ConexionCancelada:
+    """Una conexion cuya consulta cancela el statement_timeout de app/db.py, como la de ETH 1d en 140."""
+
+    async def fetch(self, *_a, **_k):
+        raise asyncpg.QueryCanceledError("canceling statement due to statement timeout")
+
+
+async def test_footprint_con_tiempo_agotado_dice_503_con_su_porque(monkeypatch):
+    # REMATE 3 (148): una consulta cancelada por tiempo es 503 con su porque, nunca 500
+    async def pasos(_conn):
+        return {"BTC": Decimal("0.1")}
+
+    monkeypatch.setattr(lec, "pasos", pasos)
+    monkeypatch.setattr(api.app.state, "pool", _Pool(_ConexionCancelada()), raising=False)
+    desde, hasta = "2026-10-20T00:00:00Z", "2026-11-03T00:00:00Z"
+    with pytest.raises(HTTPException) as exc:
+        await api.orderflow_footprint(_Peticion(symbol="BTC", marco="1d", desde=desde, hasta=hasta, paso="auto"),
+                                      symbol="BTC", marco="1d", desde=desde, hasta=hasta, paso="auto")
+    assert exc.value.status_code == 503
+    assert exc.value.detail == "la consulta paso de 20 s: pide menos velas o un marco menor"
