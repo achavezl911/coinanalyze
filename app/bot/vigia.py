@@ -41,13 +41,17 @@ BYBIT_MIN = 5
 MARGEN_PARTE = timedelta(minutes=30)
 DISCO_MIN_GB = 5
 GB = 10**9
+NODO_MAX_H = 36  # el nodo copia cada dia: 36 h sin marca es una copia perdida con margen
+NODO_OK = pathlib.Path("/var/lib/coinalyze-bot/respaldo-nodo.ok")  # lo toca el nodo tras cada copia correcta
 
 
 def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_error: str | None, latido: datetime | None,
               parte_hoy: bool, informe_semana: bool, falla_informe: str | None, latido_min: int = LATIDO_MIN,
-              bybit: dict | None = None, disco_libre: int | None = None, respaldo: dict | None = None) -> dict:
-    """{clave: texto} de lo que esta mal AHORA. Pura. disco_libre (bytes) y respaldo (systemctl show) a None: no se
-    pudieron leer (o quien llama no los mira); eso no es un problema, va por sin_juzgar."""
+              bybit: dict | None = None, disco_libre: int | None = None, respaldo: dict | None = None,
+              nodo: datetime | None = None, informe_apagado: bool = False) -> dict:
+    """{clave: texto} de lo que esta mal AHORA. Pura. disco_libre (bytes), respaldo (systemctl show) y nodo (mtime de
+    NODO_OK) a None: no se pudieron leer (o quien llama no los mira); eso no es un problema, va por sin_juzgar.
+    informe_apagado: existe informes/APAGADO, el informe semanal no se espera."""
     out = {}
     if unidad is None:
         out["unidad"] = "no puedo preguntar a systemd por coinalyze-bot"
@@ -59,6 +63,8 @@ def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_er
     juicio, texto = juicio_respaldo(respaldo)
     if juicio == "mal":
         out["respaldo"] = texto
+    if nodo is not None and ahora - nodo > timedelta(hours=NODO_MAX_H):
+        out["respaldo_nodo"] = f"los respaldos no llegan al nodo desde hace {int((ahora - nodo).total_seconds() // 3600)} h"
     if base_error:
         out["base"] = f"la base no contesta: {base_error}"
         return out  # sin base no se puede mirar ni el latido ni el parte
@@ -77,7 +83,7 @@ def problemas(ahora: datetime, unidad: dict | None, monitor: str | None, base_er
     if ahora >= ahora.replace(hour=PARTE_HORA_UTC, minute=0, second=0, microsecond=0) + MARGEN_PARTE and not parte_hoy:
         out[f"parte:{ahora:%Y-%m-%d}"] = f"el parte de hoy ({PARTE_HORA_UTC}:00Z) no salio"
     lunes = (ahora - timedelta(days=ahora.weekday())).replace(hour=13, minute=30, second=0, microsecond=0)
-    if ahora >= lunes and not informe_semana:
+    if ahora >= lunes and not informe_semana and not informe_apagado:
         out[f"informe:{semana_iso(ahora)}"] = "el informe semanal no llego" + (f": {falla_informe}" if falla_informe else "")
     return out
 
@@ -110,24 +116,27 @@ def juicio_respaldo(r: dict | None) -> tuple[str, str]:
     return "bien", ""
 
 
-def sin_leer(disco_libre: int | None, respaldo: dict | None) -> dict:
-    """{clave: causa} de disco/respaldo que no se pudieron juzgar: ni alarman ni resuelven un aviso en pie, y se publican."""
+def sin_leer(disco_libre: int | None, respaldo: dict | None, nodo: datetime | None = None) -> dict:
+    """{clave: causa} de disco/respaldo/respaldo_nodo que no se pudieron juzgar: ni alarman ni resuelven un aviso en pie,
+    y se publican."""
     out = {} if disco_libre is not None else {"disco": "disco: no pude leer el espacio libre de /"}
     juicio, texto = juicio_respaldo(respaldo)
     if juicio == "sin_juzgar":
         out["respaldo"] = texto
+    if nodo is None:
+        out["respaldo_nodo"] = f"respaldo_nodo: no existe o no puedo leer {NODO_OK}"
     return out
 
 
 def sin_juzgar(ahora: datetime, latido: datetime | None, bybit: dict | None, latido_min: int = LATIDO_MIN,
-               disco_libre: int | None = None, respaldo: dict | None = None) -> frozenset:
+               disco_libre: int | None = None, respaldo: dict | None = None, nodo: datetime | None = None) -> frozenset:
     """Lo que AHORA no se puede dar por bueno aunque no salga como problema (remate 8, R2): «bybit» solo se resuelve con el
     bot latiendo, Bybit activo y un tic COMPLETO de hace <= BYBIT_MIN. Sin tic (recien arrancado), con Bybit apagado o con el
     latido parado, no se sabe: el aviso sigue en pie (antes, releer la clave borraba el tic y salia un «resuelto» falso)."""
     tic = _hora((bybit or {}).get("tic")) if isinstance(bybit, dict) else None
     bien = latido is not None and ahora - latido <= timedelta(minutes=latido_min) and isinstance(bybit, dict) \
         and bybit.get("activo") and tic is not None and ahora - tic <= timedelta(minutes=BYBIT_MIN)
-    return (frozenset() if bien else frozenset({"bybit"})) | frozenset(sin_leer(disco_libre, respaldo))
+    return (frozenset() if bien else frozenset({"bybit"})) | frozenset(sin_leer(disco_libre, respaldo, nodo))
 
 
 def transicion(notificados: dict, actuales: dict, base_caida: bool = False, llegados: frozenset = frozenset(),
@@ -194,6 +203,15 @@ def unidad_respaldo() -> dict | None:
                            "ExecMainExitTimestamp")
 
 
+def marca_nodo(f: pathlib.Path = NODO_OK) -> datetime | None:
+    """mtime de la marca que el nodo toca tras cada copia correcta, o None si no existe o no se puede leer."""
+    try:
+        return datetime.fromtimestamp(f.stat().st_mtime, UTC)
+    except OSError as e:
+        print(f"CAUSA=VIGIA_NODO {type(e).__name__}", flush=True)
+        return None
+
+
 def disco_raiz() -> int | None:
     """Bytes disponibles en / para un usuario normal (f_bavail), o None si no se pueden leer."""
     try:
@@ -204,9 +222,10 @@ def disco_raiz() -> int | None:
 
 
 async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, conecta, estado_f: pathlib.Path,
-                 ahora: datetime | None = None, disco_libre: int | None = None, respaldo: dict | None = None) -> dict:
-    """Una pasada del interruptor. conecta(): la conexion a la base (o lanza). Devuelve lo que publica. disco_libre y
-    respaldo los lee principal() (disco_raiz, unidad_respaldo); a None, sin juzgar."""
+                 ahora: datetime | None = None, disco_libre: int | None = None, respaldo: dict | None = None,
+                 nodo: datetime | None = None) -> dict:
+    """Una pasada del interruptor. conecta(): la conexion a la base (o lanza). Devuelve lo que publica. disco_libre,
+    respaldo y nodo los lee principal() (disco_raiz, unidad_respaldo, marca_nodo); a None, sin juzgar."""
     ahora = ahora or datetime.now(UTC)
     previo = lee_estado(estado_f)
     notificados = previo.get("notificados", {}) if isinstance(previo.get("notificados"), dict) else {}
@@ -231,7 +250,8 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
     actuales = problemas(ahora, unidad, entorno.get("MONITOR_SERVICE_RESULT"), base_error, latido, parte_hoy, informe_semana,
                          falla.read_text(encoding="utf-8").strip()[:200] if falla.exists() else None,
-                         int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN), bybit, disco_libre, respaldo)
+                         int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN), bybit, disco_libre, respaldo, nodo,
+                         pathlib.Path(informes, "APAGADO").exists())
     llegados = set()  # de los avisados con fecha que ya no salen, cuales llegaron de verdad (tarde)
     for k in [k for k in notificados if k.startswith(CON_FECHA) and k not in actuales]:
         if db is None or base_error:
@@ -246,7 +266,7 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
             base_error = f"{type(e).__name__} {limpia(str(e))[:120]}"
     nuevos, resueltos, caducados = transicion(notificados, actuales, base_error is not None, frozenset(llegados),
                                               sin_juzgar(ahora, latido, bybit, int(entorno.get("VIGIA_LATIDO_MIN") or LATIDO_MIN),
-                                                         disco_libre, respaldo))
+                                                         disco_libre, respaldo, nodo))
     token, chat = entorno.get("TELEGRAM_BOT_TOKEN"), entorno.get("TELEGRAM_OUTPUT_CHAT_ID") or entorno.get("TELEGRAM_CHAT_ID")
     envio = previo.get("envio", {"ok": None, "ts": None})
     for tipo_msg, texto in mensajes(nuevos, resueltos, notificados, caducados):
@@ -272,7 +292,7 @@ async def pasada(entorno: dict, http: httpx.AsyncClient, unidad: dict | None, co
         escribe_estado(estado_f, js({**previo, "notificados": notificados, "envio": envio}))
         await en_la_base(db, "INSERT INTO bot_evento (tipo, enviada, detalle) VALUES ('vigia', true, $1::jsonb)", js({"texto": texto}))
     publica = {"ts": ahora.isoformat(), "problemas": actuales, "notificados": notificados, "envio": envio,
-               "canal": "puente" if token and chat else "sin canal", "sin_juzgar": sin_leer(disco_libre, respaldo)}
+               "canal": "puente" if token and chat else "sin canal", "sin_juzgar": sin_leer(disco_libre, respaldo, nodo)}
     for texto in publica["sin_juzgar"].values():
         print(f"sin juzgar: {texto}", flush=True)
     escribe_estado(estado_f, js(publica))
@@ -298,7 +318,7 @@ async def principal():
     carpeta = pathlib.Path(os.environ.get("STATE_DIRECTORY") or "/var/lib/coinalyze-bot-vigia")
     async with httpx.AsyncClient() as http:
         p = await pasada(dict(os.environ), http, unidad_bot(), lambda: asyncpg.connect(dsn, timeout=10), carpeta / "estado.json",
-                         disco_libre=disco_raiz(), respaldo=unidad_respaldo())
+                         disco_libre=disco_raiz(), respaldo=unidad_respaldo(), nodo=marca_nodo())
     print(f"vigia: {len(p['problemas'])} problema(s) {sorted(p['problemas'])} · avisados {sorted(p['notificados'])}", flush=True)
 
 
