@@ -275,10 +275,169 @@ function escaleraFamilia(s, paso, unidad) {
   return filas;
 }
 
+/* ------------------------------------------------------------------ la escalera profesional (campana 149, ronda A)
+ * BARRAS (L-03): fraccion = min(1, cantidad / tope), con tope = p95 (rango mas cercano) de las cantidades > 0 de las
+ * filas VISIBLES, los dos lados en UNA escala. GRANDES (L-05): cantidad >= ESC_GRANDE_X x la media de las cantidades > 0
+ * de ese lado en las visibles. TOTALES (L-09): la profundidad visible de cada lado, la proporcion y el spread. */
+const ESC_GRANDE_X = 3;
+
+function p95(xs) {
+  if (!xs.length) return null;
+  const o = xs.slice().sort((a, b) => a - b);
+  return o[Math.ceil(0.95 * o.length) - 1];
+}
+
+function medidasVisibles(filas) {
+  const qc = [];
+  const qv = [];
+  filas.forEach((f) => {
+    if (!f.n) return;
+    if (f.compra > 0) qc.push(f.compra);
+    if (f.venta > 0) qv.push(f.venta);
+  });
+  const media = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+  return { tope: p95(qc.concat(qv)), media_compra: media(qc), media_venta: media(qv) };
+}
+
+function fraccionBarra(q, tope) {
+  return tope > 0 ? Math.min(1, q / tope) : 0;
+}
+
+function esGrande(q, media) {
+  return media !== null && q > 0 && q >= ESC_GRANDE_X * media;
+}
+
+function decimales(x) {
+  return (String(x).split('.')[1] || '').length;
+}
+
+function totalesVisibles(filas, mejorCompra, mejorVenta) {
+  let c = 0;
+  let v = 0;
+  let n = 0;
+  filas.forEach((f) => {
+    if (!f.n) return;
+    c += f.compra;
+    v += f.venta;
+    n += 1;
+  });
+  const spread = mejorCompra === null || mejorVenta === null ? null
+    : (Number(mejorVenta) - Number(mejorCompra)).toFixed(Math.max(decimales(mejorCompra), decimales(mejorVenta)));
+  if (!n) return { filas: 0, compra: null, venta: null, pct_compra: null, spread };
+  return { filas: n, compra: c, venta: v, pct_compra: c + v > 0 ? (100 * c) / (c + v) : null, spread };
+}
+
+/* EL VOLUMEN RECIENTE @bid / @ask (L-07), de las paginas de /api/orderflow/cinta EN EL ORDEN EN QUE LLEGAN. Sin reloj:
+ * todo sale de las horas de las operaciones y del as_of de cada pagina. Devuelve un estado NUEVO.
+ *   La PRIMERA pagina solo marca lo visto (la escalera empieza vacia): cuenta lo que llega despues.
+ *   Se deduplica por venue e id. Nivel = el de la escalera. «venta» suma a @bid y «compra» a @ask, en base y en USD.
+ *   Un nivel se reinicia si el precio (la ultima operacion) estaba en otro y vuelve tras mas de RECIENTE_VUELVE_MS.
+ *   FALTAN OPERACIONES si una pagina truncada no solapa con lo ya visto, o si entre dos paginas buenas pasaron mas de
+ *   RECIENTE_HUECO_MS (la pagina cubre 1 min): la marca se queda hasta limpiaReciente. */
+const RECIENTE_VUELVE_MS = 2500;
+const RECIENTE_HUECO_MS = 55000;
+const RECIENTE_OLVIDO_MS = 180000;
+
+function recienteVacio() {
+  return { primado: false, corte: null, vistos: new Map(), niveles: new Map(), ultimoK: null, ultima: null,
+           falta: null, paginas: 0, asOf: null, dia: null, kmin: null, kmax: null, maxMs: null };
+}
+
+function ordenOps(x, y) {
+  if (x.ms !== y.ms) return x.ms - y.ms;
+  if (x.o.venue !== y.o.venue) return x.o.venue < y.o.venue ? -1 : 1;
+  const a = String(x.o.id);
+  const b = String(y.o.id);
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function sumaReciente(prev, pagina, paso) {
+  const P = Number(paso);
+  const s = Object.assign({}, prev, { primado: true, vistos: new Map(prev.vistos), niveles: new Map(),
+                                      paginas: prev.paginas + 1 });
+  prev.niveles.forEach((x, k) => s.niveles.set(k, Object.assign({}, x)));
+  const ops = (pagina.operaciones || []).map((o) => ({ o, ms: Date.parse(o.ts), clave: o.venue + '|' + o.id }));
+  const nuevas = ops.filter((x) => !s.vistos.has(x.clave));
+  const asOf = Date.parse(pagina.as_of);
+  if (prev.primado && !s.falta) {
+    if (pagina.truncada && nuevas.length === ops.length) s.falta = { motivo: 'truncada', pagina: s.paginas };
+    else if (prev.asOf !== null && asOf - prev.asOf > RECIENTE_HUECO_MS) s.falta = { motivo: 'hueco', pagina: s.paginas };
+  }
+  s.asOf = asOf;
+  nuevas.sort(ordenOps);
+  nuevas.forEach(({ o, ms, clave }) => {
+    s.vistos.set(clave, ms);
+    if (s.maxMs === null || ms > s.maxMs) s.maxMs = ms;
+    const k = Math.floor(Number(o.precio) / P + 1e-9);
+    const dia = o.ts.slice(0, 10);
+    if (s.dia === null || dia > s.dia) Object.assign(s, { dia, kmin: k, kmax: k });
+    else if (dia === s.dia) Object.assign(s, { kmin: Math.min(s.kmin, k), kmax: Math.max(s.kmax, k) });
+    if (!s.ultima || ms >= s.ultima.ms) {
+      s.ultima = { k, ms, ts: o.ts, venue: o.venue, id: o.id, precio: o.precio, base: Number(o.base),
+                   usd: Number(o.usd), agresor: o.agresor };
+    }
+    if (prev.primado && (s.corte === null || ms > s.corte)) {
+      let x = s.niveles.get(k);
+      if (x && s.ultimoK !== k && ms - x.ultMs > RECIENTE_VUELVE_MS) Object.assign(x, { b: 0, bu: 0, a: 0, au: 0 });
+      if (!x) {
+        x = { b: 0, bu: 0, a: 0, au: 0, nb: 0, na: 0, ultMs: ms };
+        s.niveles.set(k, x);
+      }
+      const lado = o.agresor === 'venta' ? 'b' : o.agresor === 'compra' ? 'a' : null;
+      if (lado) {
+        x[lado] += Number(o.base);
+        x[lado + 'u'] += Number(o.usd);
+        x['n' + lado] += 1;
+      }
+      x.ultMs = Math.max(x.ultMs, ms);
+    }
+    s.ultimoK = k;
+  });
+  if (!prev.primado) s.corte = s.maxMs;
+  if (s.maxMs !== null) s.vistos.forEach((ms, c) => { if (ms < s.maxMs - RECIENTE_OLVIDO_MS) s.vistos.delete(c); });
+  return s;
+}
+
+/* El boton Limpiar: lo acumulado y la marca de faltan, fuera; lo visto se queda (no se vuelve a contar). */
+function limpiaReciente(prev) {
+  return Object.assign({}, prev, { niveles: new Map(), falta: null, corte: prev.primado ? prev.maxMs : null });
+}
+
+/* Lo reciente de un nivel en la unidad de la vista: [@bid, @ask], o null si ninguna operacion contada cayo en el. */
+function recienteEn(rec, k, unidad) {
+  const x = rec && rec.niveles.get(k);
+  if (!x) return null;
+  return unidad === 'usd' ? [x.bu, x.au] : [x.b, x.a];
+}
+
+/* MAXIMO Y MINIMO DE LA SESION UTC: los niveles extremos de /api/orderflow/perfil desde las 00:00Z (`perfil` =
+ * { dia, niveles }), ampliados por la cinta del mismo dia. Un dia nuevo en la cinta deja atras lo del perfil. */
+function extremosSesion(perfil, rec, paso) {
+  const P = Number(paso);
+  let lo = null;
+  let hi = null;
+  let dia = null;
+  if (perfil && perfil.niveles.length) {
+    const ks = perfil.niveles.map((n) => kDe(n.nivel, P));
+    lo = Math.min(...ks);
+    hi = Math.max(...ks);
+    dia = perfil.dia;
+  }
+  if (rec && rec.dia !== null && (dia === null || rec.dia >= dia)) {
+    if (dia !== null && rec.dia > dia) lo = hi = null;
+    dia = rec.dia;
+    lo = lo === null ? rec.kmin : Math.min(lo, rec.kmin);
+    hi = hi === null ? rec.kmax : Math.max(hi, rec.kmax);
+  }
+  return lo === null ? null : { lo, hi, dia, de_perfil: !!(perfil && perfil.niveles.length) };
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     LIBRO_ACTIVOS, LIBRO_VENUES, LIBRO_PASO, LIBRO_VENTANAS, LIBRO_ESCRITO_S, libroVenues, rotuloFamilia, esMultiplo,
     leeHashLibro, escribeHashLibro, cadaPara, ventanaLibro, kDe, nivelTexto, libroDe, enNivel, sumaFamilia,
     estadoColumna, columnasDeFotos, fotoComoAviso, enUnidad, escalaPercentil, escaleraFamilia,
+    ESC_GRANDE_X, RECIENTE_VUELVE_MS, RECIENTE_HUECO_MS, p95, medidasVisibles, fraccionBarra, esGrande,
+    totalesVisibles, recienteVacio, sumaReciente, limpiaReciente, recienteEn, extremosSesion,
   };
 }

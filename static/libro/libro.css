@@ -36,7 +36,11 @@
   min-height: 0;
   border: 1px solid var(--borde);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 12px;
+  /* E-02: las barras van en el color del comprador y del vendedor CON ALFA (el texto lleva el fuerte) */
+  --esc-barra-compra: color-mix(in srgb, var(--comprador) 24%, transparent);
+  --esc-barra-venta: color-mix(in srgb, var(--vendedor) 24%, transparent);
+  --esc-destello: color-mix(in srgb, var(--acento) 45%, transparent);
 }
 
 .esc-cabeza {
@@ -46,9 +50,16 @@
   line-height: 1.5;
 }
 
+.esc-marco {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 .esc-tabla {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-anchor: none; /* las filas se compensan a mano: sin el anclaje del navegador */
   min-height: 0;
 }
 
@@ -70,7 +81,7 @@
 
 .escalera td {
   text-align: right;
-  padding: 1px 6px;
+  padding: 0 6px;
   white-space: nowrap;
 }
 
@@ -156,4 +167,126 @@
 .muestra.pendiente {
   background: #1e242e;
   border: 1px dashed var(--borde-hueco);
+}
+/* ---------------------------------------------------------------- la escalera profesional (campana 149, ronda A) */
+.esc-mandos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--borde);
+}
+.esc-mandos button {
+  font: inherit;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  color: var(--tx-mudo);
+  background: var(--bg-strip);
+  border: 1px solid var(--borde);
+  cursor: pointer;
+}
+.esc-mandos button[aria-pressed='true'] {
+  color: var(--tx);
+  border-color: var(--acento);
+}
+.esc-aviso {
+  flex: 1 1 auto;
+  color: var(--tx-debil);
+  font-size: 10.5px;
+  line-height: 1.3;
+  text-align: right;
+}
+.esc-aviso[data-falta],
+.esc-aviso[data-cinta='caida'] {
+  color: var(--ambar);
+}
+#esc-filas {
+  table-layout: fixed;
+}
+#esc-filas tbody tr {
+  height: var(--fila, 18px);
+  line-height: calc(var(--fila, 18px) - 2px);
+}
+#esc-filas th.rec { width: 15%; }
+#esc-filas th.q { width: 19%; }
+#esc-filas th.nivel { width: 22%; }
+#esc-filas th.n { width: 10%; }
+#esc-filas th.acum { width: 15%; }
+.escalera:not(.con-acum) #esc-filas .acum {
+  display: none;
+}
+#esc-filas tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+/* la mejor compra y la mejor venta: la fila entera, tenue */
+#esc-filas tr.mejor-compra td {
+  background-color: rgba(96, 165, 250, 0.08);
+}
+#esc-filas tr.mejor-venta td {
+  background-color: rgba(224, 90, 90, 0.08);
+}
+#esc-filas td.c {
+  color: var(--comprador-fuerte);
+  background-image: linear-gradient(to right, var(--esc-barra-compra) calc(var(--f, 0) * 100%), transparent 0);
+}
+#esc-filas td.v {
+  color: var(--vendedor-fuerte);
+  background-image: linear-gradient(to left, var(--esc-barra-venta) calc(var(--f, 0) * 100%), transparent 0);
+}
+#esc-filas td.c.grande,
+#esc-filas td.v.grande {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+#esc-filas td.rec {
+  color: var(--tx-mudo);
+}
+#esc-filas td.rec.b {
+  text-align: left;
+}
+#esc-filas td.nivel {
+  position: relative;
+}
+#esc-filas td.nivel.ultima {
+  color: var(--acento);
+  box-shadow: inset 0 0 0 1px var(--acento);
+}
+#esc-filas td.nivel.ultima::after {
+  content: attr(data-ultima);
+  position: absolute;
+  right: 2px;
+  font-size: 9px;
+  color: var(--acento);
+}
+#esc-filas td.nivel.max-sesion::before,
+#esc-filas td.nivel.min-sesion::before {
+  position: absolute;
+  left: 2px;
+  font-size: 9px;
+  color: var(--tx-mudo);
+}
+#esc-filas td.nivel.max-sesion::before {
+  content: 'máx';
+}
+#esc-filas td.nivel.min-sesion::before {
+  content: 'mín';
+}
+#esc-filas td[data-rotulo]::after {
+  content: attr(data-rotulo);
+  font-size: 9.5px;
+  color: var(--tx-debil);
+}
+.esc-centro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed rgba(242, 204, 96, 0.25);
+  pointer-events: none;
+}
+.esc-totales {
+  padding: 3px 8px;
+  border-top: 1px solid var(--borde);
+  color: var(--tx-mudo);
+  font-size: 11px;
 }

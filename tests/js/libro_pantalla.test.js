@@ -128,3 +128,90 @@ test('cada celda, al menos 2x2 pixeles de pantalla: lo que no cabe no se aleja, 
   assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 120), [100, 200]);
   assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 390), [300, 400]);
 });
+
+// ------------------------------------------------------------------ la escalera profesional (campana 149, ronda A)
+test('las barras: p95 de lo visible en UNA escala para los dos lados, y min(1, q/tope)', () => {
+  assert.strictEqual(C.p95([]), null);
+  assert.strictEqual(C.p95([5, 1, 3]), 5);
+  const xs = Array.from({ length: 20 }, (_, i) => i + 1);
+  assert.strictEqual(C.p95(xs), 19);
+  const filas = [{ n: 2, compra: 0, venta: 4 }, { n: 1, compra: 2, venta: 0 }, { n: 0 }, { n: 2, compra: 6, venta: 8 }];
+  const m = C.medidasVisibles(filas);
+  assert.strictEqual(m.tope, 8);
+  assert.strictEqual(m.media_compra, 4);
+  assert.strictEqual(m.media_venta, 6);
+  assert.strictEqual(C.fraccionBarra(4, 8), 0.5);
+  assert.strictEqual(C.fraccionBarra(20, 8), 1);
+  assert.strictEqual(C.fraccionBarra(3, null), 0);
+});
+
+test('una orden grande: >= 3x la media de su lado en lo visible, sin umbral absoluto', () => {
+  assert.strictEqual(C.ESC_GRANDE_X, 3);
+  assert.strictEqual(C.esGrande(3.1, 1), true);
+  assert.strictEqual(C.esGrande(2.9, 1), false);
+  assert.strictEqual(C.esGrande(3, 1), true);
+  assert.strictEqual(C.esGrande(5, null), false);
+});
+
+test('los totales: la profundidad visible de cada lado, la proporcion y el spread', () => {
+  const t = C.totalesVisibles([{ n: 1, compra: 3, venta: 1 }, { n: 0 }, { n: 2, compra: 1, venta: 3 }], '100.5', '101');
+  assert.deepStrictEqual(t, { filas: 2, compra: 4, venta: 4, pct_compra: 50, spread: '0.5' });
+  const v = C.totalesVisibles([{ n: 0 }], '10', '11');
+  assert.deepStrictEqual(v, { filas: 0, compra: null, venta: null, pct_compra: null, spread: '1' });
+});
+
+function pag(asOf, ops, truncada) {
+  return { as_of: asOf, truncada: !!truncada,
+           operaciones: ops.map(([s, v, id, precio, base, agresor]) => ({ ts: '2026-11-03T01:00:' + s + 'Z', venue: v,
+             id, precio, base, usd: base * precio, agresor })) };
+}
+
+test('lo reciente: la primera pagina no cuenta, se deduplica por venue e id, venta a @bid y compra a @ask', () => {
+  let r = C.sumaReciente(C.recienteVacio(), pag('2026-11-03T01:00:10Z', [['05.000', 'a', 1, '100', 1, 'venta']]), '10');
+  assert.strictEqual(r.niveles.size, 0);
+  assert.strictEqual(r.ultima.k, 10);
+  r = C.sumaReciente(r, pag('2026-11-03T01:00:11Z', [['10.500', 'a', 2, '104', 2, 'compra'],
+    ['10.000', 'b', 1, '105', 0.5, 'venta'], ['05.000', 'a', 1, '100', 1, 'venta']]), '10');
+  assert.deepStrictEqual(C.recienteEn(r, 10, 'base'), [0.5, 2]);
+  assert.deepStrictEqual(C.recienteEn(r, 10, 'usd'), [52.5, 208]);
+  // la misma pagina otra vez: nada nuevo
+  const r2 = C.sumaReciente(r, pag('2026-11-03T01:00:12Z', [['10.500', 'a', 2, '104', 2, 'compra']]), '10');
+  assert.deepStrictEqual(C.recienteEn(r2, 10, 'base'), [0.5, 2]);
+  assert.strictEqual(r2.falta, null);
+  // Limpiar: vacio, y lo ya visto no vuelve a contar
+  const r3 = C.sumaReciente(C.limpiaReciente(r2), pag('2026-11-03T01:00:13Z', [['10.500', 'a', 2, '104', 2, 'compra']]), '10');
+  assert.strictEqual(C.recienteEn(r3, 10, 'base'), null);
+});
+
+test('lo reciente: un nivel se reinicia si el precio se fue y vuelve tras mas de 2500 ms; no si vuelve antes', () => {
+  let r = C.sumaReciente(C.recienteVacio(), pag('2026-11-03T01:00:01Z', []), '10');
+  r = C.sumaReciente(r, pag('2026-11-03T01:00:20Z', [['10.000', 'a', 1, '100', 1, 'venta'],
+    ['11.000', 'a', 2, '110', 1, 'venta'], ['12.000', 'a', 3, '101', 1, 'compra']]), '10');
+  assert.deepStrictEqual(C.recienteEn(r, 10, 'base'), [1, 1]);
+  r = C.sumaReciente(r, pag('2026-11-03T01:00:21Z', [['13.000', 'a', 4, '110', 1, 'venta'],
+    ['15.600', 'a', 5, '100', 2, 'compra']]), '10');
+  assert.deepStrictEqual(C.recienteEn(r, 10, 'base'), [0, 2]);
+});
+
+test('lo reciente: una pagina truncada que no solapa dice FALTAN y la marca queda hasta Limpiar', () => {
+  let r = C.sumaReciente(C.recienteVacio(), pag('2026-11-03T01:00:01Z', [['01.000', 'a', 1, '100', 1, 'venta']]), '10');
+  r = C.sumaReciente(r, pag('2026-11-03T01:00:30Z', [['30.000', 'a', 9, '100', 1, 'venta']], true), '10');
+  assert.strictEqual(r.falta.motivo, 'truncada');
+  r = C.sumaReciente(r, pag('2026-11-03T01:00:31Z', [['31.000', 'a', 10, '100', 1, 'venta'],
+    ['30.000', 'a', 9, '100', 1, 'venta']], true), '10');
+  assert.strictEqual(r.falta.motivo, 'truncada');
+  assert.strictEqual(C.limpiaReciente(r).falta, null);
+  // truncada pero solapa: no falta nada
+  let s = C.sumaReciente(C.recienteVacio(), pag('2026-11-03T01:00:01Z', [['01.000', 'a', 1, '100', 1, 'venta']]), '10');
+  s = C.sumaReciente(s, pag('2026-11-03T01:00:02Z', [['02.000', 'a', 2, '100', 1, 'venta'],
+    ['01.000', 'a', 1, '100', 1, 'venta']], true), '10');
+  assert.strictEqual(s.falta, null);
+});
+
+test('maximo y minimo de la sesion: los del perfil, ampliados por la cinta del mismo dia', () => {
+  const r = C.sumaReciente(C.recienteVacio(), pag('2026-11-03T01:00:01Z', [['01.000', 'a', 1, '130', 1, 'venta']]), '10');
+  const e = C.extremosSesion({ dia: '2026-11-03', niveles: [{ nivel: '100' }, { nivel: '120' }] }, r, '10');
+  assert.deepStrictEqual(e, { lo: 10, hi: 13, dia: '2026-11-03', de_perfil: true });
+  assert.deepStrictEqual(C.extremosSesion(null, r, '10'), { lo: 13, hi: 13, dia: '2026-11-03', de_perfil: false });
+  assert.strictEqual(C.extremosSesion(null, C.recienteVacio(), '10'), null);
+});
