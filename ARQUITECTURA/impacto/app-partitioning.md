@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 30 | 0 | **0** | 56 ↑ | **0** |
-| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 25 | 0 | **0** | 22 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 32 | 0 | **0** | 56 ↑ | **0** |
+| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 27 | 0 | **0** | 22 ↑ | **0** |
 
 ## apply_temporal_retention
 
-`app/partitioning.py:30` · clave completa `app.partitioning.apply_temporal_retention`
+`app/partitioning.py:32` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 92 · **cota superior: 56** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -181,9 +181,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## ensure_temporal_partitions
 
-`app/partitioning.py:25` · clave completa `app.partitioning.ensure_temporal_partitions`
+`app/partitioning.py:27` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 92 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 

@@ -8,19 +8,19 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_escalera`](#-escalera) | 263 | 1 | **0** | 0 | **1** |
-| [`mensaje`](#mensaje) | 280 | 1 | **0** | 0 | **1** |
-| [`parametros`](#parametros) | 291 | 1 | **0** | 0 | **1** |
-| [`paso_de`](#paso-de) | 58 | 1 | **0** | 0 | **1** |
-| [`reagrega`](#reagrega) | 70 | 1 | **0** | 0 | **1** |
-| [`ultimo`](#ultimo) | 373 | 1 | **0** | 0 | **1** |
-| [`venues_de`](#venues-de) | 48 | 1 | **0** | 0 | **1** |
+| [`_escalera`](#-escalera) | 326 | 1 | **0** | 0 | **1** |
+| [`mensaje`](#mensaje) | 343 | 1 | **0** | 0 | **1** |
+| [`parametros`](#parametros) | 354 | 1 | **0** | 0 | **1** |
+| [`paso_de`](#paso-de) | 59 | 1 | **0** | 0 | **1** |
+| [`reagrega`](#reagrega) | 71 | 1 | **0** | 0 | **1** |
+| [`ultimo`](#ultimo) | 436 | 1 | **0** | 0 | **1** |
+| [`venues_de`](#venues-de) | 49 | 1 | **0** | 0 | **1** |
 
 ## _escalera
 
-`app/libro_lectura.py:263` · clave completa `app.libro_lectura._escalera`
+`app/libro_lectura.py:326` · clave completa `app.libro_lectura._escalera`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -41,9 +41,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## mensaje
 
-`app/libro_lectura.py:280` · clave completa `app.libro_lectura.mensaje`
+`app/libro_lectura.py:343` · clave completa `app.libro_lectura.mensaje`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -64,9 +64,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## parametros
 
-`app/libro_lectura.py:291` · clave completa `app.libro_lectura.parametros`
+`app/libro_lectura.py:354` · clave completa `app.libro_lectura.parametros`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -87,9 +87,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## paso_de
 
-`app/libro_lectura.py:58` · clave completa `app.libro_lectura.paso_de`
+`app/libro_lectura.py:59` · clave completa `app.libro_lectura.paso_de`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -110,9 +110,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## reagrega
 
-`app/libro_lectura.py:70` · clave completa `app.libro_lectura.reagrega`
+`app/libro_lectura.py:71` · clave completa `app.libro_lectura.reagrega`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -133,9 +133,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## ultimo
 
-`app/libro_lectura.py:373` · clave completa `app.libro_lectura.ultimo`
+`app/libro_lectura.py:436` · clave completa `app.libro_lectura.ultimo`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -156,9 +156,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## venues_de
 
-`app/libro_lectura.py:48` · clave completa `app.libro_lectura.venues_de`
+`app/libro_lectura.py:49` · clave completa `app.libro_lectura.venues_de`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -175,5 +175,5 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

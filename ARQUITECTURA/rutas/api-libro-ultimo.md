@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro_ultimo` · `app/api.py:3960` (cuerpo hasta la 3973) · decorador en la linea 3959.
+Handler `libro_ultimo` · `app/api.py:3975` (cuerpo hasta la 3988) · decorador en la linea 3974.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `libro_ultimo` · `app/api.py:3960` (cuerpo hasta la 3973) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3973 |
+| `as_of` | literal en app/api.py:3988 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -36,7 +36,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `orderflow_paso` — `sql/schema.sql:2934`, 2 columnas
+- `orderflow_paso` — `sql/schema.sql:2936`, 2 columnas
   - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
     O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
     o el SQL se construye en ejecucion y el analisis estatico no lo ve.
@@ -50,16 +50,16 @@ Llamadas directas del handler:
 
 - `app.api._utc_iso` — `app/api.py:2467`
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2587`
-- `app.libro_lectura.ultimo` — `app/libro_lectura.py:373`
+- `app.libro_lectura.ultimo` — `app/libro_lectura.py:436`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.libro_lectura._escalera` — `app/libro_lectura.py:263`
-- `app.libro_lectura.mensaje` — `app/libro_lectura.py:280`
-- `app.libro_lectura.parametros` — `app/libro_lectura.py:291`
-- `app.libro_lectura.paso_de` — `app/libro_lectura.py:58`
-- `app.libro_lectura.reagrega` — `app/libro_lectura.py:70`
-- `app.libro_lectura.venues_de` — `app/libro_lectura.py:48`
+- `app.libro_lectura._escalera` — `app/libro_lectura.py:326`
+- `app.libro_lectura.mensaje` — `app/libro_lectura.py:343`
+- `app.libro_lectura.parametros` — `app/libro_lectura.py:354`
+- `app.libro_lectura.paso_de` — `app/libro_lectura.py:59`
+- `app.libro_lectura.reagrega` — `app/libro_lectura.py:71`
+- `app.libro_lectura.venues_de` — `app/libro_lectura.py:49`
 - `app.orderflow.nivel_de` — `app/orderflow.py:270`
 - `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:72`
 - `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:97`
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 422 | — | `app/api.py:2596` | una funcion de su cierre |
-| 422 | — | `app/api.py:3972` | el propio handler |
+| 422 | — | `app/api.py:3987` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -131,8 +131,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
 | `app.api.libro_ultimo` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.libro_lectura._escalera` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-libro_lectura.md) |
 | `app.libro_lectura.mensaje` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-libro_lectura.md) |
