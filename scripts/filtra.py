@@ -41,6 +41,8 @@ def _ms(f: dict, *claves: str) -> int | None:
             continue
     return None
 
+NO_MUEVE = {"Funding"}  # todo lo demas mueve la posicion: Trade, BustTrade (liquidacion), AdlTrade, Delivery, Settle...
+
 
 def reconstruye(ejecuciones: list[dict]) -> tuple[list[dict], dict]:
     """Operaciones de plano a plano. Devuelve (operaciones, causas de lo que no cuenta)."""
@@ -49,7 +51,7 @@ def reconstruye(ejecuciones: list[dict]) -> tuple[list[dict], dict]:
     for i, f in enumerate(ejecuciones):
         tipo = str(f.get("execType", ""))
         t, q = _ms(f, "execTime"), _d(f.get("execQty"))
-        if tipo != "Trade":
+        if tipo in NO_MUEVE:
             c = f"ejecucion execType={tipo or '?'} (no cuenta)"
         elif t is None or q <= 0 or f.get("side") not in ("Buy", "Sell") or not f.get("symbol"):
             c = "ejecucion Trade ilegible (sin hora, cantidad o lado)"

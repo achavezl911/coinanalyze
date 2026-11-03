@@ -16,9 +16,10 @@ if [[ $EUID -ne 0 ]]; then
   fi
 fi
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
-BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-14}
+# 4 y no 14: la historia larga vive en el nodo, que copia cada dia los cifrados con sha256 y manifiesto.
+BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-4}
 # LOS VOLCADOS PRE-DESPLIEGUE VIVEN MENOS QUE LOS CIFRADOS, y son dos vidas distintas a
-# proposito. El cifrado es la copia de seguridad de verdad y se guarda dos semanas. El
+# proposito. El cifrado es la copia de seguridad de verdad y se guarda cuatro dias aqui. El
 # pre-despliegue solo sirve para revertir EL despliegue que acaba de pasar, asi que a los tres
 # dias ya no lo va a usar nadie -y pesa 419 MB de media, con ~2.8 despliegues al dia medidos el
 # 2026-09-08: 1.17 GB diarios si nadie los borra-. Decision de Alejandro, 2026-09-08.

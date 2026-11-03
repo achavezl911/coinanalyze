@@ -77,6 +77,22 @@ def test_reconstruye_parciales_volteo_y_funding():
     assert eth[0]["fee"] + eth[1]["fee"] == fi._d("0.0123") * 3
 
 
+def test_una_liquidacion_tambien_cierra():
+    t = T0 + 10 * H
+    e = [ej("BTCUSDT", "Buy", "0.1371", "43217.5531", t),
+         ej("BTCUSDT", "Sell", "0.0517", "43011.9917", t + H, tipo="Funding"),
+         ej("BTCUSDT", "Sell", "0.1371", "41003.1171", t + 2 * H, tipo="BustTrade"),  # la liquidacion cierra el largo
+         ej("BTCUSDT", "Sell", "0.0503", "41501.7713", t + 3 * H),
+         ej("BTCUSDT", "Buy", "0.0503", "41355.1239", t + 4 * H)]
+    c = [ci("BTCUSDT", "Sell", t + 2 * H, "-303.0011", "5925.1113"), ci("BTCUSDT", "Buy", t + 4 * H, "7.3317", "2087.5339")]
+    ops, causas = fi.reconstruye(e)
+    assert causas == {"ejecucion execType=Funding (no cuenta)": 1}  # el Funding sigue sin contar
+    ops.sort(key=lambda o: o["ini"])
+    assert [(o["lado"], o["ini"], o["fin"]) for o in ops] == [(1, t, t + 2 * H), (-1, t + 3 * H, t + 4 * H)]
+    assert fi.asigna(ops, c) == {}
+    assert [o["n_cierres"] for o in ops] == [1, 1]
+
+
 def test_asigna_cierres_y_rendimiento():
     p = privado()
     ops, _ = fi.reconstruye(p["ejecuciones"])

@@ -140,6 +140,18 @@ planta_pagina flujo/flujo-dibujo.js 's/^      if (L\.sigue) L\.fin = L\.modelo\.
 juzga_plantado seguir_que_no_para R "con el seguimiento parado llego una vela nueva" $m "una vela nueva mueve la vista parada"
 planta_pagina flujo/flujo.css 's/^  --comprador: #60a5fa;$/  --comprador: #3ecf8e;/' 1; m=$?
 juzga_plantado comprador_verde E "E-02" $m "el comprador vuelve al verde de antes"
+# remate 1 y su adenda (148): la fuente por vista y el precio en vivo
+planta_pagina flujo/flujo-dibujo.js 's/^    L\.fuente = fuenteDeLaVista(ctx, g, y, m, i0, i1);$/    L.fuente = fuenteDe(L.fila);/' 1; m=$?
+juzga_plantado fuente_de_hoy T "la mayor con la que cabe|acercar no esconde" $m "la fuente de antes del remate: fuenteDe(fila), acercar esconde cifras"
+planta_pagina flujo/flujo-app.js 's/venues: ref, minutos: 1, limit: 1 }/venues: FAMILIAS[VISTA.familia].venues.find((x) => x !== ref) || ref, minutos: 1, limit: 1 }/' 1; m=$?
+juzga_plantado vivo_de_otro_venue V "la linea esta en el precio de" $m "el precio en vivo de otro venue que el de referencia"
+planta_pagina flujo/flujo-dibujo.js 's/^    const yv = Math\.round(y(e\.precio)) + 0\.5;$/    const yv = (L.yVivo ??= Math.round(y(e.precio)) + 0.5);/' 1; m=$?
+juzga_plantado vivo_que_no_sigue_el_eje V "no se mueve con el eje" $m "la linea se queda en la y de su primer pintado"
+planta_pagina flujo/flujo-dibujo.js 's/^  const parado = !d\.ok || edad > VIVO_TOPE_S;$/  const parado = !d.ok;/' 1; m=$?
+juzga_plantado vivo_que_no_avisa V "no avisa" $m "la etiqueta no avisa de la cinta parada"
+# remate 2 (148): la regla de antes, los decimales de VOLUMEN de E-04 en el precio en vivo (BTC 3: 76996.900; SOL 1: 92.3)
+planta_pagina flujo/flujo-dibujo.js 's/etiquetaVivo(L\.vivo, VIVO_DECIMALES, Date\.now());/etiquetaVivo(L.vivo, DECIMALES[m.activo] ?? 2, Date.now());/' 1; m=$?
+juzga_plantado vivo_decimales_de_volumen V "la etiqueta dice .* y la ultima operacion de .* que llego es" $m "el precio en vivo con los decimales de E-04"
 
 echo "== lo que no se puede medir: NO MEDIDO, ni ROJO ni VERDE"
 echo sin_pagina > "$T/plantado"
