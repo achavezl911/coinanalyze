@@ -39,13 +39,21 @@
         <button type="button" data-valor="base">BASE</button>
         <button type="button" data-valor="usd">USD</button>
       </div>
-      <!-- F-01: los modos de la celda, siempre a la vista -->
-      <div class="seg" id="sel-celda" role="group" aria-label="Lo que dice cada celda">
-        <button type="button" data-valor="bidask" title="venta × compra del agresor">BID×ASK</button>
+      <!-- remate 3: CELDA, el fondo de cada celda, y CIFRAS, lo que se escribe encima; siempre a la vista -->
+      <div class="seg" id="sel-fondo" role="group" aria-label="El fondo de cada celda">
+        <span class="rotulo">CELDA</span>
+        <button type="button" data-valor="perfil" title="dos barras por nivel: la venta a la izquierda, la compra a la derecha">C·V</button>
+        <button type="button" data-valor="delta" title="relleno por delta">RELL Δ</button>
+        <button type="button" data-valor="volumen" title="relleno por volumen">RELL VOL</button>
+      </div>
+      <div class="seg" id="sel-celda" role="group" aria-label="Las cifras de cada celda">
+        <span class="rotulo">CIFRAS</span>
+        <button type="button" data-valor="bidask" title="venta × compra del agresor">C×V</button>
         <button type="button" data-valor="delta" title="compra − venta">DELTA</button>
         <button type="button" data-valor="volumen" title="compra + venta">VOL</button>
         <button type="button" data-valor="trades" title="operaciones">TRADES</button>
-        <button type="button" data-valor="perfil" title="el volumen de cada nivel como barra">PERFIL</button>
+        <button type="button" data-valor="des" title="solo la cifra del lado fuerte de cada desequilibrio">DESEQ</button>
+        <button type="button" data-valor="ninguna" title="sin cifras">NINGUNA</button>
       </div>
       <details class="menu" id="m-color">
         <summary>COLOR</summary>
@@ -85,6 +93,7 @@
           <span class="mando" id="sesion-propia" hidden>
             <input id="ses-ini" type="time" step="60" aria-label="Inicio de la sesión (UTC)" /> –
             <input id="ses-fin" type="time" step="60" aria-label="Fin de la sesión (UTC)" /> UTC</span>
+          <label class="mando"><input id="capa-franja" type="checkbox" /> perfil de lo visible (franja)</label>
           <label class="mando"><input id="capa-perfil" type="checkbox" /> perfil de sesión</label>
           <label class="mando"><input id="capa-compuesto" type="checkbox" /> compuesto de
             <input id="sel-compuesto" type="number" min="2" max="7" step="1" aria-label="Sesiones del compuesto" /></label>

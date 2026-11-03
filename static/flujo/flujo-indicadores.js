@@ -458,7 +458,9 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
   const mMs = FLUJO_MARCOS[m.marco] * 60000;
   const t0 = Date.parse(m.velas[0].ts);
   const out = [];
-  const umbral = Number(d.umbral_usd_vigente) || 1;
+  // REMATE 3 (148): radio de 2 a 6 px por la raiz del USD sobre la MAYOR servida, en un carril de 8 px dentro del borde
+  // izquierdo de su vela (LZ.CARRIL deja ese carril sin cifras): ninguna grande tapa una cifra
+  const usdMax = Math.max(0, ...d.operaciones.map((o) => Number(o.usd) || 0)) || 1;
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, g.arriba, g.ancho, g.abajo - g.arriba);
@@ -469,9 +471,9 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
     if (i < i0 || i > i1) return;
     const w = Math.max(1, Math.floor(g.bs * 0.86));
     const x0 = Math.round(g.x(i) - w / 2);
-    const x = x0 + (w * (t - (t0 + i * mMs))) / mMs;
+    const x = x0 + 4;
     const yy = y(Number(o.precio));
-    const r = Math.min(14, 3 + 3 * Math.sqrt(Number(o.usd) / umbral));
+    const r = 2 + 4 * Math.sqrt(Math.min(1, Math.max(0, Number(o.usd) / usdMax)));
     ctx.beginPath();
     ctx.arc(x, yy, r, 0, 2 * Math.PI);
     ctx.fillStyle = rgba(o.agresor === 'compra' ? COLOR.compra : COLOR.venta, 0.35); // E-02 (OF-6a): los tokens

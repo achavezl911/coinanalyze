@@ -252,7 +252,20 @@ async function carga() {
   midePaneles(VISTA); // OF-5a: el alto de los paneles lo fija la VISTA, no el dato
   pintaEstado('pidiendo la historia…');
   const w = ventana(VISTA, Date.now());
-  const sobre = await pedir(RUTA, parametros(VISTA, w.desde, w.hasta, VISTA.paso));
+  let sobre = await pedir(RUTA, parametros(VISTA, w.desde, w.hasta, VISTA.paso));
+  // REMATE 3 (148): en 4h y 1d con paso auto, el paso mas fino que cabe (pasoFino, flujo-calculo.js)
+  let fino = null;
+  if (sobre.ok && VISTA.paso === 'auto' && (VISTA.marco === '4h' || VISTA.marco === '1d') && mia === CARGA) {
+    const d = sobre.datos;
+    const rangos = d.velas.filter((v) => v.niveles && v.niveles.length)
+      .map((v) => [Number(v.niveles[0].nivel), Number(v.niveles[v.niveles.length - 1].nivel)]);
+    fino = pasoFino(rangos, Number(d.paso_base), Number(d.paso), LIENZO.altoGrafico(), FILA_MIN);
+    if (fino && fino.paso !== Number(d.paso)) {
+      const otro = await pedir(RUTA, parametros(VISTA, w.desde, w.hasta, String(fino.paso)));
+      if (otro.ok) sobre = otro;
+      else fino = null;
+    }
+  }
   apuntar(sobre);
   if (mia !== CARGA) return;
   apunta(sobre); // OF-5a: lo que la pantalla APLICA (K112 lo compara con lo que llego)
@@ -262,6 +275,11 @@ async function carga() {
   } else {
     ULTIMA = { asOfMs: Date.parse(sobre.datos.as_of), t: reloj() };
     MODELO = modelo(sobre.datos);
+    if (fino) {
+      MODELO.paso_auto = { regla: 'el paso más fino con el que la última vela entra en el 70 % del alto, sin pasar '
+        + TOPE_CELDAS + ' celdas', fino: true, niveles_ultima: fino.niveles, celdas_cota: fino.celdas, fila: fino.fila };
+      MODELO.fila_auto = fino.fila;
+    }
     LIENZO.pon(MODELO, VISTA);
     if (!VISTA.hasta) arrancaLatido();
     cargaArranques(mia); // OF-6a: el CVD de sesion de la primera vela
@@ -425,7 +443,10 @@ function pintaEstado(pidiendo) {
       + (inc ? ' · ' + inc + ' incompleta' + (inc > 1 ? 's' : '') : '')
       + (huecos ? ' · ' + huecos + ' hueco' + (huecos > 1 ? 's' : '') + ' sin dato' : ''));
     titulo.push('venues: ' + MODELO.venues.join(', '));
-    if (MODELO.paso_auto) titulo.push('paso automático: la vela mediana toca ' + MODELO.paso_auto.niveles_vela_mediana
+    if (MODELO.paso_auto && MODELO.paso_auto.fino) {
+      titulo.push('paso automático: la última vela toca ' + MODELO.paso_auto.niveles_ultima + ' niveles · '
+        + MODELO.paso_auto.regla);
+    } else if (MODELO.paso_auto) titulo.push('paso automático: la vela mediana toca ' + MODELO.paso_auto.niveles_vela_mediana
       + ' niveles · ' + MODELO.paso_auto.regla);
     if (!VISTA.hasta) titulo.push('vivo: la vela en curso se pide cada ' + VIVO_S + ' s');
     if (VISTA.capas.length || VISTA.compuesto || VISTA.fijo) {
@@ -484,7 +505,7 @@ function lectura(texto) {
 /* ------------------------------------------------------------- los mandos */
 function pintaSelectores() {
   [['sel-activo', 'activo'], ['sel-marco', 'marco'], ['sel-familia', 'familia'], ['sel-unidad', 'unidad'],
-    ['sel-celda', 'celda']]
+  ]
     .forEach(([id, k]) => {
       document.querySelectorAll('#' + id + ' button').forEach((b) => {
         b.setAttribute('aria-pressed', String(b.dataset.valor === VISTA[k]));
@@ -494,6 +515,14 @@ function pintaSelectores() {
   document.querySelectorAll('#m-color input[name=color]').forEach((r) => { r.checked = r.value === VISTA.color; });
   document.querySelectorAll('#m-color input[name=ref]').forEach((r) => { r.checked = r.value === VISTA.ref; });
   document.getElementById('sel-numeros').checked = VISTA.numeros !== false;
+  // REMATE 3: CELDA (el fondo) y CIFRAS (`ninguna` son los numeros apagados) y la franja de lo visible
+  const fondo = VISTA.fondo === 'relleno' ? VISTA.color : 'perfil';
+  document.querySelectorAll('#sel-fondo button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.valor === fondo)));
+  document.querySelectorAll('#sel-celda button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(VISTA.numeros === false ? b.dataset.valor === 'ninguna'
+      : b.dataset.valor === VISTA.celda));
+  });
+  document.getElementById('capa-franja').checked = VISTA.franja !== false;
   document.querySelectorAll('#menu-eje input[data-fila]').forEach((c) => { c.checked = VISTA.filas.includes(c.dataset.fila); });
   document.querySelectorAll('#menu-eje input[name=rueda]').forEach((r) => { r.checked = r.value === VISTA.rueda; });
   document.querySelectorAll('#menu-escala button').forEach((b) => {
@@ -784,8 +813,15 @@ function arranca() {
   // OF-6a: los modos de la celda, el color, los numeros, el menu del eje, el presente, la ayuda y el teclado
   document.getElementById('sel-celda').addEventListener('click', (ev) => {
     const b = ev.target.closest('button[data-valor]');
-    if (b) cambia({ celda: b.dataset.valor });
+    if (b && b.dataset.valor === 'ninguna') cambia({ numeros: false });
+    else if (b) cambia({ celda: b.dataset.valor, numeros: true });
   });
+  document.getElementById('sel-fondo').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button[data-valor]');
+    if (b && b.dataset.valor === 'perfil') cambia({ fondo: 'perfil' });
+    else if (b) cambia({ fondo: 'relleno', color: b.dataset.valor });
+  });
+  document.getElementById('capa-franja').addEventListener('change', (ev) => cambia({ franja: ev.target.checked }));
   document.querySelectorAll('#m-color input[name=color]').forEach((r) => r.addEventListener('change', () => cambia({ color: r.value })));
   document.querySelectorAll('#m-color input[name=ref]').forEach((r) => r.addEventListener('change', () => cambia({ ref: r.value })));
   document.getElementById('sel-numeros').addEventListener('change', (ev) => cambia({ numeros: ev.target.checked }));

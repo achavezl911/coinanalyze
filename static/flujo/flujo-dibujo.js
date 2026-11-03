@@ -31,7 +31,11 @@ const LZ = {
   EJE_P: 76, // eje de precios, a la derecha
   EJE_T: 20, // eje de tiempo, abajo
   CABEZA: 16, // la marca de cobertura de cada vela, arriba
-  FILA_RES: 16, // F-10: cada fila de resumen
+  FILA_RES: 18, // F-10: cada fila de resumen (16 hasta el remate 3 de la 148)
+  // REMATE 3: el carril de las grandes dentro del borde izquierdo de la vela (8 px y lo que asoma un radio de 6) que
+  // ninguna cifra pisa con el perfil compra-venta, y la franja del perfil de lo visible
+  CARRIL: 10,
+  FRANJA: 60,
   FILA_TEXTO: 10, // F-09: con filas mas bajas no se escribe ninguna cifra
   // P2 de la campana 148 (velas reales de 140, x1-tmp/c148/p2_mide.py): con la escala que ajusta lo visible la fila
   // de 5m, 15m y 1h queda por debajo de 10 px casi siempre; la vista por omision es una fila FIJA centrada en la ultima
@@ -48,6 +52,8 @@ const COLOR = {
   // E-02: el comprador es AZUL (el verde de antes no pasa la deuteranopia: P2 de la 148), el vendedor rojo
   compra: [96, 165, 250], venta: [224, 90, 90], neutro: [136, 145, 160], volumen: [200, 206, 216], poc: '#f2cc60',
   va: '#c8ced8', ambar: '#e6b75a', fuerte_compra: '#93c5fd', fuerte_venta: '#ff8f8f', grande: '#ffffff',
+  // remate 3: las barras del perfil compra-venta (los tokens con alfa, distintos del texto) y la pastilla
+  barra: 0.55, pastilla: 'rgba(3,5,8,0.92)',
   contorno: 'rgba(200,206,216,0.35)', cruz: 'rgba(230,233,238,0.55)', etiqueta: '#2a313c', vivo: '#22d3ee',
 };
 const ALFA_MIN = 0.1;
@@ -100,7 +106,7 @@ function etiquetaVivo(d, dec, ahoraMs) {
            estado: parado ? 'sin vivo' : 'vivo', aviso: (parado ? 'sin vivo ' : 'vivo ') + edadTexto(edad) };
 }
 
-const ROTULO_RES = { vol: 'VOLUMEN', delta: 'DELTA', deltap: 'DELTA %', cvd: 'CVD SESIÓN', ops: 'OPERACIONES' };
+const ROTULO_RES = { vol: 'VOLUMEN', compra: 'COMPRA', venta: 'VENTA', delta: 'DELTA', deltap: 'DELTA %', cvd: 'CVD SESIÓN', ops: 'OPERACIONES' };
 
 function creaLienzo(canvas, op) {
   const opciones = op && typeof op === 'object' ? op : { alLeer: op };
@@ -108,7 +114,7 @@ function creaLienzo(canvas, op) {
     cv: canvas, ctx: canvas.getContext('2d'), pr: window.devicePixelRatio || 1, W: 0, H: 0,
     modelo: null, fin: 0, ver: 40, verAuto: true, sigue: true, fila: LZ.FILA_DEFECTO, centro: null, modoY: 'auto',
     vista: { celda: 'bidask', color: 'delta', ref: 'vela', numeros: true, filas: FILAS_RESUMEN.slice(), rueda: 'zoom',
-             sesion: 'dia' },
+             sesion: 'dia', fondo: 'perfil', franja: true },
     pendiente: false, cuadros: 0, raton: null, arrastre: null, regla: null, aviso: null,
     cruz: opciones.cruz || null, ficha: opciones.ficha || null,
   };
@@ -206,8 +212,9 @@ function creaLienzo(canvas, op) {
   function fuenteDeLaVista(ctx, g, y, m, i0, i1) {
     const tope = fuenteDe(L.fila);
     const modo = L.vista.celda;
-    if (L.vista.numeros === false || L.fila < LZ.FILA_TEXTO || modo === 'perfil') return tope;
+    if (L.vista.numeros === false || L.fila < LZ.FILA_TEXTO) return tope;
     const w = Math.max(1, Math.floor(g.bs * 0.86));
+    const carril = L.vista.fondo === 'relleno' ? 0 : LZ.CARRIL;
     const dec = decimalesDe(m.activo, m.unidad);
     const paso = Number(m.paso);
     const celdas = [];
@@ -221,11 +228,16 @@ function creaLienzo(canvas, op) {
         const x = des[k] || {};
         const d = Number(l.delta);
         if (modo === 'bidask') {
-          celdas.push({ hueco: w / 2, piezas: [[cifraE04(l.venta, dec), !!x.dv], [cifraE04(l.compra, dec), !!x.dc]] });
+          celdas.push({ hueco: w / 2 - carril, piezas: [[cifraE04(l.venta, dec), !!x.dv], [cifraE04(l.compra, dec), !!x.dc]] });
+        } else if (modo === 'des') {
+          const piezas = [];
+          if (x.dv) piezas.push([cifraE04(l.venta, dec), true]);
+          if (x.dc) piezas.push([cifraE04(l.compra, dec), true]);
+          if (piezas.length) celdas.push({ hueco: w / 2 - carril, piezas });
         } else {
           const t = modo === 'delta' ? (d > 0 ? '+' : '') + cifraE04(l.delta, dec)
             : modo === 'trades' ? cifraE04(l.operaciones, 0) : cifraE04(l.total, dec);
-          celdas.push({ hueco: w, piezas: [[t, modo === 'delta' && !!(x.dc || x.dv)]] });
+          celdas.push({ hueco: w - carril, piezas: [[t, modo === 'delta' && !!(x.dc || x.dv)]] });
         }
       });
     }
@@ -278,7 +290,8 @@ function creaLienzo(canvas, op) {
     const reg = { cuadro: ++L.cuadros, ancho: L.W, alto: L.H, ver: L.ver, fin: L.fin, velas: [], of6a: true,
                   n: L.modelo ? L.modelo.velas.length : 0,
                   sigue: L.sigue, celda: L.vista.celda, color_modo: L.vista.color, referencia: L.vista.ref,
-                  numeros: L.vista.numeros, filas_resumen: (L.vista.filas || []).slice() };
+                  numeros: L.vista.numeros, filas_resumen: (L.vista.filas || []).slice(),
+                  fondo: L.vista.fondo === 'relleno' ? 'relleno' : 'perfil', franja: null, carril: LZ.CARRIL };
     const m = L.modelo;
     if (!m || !m.velas.length) {
       window.FLUJO_PINTADO = reg;
@@ -312,6 +325,7 @@ function creaLienzo(canvas, op) {
     reg.capas = m.capas && typeof pintaCapas === 'function' && i1 >= i0 ? pintaCapas(ctx, g, y, m, paso, i0, i1) : null;
     // OF-5a (campana 146): las grandes en su vela y a su precio, y los paneles bajo el footprint, con ESTA geometria
     reg.grandes = typeof pintaGrandes === 'function' ? pintaGrandes(ctx, g, y, m, i0, i1) : null;
+    if (L.vista.franja !== false && i1 >= i0) reg.franja = pintaFranja(ctx, g, y, m, i0, i1, paso);
     pintaResumen(ctx, g, m, i0, i1, reg.velas, cvd);
     ejeTiempo(ctx, g, i0, i1, m);
     ejeModo(ctx, g);
@@ -319,6 +333,42 @@ function creaLienzo(canvas, op) {
     window.FLUJO_PINTADO = reg;
     if (typeof pintaIndicadores === 'function') pintaIndicadores(g, m, i0, i1);
     dibujaCruz();
+  }
+
+  /* REMATE 3 (148): el PERFIL DE LO VISIBLE, una franja de LZ.FRANJA px a la izquierda con el volumen de cada nivel
+     sumado sobre las velas a la vista. Sale de las celdas que la pagina ya tiene: ninguna consulta mas. Su POC es el
+     nivel de mas volumen (en empate, el mas bajo). */
+  function pintaFranja(ctx, g, y, m, i0, i1, paso) {
+    const suma = new Map();
+    for (let i = i0; i <= i1; i++) {
+      m.velas[i].niveles.forEach((l) => {
+        const k = Number(l.nivel);
+        suma.set(k, (suma.get(k) || 0) + Number(l.total));
+      });
+    }
+    let max = 0;
+    let poc = null;
+    [...suma.keys()].sort((a, b) => a - b).forEach((k) => {
+      if (suma.get(k) > max) { max = suma.get(k); poc = k; }
+    });
+    const out = { x0: 0, ancho: LZ.FRANJA, max, poc, niveles: [] };
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, g.arriba, LZ.FRANJA, g.abajo - g.arriba);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(10,13,18,0.85)';
+    ctx.fillRect(0, g.arriba, LZ.FRANJA, g.abajo - g.arriba);
+    [...suma.keys()].sort((a, b) => a - b).forEach((k) => {
+      const t = suma.get(k);
+      const y0 = Math.round(y(k + paso));
+      const y1 = Math.round(y(k));
+      const largo = max > 0 ? Math.round(((LZ.FRANJA - 2) * t) / max) : 0;
+      ctx.fillStyle = k === poc ? COLOR.poc : rgba(COLOR.volumen, '0.45');
+      if (largo > 0) ctx.fillRect(0, y0, largo, Math.max(1, y1 - y0 - (y1 - y0 >= 3 ? 1 : 0)));
+      out.niveles.push({ nivel: k, total: t, largo, y0, y1 });
+    });
+    ctx.restore();
+    return out;
   }
 
   /* F-04: la referencia del 100 % de cada celda: su vela, lo visible o su sesion (el p98 de sus valores). */
@@ -432,15 +482,45 @@ function creaLienzo(canvas, op) {
       }
     }
     // LAS CELDAS
+    // REMATE 3 (148): CELDA es el fondo (`perfil` compra-venta por omision, o el `relleno` de antes por delta o volumen)
+    // y CIFRAS lo que se escribe encima (`celda`: compra x venta, delta, volumen, trades, solo desequilibrios; `numeros`
+    // en falso, ninguna)
     const modo = L.vista.celda;
+    const perfil = L.vista.fondo !== 'relleno';
+    const carril = perfil ? LZ.CARRIL : 0;
     const dec = decimalesDe(m.activo, m.unidad);
     const fuente = L.fuente;
     const filaCabe = L.vista.numeros !== false && L.fila >= LZ.FILA_TEXTO;
     const ref = refs.vela(v);
-    r.referencia = ref;
-    let maxTot = 0;
-    if (modo === 'perfil') nv.forEach((l) => { maxTot = Math.max(maxTot, Number(l.total)); });
+    r.referencia = perfil ? null : ref;
+    // las barras: el largo, el volumen del lado sobre el MAYOR volumen de un lado en ESTA vela por media vela menos 2 px
+    const eje = x0 + Math.floor(w / 2);
+    const media = Math.max(0, Math.floor(w / 2) - 2);
+    let ladoMax = 0;
+    nv.forEach((l) => { ladoMax = Math.max(ladoMax, Number(l.compra), Number(l.venta)); });
+    if (perfil) Object.assign(r, { eje, media, lado_max: ladoMax });
     const des = v.des || [];
+    const tipo = (negrita) => (negrita ? 'bold ' : '') + fuente + 'px ui-monospace, monospace';
+    const ancho = (t, negrita) => { ctx.font = tipo(negrita); return ctx.measureText(t).width; };
+    // una cifra: el cero en texto tenue; la del lado fuerte de un desequilibrio, en negrita sobre su pastilla
+    const escribe = (t, xt, alin, ym, fuerte, lado, fila, sufijo) => {
+      const wt = ancho(t, !!fuerte);
+      const xa = alin === 'right' ? xt - wt : xt;
+      if (fuerte) {
+        const hp = Math.min(fuente + 2, Math.max(1, fila.y1 - fila.y0 - 1));
+        const caja = [Math.round(xa - 1), Math.round(ym - hp / 2), Math.round(wt + 2), hp];
+        ctx.fillStyle = COLOR.pastilla;
+        ctx.fillRect(caja[0], caja[1], caja[2], caja[3]);
+        fila['pastilla' + sufijo] = caja;
+      }
+      ctx.font = tipo(!!fuerte);
+      ctx.textAlign = alin;
+      ctx.fillStyle = fuerte ? (lado === 'compra' ? COLOR.fuerte_compra : COLOR.fuerte_venta)
+        : Number(t.replace(/[^0-9.-]/g, '')) === 0 ? COLOR.mudo : COLOR.texto;
+      ctx.fillText(t, xt, ym);
+      fila['texto' + sufijo] = t;
+      fila['caja' + sufijo] = [xa, xa + wt];
+    };
     nv.forEach((l, k) => {
       const y0 = Math.round(y(Number(l.nivel) + paso));
       const y1 = Math.round(y(Number(l.nivel)));
@@ -450,20 +530,56 @@ function creaLienzo(canvas, op) {
       const x = des[k] || {};
       const fila = { nivel: l.nivel, y0, y1, venta: l.venta, compra: l.compra, delta: l.delta, total: l.total,
                      operaciones: l.operaciones, texto_venta: null, texto_compra: null, texto: null, color,
-                     paso_color: -1, filtro: fil, dc: !!x.dc, dv: !!x.dv, ac: !!x.ac, av: !!x.av, borde: null };
+                     paso_color: -1, filtro: fil, dc: !!x.dc, dv: !!x.dv, ac: !!x.ac, av: !!x.av, borde: null,
+                     barra_venta: null, barra_compra: null, barra_alto: null, barra_fuerte: null,
+                     pastilla_venta: null, pastilla_compra: null, pastilla: null,
+                     caja_venta: null, caja_compra: null, caja: null };
       if (fil === 'escondida' || y1 < g.arriba - 1 || y0 > g.abajo + 1) {
         r.niveles.push(fila);
         return;
       }
-      fila.paso_color = pasoColor(Number(l[refs.campo]), ref);
-      const a = alfaDe(fila.paso_color) * (fil === 'atenuada' ? 0.25 : 1);
-      ctx.fillStyle = rgba(refs.campo === 'total' ? COLOR.volumen : COLOR[color], a.toFixed(3));
-      ctx.fillRect(x0, y0, w, Math.max(1, y1 - y0 - (filaCabe ? 1 : 0)));
-      if (modo === 'perfil' && maxTot > 0) {
-        const pw = Math.max(1, Math.round(((w - 2) * Number(l.total)) / maxTot));
-        ctx.fillStyle = rgba(COLOR[color], 0.85);
-        ctx.fillRect(x0 + 1, y0 + 1, pw, Math.max(1, y1 - y0 - 2));
-        fila.barra = pw;
+      const atenua = fil === 'atenuada' ? 0.25 : 1;
+      const conTexto = filaCabe && fil !== 'atenuada';
+      const ym = (y0 + y1) / 2;
+      // PRIMERO que cifras caben (las barras del lado fuerte sin cifra van en color fuerte), despues se pinta
+      let piezas = null; // [[texto, x, alin, fuerte, lado, sufijo]]
+      if (conTexto && (modo === 'bidask' || modo === 'des')) {
+        // F-02: la venta del agresor (bid) a la izquierda del eje de la vela, la compra (ask) a la derecha
+        const tv = cifraE04(l.venta, dec);
+        const tc = cifraE04(l.compra, dec);
+        const hueco = w / 2 - carril;
+        const lados = modo === 'bidask' ? [['venta', tv, !!x.dv], ['compra', tc, !!x.dc]]
+          : [['venta', tv, true], ['compra', tc, true]].filter((p) => (p[0] === 'venta' ? x.dv : x.dc));
+        if (lados.length && lados.every((p) => ancho(p[1], p[2]) + 4 <= hueco)) {
+          piezas = lados.map((p) => (p[0] === 'venta' ? [p[1], eje - 3, 'right', p[2], 'venta', '_venta']
+            : [p[1], eje + 3, 'left', p[2], 'compra', '_compra']));
+        }
+      } else if (conTexto) {
+        const t = modo === 'delta' ? (d > 0 ? '+' : '') + cifraE04(l.delta, dec)
+          : modo === 'trades' ? cifraE04(l.operaciones, 0) : cifraE04(l.total, dec);
+        const fuerte = modo === 'delta' && (x.dc || x.dv);
+        if (ancho(t, fuerte) + 4 <= w - carril) {
+          piezas = [[t, x0 + w - 2, 'right', fuerte, x.dc ? 'compra' : 'venta', '']];
+        }
+      }
+      const escritoLado = (lado) => !!piezas && piezas.some((p) => p[3] && (p[4] === lado || p[5] === ''));
+      if (perfil) {
+        const hb = y1 - y0 >= 3 ? y1 - y0 - 1 : 1;
+        const lv = ladoMax > 0 ? Math.round((media * Number(l.venta)) / ladoMax) : 0;
+        const lc = ladoMax > 0 ? Math.round((media * Number(l.compra)) / ladoMax) : 0;
+        const fv = x.dv && !escritoLado('venta');
+        const fc = x.dc && !escritoLado('compra');
+        ctx.fillStyle = fv ? COLOR.fuerte_venta : rgba(COLOR.venta, (COLOR.barra * atenua).toFixed(3));
+        if (lv > 0) ctx.fillRect(eje - lv, y0, lv, hb);
+        ctx.fillStyle = fc ? COLOR.fuerte_compra : rgba(COLOR.compra, (COLOR.barra * atenua).toFixed(3));
+        if (lc > 0) ctx.fillRect(eje, y0, lc, hb);
+        Object.assign(fila, { barra_venta: lv, barra_compra: lc, barra_alto: hb,
+                              barra_fuerte: fv && fc ? 'los dos' : fv ? 'venta' : fc ? 'compra' : null });
+      } else {
+        fila.paso_color = pasoColor(Number(l[refs.campo]), ref);
+        const a = alfaDe(fila.paso_color) * atenua;
+        ctx.fillStyle = rgba(refs.campo === 'total' ? COLOR.volumen : COLOR[color], a.toFixed(3));
+        ctx.fillRect(x0, y0, w, Math.max(1, y1 - y0 - (filaCabe ? 1 : 0)));
       }
       if (fil === 'grande') {
         ctx.strokeStyle = COLOR.grande;
@@ -478,45 +594,9 @@ function creaLienzo(canvas, op) {
         ctx.fillStyle = COLOR.fuerte_venta;
         ctx.fillRect(x0, y0, 2, Math.max(1, y1 - y0 - 1));
       }
-      const conTexto = filaCabe && fil !== 'atenuada' && modo !== 'perfil';
-      const ym = (y0 + y1) / 2;
-      let escrito = false;
-      if (conTexto && modo === 'bidask') {
-        // F-02: la venta del agresor (bid) a la izquierda del eje de la vela, la compra (ask) a la derecha
-        const tv = cifraE04(l.venta, dec);
-        const tc = cifraE04(l.compra, dec);
-        ctx.font = (x.dv ? 'bold ' : '') + fuente + 'px ui-monospace, monospace';
-        const wv = ctx.measureText(tv).width;
-        ctx.font = (x.dc ? 'bold ' : '') + fuente + 'px ui-monospace, monospace';
-        const wc = ctx.measureText(tc).width;
-        if (wv + 4 <= w / 2 && wc + 4 <= w / 2) {
-          ctx.font = (x.dv ? 'bold ' : '') + fuente + 'px ui-monospace, monospace';
-          ctx.fillStyle = x.dv ? COLOR.fuerte_venta : COLOR.texto;
-          ctx.textAlign = 'right';
-          fila.texto_venta = tv;
-          ctx.fillText(fila.texto_venta, xc - 3, ym);
-          ctx.font = (x.dc ? 'bold ' : '') + fuente + 'px ui-monospace, monospace';
-          ctx.fillStyle = x.dc ? COLOR.fuerte_compra : COLOR.texto;
-          ctx.textAlign = 'left';
-          fila.texto_compra = tc;
-          ctx.fillText(fila.texto_compra, xc + 3, ym);
-          escrito = true;
-        }
-      } else if (conTexto) {
-        const t = modo === 'delta' ? (d > 0 ? '+' : '') + cifraE04(l.delta, dec)
-          : modo === 'trades' ? cifraE04(l.operaciones, 0) : cifraE04(l.total, dec);
-        const fuerte = modo === 'delta' && (x.dc || x.dv);
-        ctx.font = (fuerte ? 'bold ' : '') + fuente + 'px ui-monospace, monospace';
-        if (ctx.measureText(t).width + 4 <= w) {
-          ctx.fillStyle = fuerte ? (x.dc ? COLOR.fuerte_compra : COLOR.fuerte_venta) : COLOR.texto;
-          ctx.textAlign = 'right';
-          fila.texto = t;
-          ctx.fillText(t, x0 + w - 2, ym);
-          escrito = true;
-        }
-      }
-      // F-05: el desequilibrio, en el color y la negrita del lado fuerte; si la cifra no se escribe, un borde de 1 px
-      if ((x.dc || x.dv) && !escrito) {
+      if (piezas) piezas.forEach((p) => escribe(p[0], p[1], p[2], ym, p[3], p[4], fila, p[5]));
+      // F-05 con el relleno: si la cifra del desequilibrio no se escribe, un borde de 1 px (con el perfil, su barra)
+      if (!perfil && (x.dc || x.dv) && !(escritoLado('compra') || escritoLado('venta'))) {
         ctx.strokeStyle = x.dc ? COLOR.fuerte_compra : COLOR.fuerte_venta;
         ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, Math.max(1, y1 - y0 - 1));
         if (x.dc && x.dv) {
@@ -527,26 +607,27 @@ function creaLienzo(canvas, op) {
       }
       r.niveles.push(fila);
     });
-    // EL POC de la vela, servido: un marco en su fila
-    if (v.poc !== null && v.poc !== undefined) {
-      const y0 = Math.round(y(Number(v.poc) + paso));
-      const y1 = Math.round(y(Number(v.poc)));
+    // EL POC de la vela, servido: con el perfil, una linea en su color a lo ancho de la vela (y su marco si la fila
+    // lleva cifras); con el relleno, el marco de antes. F-07: los EMPATADOS, igual
+    const conCifras = (n) => r.niveles.some((f) => f.nivel === n && (f.texto || f.texto_venta || f.texto_compra));
+    const pintaPoc = (n) => {
+      const y0 = Math.round(y(Number(n) + paso));
+      const y1 = Math.round(y(Number(n)));
+      const p = { nivel: n, y0, y1, linea: null, marco: !perfil || conCifras(n) };
       ctx.strokeStyle = COLOR.poc;
       ctx.lineWidth = 1;
-      ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, Math.max(1, y1 - y0 - 1));
-      r.poc = { nivel: v.poc, y0, y1 };
-      r.pocs.push(r.poc);
-    }
-    // F-07: si hay EMPATE en el volumen maximo, todos los empatados llevan su marco
-    if (nv.length) {
-      pocsDe(nv).filter((n) => n !== v.poc).forEach((n) => {
-        const y0 = Math.round(y(Number(n) + paso));
-        const y1 = Math.round(y(Number(n)));
-        ctx.strokeStyle = COLOR.poc;
-        ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, Math.max(1, y1 - y0 - 1));
-        r.pocs.push({ nivel: n, y0, y1 });
-      });
-    }
+      if (perfil) {
+        const yl = Math.floor((y0 + y1) / 2);
+        ctx.fillStyle = COLOR.poc;
+        ctx.fillRect(x0, yl, w, 1);
+        p.linea = { x0, x1: x0 + w, y: yl };
+      }
+      if (p.marco) ctx.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, Math.max(1, y1 - y0 - 1));
+      r.pocs.push(p);
+      return p;
+    };
+    if (v.poc !== null && v.poc !== undefined) r.poc = pintaPoc(v.poc);
+    if (nv.length) pocsDe(nv).filter((n) => n !== v.poc).forEach(pintaPoc);
     // LA VALUE AREA de la vela, servida: una barra a su izquierda de VAL a VAH + paso
     if (v.value_area) {
       const y0 = Math.round(y(Number(v.value_area.vah) + paso));
@@ -588,7 +669,8 @@ function creaLienzo(canvas, op) {
         const yr = g.abajo + j * LZ.FILA_RES;
         if (val[f] === null || val[f] === undefined) return;
         const x = Number(val[f]);
-        const signo = f === 'vol' || f === 'ops' ? null : x > 0 ? COLOR.compra : x < 0 ? COLOR.venta : COLOR.neutro;
+        const signo = f === 'vol' || f === 'ops' ? null : f === 'compra' ? COLOR.compra : f === 'venta' ? COLOR.venta
+          : x > 0 ? COLOR.compra : x < 0 ? COLOR.venta : COLOR.neutro;
         const kk = pasoColor(x, maximo[f]);
         ctx.fillStyle = rgba(signo || COLOR.volumen, (alfaDe(kk) * 0.6).toFixed(3));
         ctx.fillRect(r.x0, yr + 1, r.ancho, LZ.FILA_RES - 2);
@@ -958,7 +1040,17 @@ function creaLienzo(canvas, op) {
   }).observe(L.cv.parentElement);
   mide();
 
+  /* REMATE 3: en 4h y 1d con paso auto, la fila que pone la ultima vela en el 70 % del alto (flujo-app.js) */
+  function filaAuto() {
+    return (L.modelo && L.modelo.fila_auto) || LZ.FILA_DEFECTO;
+  }
+
   const api = {
+    /* REMATE 3: el alto del grafico (sin cabeza, eje ni resumen) para el paso auto de 4h y 1d */
+    altoGrafico() {
+      const g = geo();
+      return g.abajo - g.arriba;
+    },
     /* el modelo entero (una vista nueva): se mira el final, o lo que diga el hash */
     pon(modelo, e) {
       L.modelo = modelo;
@@ -968,7 +1060,7 @@ function creaLienzo(canvas, op) {
     },
     /* lo que el hash dice de la vista: el modo de la celda y el color, y el estado de los dos ejes */
     vista(e, nueva) {
-      ['celda', 'color', 'ref', 'numeros', 'filas', 'rueda', 'sesion'].forEach((k) => {
+      ['celda', 'color', 'ref', 'numeros', 'filas', 'rueda', 'sesion', 'fondo', 'franja'].forEach((k) => {
         if (e[k] !== undefined) L.vista[k] = e[k];
       });
       if (!nueva && e.ver === undefined) {
@@ -980,7 +1072,7 @@ function creaLienzo(canvas, op) {
       const n = L.modelo ? L.modelo.velas.length : 0;
       L.sigue = e.x === null || e.x === undefined;
       L.fin = n - 1 - (L.sigue ? 0 : e.x);
-      L.fila = e.fila || LZ.FILA_DEFECTO;
+      L.fila = e.fila || filaAuto();
       L.modoY = e.y ? 'manual' : 'auto';
       if (e.y) L.centro = Number(e.y);
       acota();
@@ -995,7 +1087,7 @@ function creaLienzo(canvas, op) {
     /* I-04: la escala vertical vuelve a AUTO (la fila por omision, centrada en la ultima vela a la vista) */
     auto() {
       L.modoY = 'auto';
-      L.fila = LZ.FILA_DEFECTO;
+      L.fila = filaAuto();
       L.centro = null;
       tocado(false);
     },

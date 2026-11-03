@@ -19,6 +19,8 @@ test('el hash: por omision BTC/1m/perp con paso auto, y lo que no se entiende ca
     // OF-6a (campana 148): la celda, el color, las filas de resumen y los dos ejes (flujo_pro.test.js)
     celda: 'bidask', color: 'delta', ref: 'vela', numeros: true, filas: F.FILAS_RESUMEN, rueda: 'zoom', x: null,
     y: null, fila: null,
+    // remate 3 (148): el perfil compra-venta y la franja de lo visible, por omision
+    fondo: 'perfil', franja: true,
   });
   const e = F.leeHash('#eth/5m/deribit/0.5/unidad=usd/min=2/esconde/grande=40/hasta=2026-10-17T11:30Z/ver=20');
   assert.deepStrictEqual([e.activo, e.marco, e.familia, e.paso, e.unidad, e.min, e.esconde, e.grande, e.hasta, e.ver],
@@ -45,7 +47,7 @@ test('la historia acaba en la vela en curso, o en `hasta`, con las velas de su m
   assert.deepStrictEqual(F.ventana(F.leeHash('#BTC/5m/perp'), ahora),
     { desde: '2026-10-16T16:10:00Z', hasta: '2026-10-17T12:10:00Z' });
   assert.deepStrictEqual(F.ventana(F.leeHash('#BTC/1d/perp/hasta=2026-10-17T00:00Z'), ahora),
-    { desde: '2026-09-17T00:00:00Z', hasta: '2026-10-17T00:00:00Z' });
+    { desde: '2026-10-03T00:00:00Z', hasta: '2026-10-17T00:00:00Z' });
   // el latido pide SOLO lo que todavia puede cambiar: 90 s atras hasta la vela en curso
   assert.deepStrictEqual(F.ventanaViva('1m', ahora), { desde: '2026-10-17T12:06:00Z', hasta: '2026-10-17T12:08:00Z' });
   assert.deepStrictEqual(F.ventanaViva('15m', ahora), { desde: '2026-10-17T12:00:00Z', hasta: '2026-10-17T12:15:00Z' });
