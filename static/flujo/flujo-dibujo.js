@@ -16,7 +16,8 @@
  * arrastre sigue marcando el perfil fijo (flujo-app.js).
  *
  * NIVEL DE DETALLE (F-09): una cifra se escribe si la fila mide >= LZ.FILA_TEXTO px y cabe en su sitio con 4 px de
- * holgura (la semicelda en bid x ask, la celda en los demas modos); la fuente va de 9 a 13 px con el alto de fila. Las
+ * holgura (la semicelda en bid x ask, la celda en los demas modos); la fuente es UNA por vista, la mayor hasta el techo de
+ * fuenteDe (9 a 13 px con el alto de fila) con la que toda cifra que cabe a 9 px sigue cabiendo (fuenteVista). Las
  * marcas (POC, value area, desequilibrios, cobertura) se pintan siempre.
  *
  * EL CONTRATO DE LO PINTADO, que leen K109, K112 y K113: cada vez que pinta, el lienzo deja en `window.FLUJO_PINTADO` lo
@@ -47,7 +48,7 @@ const COLOR = {
   // E-02: el comprador es AZUL (el verde de antes no pasa la deuteranopia: P2 de la 148), el vendedor rojo
   compra: [96, 165, 250], venta: [224, 90, 90], neutro: [136, 145, 160], volumen: [200, 206, 216], poc: '#f2cc60',
   va: '#c8ced8', ambar: '#e6b75a', fuerte_compra: '#93c5fd', fuerte_venta: '#ff8f8f', grande: '#ffffff',
-  contorno: 'rgba(200,206,216,0.35)', cruz: 'rgba(230,233,238,0.55)', etiqueta: '#2a313c',
+  contorno: 'rgba(200,206,216,0.35)', cruz: 'rgba(230,233,238,0.55)', etiqueta: '#2a313c', vivo: '#22d3ee',
 };
 const ALFA_MIN = 0.1;
 const ALFA_MAX = 0.86;
@@ -64,6 +65,39 @@ function alfaDe(k) {
 /* F-09: la fuente de las cifras de la celda, de 9 a 13 px segun el alto de fila. */
 function fuenteDe(fila) {
   return Math.min(13, Math.max(9, Math.round(fila) - 2));
+}
+
+/* REMATE 1 (148): UNA fuente por vista, y fuenteDe es solo su techo. `celdas`: cada celda a la vista que puede llevar
+ * cifra, con sus piezas [[texto, negrita]] y el hueco de cada una (w/2 en bid x ask, w en las de un texto);
+ * `ancho(texto, negrita, px)` mide. La fuente es la MAYOR entre 9 px y `tope` con la que toda celda que cabe a 9 px sigue
+ * cabiendo: sale la cifra que cabe a 9 px con la fila >= 10 (F-09), y acercar el precio o ensanchar la vela solo suben o
+ * dejan la fuente, nunca echan una cifra (P1 del remate, sobre velas reales de BTC, ETH y SOL). */
+function fuenteVista(celdas, tope, ancho) {
+  const cabe = (c, f) => c.piezas.every(([t, b]) => ancho(t, b, f) + 4 <= c.hueco);
+  const salen = celdas.filter((c) => cabe(c, 9));
+  for (let f = tope; f > 9; f--) if (salen.every((c) => cabe(c, f))) return f;
+  return 9;
+}
+
+/* ADENDA DEL REMATE 1: la etiqueta del precio en vivo. `d`: { venue, precio, tsMs, asOfMs, recibidoMs, ok } de la ultima
+ * respuesta de la cinta (su ultima operacion, del venue de referencia); la edad es la de la operacion cuando el servidor
+ * respondio mas lo que paso desde entonces. Mas de 10 s, o la ultima peticion sin respuesta: «sin vivo» con su edad (no
+ * finge vivo). Sin ninguna operacion conocida, null: no se pinta un precio.
+ * El precio, con VIVO_DECIMALES fijos en los tres activos (remate 2), no con los decimales de VOLUMEN de E-04 (BTC 3,
+ * SOL 1: 76996.900 y 92.3 en produccion el 2026-11-03). Medido por el operador el 2026-11-03 00:26Z: /api/orderflow/cinta
+ * en BTC, ETH y SOL por binance_usdm, binance_spot, bybit_linear, okx_swap y coinbase_spot no trae mas de 2 decimales, y
+ * la cadena llega sin ceros finales («77028», «77028.01»): escrita tal cual la etiqueta cambiaria de ancho. */
+const VIVO_TOPE_S = 10;
+const VIVO_DECIMALES = 2;
+function edadTexto(s) {
+  return s < 60 ? Math.floor(s) + 's' : s < 3600 ? Math.floor(s / 60) + 'm' : Math.floor(s / 3600) + 'h';
+}
+function etiquetaVivo(d, dec, ahoraMs) {
+  if (!d || d.precio === null || d.precio === undefined || !Number.isFinite(Number(d.precio))) return null;
+  const edad = Math.max(0, (d.asOfMs - d.tsMs + (ahoraMs - d.recibidoMs)) / 1000);
+  const parado = !d.ok || edad > VIVO_TOPE_S;
+  return { venue: d.venue, precio: Number(d.precio), texto: Number(d.precio).toFixed(dec), edad_s: Math.round(edad * 10) / 10,
+           estado: parado ? 'sin vivo' : 'vivo', aviso: (parado ? 'sin vivo ' : 'vivo ') + edadTexto(edad) };
 }
 
 const ROTULO_RES = { vol: 'VOLUMEN', delta: 'DELTA', deltap: 'DELTA %', cvd: 'CVD SESIÓN', ops: 'OPERACIONES' };
@@ -154,6 +188,88 @@ function creaLienzo(canvas, op) {
   }
 
   /* ------------------------------------------------------------ pintar */
+  const ANCHOS = new Map();
+  function mideTexto(ctx, t, negrita, px) {
+    const f = (negrita ? 'bold ' : '') + px + 'px ui-monospace, monospace';
+    const k = f + '|' + t;
+    let a = ANCHOS.get(k);
+    if (a === undefined) {
+      if (ANCHOS.size > 50000) ANCHOS.clear();
+      ctx.font = f;
+      a = ctx.measureText(t).width;
+      ANCHOS.set(k, a);
+    }
+    return a;
+  }
+
+  /* REMATE 1: las celdas a la vista que pintaVela puede escribir (sus mismas condiciones y textos), para fuenteVista */
+  function fuenteDeLaVista(ctx, g, y, m, i0, i1) {
+    const tope = fuenteDe(L.fila);
+    const modo = L.vista.celda;
+    if (L.vista.numeros === false || L.fila < LZ.FILA_TEXTO || modo === 'perfil') return tope;
+    const w = Math.max(1, Math.floor(g.bs * 0.86));
+    const dec = decimalesDe(m.activo, m.unidad);
+    const paso = Number(m.paso);
+    const celdas = [];
+    for (let i = i0; i <= i1; i++) {
+      const des = m.velas[i].des || [];
+      m.velas[i].niveles.forEach((l, k) => {
+        const y0 = Math.round(y(Number(l.nivel) + paso));
+        const y1 = Math.round(y(Number(l.nivel)));
+        const fil = filtro(l.total, m.filtro);
+        if (fil === 'escondida' || fil === 'atenuada' || y1 < g.arriba - 1 || y0 > g.abajo + 1) return;
+        const x = des[k] || {};
+        const d = Number(l.delta);
+        if (modo === 'bidask') {
+          celdas.push({ hueco: w / 2, piezas: [[cifraE04(l.venta, dec), !!x.dv], [cifraE04(l.compra, dec), !!x.dc]] });
+        } else {
+          const t = modo === 'delta' ? (d > 0 ? '+' : '') + cifraE04(l.delta, dec)
+            : modo === 'trades' ? cifraE04(l.operaciones, 0) : cifraE04(l.total, dec);
+          celdas.push({ hueco: w, piezas: [[t, modo === 'delta' && !!(x.dc || x.dv)]] });
+        }
+      });
+    }
+    return fuenteVista(celdas, tope, (t, b, f) => mideTexto(ctx, t, b, f));
+  }
+
+  /* ADENDA: la linea discontinua del ultimo precio a todo lo ancho del grafico (no sobre el eje ni los paneles) y su
+   * etiqueta resaltada en el eje, despues de las demas etiquetas (la cruz va en su propio lienzo, encima: manda donde
+   * esta el raton). Fuera de la escala, la etiqueta pegada al borde con su flecha. Lo pintado, en FLUJO_PINTADO.vivo. */
+  function pintaVivo(ctx, g, y, lo, hi, m) {
+    const e = etiquetaVivo(L.vivo, VIVO_DECIMALES, Date.now());
+    if (!e) return null;
+    const fuera = e.precio > hi ? 'arriba' : e.precio < lo ? 'abajo' : null;
+    const yv = Math.round(y(e.precio)) + 0.5;
+    const ye = fuera === 'arriba' ? g.arriba + 7 : fuera === 'abajo' ? g.abajo - 31 : yv;
+    const vivo = e.estado === 'vivo';
+    if (!fuera) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, g.arriba, g.ancho, g.abajo - g.arriba);
+      ctx.clip();
+      ctx.strokeStyle = vivo ? COLOR.vivo : COLOR.mudo;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(0, yv);
+      ctx.lineTo(g.ancho, yv);
+      ctx.stroke();
+      ctx.restore();
+    }
+    const marca = fuera === 'arriba' ? '\u25b2 ' : fuera === 'abajo' ? '\u25bc ' : '';
+    ctx.fillStyle = vivo ? COLOR.vivo : COLOR.etiqueta;
+    ctx.fillRect(g.ancho + 1, ye - 7, LZ.EJE_P - 2, 36);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = vivo ? COLOR.fondo : COLOR.mudo;
+    ctx.font = 'bold 10px ui-monospace, monospace';
+    ctx.fillText(marca + e.texto, g.ancho + 4, ye);
+    ctx.font = '9px ui-monospace, monospace';
+    ctx.fillText(e.venue, g.ancho + 4, ye + 11);
+    ctx.fillText(e.aviso, g.ancho + 4, ye + 22);
+    return { ...e, marca: marca.trim(), fuera, y: fuera ? null : yv, etiqueta_y: ye };
+  }
+
   function pinta() {
     const ctx = L.ctx;
     ctx.setTransform(L.pr, 0, 0, L.pr, 0, 0);
@@ -179,8 +295,9 @@ function creaLienzo(canvas, op) {
     const { lo, hi } = escala(g, paso);
     const alto = g.abajo - g.arriba;
     const y = (p) => g.arriba + ((hi - p) / (hi - lo)) * alto;
+    L.fuente = fuenteDeLaVista(ctx, g, y, m, i0, i1);
     reg.escala = { lo, hi, arriba: g.arriba, abajo: g.abajo, modo: L.modoY, fila: L.fila, centro: L.centro,
-                   fuente: fuenteDe(L.fila), resumen: g.resumen };
+                   fuente: L.fuente, fuente_tope: fuenteDe(L.fila), resumen: g.resumen };
     rejilla(ctx, g, lo, hi, y, paso);
     const refs = referencias(m, i0, i1);
     const cvd = cvdSesion(m.velas, leeSesion(L.vista.sesion) || leeSesion('dia'), m.arranques || {});
@@ -198,6 +315,7 @@ function creaLienzo(canvas, op) {
     pintaResumen(ctx, g, m, i0, i1, reg.velas, cvd);
     ejeTiempo(ctx, g, i0, i1, m);
     ejeModo(ctx, g);
+    reg.vivo = pintaVivo(ctx, g, y, lo, hi, m);
     window.FLUJO_PINTADO = reg;
     if (typeof pintaIndicadores === 'function') pintaIndicadores(g, m, i0, i1);
     dibujaCruz();
@@ -316,7 +434,7 @@ function creaLienzo(canvas, op) {
     // LAS CELDAS
     const modo = L.vista.celda;
     const dec = decimalesDe(m.activo, m.unidad);
-    const fuente = fuenteDe(L.fila);
+    const fuente = L.fuente;
     const filaCabe = L.vista.numeros !== false && L.fila >= LZ.FILA_TEXTO;
     const ref = refs.vela(v);
     r.referencia = ref;
@@ -902,6 +1020,11 @@ function creaLienzo(canvas, op) {
       L.fin = L.ver - 1;
       tocado(true);
     },
+    // ADENDA: el ultimo precio de la cinta (flujo-app.js, cada segundo con la vista viva); null lo quita
+    vivo(d) {
+      L.vivo = d;
+      pide();
+    },
     borraRegla() {
       L.regla = null;
       dibujaCruz();
@@ -924,5 +1047,5 @@ function horaDe(t, marco) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { LZ, COLOR, creaLienzo, fuenteDe, alfaDe, horaDe };
+  module.exports = { LZ, COLOR, creaLienzo, fuenteDe, fuenteVista, etiquetaVivo, VIVO_DECIMALES, alfaDe, horaDe };
 }

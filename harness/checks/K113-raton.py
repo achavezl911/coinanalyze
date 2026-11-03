@@ -13,6 +13,7 @@ el hash) y las respuestas que llegaron por la red.
 LAS VISTAS, RELATIVAS A AHORA (`h` es la hora entera que acabo hace una hora; K113_HASTA la fija):
   (vacio)                             LA VISTA POR OMISION, en vivo, en 1920x1080 (todos los gestos) y en 1366x768
   #BTC/15m/perp/hasta=<h>             otro marco del pasado: lo pintado, la cruz, los modos de la celda y la regla
+  #BTC/1h/perp/hasta=<h>              el marco de 1 h, en 1366x768: las cuatro muescas de Ctrl+rueda (remate 1)
   #ETH/5m/perp/unidad=usd/hasta=<h>   otro activo, en USD (sin decimales: E-04), en 1366x768
   #BTC/1m/perp/hasta=<h>/modo=tpo/sesiones=1   el TPO, con el mismo convenio del raton
 
@@ -24,7 +25,13 @@ LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro m
                  resumen (F-10), con el CVD de sesion recalculado exacto desde su arranque servido
   (C) la cruz    y la ficha: la vela y el nivel bajo el cursor (E-05: precio redondeado al paso y hora en los ejes, la
                  vertical tambien por los paneles; F-16: la ficha dice esa celda, y #lectura lo mismo)
-  (T) el texto   F-09: cada cifra sale si la fila mide >= 10 px y cabe con 4 px de holgura, y no sale si no
+  (T) el texto   F-09: cada cifra sale si la fila mide >= 10 px y cabe con 4 px de holgura, y no sale si no; la fuente
+                 es UNA por vista, la mayor (9 px a fuenteDe) con la que cabe toda cifra que cabe a 9, y es la que mide
+                 fillText; tras un gesto que solo acerca el precio o solo ensancha las velas (y 1-4 muescas de Ctrl+rueda en
+                 la vista por omision y en BTC 15m y 1h) ninguna celda a la vista antes y despues pierde su cifra (remate 1)
+  (V) el vivo    adenda del remate 1: la linea y la etiqueta del precio en vivo estan en la ULTIMA operacion de la cinta
+                 que la pagina recibio (por la red), del venue de referencia que declara, con 2 decimales (remate 2), en la
+                 y de su precio tras cada gesto; «sin vivo» con la cinta parada; ninguna en una vista del pasado
   (R) el raton   cada gesto mueve lo que manda y nada mas (I-01, I-02, I-03, I-04, I-05, I-06, I-07, I-08)
   (E) el aspecto E-01 (fondo y contraste), E-02 (comprador y vendedor con dE2000 >= 20 en vision normal y en las tres
                  simulaciones de Machado 2009; el mismo comprador en /libro y en la mesa), E-03, E-04
@@ -68,6 +75,7 @@ EJE_P, EJE_T, CABEZA, FILA_RES = 76, 20, 16, 16
 FILA_TEXTO, FILA_DEFECTO, ESPACIADO = 10, 12, 81
 PASOS, CORTE = 20, 0.98
 DECIMALES = {"BTC": 3, "ETH": 2, "SOL": 1}
+VIVO_DECIMALES = 2  # remate 2: el precio en vivo, 2 fijos (la cinta no trae mas, medido por el operador 2026-11-03)
 FAMILIAS = {"perp": ["binance_usdm", "bybit_linear", "okx_swap", "bitget_usdt"],
             "spot": ["binance_spot", "bybit_spot", "okx_spot"], "coinbase": ["coinbase_spot"],
             "deribit": ["deribit_perp"]}
@@ -393,6 +401,30 @@ class Vista:
                 except (self.K.SystemExit2, ValueError, KeyError):
                     x["cuerpo"] = {}
 
+    async def cinta_parada(self, segundos: float) -> dict:
+        """(V) Para la cinta sin tocar el banco: cada respuesta de /api/orderflow/cinta llega con las operaciones de la
+        primera que se intercepto y su as_of nuevo. Devuelve la cosecha del final, con la intercepcion puesta."""
+        await self.s.pide("Fetch.enable", patterns=[{"urlPattern": "*/api/orderflow/cinta*", "requestStage": "Response"}])
+        quietas, visto, fin = None, len(self.s.eventos), time.monotonic() + segundos
+        try:
+            while time.monotonic() < fin:
+                await self.s.drena(0.2)
+                nuevos, visto = self.s.eventos[visto:], len(self.s.eventos)
+                for ev in nuevos:
+                    if ev.get("method") != "Fetch.requestPaused":
+                        continue
+                    rid = ev["params"]["requestId"]
+                    r = await self.s.pide("Fetch.getResponseBody", requestId=rid)
+                    cuerpo = json.loads(base64.b64decode(r["body"]) if r.get("base64Encoded") else r["body"])
+                    quietas = cuerpo.get("operaciones", []) if quietas is None else quietas
+                    cuerpo["operaciones"] = quietas
+                    await self.s.pide("Fetch.fulfillRequest", requestId=rid, responseCode=200,
+                                      responseHeaders=[{"name": "Content-Type", "value": "application/json"}],
+                                      body=base64.b64encode(json.dumps(cuerpo).encode()).decode())
+            return await self.cosecha()
+        finally:
+            await self.s.pide("Fetch.disable")
+
     def excepciones(self) -> list[str]:
         return [json.dumps(e["params"].get("exceptionDetails", {}))[:300] for e in self.s.eventos
                 if e.get("method") == "Runtime.exceptionThrown"]
@@ -436,7 +468,7 @@ class Juez:
     """Lo que se condena, por brazo; y lo que se dice."""
 
     def __init__(self):
-        self.malos = {b: [] for b in "PFCTRE"}
+        self.malos = {b: [] for b in "PFCTREV"}
         self.info: list[str] = []
         self.pasos = 0
 
@@ -515,9 +547,7 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
     pf = float(paso)
     dec = 0 if pin.get("unidad") == "usd" else DECIMALES.get(pin.get("activo"), 2)
     fila = esc["fila"]
-    fuente = fuente_de(fila)
-    if esc.get("fuente") != fuente:
-        J.mal("T", pref, f"la fuente de las celdas es de {esc.get('fuente')} px con filas de {fila:.1f} y tiene que ser de {fuente}")
+    tope = fuente_de(fila)
     if abs((esc["hi"] - esc["lo"]) - (esc["abajo"] - esc["arriba"]) / fila * pf) > 1e-6 * max(1, esc["hi"]) or \
             abs(esc["centro"] - (esc["hi"] + esc["lo"]) / 2) > 1e-6 * max(1, esc["hi"]):
         J.mal("F", pref, f"la escala del precio no es la de su centro y su fila ({esc})")
@@ -592,9 +622,20 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
             exp = esperado_celda(s_, pin.get("celda", "bidask"), dec, d)
             cand = numeros and fila >= FILA_TEXTO and dentro and f["filtro"] != "atenuada" and bool(exp)
             for t, negrita, _lado in exp:
-                piezas.add((t, f"{'bold ' if negrita else ''}{fuente}px ui-monospace, monospace"))
+                for fz in range(9, tope + 1):
+                    piezas.add((t, f"{'bold ' if negrita else ''}{fz}px ui-monospace, monospace"))
             plan.append((r, w, n, f, s_, exp, cand, d))
     medidas = await anchos(v, piezas)
+
+    def cabe_a(exp: list, w: float, fz: int) -> bool:
+        hueco = w / 2 if exp and exp[0][2] != "uno" else w
+        return all(medidas[(t, f"{'bold ' if ng else ''}{fz}px ui-monospace, monospace")] + 4 <= hueco for t, ng, _ in exp)
+    # remate 1: UNA fuente por vista, la mayor entre 9 y fuenteDe(fila) con la que cabe toda cifra que cabe a 9 px
+    salen = [(x[5], x[1]) for x in plan if x[6] and cabe_a(x[5], x[1], 9)]
+    fuente = next((fz for fz in range(tope, 9, -1) if all(cabe_a(x, w, fz) for x, w in salen)), 9)
+    if esc.get("fuente") != fuente:
+        J.mal("T", pref, f"la fuente de las celdas es de {esc.get('fuente')} px con filas de {fila:.1f} y la mayor con la que "
+                         f"cabe toda cifra que cabe a 9 px es {fuente}: con otra, acercar el precio esconde cifras (remate 1)")
     n_textos = 0
     for r, w, n, f, _s, exp, cand, d in plan:
         quien = f"vela {r['ts'][11:16]} nivel {n}"
@@ -624,6 +665,8 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
                 J.mal("F", pref, f"{quien}: el contrato dice «{p}» y el lienzo no lo escribio en su fila")
                 continue
             x_ = reg[0]
+            if f"{fuente}px" not in str(x_[4]):
+                J.mal("T", pref, f"{quien}: «{p}» se escribe con «{x_[4]}» y la vista dice {fuente} px")
             ancho_t = medidas[(t, f"{'bold ' if negrita else ''}{fuente}px ui-monospace, monospace")]
             if lado == "venta" and not (x_[6] == "right" and x_[1] <= xc and x_[1] - ancho_t >= r["x0"]):
                 J.mal("E", pref, f"{quien}: la venta (bid) no esta a la izquierda del eje de la vela (F-02)")
@@ -806,6 +849,86 @@ def juzga_cruz(c: dict, velas: list, x: float, y: float, J: Juez, pref: str, sob
                          "escrito (E-05: la cruz sigue por los paneles)")
 
 
+def cifras_de(pin: dict) -> tuple[set, set]:
+    """Las celdas con cifra y las celdas a la vista; cada una por su vela, su nivel y sus valores (si una vela viva cambia
+    entre medias, sus celdas cambiadas no se comparan)."""
+    esc = pin.get("escala") or {}
+    con, vis = set(), set()
+    for r in pin.get("velas") or []:
+        for f in r.get("niveles") or []:
+            k = (r["ts"], str(f["nivel"]), str(f.get("venta")), str(f.get("compra")), str(f.get("total")))
+            if esc and f.get("filtro") != "escondida" and not (f["y1"] < esc["arriba"] - 1 or f["y0"] > esc["abajo"] + 1):
+                vis.add(k)
+            if f.get("texto_venta") or f.get("texto_compra") or f.get("texto"):
+                con.add(k)
+    return con, vis
+
+
+def monotonia(J: Juez, pref: str, nombre: str, pa: dict, pb: dict) -> None:
+    """(T) del remate 1: un gesto que solo acerca el precio o solo ensancha las velas no le quita la cifra a ninguna celda
+    que esta a la vista antes y despues."""
+    if pa.get("celda") != pb.get("celda"):
+        return
+    ca, _ = cifras_de(pa)
+    cb, vb = cifras_de(pb)
+    perdidas = sorted((ca & vb) - cb)
+    if perdidas:
+        J.mal("T", pref, f"«{nombre}» solo acerca y {len(perdidas)} celda(s) a la vista pierden su cifra (la primera: vela "
+                         f"{perdidas[0][0][11:16]} nivel {perdidas[0][1]}; fuente {(pa.get('escala') or {}).get('fuente')} -> "
+                         f"{(pb.get('escala') or {}).get('fuente')} px; F-09: acercar no esconde)")
+
+
+def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un juicio por propiedad de la adenda
+    """(V) la linea del precio en vivo, contra las respuestas de la cinta que la pagina RECIBIO (la red, no su contrato)."""
+    pin = c.get("pin") or {}
+    vivo = pin.get("vivo")
+    pedidas = sorted((x for x in c.get("red") or [] if x["ruta"] == "/api/orderflow/cinta" and x["q"].get("limit") == "1"),
+                     key=lambda x: x["t"] or 0)
+    if e.get("hasta"):
+        if vivo or pedidas:
+            J.mal("V", pref, f"una vista del pasado lleva precio en vivo (etiqueta {(vivo or {}).get('texto')}, "
+                             f"{len(pedidas)} peticiones de la cinta)")
+        return
+    vs = pin.get("venues") or []
+    ref = "binance_spot" if e.get("familia") == "spot" else "binance_usdm"
+    ref = ref if ref in vs or not vs else vs[0]
+    llegadas = [x for x in pedidas if (x.get("cuerpo") or {}).get("operaciones")]
+    if not llegadas:
+        if vivo:
+            J.mal("V", pref, f"la linea esta en {vivo.get('texto')} y no llego ninguna operacion de la cinta (lo ausente no es un precio)")
+        return
+    if not vivo:
+        J.mal("V", pref, f"llegaron {len(llegadas)} respuestas de la cinta con operaciones y no hay precio en vivo")
+        return
+    ult = llegadas[-1]
+    o = ult["cuerpo"]["operaciones"][0]
+    if vivo.get("venue") != ref or ult["q"].get("venues") != ref or o.get("venue") != ref:
+        J.mal("V", pref, f"la linea esta en el precio de {o.get('venue')} (pedido venues={ult['q'].get('venues')}) y dice "
+                         f"{vivo.get('venue')}: el venue de referencia de la vista es {ref}")
+    validos = [to_fixed(float(x["cuerpo"]["operaciones"][0]["precio"]), VIVO_DECIMALES) for x in llegadas[-2:]]
+    if vivo.get("texto") not in validos:
+        J.mal("V", pref, f"la etiqueta dice {vivo.get('texto')} y la ultima operacion de {ref} que llego es {validos[-1]} "
+                         f"({VIVO_DECIMALES} decimales)")
+    esc = pin.get("escala") or {}
+    p = float(vivo.get("precio") or 0)
+    if esc and esc["hi"] > esc["lo"]:
+        fuera = "arriba" if p > esc["hi"] else "abajo" if p < esc["lo"] else None
+        yq = round(esc["arriba"] + (esc["hi"] - p) / (esc["hi"] - esc["lo"]) * (esc["abajo"] - esc["arriba"])) + 0.5
+        if vivo.get("fuera") != fuera or (fuera is None and abs((vivo.get("y") or -1e9) - yq) > TOL):
+            J.mal("V", pref, f"la linea del precio en vivo esta en y={vivo.get('y')} ({vivo.get('fuera')}) y {vivo.get('texto')} "
+                             f"en esta escala va en y={yq} ({fuera}): no se mueve con el eje")
+    eje = [t[0] for t in textos_de(c, "lienzo") if t[1] >= pin.get("ancho", 0) - EJE_P]
+    if not any(t.endswith(str(vivo.get("texto"))) for t in eje) or vivo.get("aviso") not in eje:
+        J.mal("V", pref, f"la etiqueta {vivo.get('texto')} · {vivo.get('aviso')} no esta escrita en el eje de precio")
+    ultima = next((x for x in reversed(pedidas) if x.get("cuerpo")), ult)
+    edad = (ms(ultima["cuerpo"].get("as_of") or ult["cuerpo"]["as_of"]) - ms(o["ts"])) / 1000
+    if edad > 11 and vivo.get("estado") != "sin vivo":
+        J.mal("V", pref, f"la ultima operacion de {ref} tiene {edad:.0f} s y la etiqueta dice «{vivo.get('aviso')}»: no avisa "
+                         "de que no hay vivo")
+    if edad < 7 and vivo.get("estado") != "vivo":
+        J.mal("V", pref, f"la ultima operacion de {ref} tiene {edad:.1f} s y la etiqueta dice «{vivo.get('aviso')}»")
+
+
 def estado_ejes(c: dict) -> dict:
     p = c["pin"] or {}
     e = p.get("escala") or {}
@@ -858,6 +981,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
     async def paso(nombre: str, c: dict | None = None) -> dict:
         c = c or await v.cosecha()
         r = await juzga_footprint(v, c, e, K109, K112, J, f"{pref} tras «{nombre}»", arr)
+        juzga_vivo(c, e, J, f"{pref} tras «{nombre}»")
         if r:
             r["escritas_resumen"] = await juzga_resumen(v, c, e, r["velas"], arranques_de(c, K109, e) or arr, J,
                                                         f"{pref} tras «{nombre}»")
@@ -870,12 +994,17 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
         """El estado JUSTO antes del gesto, el gesto y el estado despues (con su juicio, si lleva nombre). En el vivo
         puede llegar una vela nueva entre medias y mover lo que se mide: entonces se vuelve a medir (tres veces como mucho)."""
         for _ in range(3):
-            a = estado_ejes(await v.cosecha())
+            ca = await v.cosecha()
+            a = estado_ejes(ca)
             await accion()
             pr = await paso(nombre) if nombre else {"c": await v.cosecha()}
             b = estado_ejes(pr["c"])
             if a["n"] == b["n"]:
                 break
+        # remate 1: si el gesto solo acerca (filas mas altas o velas mas anchas, nada mas pequeno), la monotonia
+        if nombre and b["fila"] >= a["fila"] - 1e-9 and b["ver"] <= a["ver"] + 1e-9 and \
+                (b["fila"] > a["fila"] + 1e-9 or b["ver"] < a["ver"] - 1e-9):
+            monotonia(J, f"{pref} tras «{nombre}»", nombre, ca["pin"] or {}, pr["c"]["pin"] or {})
         return a, pr, b
 
     p0 = await paso("carga", c0)
@@ -948,6 +1077,14 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
     b = estado_ejes(pr["c"])
     if b["modo"] != "auto" or b["fila"] != FILA_DEFECTO:
         J.mal("R", pref, f"tras el doble clic en el eje de precio la escala es {b['modo']} con fila {b['fila']} (I-04: AUTO)")
+    if not e.get("hasta") or (e["activo"] == "BTC" and e["marco"] in ("15m", "1h")):
+        # remate 1: 1, 2, 3 y 4 muescas de Ctrl+rueda (deltaY -120) desde la escala por omision; cada una contra la anterior
+        # (en medido) y contra la de partida: ninguna celda a la vista en las dos pierde su cifra
+        p_ini = (await v.cosecha())["pin"] or {}
+        for k in range(1, 5):
+            _, pr, _ = await medido(f"ctrl+rueda, muesca {k}", lambda: v.rueda(*L(xm, ym), -120, "ctrl"))
+            monotonia(J, f"{pref} tras «{k} muescas»", f"{k} muescas de ctrl+rueda", p_ini, pr["c"]["pin"] or {})
+        await v.clic(*L(xe, ym), veces=2)
     if completo:
         # I-02: arrastrar el eje de precio 100 px hacia arriba reduce el rango y deja el centro
         a, pr, b = await medido("arrastre del eje de precio", lambda: v.arrastra(*L(xe, ym), *L(xe, ym - 100)))
@@ -1046,6 +1183,13 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
     await recorrido_regla(v, out, ctx, L, xm, ym, g0, pref)
     if completo and not e.get("hasta"):
         await recorrido_sigue(v, out, ctx, L, xm, ym, pref)
+    if completo and not e.get("hasta"):
+        # (V) la cinta parada: la sonda le devuelve a la pagina la misma operacion con el as_of nuevo, 14 s
+        c = await v.cinta_parada(14)
+        juzga_vivo(c, e, J, f"{pref} con la cinta parada")
+        vv = (c["pin"] or {}).get("vivo") or {}
+        if vv.get("estado") != "sin vivo" or not str(vv.get("aviso", "")).startswith("sin vivo "):
+            J.mal("V", pref, f"con la cinta parada 14 s la etiqueta dice «{vv.get('aviso')}»: no avisa de que no hay vivo")
     # (P): ningun gesto volvio a pedir la historia
     c = await v.cosecha()
     hist = pedidas_historia(c["red"])
@@ -1332,6 +1476,7 @@ def juzga() -> int:
     huella = hashlib.sha256()
     vistas = [("", 1920, 1080, recorrido_completo), ("", 1366, 768, recorrido_corto),
               (f"#BTC/15m/perp/hasta={h}", 1920, 1080, recorrido_corto),
+              (f"#BTC/1h/perp/hasta={h}", 1366, 768, recorrido_corto),
               (f"#ETH/5m/perp/unidad=usd/hasta={h}", 1366, 768, recorrido_corto),
               (f"#BTC/1m/perp/hasta={h}/modo=tpo/sesiones=1", 1920, 1080, recorrido_tpo)]
     for i, (vista, ancho, alto, rec) in enumerate(vistas):
@@ -1368,7 +1513,7 @@ def juzga() -> int:
             f"{p['gesto']}{'' if p.get('textos') is None else ' (' + str(p['textos']) + ' cifras)'}"
             for p in out["pasos"][:6]) + (" …" if len(out["pasos"]) > 6 else ""))
     cola = f" · sujeto: {sujeto} · {declara} · huella {huella.hexdigest()[:16]}"
-    rojos = [(b, x) for b in "PFCTRE" for x in J.malos[b]]
+    rojos = [(b, x) for b in "PFCTREV" for x in J.malos[b]]
     if rojos:
         print(f"ROJO  K113 · el raton o el aspecto de /flujo no hacen lo que la especificacion dice · {len(rojos)} hallazgo(s)"
               + cola)

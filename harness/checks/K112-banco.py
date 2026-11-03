@@ -136,7 +136,9 @@ RUTAS = {"/api/orderflow/footprint": ("footprint", ("symbol", "desde", "hasta", 
          "/api/orderflow/sesiones": ("sesiones", ("symbol", "desde", "hasta", "sesion", "paso", "venues", "unidad")),
          "/api/orderflow/perfil": ("perfil", ("symbol", "desde", "hasta", "paso", "venues", "unidad")),
          "/api/orderflow/vwap": ("vwap", ("symbol", "desde", "hasta", "marco", "sesion", "venues")),
-         "/api/orderflow/tpo": ("tpo", ("symbol", "desde", "hasta", "sesion", "paso", "venues"))}
+         "/api/orderflow/tpo": ("tpo", ("symbol", "desde", "hasta", "sesion", "paso", "venues")),
+         # remate 1 de la 148: el precio en vivo de /flujo (una por segundo, venues=<referencia>&minutos=1&limit=1)
+         "/api/orderflow/cinta": ("cinta", ("symbol", "venues", "min_usd", "minutos", "limit"))}
 
 
 def _sirve_ruta(dsn: str, ruta: str, q: dict[str, str]) -> tuple[int, dict]:
@@ -159,6 +161,17 @@ def _sirve_ruta(dsn: str, ruta: str, q: dict[str, str]) -> tuple[int, dict]:
                 kw["marco"] = kw["marco"] or "1m"
             if "limit" in params:
                 kw["limit"] = int(kw["limit"] or (500 if nombre == "grandes" else 200))
+            if nombre == "cinta":
+                # el bloque vivo llega hasta despues de ahora (lo futuro no se ha operado aun) y se acaba a la media hora
+                # de cargar: pasado su final se repiten sus ultimos 25 min, desplazados, y el vivo sigue con operaciones
+                kw["minutos"] = int(kw["minutos"] or 60)
+                await conn.execute("""CREATE TEMP VIEW orderflow_cinta AS
+                    WITH d AS (SELECT t1, CASE WHEN now() <= t1 THEN interval '0 s'
+                                          ELSE ceil(extract(epoch FROM now() - t1) / 1500) * interval '1500 s' END AS s
+                                 FROM (SELECT max(ts) AS t1 FROM public.orderflow_cinta) f)
+                    SELECT c.ts + d.s AS ts, c.venue, c.symbol, c.precio, c.base, c.usd, c.compra, c.id
+                      FROM public.orderflow_cinta c, d
+                     WHERE c.ts + d.s <= now() AND (d.s = interval '0 s' OR c.ts > d.t1 - interval '1500 s')""")
             return await getattr(lec, nombre)(conn, **kw)
         finally:
             await conn.close()

@@ -28,6 +28,12 @@ let MODELO = null;
 let ULTIMA = null; // la ultima respuesta BUENA: { asOfMs, t }
 let FALLO = null; // el ultimo intento que no trajo dato
 let LATIDO = null;
+// ADENDA DEL REMATE 1 (148): el precio en vivo, la ultima operacion del venue de referencia, una peticion por segundo
+const RUTA_CINTA_VIVA = '/api/orderflow/cinta';
+const PRECIO_VIVO_MS = 1000;
+let PRECIO = null;
+let PIDIENDO_VIVO = false;
+let VIVO_DATO = null;
 let TIC = null;
 let PIDIENDO = false;
 let CARGA = 0;
@@ -323,12 +329,48 @@ function arrancaLatido() {
   pararLatido();
   LATIDO = setInterval(late, VIVO_S * 1000);
   TIC = setInterval(pintaEstado, 1000);
+  PRECIO = setInterval(() => latePrecio(CARGA), PRECIO_VIVO_MS);
+  latePrecio(CARGA);
+}
+
+/* El venue de referencia de la familia: binance_usdm en perpetuos, binance_spot en spot; si la vista no lo lleva, su
+ * primer venue. Es el que dice la etiqueta. */
+function venueReferencia(familia) {
+  const vs = (FAMILIAS[familia] || {}).venues || [];
+  const ref = familia === 'spot' ? 'binance_spot' : 'binance_usdm';
+  return vs.includes(ref) ? ref : vs[0] || ref;
+}
+
+/* La peticion mas pequena que la ruta deja (venues=<referencia>&minutos=1&limit=1; operaciones[0] es la ultima). Sin
+ * operacion nueva se queda la anterior y su edad crece; sin respuesta, la etiqueta dice «sin vivo»; sin ninguna
+ * operacion conocida, ningun precio. No se apunta en FLUJO_HITOS: es el latido del precio, no un dato de la vista. */
+async function latePrecio(mia) {
+  if (PIDIENDO_VIVO || document.hidden || VISTA.hasta || mia !== CARGA || !LIENZO) return;
+  PIDIENDO_VIVO = true;
+  const ref = venueReferencia(VISTA.familia);
+  const sobre = await pedir(RUTA_CINTA_VIVA, { symbol: VISTA.activo, venues: ref, minutos: 1, limit: 1 });
+  PIDIENDO_VIVO = false;
+  if (mia !== CARGA || PRECIO === null) return;
+  const op = sobre.ok ? (sobre.datos.operaciones || [])[0] : null;
+  if (op) {
+    VIVO_DATO = { venue: ref, precio: op.precio, tsMs: Date.parse(op.ts), asOfMs: Date.parse(sobre.datos.as_of),
+                  recibidoMs: Date.now(), ok: true };
+  } else if (VIVO_DATO && VIVO_DATO.venue === ref) {
+    VIVO_DATO = { ...VIVO_DATO, ok: sobre.ok };
+  } else {
+    VIVO_DATO = null;
+  }
+  LIENZO.vivo(VIVO_DATO);
 }
 
 function pararLatido() {
   if (LATIDO !== null) clearInterval(LATIDO);
   if (TIC !== null) clearInterval(TIC);
   LATIDO = TIC = null;
+  if (PRECIO !== null) clearInterval(PRECIO);
+  PRECIO = null;
+  VIVO_DATO = null;
+  if (LIENZO) LIENZO.vivo(null);
   if (LATIDO_TPO !== null) clearInterval(LATIDO_TPO);
   LATIDO_TPO = null;
   paraCinta(); // OF-5a
