@@ -745,6 +745,10 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
                          f"{estados.get(v)}")
     if len(filas) != len(esp):
         malos.append(f"{len(filas)} filas pintadas y {len(esp)} recalculadas")
+    cortas = [f for f in filas if len(f["t"]) != 8 or len(f.get("c") or []) != 8]
+    if cortas:  # una pagina sin las 8 columnas (la de e0fb3fb) es ROJO de este brazo y no tumba a los demas
+        malos.append(f"fila {cortas[0]['d'].get('nivel')}: {len(cortas[0]['t'])} columnas y la escalera tiene 8")
+        filas = []
     for f, x in zip(filas, esp, strict=False):
         d, t = f["d"], f["t"]
         if int(d.get("k", "0")) != x["k"] or int(d.get("n", "-1")) != x["n"]:
@@ -778,8 +782,11 @@ def juzga_escalera(vio: dict, e: dict, libros_por_venue: dict, estados: dict, ro
     if malos:
         rojos.append(f"(F) {pref} la escalera no pinta lo servido: {malos[0]}" + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
     if len(filas) == len(esp):
-        juzga_pro(vio, e, esp, rojos, nomed if nomed is not None else [], info, pref, casa,
-                  suma(vivos, len(e["venues"])))
+        try:  # una pagina sin la forma profesional es ROJO de este brazo y no tumba a los demas (el R1 de e0fb3fb)
+            juzga_pro(vio, e, esp, rojos, nomed if nomed is not None else [], info, pref, casa,
+                      suma(vivos, len(e["venues"])))
+        except (KeyError, TypeError, AttributeError, IndexError, ValueError) as exc:
+            rojos.append(f"(F) {pref} la escalera no tiene la forma profesional: {type(exc).__name__} {str(exc)[:80]}")
     info.append(f"(F) {pref} escalera: {len(filas)} filas, {sum(1 for x in esp if x['n'])} niveles conocidos, "
                 f"{len(vivos)} de {len(e['venues'])} venues sumando ({', '.join(f'{v} {estados.get(v)}' for v in e['venues'])})")
 
@@ -1218,7 +1225,7 @@ def juzga() -> int:
         pin = vio.get("pintado") or {}
         if "hasta=" in vista:
             mapa = {k: v for k, v in (pin.get("mapa") or {}).items() if k != "cuadro"}
-            esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms")}
+            esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms", "ms")}
             huella.update(json.dumps([vista, mapa, esc, vio.get("filas"), [p["url"].split("?", 1)[-1] for p in vio["fotos"]],
                                       [p.get("cuerpo") and {k: v for k, v in p["cuerpo"].items() if k != "as_of"}
                                        for p in vio["fotos"]], sorted((vio.get("pixeles") or {}).items()),
