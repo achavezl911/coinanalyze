@@ -30,7 +30,7 @@
 #   (C) barra_otra_escala         las barras con la escala al doble del mayor lado de su vela
 #   (C) relleno_por_omision       la vista por omision pinta el relleno en vez del perfil compra-venta
 #   (C) desequilibrio_sin_pastilla  la cifra fuerte en negrita sin su pastilla
-#   (C) grande_sobre_cifra        las grandes en el centro de su vela, encima de las cifras
+#   (C) grande_sobre_cifra        las grandes 6 px a la izquierda del eje de su vela, encima de la cifra de venta
 #   (C) poc_fuera_de_su_fila      la linea del POC una fila por debajo de la suya
 #   (S) timeout_como_500          una copia de app/ sin la clausula del tiempo agotado: la ruta no dice 503
 #   V   k112_de_d91d935           el K112 de antes, con las vistas nuevas, contra la pagina buena: ROJO (el defecto era suyo)
@@ -196,8 +196,8 @@ planta_pagina flujo/flujo-calculo.js "s/Object\.assign(e, { fondo: 'perfil', fra
 juzga_plantado relleno_por_omision C "se pinta el fondo|paso de color" $m "el relleno por omision en vez del perfil"
 planta_pagina flujo/flujo-dibujo.js 's/^      if (fuerte) {$/      if (false) {/' 1; m=$?
 juzga_plantado desequilibrio_sin_pastilla C "sin su pastilla" $m "el desequilibrio en negrita sin su pastilla"
-planta_pagina flujo/flujo-indicadores.js 's/^    const x = x0 + 4;$/    const x = x0 + w \/ 2;/' 1; m=$?
-juzga_plantado grande_sobre_cifra C "tapa la cifra" $m "las grandes en el centro de su vela, sobre las cifras"
+planta_pagina flujo/flujo-indicadores.js 's/^    const x = x0 + 4;$/    const x = x0 + Math.floor(w \/ 2) - 6;/' 1; m=$?
+juzga_plantado grande_sobre_cifra C "tapa la cifra" $m "las grandes 6 px a la izquierda del eje, sobre la cifra de venta"
 planta_pagina flujo/flujo-dibujo.js 's/const yl = Math\.floor((y0 + y1) \/ 2);/const yl = Math.floor((y0 + y1) \/ 2) + (y1 - y0);/' 1; m=$?
 juzga_plantado poc_fuera_de_su_fila C "linea del POC" $m "la linea del POC una fila por debajo"
 mkdir -p "$T/sobre/k112app"; ln -s "$REPO/static" "$T/sobre/k112app/static"; cp -r "$REPO/app" "$T/sobre/k112app/app"; rm -rf "$T/sobre/k112app/app/__pycache__"

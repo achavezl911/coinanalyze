@@ -1259,7 +1259,8 @@ def juzga() -> int:
                                       [(r["ruta"], sorted(r["q"].items())) for r in vio["red"]],
                                       [r.get("cuerpo") and {k: v for k, v in r["cuerpo"].items() if k != "as_of"}
                                        for r in vio["red"] if r["ruta"] != RUTA_FP],
-                                      vio.get("cajas"), vio.get("encima")], sort_keys=True, default=str).encode())
+                                      vio.get("cajas"), vio.get("encima"), brazos], sort_keys=True,
+                                     default=str).encode())
         else:  # del vivo: lo que no depende del mercado, y si la cinta pide SOLO lo nuevo (la cadena de sus peticiones)
             cin = [r for r in vio["red"] if r["ruta"] == RUTA_ORD]
             cadena = [not cin[0]["q"].get("desde")] + [

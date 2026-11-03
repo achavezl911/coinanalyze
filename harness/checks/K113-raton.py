@@ -763,6 +763,7 @@ async def juzga_resumen(v: Vista, c: dict, e: dict, velas: list, arranques: dict
         hueco = x["estado"] == "hueco"
         tot = float(x["total"])
         quiero = {"vol": None if hueco else x["total"], "delta": None if hueco else x["delta"],
+                  "compra": None if hueco else x["compra"], "venta": None if hueco else x["venta"],
                   "deltap": None if hueco or not tot else (float(x["delta"]) / tot) * 100,
                   "cvd": cvd[i][0], "ops": None if hueco else str(x["operaciones"])}
         for f in filas:
