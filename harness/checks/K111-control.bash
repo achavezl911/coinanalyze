@@ -237,6 +237,7 @@ comprueba invocacion_ajena "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(h
 echo "== restaurado"
 FIN=$(escenario)
 rc=$(k111 $P1 "$DB"); HK_FIN=$(huella_k111)
+guarda escenario_restaurado  # (149 r2) su huella no repitio la del bueno en ctl1 y ctl2: la diferencia, contra el_bueno_es_verde.sal
 comprueba escenario_restaurado "$([ "$FIN" = "$BUENO" ] && [ "$rc" = 0 ] && [ "$HK_FIN" = "$HK_BUENA" ] && echo 0 || echo 1)" \
   "escenario $BUENO -> $FIN · huella de K111 $HK_BUENA -> $HK_FIN · rc=$rc"
 ARBOL_DESPUES=$(git -C "$REPO" status --porcelain 2>/dev/null | sha256sum | cut -c1-12)
