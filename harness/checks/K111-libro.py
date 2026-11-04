@@ -351,6 +351,8 @@ COSECHA = r"""
 (() => {
   const h = window.LIBRO_HITOS || {};
   if (h.repinta) h.repinta();
+  // (149 B r1, P4) las celdas del contrato se declaran fuera del gesto: se piden enteras antes de leerlo
+  if (typeof EL_MAPA !== 'undefined' && EL_MAPA && EL_MAPA.declara) EL_MAPA.declara();
   const filas = [...document.querySelectorAll('#esc-filas tbody tr')].map((tr) => {
     const r = tr.getBoundingClientRect();
     return {cls: tr.className, d: Object.assign({}, tr.dataset), t: [...tr.children].map((td) => td.textContent),
@@ -409,7 +411,9 @@ RATON = r"""
   const h = window.__k111h;
   return {k: tr.dataset.k, k0: h.dataset.k, top: Math.round(h.getBoundingClientRect().top * 10) / 10, misma: tr === h,
           vivo: h.isConnected, hover: h.matches(':hover'), hi: r.libro_hi === undefined ? null : r.libro_hi,
-          lo: r.libro_lo === undefined ? null : r.libro_lo};
+          lo: r.libro_lo === undefined ? null : r.libro_lo, sc: Math.round(tr.closest('.esc-tabla').scrollTop),
+          nf: tr.parentNode.children.length, k1: tr.parentNode.firstElementChild.dataset.k,
+          kn: tr.parentNode.lastElementChild.dataset.k};
 })
 """
 
@@ -440,15 +444,18 @@ def juzga_raton(vio: dict, rojos: list, info: list, pref: str) -> None:
         return
     bordes = len({(x["hi"], x["lo"]) for x in ok})
     a = ok[0]
+    # (149 B r1, P5) la rejilla en cada muestra distinta: filas, primera..ultima y scroll; dice POR QUE un nivel no se movio
+    rej = " · rejilla " + " ".join(dict.fromkeys(f"{x.get('nf')}f {x.get('k1')}..{x.get('kn')} sc{x.get('sc')}"
+                                                 for x in ok))[:400]
     malo = next((x for x in ok if x["k"] != a["k"] or not x["misma"] or not x["vivo"] or not x["hover"]
                  or abs(x["top"] - a["top"]) > 1), None)
     if malo:
         rojos.append(f"(F) {pref} la fila se mueve bajo el raton quieto: nivel {a['k']} a y {a['top']} y luego bajo el "
                      f"puntero {malo['k']} (la de antes a y {malo['top']}, {'en' if malo['hover'] else 'sin'} :hover) · "
-                     f"{bordes} bordes del libro en {RATON_S:.0f} s")
+                     f"{bordes} bordes del libro en {RATON_S:.0f} s" + rej)
     else:
         info.append(f"(F) {pref} raton quieto {RATON_S:.0f} s: el nivel {a['k']} no se movio · {bordes} bordes del libro"
-                    + ("" if bordes > 1 else " (el borde no se movio: no ejercita la rejilla)"))
+                    + ("" if bordes > 1 else " (el borde no se movio: no ejercita la rejilla)") + rej)
 
 
 def piezas(vista: str, pieza: str) -> None:

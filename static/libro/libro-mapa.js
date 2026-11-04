@@ -25,13 +25,16 @@
  * linea de debajo del mapa lo dice, y el contrato tambien.
  *
  * EL CONTRATO DE LO PINTADO, que lee K111: `window.LIBRO_PINTADO.mapa`: la escala (sus cortes y de que celdas salen), el
- * eje, por columna visible sus celdas [k, compra, venta, n, indice, lado, n_honda], y la banda «ahora», el perfil del
+ * eje, por columna visible sus celdas [k, compra, venta, n, indice, lado, n_honda] (reg.celdas = 'declaradas'; en un
+ * gesto quedan 'pendientes' hasta EL_MAPA.declara() o DECLARA_MS despues), y la banda «ahora», el perfil del
  * libro, el del volumen y el volumen de abajo. K111 no se lo cree: lo recalcula de las respuestas y lee los pixeles.
  */
 
 const MAPA = { EJE_P: 76, EJE_T: 20, AHORA: 28, VOLUMEN: 64, PERFIL: 64, BAJO: 40 };
 MAPA.DERECHA = MAPA.AHORA + MAPA.VOLUMEN + MAPA.PERFIL + MAPA.EJE_P; // lo que no es mapa, a la derecha
 MAPA.ABAJO = MAPA.BAJO + MAPA.EJE_T; // y debajo
+MAPA.DECLARA_MS = 250; // las celdas del contrato, tanto despues del ultimo cuadro (fuera del gesto)
+MAPA.GESTO_MS = 250; // un gesto (rueda, arrastre) dura hasta tanto despues de su ultimo evento: sin recortes
 const MAPA_COLOR = {
   fondo: [10, 13, 18], desconocido: [26, 26, 26], hueco: [34, 29, 22], hueco_raya: [52, 42, 26], pendiente: [30, 36, 46],
   compra: '#60a5fa', venta: '#e05a5a', eje: '#8891a0', // E-02 (OF-6a): los colores propios de cada lado
@@ -105,7 +108,8 @@ function columnaAhora(m, j1, ahoraMs) {
 function creaMapa(canvas, alLeer, aviso, alEscala) {
   const L = { cv: canvas, ctx: canvas.getContext('2d'), pr: window.devicePixelRatio || 1, W: 0, H: 0, modelo: null,
               fin: 0, ver: 0, pedido: 0, sigue: true, pendiente: false, cuadros: 0, arrastre: null, bmp: null,
-              esc: null, escClave: null, escT: -Infinity, escN: 0, escTimer: null, clave: null, aviso, alEscala,
+              esc: null, escClave: null, escT: -Infinity, escN: 0, escTimer: null, gestoT: -Infinity, clave: null, aviso,
+              alEscala,
               pc: MAPA_PERCENTILES.slice() };
 
   function mide() {
@@ -140,17 +144,17 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
   }
 
   /* El color de la celda (columna j, nivel k) y lo que el contrato dice de ella. */
-  function celda(m, j, k, esc) {
+  function celda(m, j, k, esc, soloColor) {
     const col = m.columnas[j];
     const s = col.suma;
-    if (col.estado === 'hueco') return [colorHueco(j, k), null];
-    if (col.estado !== 'foto') return [MAPA_COLOR[col.estado], null];
-    if (!s || k < s.lo || k > s.hi || !s.n[k - s.lo]) return [MAPA_COLOR.desconocido, null];
+    if (col.estado === 'hueco') return soloColor ? colorHueco(j, k) : [colorHueco(j, k), null];
+    if (col.estado !== 'foto') return soloColor ? MAPA_COLOR[col.estado] : [MAPA_COLOR[col.estado], null];
+    if (!s || k < s.lo || k > s.hi || !s.n[k - s.lo]) return soloColor ? MAPA_COLOR.desconocido : [MAPA_COLOR.desconocido, null];
     const i = k - s.lo;
     const ix = esc.indice(enUnidad(s.c[i] + s.v[i], k, m.paso, m.unidad));
     const lado = ladoDe(s.c[i], s.v[i]);
-    return [ix < 0 ? MAPA_COLOR.fondo : (lado ? MAPA_LUT_VENTA : MAPA_LUT_COMPRA)[ix],
-            [k, s.c[i], s.v[i], s.n[i], ix, lado ? 'v' : 'c', s.h ? s.h[i] : 0]];
+    const color = ix < 0 ? MAPA_COLOR.fondo : (lado ? MAPA_LUT_VENTA : MAPA_LUT_COMPRA)[ix];
+    return soloColor ? color : [color, [k, s.c[i], s.v[i], s.n[i], ix, lado ? 'v' : 'c', s.h ? s.h[i] : 0]];
   }
 
   /* El mapa de bits de las columnas [j0, j1] y las filas [kLo, kHi] (k alto arriba), con la escala `esc`. */
@@ -162,7 +166,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     for (let j = j0; j <= j1; j++) {
       const x0 = 2 * (j - j0);
       for (let k = kHi; k >= kLo; k--) {
-        const c = celda(m, j, k, esc)[0];
+        const c = celda(m, j, k, esc, true);
         const y0 = 2 * (kHi - k);
         for (let q = 0; q < 4; q++) {
           const o = ((y0 + (q >> 1)) * w + x0 + (q & 1)) * 4;
@@ -184,18 +188,26 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
   function negociado(m, tA, tB) {
     const h = m.huella;
     if (!h || !h.velas) return null;
-    const P = Number(m.paso);
+    // (149 B r1, P4) la respuesta se lee UNA vez por huella y paso, no en cada cuadro del gesto
+    if (L.huellaDe !== h || L.huellaPaso !== m.paso) {
+      const P = Number(m.paso);
+      L.huellaDe = h;
+      L.huellaPaso = m.paso;
+      L.huellaLeida = h.velas.map((x) => {
+        const t = Date.parse(x.ts);
+        return [t, Number(x.compra), Number(x.venta), isoZ(t),
+                (x.niveles || []).map((y) => [Math.round(Number(y.nivel) / P), Number(y.compra), Number(y.venta)])];
+      });
+    }
     const niveles = new Map();
     const velas = [];
-    h.velas.forEach((x) => {
-      const t = Date.parse(x.ts);
+    L.huellaLeida.forEach(([t, c, v, iso, nv]) => {
       if (t + 60000 <= tA || t >= tB) return;
-      velas.push([t, Number(x.compra), Number(x.venta)]);
-      (x.niveles || []).forEach((y) => {
-        const k = Math.round(Number(y.nivel) / P);
+      velas.push([t, c, v, iso]);
+      nv.forEach(([k, yc, yv]) => {
         const z = niveles.get(k) || [0, 0];
-        z[0] += Number(y.compra);
-        z[1] += Number(y.venta);
+        z[0] += yc;
+        z[1] += yv;
         niveles.set(k, z);
       });
     });
@@ -244,11 +256,14 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     const datos = [lo - 2, hi + 2];
     [lo, hi] = bandaDe(datos[0], datos[1], cy, kb === null ? Math.floor((datos[0] + datos[1]) / 2) : kb);
     const filas = hi - lo + 1;
-    // los cortes de color, de lo VISIBLE: como mucho una vez por segundo (al arrastrar), salvo `forzar` (K111)
+    // los cortes de color, de lo VISIBLE: como mucho una vez por segundo, salvo `forzar` (K111). (149 B r1, P4) Durante
+    // un gesto (rueda o arrastre hace menos de GESTO_MS) no se rehacen: rehacerlos tira el mapa de bits de toda la
+    // ventana y ese cuadro pasaba de 50 ms con datos de produccion; se rehacen al quedarse quieto
     const escClave = [j0, j1, lo, hi, L.pc.join(','), m.unidad, m.version || 0, n, m.columnas[0].ts].join('|');
     if (escClave !== L.escClave) {
       const t = performance.now();
-      if (forzar || !L.esc || t - L.escT >= 1000) {
+      const enGesto = t - L.gestoT < MAPA.GESTO_MS;
+      if (forzar || !L.esc || (!enGesto && t - L.escT >= 1000)) {
         L.esc = escalaCortes(m.columnas, j0, j1, lo, hi, m.paso, m.unidad, L.pc);
         L.esc.columnas = [isoZ(m.columnas[j0].ts), isoZ(m.columnas[j1].ts)];
         L.esc.niveles = [lo, hi];
@@ -260,7 +275,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
         L.escTimer = setTimeout(() => {
           L.escTimer = null;
           pide();
-        }, 1000 - (t - L.escT) + 5);
+        }, Math.max(enGesto ? MAPA.GESTO_MS - (t - L.gestoT) : 0, 1000 - (t - L.escT)) + 5);
       }
     }
     const esc = L.esc;
@@ -385,7 +400,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
       ctx.beginPath();
       ctx.rect(0, alto, ancho, MAPA.BAJO);
       ctx.clip();
-      neg.velas.forEach(([t, c, v]) => {
+      neg.velas.forEach(([t, c, v, iso]) => {
         const x0 = xT(t);
         const x1 = xT(t + 60000);
         const hc = bajo.tope > 0 ? (hb * c) / bajo.tope : 0;
@@ -395,7 +410,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
         ctx.fillRect(x0 + 0.5, base - hc, Math.max(1, x1 - x0 - 1), hc);
         ctx.fillStyle = MAPA_COLOR.venta;
         ctx.fillRect(x0 + 0.5, base - hc - hv, Math.max(1, x1 - x0 - 1), hv);
-        bajo.velas.push([isoZ(t), c, v, x0, x1]);
+        bajo.velas.push([iso, c, v, x0, x1]);
       });
       ctx.restore();
     }
@@ -442,25 +457,43 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
                          ahora: { j: ja, ts: ja === null ? null : isoZ(m.columnas[ja].ts), x0: ancho, x1: ancho + MAPA.AHORA,
                                   motivo: porQueNo },
                          perfil, volumen, bajo, ultimo });
+    const porDeclarar = [];
     for (let j = j0; j <= j1; j++) {
       const col = m.columnas[j];
       const s = col.suma;
       const x0 = xDe(j);
-      const c = { ts: isoZ(col.ts), estado: col.estado, origen: col.origen, x0, x1: x0 + bs,
+      if (!col.tsIso) col.tsIso = isoZ(col.ts);
+      const c = { ts: col.tsIso, estado: col.estado, origen: col.origen, x0, x1: x0 + bs,
                   venues: s ? s.venues : [], lo: s ? s.lo : null, hi: s ? s.hi : null,
                   mejor_compra: s ? s.mejorCompra : null, mejor_venta: s ? s.mejorVenta : null,
                   y_compra: s ? Math.round(yPrecio(s.mejorCompra)) + 0.5 : null,
                   y_venta: s ? Math.round(yPrecio(s.mejorVenta)) + 0.5 : null,
                   honda: s && s.honda ? s.honda : [], alcance: alcanceColumna(col, m.paso), celdas: [] };
-      if (s && col.estado === 'foto') {
-        for (let k = Math.max(lo, s.lo); k <= Math.min(hi, s.hi); k++) {
-          const d = celda(m, j, k, esc)[1];
-          if (d) c.celdas.push(d);
-        }
-      }
+      if (s && col.estado === 'foto') porDeclarar.push([c, j, Math.max(lo, s.lo), Math.min(hi, s.hi)]);
       reg.columnas.push(c);
     }
     window.LIBRO_PINTADO.mapa = reg;
+    // (149 B r1, P4) las celdas del contrato NO se declaran en cada cuadro: son cada celda conocida a la vista (BTC perp
+    // 1 h con la capa honda, ~69 k arrays) y eran el coste del gesto (celda + recolector, perfil de CDP), no el mapa de
+    // bits. Se declaran con `forzar`, cuando se pide el contrato (declara(), lo llama K111 al leer) o DECLARA_MS despues
+    // del ultimo cuadro; hasta entonces reg.celdas = 'pendientes'.
+    reg.celdas = 'pendientes';
+    L.declara = () => {
+      L.declara = null;
+      if (L.declTimer) clearTimeout(L.declTimer);
+      L.declTimer = null;
+      porDeclarar.forEach(([c, j, a, b]) => {
+        for (let k = a; k <= b; k++) {
+          const d = celda(m, j, k, esc)[1];
+          if (d) c.celdas.push(d);
+        }
+      });
+      reg.celdas = 'declaradas';
+    };
+    if (L.declTimer) clearTimeout(L.declTimer);
+    L.declTimer = null;
+    if (forzar) L.declara();
+    else L.declTimer = setTimeout(() => L.declara && L.declara(), MAPA.DECLARA_MS);
     // lo que se ve del mapa, dicho: cuanto de la ventana y por que no mas; la capa honda; el footprint
     const conocidos = datos[1] - datos[0] + 1;
     if (L.aviso) {
@@ -500,6 +533,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
 
   L.cv.addEventListener('wheel', (ev) => {
     ev.preventDefault();
+    L.gestoT = performance.now();
     L.pedido = L.ver * (ev.deltaY > 0 ? 1.12 : 1 / 1.12);
     acota();
     pide();
@@ -512,6 +546,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
   });
   L.cv.addEventListener('mousemove', (ev) => {
     if (L.arrastre && L.modelo) {
+      L.gestoT = performance.now();
       L.fin = L.arrastre.fin - (ev.clientX - L.arrastre.x) / ((L.W - MAPA.DERECHA) / L.ver);
       acota();
       pide();
@@ -553,6 +588,10 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
       L.pc = pc.slice();
       L.escClave = null;
       pinta(true);
+    },
+    /* el contrato entero ya: declara las celdas del ultimo cuadro si estaban pendientes */
+    declara() {
+      if (L.declara) L.declara();
     },
     pinta,
     pide,
