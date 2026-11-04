@@ -202,6 +202,11 @@ planta_pagina libro/libro-calculo.js 's/^const ESC_GRANDE_X = 3;/const ESC_GRAND
 juzga_plantado grande_con_otro_umbral F "una orden grande con otro umbral: fila" $m "grande a 2x la media y no a 3x"
 planta_pagina libro/libro-escalera.js 's/      tot = totalesVisibles(vis, /      tot = totalesVisibles([...modelo.values()], /' 1; m=$?
 juzga_plantado totales_de_otra_cosa F "los totales son de otra cosa" $m "los totales de todo el modelo y no de lo visible"
+# las dos vistas del vivo: sin ancla la rejilla es solo el libro (17-22 filas, cabe en la caja, scroll 0) y la fila se
+# corre SOLO si cambia el borde de ARRIBA en los 20 s. borde_que_late recorta cada mensaje segun la fase de 4 s en que
+# sale, y el de arriba es el maximo de las venues: se mueve si la venue que lo tiene manda en la otra fase. Va por el
+# ritmo de las venues, no por el tamano (149 B r1, P5: en k111plant5 condenaron las dos; K111 dice ahora «N de arriba»
+# y «no ejercita» si el de arriba no se movio)
 planta_pagina libro/libro-escalera.js 's/^const ESC_ANCLA = true;/const ESC_ANCLA = false;/' 1; m=$?
 juzga_plantado rejilla_sin_ancla F "\[BTC perp vivo( 1366x768)?\] la fila se mueve bajo el raton quieto" $m "sin relleno ni compensacion: la rejilla resbala con el borde"
 planta_pagina libro/libro-escalera.js "s/^const SIN_CINTA = '';/const SIN_CINTA = '0';/" 1; m=$?

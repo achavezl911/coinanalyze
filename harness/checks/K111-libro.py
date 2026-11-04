@@ -443,6 +443,9 @@ def juzga_raton(vio: dict, rojos: list, info: list, pref: str) -> None:
         rojos.append(f"(F) {pref} raton quieto: no hay fila de la escalera bajo el puntero ({len(ok)} de {len(m)} muestras)")
         return
     bordes = len({(x["hi"], x["lo"]) for x in ok})
+    # (149 B r1, P5) solo el borde de ARRIBA (el nivel mas alto) corre las filas de una rejilla sin ancla: uno de abajo
+    # anade o quita filas por debajo del raton. La vista la ejercita si cambia el de arriba, no si cambia cualquiera
+    arriba = len({x["hi"] for x in ok})
     a = ok[0]
     # (149 B r1, P5) la rejilla en cada muestra distinta: filas, primera..ultima y scroll; dice POR QUE un nivel no se movio
     rej = " · rejilla " + " ".join(dict.fromkeys(f"{x.get('nf')}f {x.get('k1')}..{x.get('kn')} sc{x.get('sc')}"
@@ -452,10 +455,11 @@ def juzga_raton(vio: dict, rojos: list, info: list, pref: str) -> None:
     if malo:
         rojos.append(f"(F) {pref} la fila se mueve bajo el raton quieto: nivel {a['k']} a y {a['top']} y luego bajo el "
                      f"puntero {malo['k']} (la de antes a y {malo['top']}, {'en' if malo['hover'] else 'sin'} :hover) · "
-                     f"{bordes} bordes del libro en {RATON_S:.0f} s" + rej)
+                     f"{bordes} bordes del libro ({arriba} de arriba) en {RATON_S:.0f} s" + rej)
     else:
         info.append(f"(F) {pref} raton quieto {RATON_S:.0f} s: el nivel {a['k']} no se movio · {bordes} bordes del libro"
-                    + ("" if bordes > 1 else " (el borde no se movio: no ejercita la rejilla)") + rej)
+                    f" ({arriba} de arriba)" + ("" if arriba > 1 else " (el borde de ARRIBA no se movio: no ejercita la "
+                                                "rejilla)") + rej)
 
 
 def piezas(vista: str, pieza: str) -> None:
