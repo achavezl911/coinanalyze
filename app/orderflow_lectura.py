@@ -188,6 +188,30 @@ SELECT {vela} AS vela, count(*) AS filas, count(*) FILTER (WHERE segundos = 60) 
  GROUP BY 1
 """
 
+# REMATE 4 (148, punto D): apertura y cierre por vela. Las celdas no los guardan (son volumen por nivel, sin orden):
+# salen de la CINTA, cada operacion, del venue de REFERENCIA, el mismo con el que /flujo situa el precio en vivo
+# (flujo-app.js venueReferencia). Uno solo porque sumar venues mezcla cotizaciones (USD, USDT, USDC) y la vela
+# dejaria de ser la del precio que se ve. Una vela que empieza antes de la operacion mas antigua que guarda la cinta
+# (48 h) puede haber perdido su apertura: va sin ellas, igual que una vela sin operaciones de ese venue.
+VELA_PRECIO_SQL = """
+WITH v AS (SELECT k, $3::timestamptz + k * $5::interval AS t0, $3::timestamptz + (k + 1) * $5::interval AS t1
+             FROM generate_series(0, $4::int - 1) k)
+SELECT k,
+       (SELECT precio FROM orderflow_cinta WHERE symbol = $1 AND venue = $2 AND ts >= t0 AND ts < t1
+         ORDER BY ts, id LIMIT 1) AS apertura,
+       (SELECT precio FROM orderflow_cinta WHERE symbol = $1 AND venue = $2 AND ts >= t0 AND ts < t1
+         ORDER BY ts DESC, id DESC LIMIT 1) AS cierre
+  FROM v
+ WHERE t0 >= (SELECT min(ts) FROM orderflow_cinta WHERE symbol = $1 AND venue = $2)
+"""
+REGLA_APERTURA = ("apertura y cierre: la primera y la ultima operacion de la vela en la cinta del venue de referencia "
+                  "(binance_usdm si se pide, si no binance_spot, si no el primero pedido); a igualdad de hora, el id. "
+                  "null si ese venue no opero en la vela o si la vela empieza antes de lo que guarda la cinta (48 h)")
+
+
+def venue_referencia(vs: list[str]) -> str:
+    return next((r for r in ("binance_usdm", "binance_spot") if r in vs), vs[0])
+
 
 def _nivel_json(n: Decimal, compra: Decimal, venta: Decimal, ops: int) -> dict[str, Any]:
     return {"nivel": texto(n), "compra": texto(compra), "venta": texto(venta), "delta": texto(compra - venta),
@@ -242,6 +266,8 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
     if len(filas) > TOPE_CELDAS:
         raise Peticion(f"mas de {TOPE_CELDAS} celdas: pide un paso mayor o un rango menor")
     cob = {f["vela"]: f for f in await conn.fetch(COBERTURA_SQL.format(vela=vela), activo, vs, a, b)}
+    ref = venue_referencia(vs)
+    oc = {f["k"]: f for f in await conn.fetch(VELA_PRECIO_SQL, activo, ref, a, n_velas, timedelta(minutes=minutos))}
     por_vela: dict[datetime, list[Any]] = {}
     for f in filas:
         por_vela.setdefault(f["vela"], []).append(f)
@@ -255,8 +281,10 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
         totales = {f["n"]: f[c] + f[v] for f in niveles}
         poc = poc_de(totales)
         va = value_area(totales)
+        ap, ci = (oc[k]["apertura"], oc[k]["cierre"]) if k in oc else (None, None)
         velas.append({
             "ts": iso(inicio),
+            "apertura": texto(ap) if ap is not None else None, "cierre": texto(ci) if ci is not None else None,
             "compra": texto(compra), "venta": texto(venta), "delta": texto(compra - venta),
             "total": texto(compra + venta), "operaciones": sum(int(f["nc"] + f["nv"]) for f in niveles),
             "poc": texto(poc) if poc is not None else None,
@@ -268,6 +296,7 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
                         vs, u, a, b),
             "marco": marco, "velas_alineadas": "date_bin sobre UTC: cada vela empieza en un multiplo del marco",
             "poc": "por vela, el nivel de mayor total; a igualdad, el de precio mas bajo",
+            "apertura_cierre": {"venue": ref, "regla": REGLA_APERTURA},
             "value_area": {"porcentaje": 70, "algoritmo": "por vela, el mismo que el perfil: " + ALGORITMO_VA},
             **({"paso_auto": auto} if auto else {}),
             "celdas": len(filas), "tope_celdas": TOPE_CELDAS, "tope_velas": TOPE_VELAS, "velas": velas}

@@ -489,6 +489,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
     # (C) remate 3: las celdas del footprint, sus barras, pastillas, POC, franja y que ninguna grande tape una cifra
     celdas_ok = juzga_celdas(pin, e, visibles, malos["C"])
     juzga_cifras(pin, visibles, malos["C"])
+    cuerpos_ok = juzga_cuerpo(pin, visibles, malos["F"])
     # ---------------------------------------------------------------- (P) y (V): lo pedido
     paneles_pedidos = [c for c in PANELES if c in e["ind"]]
     red = {r: [x for x in vio["red"] if x["ruta"] == r] for r in (RUTA_IND, RUTA_GR, RUTA_ORD)}
@@ -615,7 +616,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
                          + lista[0] + (f" (y {len(lista) - 1} mas)" if len(lista) > 1 else ""))
     info.append(f"(F)(G) {pref} {len(visibles)} velas a la vista · paneles {paneles_pedidos or 'ninguno'} · "
                 f"{puntos_ok} puntos y huecos en su sitio ({sum(len(p['huecos']) for p in ind.get('paneles') or [])} "
-                f"huecos) · {grandes_ok} grandes en su vela · {filas_ok} filas de la cinta · {celdas_ok} celdas con sus barras"
+                f"huecos) · {grandes_ok} grandes en su vela · {filas_ok} filas de la cinta · {celdas_ok} celdas con sus barras · {cuerpos_ok} cuerpos"
                 + (f" · {len(red[RUTA_ORD])} peticiones de la cinta" if vivo and "cinta" in e["ind"] else ""))
     return {"e": e, "w": w, "d": d, "vio": vio, "pref": pref} if not vivo else {}
 
@@ -852,6 +853,36 @@ def juzga_cifras(pin: dict, visibles: list, malos: list) -> None:
                 malos.append(f"{donde}: una cifra sale de su media vela (venta {cv}, compra {cc}; eje {eje}, vela {x0} a "
                              f"{x0 + w})")
                 return
+
+
+def juzga_cuerpo(pin: dict, visibles: list, malos: list) -> int:
+    """REMATE 4 (148, 2e): el cuerpo de cada vela contra lo SERVIDO. Con apertura y cierre servidos, una linea en el eje
+    (x0 + ancho // 2) de y(apertura) a y(cierre) (+-1 px), con la direccion de esos dos numeros; sin ellos, ningun
+    cuerpo. Una respuesta sin la clave (un servidor de antes) no se juzga. Devuelve los cuerpos que cuadran."""
+    esc = pin.get("escala") or {}
+    if not esc or esc.get("hi") == esc.get("lo"):
+        return 0
+    y = lambda p: esc["arriba"] + (esc["hi"] - float(p)) / (esc["hi"] - esc["lo"]) * (esc["abajo"] - esc["arriba"])  # noqa: E731
+    n = 0
+    for _i, v, r in visibles:
+        if "apertura" not in v:
+            continue
+        donde, c = f"vela {r['ts'][5:16]}", r.get("cuerpo")
+        if v["apertura"] is None or v["cierre"] is None:
+            if c:
+                malos.append(f"{donde}: sin apertura ni cierre servidos y se pinta un cuerpo {c}")
+            continue
+        a, z = D(v["apertura"]), D(v["cierre"])
+        quiero = {"x": r["x0"] + r["ancho"] // 2, "direccion": "sube" if z > a else "baja" if z < a else "plana"}
+        if not c:
+            malos.append(f"{donde}: el cuerpo servido (apertura {v['apertura']}, cierre {v['cierre']}) no se pinta")
+        elif (c.get("x"), c.get("direccion")) != (quiero["x"], quiero["direccion"]) \
+                or abs(c.get("y_apertura", -9) - y(a)) > 1.01 or abs(c.get("y_cierre", -9) - y(z)) > 1.01:
+            malos.append(f"{donde}: el cuerpo pintado {c} no es el servido (apertura {v['apertura']} en y {y(a):.1f}, "
+                         f"cierre {v['cierre']} en y {y(z):.1f}, {quiero['direccion']}, en el eje x {quiero['x']})")
+        else:
+            n += 1
+    return n
 
 
 def juzga_celdas(pin: dict, e: dict, visibles: list, malos: list) -> int:

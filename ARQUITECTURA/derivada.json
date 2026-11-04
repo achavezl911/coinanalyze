@@ -41233,7 +41233,7 @@
             "harness/checks/K108-orderflow.py:940",
             "harness/checks/K112-banco.py:133",
             "harness/checks/K112-control.bash:176",
-            "harness/checks/K112-control.bash:242"
+            "harness/checks/K112-control.bash:247"
           ],
           "menciones": []
         }
@@ -48018,12 +48018,12 @@
             "harness/checks/K112-banco.py:236",
             "harness/checks/K112-banco.py:237",
             "harness/checks/K112-banco.py:238",
-            "harness/checks/K112-control.bash:239",
+            "harness/checks/K112-control.bash:244",
             "harness/checks/K112-indicadores.py:402",
-            "harness/checks/K112-indicadores.py:1276",
-            "harness/checks/K112-indicadores.py:1283",
-            "harness/checks/K112-indicadores.py:1286",
-            "harness/checks/K112-indicadores.py:1290",
+            "harness/checks/K112-indicadores.py:1307",
+            "harness/checks/K112-indicadores.py:1314",
+            "harness/checks/K112-indicadores.py:1317",
+            "harness/checks/K112-indicadores.py:1321",
             "harness/checks/K113-control.bash:159",
             "harness/checks/K113-raton.py:448",
             "harness/checks/K113-raton.py:1467",
@@ -48893,12 +48893,12 @@
         {
           "funcion": "app.orderflow_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:365"
+          "sitio": "app/orderflow_lectura.py:394"
         },
         {
           "funcion": "app.orderflow_lectura.indicadores",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:878"
+          "sitio": "app/orderflow_lectura.py:907"
         }
       ],
       "leida_por": [
@@ -49414,7 +49414,7 @@
         {
           "funcion": "app.orderflow_lectura.indicadores",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:874"
+          "sitio": "app/orderflow_lectura.py:903"
         },
         {
           "funcion": "app.scalp_logic.market_structure",
@@ -50375,7 +50375,7 @@
         {
           "funcion": "app.orderflow_lectura._barrido_liquidaciones",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:804"
+          "sitio": "app/orderflow_lectura.py:833"
         },
         {
           "funcion": "app.scalp_logic.feed_quality",
@@ -51647,14 +51647,19 @@
       ],
       "lectores": [
         {
+          "funcion": "app.orderflow_lectura.footprint",
+          "origen": "constante VELA_PRECIO_SQL",
+          "sitio": "app/orderflow_lectura.py:197"
+        },
+        {
           "funcion": "app.orderflow_lectura.cinta",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:321"
+          "sitio": "app/orderflow_lectura.py:350"
         },
         {
           "funcion": "app.orderflow_lectura.ordenes",
           "origen": "constante ORDENES_SQL",
-          "sitio": "app/orderflow_lectura.py:916"
+          "sitio": "app/orderflow_lectura.py:945"
         }
       ]
     },
@@ -51699,7 +51704,7 @@
         {
           "funcion": "app.orderflow_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:356"
+          "sitio": "app/orderflow_lectura.py:385"
         }
       ]
     },
@@ -51727,7 +51732,7 @@
         {
           "funcion": "app.orderflow_lectura.grandes",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:338"
+          "sitio": "app/orderflow_lectura.py:367"
         }
       ]
     },

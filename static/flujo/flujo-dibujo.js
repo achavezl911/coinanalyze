@@ -645,6 +645,19 @@ function creaLienzo(canvas, op) {
       ctx.fillRect(x0 - 3, y0, 2, y1 - y0);
       r.va = { val: v.value_area.val, vah: v.value_area.vah, y0, y1 };
     }
+    // REMATE 4 (148, 2e): EL CUERPO de la vela, servido (apertura y cierre del venue de referencia): una linea de 1 px
+    // en el eje, de la apertura al cierre, azul si sube, roja si baja, gris si cierra donde abrio. Sin ellas, nada
+    r.cuerpo = null;
+    const oc = v; // la vela de la que sale el cuerpo (K112-control planta aqui la de otra vela)
+    if (oc.apertura != null && oc.cierre != null) {
+      const ya = Math.round(y(Number(oc.apertura)));
+      const yc = Math.round(y(Number(oc.cierre)));
+      const dir = Number(oc.cierre) > Number(oc.apertura) ? 'sube' : Number(oc.cierre) < Number(oc.apertura) ? 'baja'
+        : 'plana';
+      ctx.fillStyle = rgba(dir === 'sube' ? COLOR.compra : dir === 'baja' ? COLOR.venta : COLOR.neutro, '1');
+      ctx.fillRect(eje, Math.min(ya, yc), 1, Math.max(1, Math.abs(yc - ya)));
+      r.cuerpo = { apertura: oc.apertura, cierre: oc.cierre, direccion: dir, x: eje, y_apertura: ya, y_cierre: yc };
+    }
     return r;
   }
 

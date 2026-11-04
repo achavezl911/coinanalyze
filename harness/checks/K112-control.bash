@@ -207,6 +207,11 @@ planta_pagina flujo/flujo-dibujo.js 's/^        const hueco = { venta: w \/ 2 - 
 juzga_plantado carril_en_la_compra C "la compra .* cabe en su media vela" $m "el carril restado de los dos lados (la auditoria del remate 3)"
 planta_pagina flujo/flujo-dibujo.js 's/const yl = Math\.floor((y0 + y1) \/ 2);/const yl = Math.floor((y0 + y1) \/ 2) + (y1 - y0);/' 1; m=$?
 juzga_plantado poc_fuera_de_su_fila C "linea del POC" $m "la linea del POC una fila por debajo"
+# remate 4 (D, 2e): el cuerpo de la vela al reves (apertura en el cierre) y el de la vela siguiente
+planta_pagina flujo/flujo-dibujo.js 's/const ya = Math\.round(y(Number(oc\.apertura)));/const ya = Math.round(y(Number(oc.cierre)));/;s/const yc = Math\.round(y(Number(oc\.cierre)));/const yc = Math.round(y(Number(oc.apertura)));/' 2; m=$?
+juzga_plantado cuerpo_al_reves F "el cuerpo pintado .* no es el servido" $m "el cuerpo de la vela pintado del cierre a la apertura"
+planta_pagina flujo/flujo-dibujo.js 's/^    const oc = v; /    const oc = m.velas[iv + 1] || v; /' 1; m=$?
+juzga_plantado cuerpo_de_otra_vela F "el cuerpo pintado .* no es el servido" $m "cada vela con el cuerpo de la siguiente"
 mkdir -p "$T/sobre/k112app"; ln -s "$REPO/static" "$T/sobre/k112app/static"; cp -r "$REPO/app" "$T/sobre/k112app/app"; rm -rf "$T/sobre/k112app/app/__pycache__"
 sed -i 's/^    except asyncpg\.QueryCanceledError as exc:$/    except ZeroDivisionError as exc:/' "$T/sobre/k112app/app/api.py"
 m=$([ "$(diff "$REPO/app/api.py" "$T/sobre/k112app/app/api.py" | grep -c '^>')" = 1 ] && echo 0 || echo 1)
