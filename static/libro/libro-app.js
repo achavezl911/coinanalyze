@@ -25,6 +25,8 @@ const SONDEO_S = 1;
 const REINTENTO_WS_S = 30;
 const RUTA_CINTA = '/api/orderflow/cinta';
 const RUTA_PERFIL = '/api/orderflow/perfil';
+const RUTA_HONDA = '/api/libro/honda';
+const RUTA_HUELLA = '/api/orderflow/footprint';
 const CINTA_S = 1; // la cinta de la vista, una pagina por segundo (minutos=1, limit=1000), sin solapar
 const PERFIL_S = 60; // el maximo y minimo de la sesion UTC, del perfil desde las 00:00Z
 const TIEMPOS_MAX = 2000;
@@ -78,9 +80,15 @@ async function carga() {
   pintaEstado('pidiendo la historia…');
   const venues = venuesVista();
   const w = ventanaLibro(VISTA, ahora());
-  const sobre = await pedir(RUTA_FOTOS, { symbol: VISTA.activo, venues: venues.join(','), desde: w.desde,
-                                          hasta: w.hasta, paso: VISTA.paso, cada: w.cada });
-  apuntar(sobre);
+  // la historia, la capa honda (desde 75 s antes: la primera columna puede usar una foto de antes de la ventana) y el
+  // footprint 1m de la ventana, a la vez
+  const q = { symbol: VISTA.activo, venues: venues.join(','), hasta: w.hasta };
+  const [sobre, honda, huella] = await Promise.all([
+    pedir(RUTA_FOTOS, Object.assign({ desde: w.desde, paso: VISTA.paso, cada: w.cada }, q)),
+    pedir(RUTA_HONDA, Object.assign({ desde: isoZ(Date.parse(w.desde) - HONDA_RANCIA_S * 1000) }, q)),
+    pedir(RUTA_HUELLA, Object.assign({ desde: w.desde, marco: '1m', paso: VISTA.paso, unidad: 'base' }, q)),
+  ]);
+  [sobre, honda, huella].forEach(apuntar);
   if (mia !== CARGA) return;
   if (!sobre.ok) {
     FALLO = sobre;
@@ -91,7 +99,12 @@ async function carga() {
     MODELO = { activo: VISTA.activo, familia: VISTA.familia, venues, N: venues.length, paso: sobre.datos.paso,
                cada: w.cada, unidad: VISTA.unidad, desde: w.desde, hasta: w.hasta, asOfMs: asOf,
                fijo: !!VISTA.hasta, aviso: sobre.datos.aviso,
-               columnas: columnasDeFotos(sobre.datos, venues, w.columnas, asOf) };
+               columnas: columnasDeFotos(sobre.datos, venues, w.columnas, asOf), ahora,
+               huella: huella.ok ? { desde: w.desde, hasta: w.hasta, velas: huella.datos.velas || [] } : null,
+               huellaFallo: huella.ok ? null : 'el footprint respondió ' + (huella.http || 'nada') };
+    // la capa honda, junta a las columnas de la historia (las del vivo no la llevan): al paso guardado, el de omision
+    MODELO.honda = honda.ok ? juntaHonda(MODELO.columnas, honda.datos, venues, MODELO.paso, LIBRO_PASO[VISTA.activo])
+      : { pinta: false, motivo: 'la capa honda respondió ' + (honda.http || 'nada'), columnas: 0 };
     EL_MAPA.pon(MODELO, VISTA.ver);
     pideEscalera();
     if (!VISTA.hasta) {
@@ -378,7 +391,7 @@ function congela() {
 }
 
 function repinta() {
-  if (EL_MAPA) EL_MAPA.pinta();
+  if (EL_MAPA) EL_MAPA.pinta(true);
   if (LA_ESCALERA) pintaEscaleraYa();
   pintaEstado();
 }
@@ -488,7 +501,73 @@ function lectura(col, k) {
   const u = (q) => cifra(enUnidad(q, k, MODELO.paso, VISTA.unidad));
   caja.textContent = t + nivel + ' · compra ' + u(s.c[x]) + ' · venta ' + u(s.v[x]) + ' · lo conocen ' + s.n[x] + ' de '
     + s.N + ' venues' + (s.n[x] < s.N ? ' (la suma es de esos)' : '') + ' · mejor compra ' + s.mejorCompra
-    + ' · mejor venta ' + s.mejorVenta + (col.origen === 'vivo' ? ' · columna del vivo' : '');
+    + ' · mejor venta ' + s.mejorVenta + (col.origen === 'vivo' ? ' · columna del vivo' : '')
+    + (s.c[x] > 0 && s.v[x] > 0 ? ' · compra y venta a la vez (venues cruzados): pinta el lado mayor' : '')
+    + (s.h && s.h[x] ? ' · capa honda, foto de hace ' + s.honda.map((y) => y.venue + ' ' + Math.round(y.edad_s) + ' s')
+      .join(', ') : '');
+}
+
+/* ------------------------------------------------------------------ el mando de intensidad y la leyenda
+ * Dos asas en percentiles (los cortes de lo visible); se recuerdan en localStorage si el navegador deja. */
+const INTENSIDAD_CLAVE = 'libro.intensidad';
+
+function montaIntensidad() {
+  const a = document.getElementById('int-bajo');
+  const b = document.getElementById('int-alto');
+  if (!a || !b) return;
+  try {
+    const x = JSON.parse(window.localStorage.getItem(INTENSIDAD_CLAVE) || 'null');
+    if (Array.isArray(x) && x.length === 2 && x[0] >= 0 && x[1] <= 100 && x[0] < x[1]) [a.value, b.value] = x;
+  } catch (e) {
+    // sin localStorage (o con basura): los de omision
+  }
+  const mueve = (ev) => {
+    let lo = Number(a.value);
+    let hi = Number(b.value);
+    if (lo >= hi) {
+      if (ev && ev.target === a) lo = hi - 1;
+      else hi = lo + 1;
+      a.value = lo;
+      b.value = hi;
+    }
+    try {
+      window.localStorage.setItem(INTENSIDAD_CLAVE, JSON.stringify([lo, hi]));
+    } catch (e) {
+      // no se recuerda: no pasa nada
+    }
+    EL_MAPA.percentiles([lo, hi]);
+  };
+  a.addEventListener('input', mueve);
+  b.addEventListener('input', mueve);
+  if (Number(a.value) !== MAPA_PERCENTILES[0] || Number(b.value) !== MAPA_PERCENTILES[1]) mueve();
+}
+
+/* La leyenda: los dos degradados con sus cortes en la unidad de la vista, el desconocido y el «sin datos». */
+function pintaLeyenda(esc, m) {
+  const cv = document.getElementById('mapa-leyenda');
+  const tx = document.getElementById('mapa-cortes');
+  if (!cv || !tx) return;
+  const g = cv.getContext('2d');
+  const w = cv.width - 40;
+  [[MAPA_LUT_COMPRA, 0], [MAPA_LUT_VENTA, 7]].forEach(([lut, y]) => {
+    for (let x = 0; x < w; x++) {
+      const c = lut[Math.floor((255 * x) / (w - 1))];
+      g.fillStyle = 'rgb(' + c.join(',') + ')';
+      g.fillRect(x, y, 1, 6);
+    }
+  });
+  g.fillStyle = 'rgb(' + MAPA_COLOR.desconocido.join(',') + ')';
+  g.fillRect(w + 4, 0, 14, 13);
+  for (let x = 0; x < 14; x++) {
+    for (let y = 0; y < 13; y++) {
+      g.fillStyle = 'rgb(' + colorHueco(x, y).join(',') + ')';
+      g.fillRect(w + 22 + x, y, 1, 1);
+    }
+  }
+  const u = m.unidad === 'usd' ? ' USD' : ' ' + m.activo;
+  tx.textContent = esc.corte[0] === null ? 'sin cantidades a la vista'
+    : 'p' + esc.percentiles[0] + ' ' + cifra(esc.corte[0]) + u + ' → p' + esc.percentiles[1] + ' ' + cifra(esc.corte[1])
+      + u + ' (de ' + esc.n + ' celdas a la vista) · gris: desconocido · rayado: sin datos';
 }
 
 function cambia(cambios) {
@@ -504,7 +583,8 @@ function aplicaHash() {
 }
 
 function arranca() {
-  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'));
+  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'), pintaLeyenda);
+  montaIntensidad();
   LA_ESCALERA = creaEscalera(document.getElementById('escalera'), { pide: pideEscalera, limpia: limpiaCinta });
   [['sel-activo', 'activo'], ['sel-familia', 'familia'], ['sel-ventana', 'ventana'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {

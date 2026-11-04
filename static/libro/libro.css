@@ -32,9 +32,31 @@
 
 /* lo que se ve del mapa (cuantas columnas y niveles, y por que no mas): dos lineas fijas, para que el texto no mueva
  * el lienzo */
+.encaje-fila {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
 .encaje {
+  flex: 1 1 auto;
   min-height: 30px;
   color: var(--tx-mudo);
+}
+
+/* (149 B) el mando de intensidad y la leyenda del mapa */
+.intensidad {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 520px;
+  color: var(--tx-mudo);
+}
+
+.intensidad input[type='range'] {
+  width: 80px;
 }
 
 .escalera {
@@ -173,12 +195,17 @@
   background: var(--rojo);
 }
 
+.muestra.ultimo {
+  height: 1px;
+  background: var(--acento);
+}
+
 .muestra.desconocido {
-  background: #2e2e2e;
+  background: #1a1a1a;
 }
 
 .muestra.hueco-libro {
-  background: #463014;
+  background: repeating-linear-gradient(135deg, #221d16 0 2px, #342a1a 2px 3px);
 }
 
 .muestra.pendiente {

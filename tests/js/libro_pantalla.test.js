@@ -73,13 +73,79 @@ test('un instante sin foto es HUECO si su minuto ya se escribio, y «sin escribi
   assert.strictEqual(cols[1].suma, null);
 });
 
-test('la escala es el percentil: el puesto entre las celdas con cantidad de las columnas dadas; un cero es el fondo', () => {
-  const col = (cs) => ({ estado: 'foto', suma: { lo: 0, c: Float64Array.from(cs), v: new Float64Array(cs.length),
+test('la escala son dos cortes de lo visible: p20 y p98; debajo el fondo, entre lineal, encima saturado', () => {
+  const col = (cs) => ({ estado: 'foto', suma: { lo: 0, hi: cs.length - 1, c: Float64Array.from(cs), v: new Float64Array(cs.length),
                                                  n: Uint8Array.from(cs.map(() => 1)) } });
-  const esc = C.escalaPercentil([col([1, 2, 3, 4]), col([0, 100])], 0, 1, '1', 'base');
-  assert.strictEqual(esc.n, 5); // el cero conocido no cuenta
-  assert.deepStrictEqual([esc.indice(1), esc.indice(3), esc.indice(100), esc.indice(0)], [0, 102, 204, -1]);
-  assert.strictEqual(C.escalaPercentil([col([1, 2, 3, 4]), col([0, 100])], 0, 0, '1', 'base').indice(100), 255);
+  const xs = Array.from({ length: 101 }, (_, i) => i); // 0..100: el cero conocido no cuenta, quedan 1..100
+  const esc = C.escalaCortes([col(xs), { estado: 'hueco', suma: null }], 0, 1, 0, 100, '1', 'base');
+  assert.strictEqual(esc.n, 100);
+  assert.deepStrictEqual(esc.corte, [20, 98]); // puestos floor(0.2 * 99) = 19 y floor(0.98 * 99) = 97
+  assert.deepStrictEqual([esc.indice(0), esc.indice(19), esc.indice(20), esc.indice(59), esc.indice(98), esc.indice(1e9)],
+    [-1, -1, 0, 127, 255, 255]);
+  // solo lo VISIBLE: las filas fuera de [lo, hi] y las columnas fuera de [j0, j1] no mueven los cortes
+  assert.deepStrictEqual(C.escalaCortes([col(xs)], 0, 0, 0, 10, '1', 'base').corte, [2, 9]); // 1..10: puestos 1 y 8
+  assert.strictEqual(C.escalaCortes([col([5]), col(xs)], 0, 0, 0, 100, '1', 'base').corte[1], 5);
+  // los percentiles del mando
+  assert.deepStrictEqual(C.escalaCortes([col(xs)], 0, 0, 0, 100, '1', 'base', [0, 50]).corte, [1, 50]);
+  assert.deepStrictEqual(C.escalaCortes([], 0, -1, 0, 1, '1', 'base').corte, [null, null]);
+});
+
+test('la paleta: dos familias de 256 del fondo al color lleno, luminancia monotona; el desconocido no es de la paleta', () => {
+  const Mp = require('../../static/libro/libro-mapa.js');
+  [Mp.MAPA_LUT_COMPRA, Mp.MAPA_LUT_VENTA].forEach((lut, i) => {
+    assert.strictEqual(lut.length, 256);
+    assert.deepStrictEqual(lut[0], Mp.MAPA_COLOR.fondo);
+    assert.strictEqual('#' + lut[255].map((c) => c.toString(16).padStart(2, '0')).join(''),
+      i ? Mp.MAPA_COLOR.venta : Mp.MAPA_COLOR.compra);
+    for (let x = 1; x < 256; x++) assert.ok(Mp.luminancia(lut[x]) >= Mp.luminancia(lut[x - 1]), 'escalon ' + x);
+  });
+  const lejos = (a, b) => a.some((c, j) => Math.abs(c - b[j]) > 2);
+  [Mp.MAPA_COLOR.desconocido, Mp.MAPA_COLOR.hueco, Mp.MAPA_COLOR.hueco_raya, Mp.MAPA_COLOR.pendiente].forEach((x) => {
+    [Mp.MAPA_LUT_COMPRA, Mp.MAPA_LUT_VENTA].forEach((lut) => lut.forEach((c) => assert.ok(lejos(c, x), String(x))));
+  });
+  assert.ok(lejos(Mp.MAPA_COLOR.desconocido, Mp.MAPA_COLOR.fondo));
+  assert.deepStrictEqual([Mp.ladoDe(3, 2), Mp.ladoDe(2, 3), Mp.ladoDe(2, 2)], [0, 1, 0]); // el mayor manda
+  assert.deepStrictEqual([Mp.colorHueco(0, 0), Mp.colorHueco(1, 0)], [Mp.MAPA_COLOR.hueco_raya, Mp.MAPA_COLOR.hueco]);
+});
+
+test('la capa honda: la ultima foto con ts <= t y no mas de 75 s; solo anade fuera del vivo; al paso por suelo', () => {
+  const t0 = Date.parse('2026-10-18T03:00:00Z');
+  const foto = (s, extra) => Object.assign({ ts: isoZ(t0 + s * 1000), venue: 'okx_swap', rancia: false,
+                                             compras: { desde: '80990', cantidades: ['1', '2', '3', '4'] },
+                                             ventas: { desde: '81030', cantidades: ['5', '6'] } }, extra);
+  const d = { fotos: [foto(0), foto(30, { rancia: true, compras: null, ventas: null }), foto(100)] };
+  const por = C.hondaPorVenue(d);
+  assert.strictEqual(C.hondaEn(por, 'okx_swap', t0 + 20000).edad_s, 20);
+  assert.strictEqual(C.hondaEn(por, 'okx_swap', t0 + 40000), null); // la ultima es rancia: no se usa la de antes
+  assert.strictEqual(C.hondaEn(por, 'okx_swap', t0 + 99000), null); // la de 30 s ya no vale, la de 100 aun no
+  assert.strictEqual(C.hondaEn(por, 'okx_swap', t0 + 175000).edad_s, 75);
+  assert.strictEqual(C.hondaEn(por, 'okx_swap', t0 + 176000), null); // mas de 75 s
+  assert.strictEqual(C.hondaEn(por, 'okx_swap', t0 - 1), null);
+  // al paso 10 (el guardado): compras 8099..8096, ventas 8103..8104; el vivo conoce 8098..8102: manda el
+  const L = { lo: 8098, hi: 8102 };
+  const n10 = C.nivelesHondos(foto(0), L, '10', '10');
+  assert.deepStrictEqual([...n10.entries()].sort((a, b) => a[0] - b[0]), [[8096, [4, 0]], [8097, [3, 0]],
+    [8103, [0, 5]], [8104, [0, 6]]]);
+  // al paso 20: por suelo; 8099 y 8098 caen en 4049 y 8103 en 4051, que el vivo (4049..4051) ya conoce
+  const n20 = C.nivelesHondos(foto(0), { lo: 4049, hi: 4051 }, '20', '10');
+  assert.deepStrictEqual([...n20.entries()].sort((a, b) => a[0] - b[0]), [[4048, [7, 0]], [4052, [0, 6]]]);
+  // la junta: n cuenta la capa honda como un venue mas, y h dice cuantos de esos son hondos
+  const viva = C.libroDe('okx_swap', '81005', '81012', { desde: '81000', cantidades: ['1'] },
+                         { desde: '81010', cantidades: ['2'] }, '10');
+  const col = { ts: t0 + 10000, estado: 'foto', suma: C.sumaFamilia([viva], 4),
+                fotos: [{ venue: 'okx_swap', compra: '81005', venta: '81012', compras: { desde: '81000', cantidades: ['1'] },
+                          ventas: { desde: '81010', cantidades: ['2'] } }] };
+  const r = C.juntaHonda([col], d, ['okx_swap', 'bitget_usdt'], '10', '10');
+  assert.deepStrictEqual([r.pinta, r.columnas], [true, 1]);
+  const s = col.suma;
+  assert.deepStrictEqual([s.lo, s.hi], [8096, 8104]);
+  assert.deepStrictEqual([s.c[8099 - s.lo], s.n[8099 - s.lo], s.h[8099 - s.lo], s.c[8100 - s.lo], s.h[8100 - s.lo]],
+    [1, 1, 1, 1, 0]);
+  assert.deepStrictEqual(s.honda, [{ venue: 'okx_swap', edad_s: 10 }]);
+  // un paso mas fino que el guardado no se pinta, y se dice
+  const f = C.juntaHonda([], d, ['okx_swap'], '5', '10');
+  assert.strictEqual(f.pinta, false);
+  assert.match(f.motivo, /más fino/);
 });
 
 test('la escalera: las mejores marcadas, la acumulada desde el medio, «parcial» si no la conocen todos', () => {
@@ -114,14 +180,15 @@ test('un venue sin libro valido se dice con su motivo y no suma; uno con el avis
 
 test('cada celda, al menos 2x2 pixeles de pantalla: lo que no cabe no se aleja, y los niveles van en banda', () => {
   const Mp = require('../../static/libro/libro-mapa.js');
-  // el lienzo en 1920x1080 mide 1496x818 (CSS): el mapa, 1420x798, y caben 710 columnas y 399 niveles (al doble con DPR 2)
-  assert.deepStrictEqual(Mp.cabenEn(1496, 818, 1), [710, 399]);
-  assert.deepStrictEqual(Mp.cabenEn(1496, 818, 2), [1420, 798]);
-  assert.strictEqual(Mp.verEfectivo(720, 720, 710), 710); // la vista del operador: 720 pedidas, 710 a la vista
-  assert.strictEqual(Mp.verEfectivo(360, 360, 710), 360);
-  assert.strictEqual(Mp.verEfectivo(720, 90, 710), 90);
-  assert.strictEqual(Mp.verEfectivo(720, 3, 710), 10); // al menos 10
-  assert.strictEqual(Mp.verEfectivo(720, 100.4, 710), 100); // un numero entero de columnas
+  // el lienzo en 1920x1080 mide 1496x818 (CSS): el mapa, 1264x758 (a la derecha «ahora», los dos perfiles y el eje;
+  // debajo el volumen y las horas), y caben 632 columnas y 379 niveles (al doble con DPR 2)
+  assert.deepStrictEqual(Mp.cabenEn(1496, 818, 1), [632, 379]);
+  assert.deepStrictEqual(Mp.cabenEn(1496, 818, 2), [1264, 758]);
+  assert.strictEqual(Mp.verEfectivo(720, 720, 632), 632); // la vista del operador: 720 pedidas, 632 a la vista
+  assert.strictEqual(Mp.verEfectivo(360, 360, 632), 360);
+  assert.strictEqual(Mp.verEfectivo(720, 90, 632), 90);
+  assert.strictEqual(Mp.verEfectivo(720, 3, 632), 10); // al menos 10
+  assert.strictEqual(Mp.verEfectivo(720, 100.4, 632), 100); // un numero entero de columnas
   // los niveles: todos si caben; si no, los que caben alrededor de la mejor compra, dentro de lo conocido
   assert.deepStrictEqual(Mp.bandaDe(100, 150, 60, 120), [100, 150]);
   assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 250), [200, 300]);
