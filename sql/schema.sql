@@ -1498,6 +1498,7 @@ BEGIN
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
+        'orderflow_celda_hora',
         'orderflow_cinta',
         'libro_foto',
         'libro_honda'
@@ -1557,6 +1558,7 @@ DECLARE
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
+        'orderflow_celda_hora',
         'orderflow_cinta',
         'libro_foto',
         'libro_honda'
@@ -3002,6 +3004,36 @@ CREATE TABLE IF NOT EXISTS orderflow_cobertura (
 );
 CREATE INDEX IF NOT EXISTS orderflow_cobertura_ts_idx ON orderflow_cobertura (ts);
 
+-- OF-1b (campana 149) · las celdas SUMADAS POR HORA, para que el footprint de 1h, 4h y 1d no sume minutos en cada
+-- carga. ts = inicio de la hora UTC; el nivel es el MISMO que el guardado en orderflow_celda (no se reagrega). La
+-- escribe app/orderflow.py (suma_horas) y vale SOLO para las horas con fila en orderflow_hora_hecha: la marca va en
+-- la misma transaccion que la suma y la borra quien reescribe un minuto de esa hora. Sin marca, se lee de minutos.
+CREATE TABLE IF NOT EXISTS orderflow_celda_hora (
+    ts timestamptz NOT NULL CHECK (ts = date_bin(interval '1 hour', ts, timestamptz '2000-01-01 00:00:00+00')),
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    nivel numeric NOT NULL CHECK (nivel >= 0),
+    compra_base numeric NOT NULL CHECK (compra_base >= 0),
+    venta_base numeric NOT NULL CHECK (venta_base >= 0),
+    compra_usd numeric NOT NULL CHECK (compra_usd >= 0),
+    venta_usd numeric NOT NULL CHECK (venta_usd >= 0),
+    compras bigint NOT NULL CHECK (compras >= 0),
+    ventas bigint NOT NULL CHECK (ventas >= 0),
+    CHECK (compras + ventas > 0),
+    PRIMARY KEY (symbol, ts, venue, nivel)
+) PARTITION BY RANGE (ts);
+
+CREATE TABLE IF NOT EXISTS orderflow_hora_hecha (
+    ts timestamptz NOT NULL CHECK (ts = date_bin(interval '1 hour', ts, timestamptz '2000-01-01 00:00:00+00')),
+    venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
+                                         'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    hecha timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (symbol, ts, venue)
+);
+CREATE INDEX IF NOT EXISTS orderflow_hora_hecha_ts_idx ON orderflow_hora_hecha (ts);
+
 CREATE OR REPLACE FUNCTION ensure_temporal_partitions(
     reference_ts timestamptz DEFAULT now(),
     days_before integer DEFAULT 1,
@@ -3033,6 +3065,7 @@ BEGIN
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
+        'orderflow_celda_hora',
         'orderflow_cinta',
         'libro_foto',
         'libro_honda'
@@ -3092,6 +3125,7 @@ DECLARE
         'liquidations_realtime',
         'scalp_signal_snapshot',
         'orderflow_celda',
+        'orderflow_celda_hora',
         'orderflow_cinta',
         'libro_foto',
         'libro_honda'

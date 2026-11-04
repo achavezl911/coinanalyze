@@ -38,7 +38,7 @@ def test_managed_table_set_is_exactly_the_partitioned_tables() -> None:
     # y en ensure_temporal_partitions. Si aqui se anade una tabla y alli no, la tabla se
     # queda sin particiones nuevas y sin retencion, en silencio: por eso se fija.
     # Las cinco de siempre mas las dos de OF-1 (campana 140), la de OF-4a (campana 144)
-    # y libro_honda, el libro profundo de la campana 151-A.
+    # libro_honda, el libro profundo de la campana 151-A, y las celdas por hora de OF-1b (149).
     assert frozenset(
         {
             "futures_trades_realtime",
@@ -47,6 +47,7 @@ def test_managed_table_set_is_exactly_the_partitioned_tables() -> None:
             "liquidations_realtime",
             "scalp_signal_snapshot",
             "orderflow_celda",
+            "orderflow_celda_hora",
             "orderflow_cinta",
             "libro_foto",
             "libro_honda",
