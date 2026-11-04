@@ -199,7 +199,7 @@ juzga_plantado grande_con_otro_umbral F "una orden grande con otro umbral: fila"
 planta_pagina libro/libro-escalera.js 's/      tot = totalesVisibles(vis, /      tot = totalesVisibles([...modelo.values()], /' 1; m=$?
 juzga_plantado totales_de_otra_cosa F "los totales son de otra cosa" $m "los totales de todo el modelo y no de lo visible"
 planta_pagina libro/libro-escalera.js 's/^const ESC_ANCLA = true;/const ESC_ANCLA = false;/' 1; m=$?
-juzga_plantado rejilla_sin_ancla F "\[BTC perp vivo\] la fila se mueve bajo el raton quieto" $m "sin relleno ni compensacion: la rejilla resbala con el borde"
+juzga_plantado rejilla_sin_ancla F "\[BTC perp vivo( 1366x768)?\] la fila se mueve bajo el raton quieto" $m "sin relleno ni compensacion: la rejilla resbala con el borde"
 planta_pagina libro/libro-escalera.js "s/^const SIN_CINTA = '';/const SIN_CINTA = '0';/" 1; m=$?
 echo sin_cinta > "$T/plantado"
 juzga_plantado sin_cinta_como_cero F "la cinta caída se pinta como cifras" $m "la cinta caida pintada como ceros"
