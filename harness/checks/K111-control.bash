@@ -161,7 +161,9 @@ juzga_bueno() {  # nombre patron-de-info que [puerto] [base] [etiqueta]
 }
 echo cantidad > "$T/plantado"
 juzga_plantado cantidad_servida S "lo servido no es libro_foto: foto .* compras servido" 0 "una cantidad +1 despues de calcularla"
-planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return [MAPA_COLOR.fondo, null];/' 1; m=$?
+# (149 B r1) la celda desconocida se planta en sus DOS salidas: el mapa de bits pinta por soloColor, el contrato por
+# el par; plantar solo el par dejaba los pixeles intactos (desconocido_como_cero salio FALLA con rc=0)
+planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return soloColor ? MAPA_COLOR\.desconocido : \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return soloColor ? MAPA_COLOR.fondo : [MAPA_COLOR.fondo, null];/' 1; m=$?
 juzga_plantado desconocido_como_cero F "el mapa no pinta lo servido: .*tenia que ser \(26, 26, 26\) \(DESCONOCIDO\)" $m "lo desconocido del color del fondo"
 planta_pagina libro/libro-calculo.js 's/    const fotos = porTs\.get(t) || \[\];/    const fotos = porTs.get(t) || globalThis.K111_ULT || []; globalThis.K111_ULT = fotos;/' 1; m=$?
 juzga_plantado hueco_rellenado F "el mapa no pinta lo servido: columna .*pintada foto y lo servido dice hueco" $m "el hueco con la foto anterior" "$P2" "${DB}_hueco" hueco
@@ -230,7 +232,7 @@ planta_pagina libro/libro-mapa.js 's/        const x0 = xT(t);/        const x0 
 juzga_plantado volumen_de_otro_minuto F "el mapa no pinta lo servido: el volumen de debajo" $m "cada barra de abajo bajo el minuto siguiente"
 planta_pagina libro/libro-mapa.js 's/escalaCortes(m\.columnas, j0, j1, /escalaCortes(m.columnas, 0, m.columnas.length - 1, /' 1; m=$?
 juzga_plantado rango_de_otra_ventana F "el mapa no pinta lo servido: (la escala declara|columna .* nivel .*color [0-9-]+ y el percentil)" $m "los cortes de toda la historia y no de lo visible"
-planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return [MAPA_LUT_COMPRA[40], null];/' 1; m=$?
+planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return soloColor ? MAPA_COLOR\.desconocido : \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return soloColor ? MAPA_LUT_COMPRA[40] : [MAPA_LUT_COMPRA[40], null];/' 1; m=$?
 juzga_plantado ausente_con_color F "el mapa no pinta lo servido: .*tenia que ser \(26, 26, 26\) \(DESCONOCIDO\)" $m "lo desconocido con un color de la paleta"
 planta_pagina libro/libro-app.js 's/^  const hDesde = isoZ(Math\.floor(Date\.parse(w\.desde) \/ 60000) \* 60000);$/  const hDesde = isoZ(Math.floor(Date.parse(w.desde) \/ 60000) * 60000 + 10000);/' 1; m=$?
 juzga_plantado footprint_fuera_de_vela P "pide el footprint fuera del contrato de la ruta: desde=.* y le responde 422" $m "el footprint con desde al borde de 10 s (el 422 de produccion)"
