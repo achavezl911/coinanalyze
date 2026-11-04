@@ -16,14 +16,17 @@
 #   (F) sin_libro_con_su_ultimo   un venue que dejo de tener libro valido, sumado con su ultimo libro
 #   (C) canal_mal_declarado       va por sondeo y escribe que va por websocket
 #   (V) familias_sumadas          perpetuos y spot pedidos como una familia
-#   (F) parcial_como_completo     un nivel que no conocen todos, pintado entero (sin su damero)
-#   (F) escala_lineal             el color por la cantidad en lineal y no por su percentil de la ventana (P2)
+#   (F) parcial_como_completo     un nivel que no conocen todos, declarado de todos (P2 = a: mismo color, el globo dice n de N)
+#   (F) escala_lineal             el color en lineal desde cero y no entre los cortes p20/p98 de lo visible
 #   (F) acumulada_sin_minimo      la acumulada que pasa por niveles parciales, escrita sin su «≥»
 #   (P) cada_fuera_de_regla       la historia pedida con un cada que no es el de la regla
 #   (P) pagina_rota               una excepcion al arrancar
 #   (F) pagina_de_e0fb3fb         la pagina de antes del remate (libro.html y static/libro/* de e0fb3fb, por git show): sin
 #                                 la forma profesional (#esc-totales) en su html, llegue o no a listo (149 r1)
 #   (F) rejilla_sin_ancla         sin relleno ni compensacion: la fila bajo un raton quieto cambia con el borde (149 r1)
+#   (F) 149 rB, el mapa: lado_cambiado · honda_rancia_pintada (75 -> 750 s) · honda_de_otro_paso (suelo -> redondeo)
+#       honda_pisa_el_vivo · extension_de_otra_columna · perfil_desalineado · volumen_de_otro_minuto
+#       rango_de_otra_ventana (cortes de toda la historia) · ausente_con_color
 # Y tres escenarios BUENOS mas que tienen que salir VERDE: vivo_por_sondeo (el websocket rechazado), hueco_en_medio (la
 # base con el hueco y la pagina buena) y sin_libro_dicho (el venue sin libro y la pagina buena: lo dice y no suma).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina («FALTA DESPLEGAR») · sin_chromium · sin_fotos (la base vacia) · sin_canal.
@@ -154,8 +157,8 @@ juzga_bueno() {  # nombre patron-de-info que [puerto] [base] [etiqueta]
 }
 echo cantidad > "$T/plantado"
 juzga_plantado cantidad_servida S "lo servido no es libro_foto: foto .* compras servido" 0 "una cantidad +1 despues de calcularla"
-planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) base = MAPA_COLOR\.desconocido;/!s.n[k - s.lo]) base = MAPA_COLOR.fondo;/' 1; m=$?
-juzga_plantado desconocido_como_cero F "el mapa no pinta lo servido: .*tenia que ser \(46, 46, 46\) \(DESCONOCIDO\)" $m "lo desconocido del color del fondo"
+planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return [MAPA_COLOR.fondo, null];/' 1; m=$?
+juzga_plantado desconocido_como_cero F "el mapa no pinta lo servido: .*tenia que ser \(26, 26, 26\) \(DESCONOCIDO\)" $m "lo desconocido del color del fondo"
 planta_pagina libro/libro-calculo.js 's/    const fotos = porTs\.get(t) || \[\];/    const fotos = porTs.get(t) || globalThis.K111_ULT || []; globalThis.K111_ULT = fotos;/' 1; m=$?
 juzga_plantado hueco_rellenado F "el mapa no pinta lo servido: columna .*pintada foto y lo servido dice hueco" $m "el hueco con la foto anterior" "$P2" "${DB}_hueco" hueco
 planta_pagina libro/libro-app.js "s/\['libro', 'sin_libro', 'sin_dato'\]\.includes(m\.tipo)/['libro', 'sin_dato'].includes(m.tipo)/" 1; m=$?
@@ -168,9 +171,9 @@ echo sin_ws > "$T/plantado"
 juzga_plantado canal_mal_declarado C "escribe .vivo por WEBSOCKET" $m "va por sondeo y escribe websocket"
 planta_pagina flujo/flujo-calculo.js "s/'okx_swap', 'bitget_usdt'\] },/'okx_swap', 'bitget_usdt', 'binance_spot', 'bybit_spot', 'okx_spot'] },/" 1; m=$?
 juzga_plantado familias_sumadas V "2 familia\\(s\\): perp, spot" $m "perpetuos + spot en la familia perp"
-planta_pagina libro/libro-mapa.js 's/  return n >= N ? 4 : Math\.max(1, Math\.round((4 \* n) \/ N));/  return 4;/' 1; m=$?
-juzga_plantado parcial_como_completo F "el mapa no pinta lo servido: .*\(DESCONOCIDO\)" $m "sin damero: lo parcial pintado entero"
-planta_pagina libro/libro-calculo.js 's/      return Math\.min(255, Math\.floor((256 \* a) \/ n));/      return Math.min(255, Math.floor((255 * q) \/ ord[n - 1]));/' 1; m=$?
+planta_pagina libro/libro-mapa.js 's/s\.n\[i\], ix, lado ? /s.N, ix, lado ? /' 1; m=$?
+juzga_plantado parcial_como_completo F "el mapa no pinta lo servido: columna .* nivel .*pinta compra .*y lo servido da" $m "lo parcial declarado como de todos (P2 = a: el mismo color y el globo dice n de N)"
+planta_pagina libro/libro-calculo.js 's/      return Math\.min(255, Math\.floor((255 \* (q - a)) \/ (b - a)));/      return Math.min(255, Math.floor((255 * q) \/ b));/' 1; m=$?
 juzga_plantado escala_lineal F "el mapa no pinta lo servido: .*(color [0-9]+ y el percentil|tenia que ser .*su color)" $m "lineal y no el percentil de la ventana"
 planta_pagina libro/libro-calculo.js 's/      parcial = parcial || f\.n < s\.N;/      parcial = false;/' 1; m=$?
 juzga_plantado acumulada_sin_minimo F "la escalera no pinta lo servido: fila .*acumulada" $m "la acumulada sin su minimo"
@@ -200,6 +203,26 @@ juzga_plantado rejilla_sin_ancla F "\[BTC perp vivo\] la fila se mueve bajo el r
 planta_pagina libro/libro-escalera.js "s/^const SIN_CINTA = '';/const SIN_CINTA = '0';/" 1; m=$?
 echo sin_cinta > "$T/plantado"
 juzga_plantado sin_cinta_como_cero F "la cinta caída se pinta como cifras" $m "la cinta caida pintada como ceros"
+
+echo "== el mapa profesional (campana 149 ronda B): paleta por lado, rango, capa honda y lo de alrededor"
+planta_pagina libro/libro-mapa.js 's/  return v > c ? 1 : 0;/  return v > c ? 0 : 1;/' 1; m=$?
+juzga_plantado lado_cambiado F "el mapa no pinta lo servido: columna .* nivel .*: lado [cv] y [0-9.e-]+ de capa honda; lo servido da" $m "el lado que gana, al reves"
+planta_pagina libro/libro-calculo.js 's/^const HONDA_RANCIA_S = 75;/const HONDA_RANCIA_S = 750;/' 1; m=$?
+juzga_plantado honda_rancia_pintada F "\[BTC perp\] el mapa no pinta lo servido: (capa honda: la pagina dice|R1: ensena los niveles|columna .* nivel )" $m "la foto honda de hace mas de 75 s, pintada"
+planta_pagina libro/libro-calculo.js 's/    const k = Math\.floor(ks \/ m);/    const k = Math.round(ks \/ m);/' 1; m=$?
+juzga_plantado honda_de_otro_paso F "\[ETH okx_swap\] el mapa no pinta lo servido: (R1: ensena los niveles|columna .* nivel )" $m "la capa honda agrupada al paso de la vista por redondeo y no por suelo"
+planta_pagina libro/libro-calculo.js 's/^    if (L && (lado === 0 ? k >= L\.lo : k <= L\.hi)) return;$/    if (L \&\& false) return;/' 1; m=$?
+juzga_plantado honda_pisa_el_vivo F "el mapa no pinta lo servido: columna .* nivel .*(de capa honda; lo servido|pinta compra)" $m "la capa honda sumada dentro del alcance del vivo"
+planta_pagina libro/libro-mapa.js 's/ctx\.drawImage(L\.bmp, 2 \* ja, /ctx.drawImage(L.bmp, 2 * (ja - 1), /' 1; m=$?
+juzga_plantado extension_de_otra_columna F "el mapa no pinta lo servido: «ahora» nivel .*tenia que ser" $m "«ahora» estira la columna de antes"
+planta_pagina libro/libro-mapa.js 's/ctx\.fillRect(xPerf + 2, yDe(k), b\.largo(q), fh);/ctx.fillRect(xPerf + 2, yDe(k + 1), b.largo(q), fh);/' 1; m=$?
+juzga_plantado perfil_desalineado F "el mapa no pinta lo servido: el perfil del libro, nivel" $m "el perfil del libro una fila desplazado"
+planta_pagina libro/libro-mapa.js 's/        const x0 = xT(t);/        const x0 = xT(t + 60000);/; s/        const x1 = xT(t + 60000);/        const x1 = xT(t + 120000);/' 2; m=$?
+juzga_plantado volumen_de_otro_minuto F "el mapa no pinta lo servido: el volumen de debajo" $m "cada barra de abajo bajo el minuto siguiente"
+planta_pagina libro/libro-mapa.js 's/escalaCortes(m\.columnas, j0, j1, /escalaCortes(m.columnas, 0, m.columnas.length - 1, /' 1; m=$?
+juzga_plantado rango_de_otra_ventana F "el mapa no pinta lo servido: (la escala declara|columna .* nivel .*color [0-9-]+ y el percentil)" $m "los cortes de toda la historia y no de lo visible"
+planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return [MAPA_LUT_COMPRA[40], null];/' 1; m=$?
+juzga_plantado ausente_con_color F "el mapa no pinta lo servido: .*tenia que ser \(26, 26, 26\) \(DESCONOCIDO\)" $m "lo desconocido con un color de la paleta"
 
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"

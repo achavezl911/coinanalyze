@@ -72,8 +72,14 @@ HASTA_R1 = os.environ.get("K111_HASTA_R1", "")  # el final de las vistas de R1 (
 ESPERA_VIVO_S = float(os.environ.get("K111_ESPERA_VIVO", "25"))
 RATON_S = float(os.environ.get("K111_RATON", "20"))  # (149 r1) el raton quieto sobre la escalera, en vivo
 ANCHO, ALTO = 1920, 1080
-EJE_P, EJE_T = 76, 20  # los margenes de los ejes del mapa (el de los precios a la derecha, el de las horas debajo)
+# (149 B) lo que no es mapa: a la derecha «ahora» 28, el perfil de lo negociado 64, el del libro 64 y los precios 76;
+# debajo el volumen por minuto 40 y las horas 20
+AHORA_PX, VOLUMEN_PX, PERFIL_PX, BAJO_PX = 28, 64, 64, 40
+EJE_P, EJE_T = AHORA_PX + VOLUMEN_PX + PERFIL_PX + 76, BAJO_PX + 20
 RUTA_CINTA = "/api" + "/orderflow/cinta"
+RUTA_HONDA, RUTA_HUELLA = "/api" + "/libro/honda", "/api" + "/orderflow/footprint"
+HONDA_RANCIA_MS = 75_000  # app/libro_honda.py RANCIA_S
+PERCENTILES = (20, 98)  # los cortes de lo visible por omision (el mando de intensidad los mueve; K111 no lo toca)
 RUTA_PERFIL = "/api" + "/orderflow/perfil"
 RUTA_FOTOS, RUTA_ULTIMO, RUTA_VIVO = "/api" + "/libro/fotos", "/api" + "/libro/ultimo", "/api" + "/libro/vivo"
 # Lo DECIDIDO por el encargo y por P1/P2 de la campana, escrito aqui y no leido de la pagina:
@@ -85,22 +91,18 @@ VENUES = ("binance_usdm", "binance_spot", "bybit_linear", "bybit_spot", "okx_swa
 PASO_GUARDADO = {"BTC": "10", "ETH": "0.5", "SOL": "0.02"}
 VENTANAS = {"30m": 30, "1h": 60, "4h": 240, "12h": 720, "1d": 1440, "3d": 4320}
 TOPE_FOTOS, FOTO_S, ESCRITO_S = 2000, 5, 62
-FONDO, DESCONOCIDO, HUECO, PENDIENTE = (10, 13, 18), (46, 46, 46), (70, 48, 20), (30, 36, 46)
-RAMPA = [(28, 30, 72), (86, 30, 110), (190, 50, 70), (245, 140, 40), (255, 245, 180)]
-SUB = [(0, 0), (1, 1), (1, 0), (0, 1)]  # el orden en que se colorean los cuadritos de una celda
+FONDO, DESCONOCIDO, PENDIENTE = (10, 13, 18), (26, 26, 26), (30, 36, 46)
+HUECO, HUECO_RAYA = (34, 29, 22), (52, 42, 26)  # rayas: (columna + nivel) % 3 == 0
+COMPRA, VENTA, REFERENCIA = (0x60, 0xA5, 0xFA), (0xE0, 0x5A, 0x5A), (0xF2, 0xCC, 0x60)
+SUB = [(0, 0), (1, 1), (1, 0), (0, 1)]  # los cuatro cuadritos de una celda (desde 149 B, todos del mismo color)
 
 
-def _lut() -> list[tuple]:
-    out = []
-    for i in range(256):
-        x = i / 255 * (len(RAMPA) - 1)
-        a = min(len(RAMPA) - 2, math.floor(x))
-        f = x - a
-        out.append(tuple(math.floor(c + (RAMPA[a + 1][j] - c) * f + 0.5) for j, c in enumerate(RAMPA[a])))
-    return out
+def _lut(b: tuple) -> list[tuple]:
+    """Del fondo (0) al color lleno del lado (255) en linea recta; Math.round de JS es floor(x + 0.5)."""
+    return [tuple(math.floor(c + (b[j] - c) * i / 255 + 0.5) for j, c in enumerate(FONDO)) for i in range(256)]
 
 
-LUT = _lut()
+LUT_C, LUT_V = _lut(COMPRA), _lut(VENTA)
 
 
 def _modulo(nombre: str, fichero: str):
@@ -252,27 +254,80 @@ def columnas(d: dict, e: dict, instantes: list[int], as_of: int) -> list[dict]:
     return out
 
 
-def percentil(cols: list[dict], paso: str, u: str):
-    xs = sorted(q for c in cols if c["estado"] == "foto" and c["suma"]
-                for k in c["suma"]["n"] for q in [unidad(c["suma"]["c"][k] + c["suma"]["v"][k], k, paso, u)] if q > 0)
+def cortes(cols: list[dict], j0: int, j1: int, lo: int, hi: int, paso: str, u: str, pc=PERCENTILES):
+    """(149 B) LOS DOS CORTES DE LO VISIBLE: las cantidades > 0 de las celdas conocidas de las columnas j0..j1 con foto y
+    los niveles lo..hi; el percentil p es el de puesto floor(p / 100 * (n - 1)). Debajo del bajo, el fondo (-1); entre
+    los dos, lineal 0..255; encima del alto, 255. -> (indice, (a, b), n)."""
+    xs = sorted(q for c in cols[max(0, j0):j1 + 1] if c["estado"] == "foto" and c["suma"]
+                for k in c["suma"]["n"] if lo <= k <= hi
+                for q in [unidad(c["suma"]["c"][k] + c["suma"]["v"][k], k, paso, u)] if q > 0)
+    a, b = ((xs[min(len(xs) - 1, math.floor(p / 100 * (len(xs) - 1)))] for p in pc) if xs else (None, None))
 
     def indice(q: float) -> int:
-        if not q > 0 or not xs:
+        if not q > 0 or not xs or q < a:
             return -1
-        a, b = 0, len(xs)
-        while a < b:
-            m = (a + b) // 2
-            if xs[m] < q:
-                a = m + 1
-            else:
-                b = m
-        return min(255, math.floor(256 * a / len(xs)))
+        if q >= b:
+            return 255
+        return min(255, math.floor(255 * (q - a) / (b - a)))
 
-    return indice
+    return indice, (a, b), len(xs)
 
 
-def cuadritos(n: int, N: int) -> int:
-    return 4 if n >= N else max(1, math.floor(4 * n / N + 0.5))
+def junta_honda(cols: list[dict], d: dict | None, e: dict, paso: str) -> dict:
+    """(149 B) LA CAPA HONDA, recalculada aqui: por venue de la familia, su ULTIMA foto honda con ts <= t, de no mas de
+    75 s, no rancia y con niveles; sus niveles (al paso guardado, por suelo al de la vista) solo ANADEN fuera del alcance
+    vivo de ESE venue en esa columna (compras por debajo de su lo, ventas por encima de su hi); cuenta en n y en h."""
+    guardado = PASO_GUARDADO[e["activo"]]
+    if not d or d.get("fotos") is None:
+        return {"pinta": False, "columnas": 0}
+    if Decimal(paso) % Decimal(guardado):
+        return {"pinta": False, "columnas": 0}
+    s_, m_ = float(guardado), round(float(paso) / float(guardado))
+    por: dict = {}
+    for x in d["fotos"]:
+        por.setdefault(x["venue"], []).append((epoch_ms(x["ts"]), x))
+    for xs in por.values():
+        xs.sort(key=lambda y: y[0])
+    cuantas = 0
+    for c in cols:
+        s = c["suma"]
+        if c["estado"] != "foto" or not s:
+            continue
+        extras = []
+        for venue in e["venues"]:
+            ant = [y for y in por.get(venue, []) if y[0] <= c["ts"]]
+            if not ant:
+                continue
+            t_, f = ant[-1]
+            if c["ts"] - t_ > HONDA_RANCIA_MS or f.get("rancia") or (not f.get("compras") and not f.get("ventas")):
+                continue
+            vivo = next((y for y in c["fotos"] if y["venue"] == venue), None)
+            L = libro(vivo["venue"], vivo["compra"], vivo["venta"], vivo["compras"], vivo["ventas"], paso) if vivo else None
+            niv: dict = {}
+            for lado, campo, sig in ((0, "compras", -1), (1, "ventas", 1)):
+                if not f.get(campo):
+                    continue
+                k0 = round(float(f[campo]["desde"]) / s_)
+                for i, q in enumerate(f[campo]["cantidades"]):
+                    k = (k0 + sig * i) // m_
+                    if L and (k >= L["lo"] if lado == 0 else k <= L["hi"]):
+                        continue
+                    niv.setdefault(k, [0.0, 0.0])[lado] += float(q)
+            if niv:
+                extras.append((venue, (c["ts"] - t_) / 1000, niv))
+        if not extras:
+            continue
+        cuantas += 1
+        h: dict = {}
+        for _, _, niv in extras:
+            for k, (qc, qv) in niv.items():
+                s["c"][k] = s["c"].get(k, 0.0) + qc
+                s["v"][k] = s["v"].get(k, 0.0) + qv
+                s["n"][k] = s["n"].get(k, 0) + 1
+                h[k] = h.get(k, 0) + 1
+        s["lo"], s["hi"] = min([s["lo"], *s["n"]]), max([s["hi"], *s["n"]])
+        s["h"], s["honda"] = h, [{"venue": v, "edad_s": a} for v, a, _ in extras]
+    return {"pinta": True, "columnas": cuantas}
 
 
 # --------------------------------------------------------------------------------------------- mirar
@@ -388,7 +443,7 @@ def piezas(vista: str, pieza: str) -> None:
 
 
 async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: int = ALTO, dpr: float = 1) -> dict:
-    out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "cinta": [], "perfil": [], "ws": [], "ws_abiertos": 0,
+    out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "cinta": [], "perfil": [], "honda": [], "huella": [], "ws": [], "ws_abiertos": 0,
            "pantalla": [ancho, alto, dpr]}
     with K.Chromium(ancho, alto) as c:
         req = urllib.request.Request(f"http://127.0.0.1:{c.puerto}/json/new?about:blank", method="PUT")
@@ -431,7 +486,7 @@ async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: i
                 if m == "Runtime.exceptionThrown":
                     out["excepciones"].append(json.dumps(p.get("exceptionDetails", {}))[:300])
                 elif m == "Network.requestWillBeSent" and any(r in p["request"]["url"] for r in (
-                        "/api" + "/libro/", RUTA_CINTA, RUTA_PERFIL)):
+                        "/api" + "/libro/", RUTA_CINTA, RUTA_PERFIL, RUTA_HUELLA)):
                     porid[p["requestId"]] = {"url": p["request"]["url"], "estado": None, "t": p.get("timestamp")}
                 elif m == "Network.responseReceived" and p.get("requestId") in porid:
                     porid[p["requestId"]]["estado"] = p["response"]["status"]
@@ -453,17 +508,19 @@ async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: i
                     except (K.SystemExit2, ValueError, KeyError):
                         x["cuerpo"] = None
                 (out["fotos"] if RUTA_FOTOS in x["url"] else out["ultimo"] if RUTA_ULTIMO in x["url"]
-                 else out["cinta"] if RUTA_CINTA in x["url"] else out["perfil"] if RUTA_PERFIL in x["url"] else []).append(x)
+                 else out["cinta"] if RUTA_CINTA in x["url"] else out["perfil"] if RUTA_PERFIL in x["url"]
+                 else out["honda"] if RUTA_HONDA in x["url"] else out["huella"] if RUTA_HUELLA in x["url"] else []).append(x)
             out["pixeles"] = {}
             pedir = juez_puntos(out) if not vivo else []
             if pedir:
                 vals = await s.evalua(PIXELES + "(" + json.dumps(pedir) + ")")
                 out["pixeles"] = {tuple(p): tuple(v) for p, v in zip(pedir, vals, strict=True)}
-            # y TODOS los pixeles del mapa: el lienzo menos sus ejes, medido aqui (no lo que declara la pagina)
+            # y TODOS los pixeles del lienzo (el mapa, «ahora», los perfiles y el volumen de debajo; los ejes de texto no
+            # se juzgan): el tamano medido aqui, no lo que declara la pagina
             lz = out.get("lienzo") or {}
             if not vivo and lz.get("w"):
                 pr = lz.get("pr") or 1
-                tam = [math.floor((math.floor(lz["w"]) - EJE_P) * pr), math.floor((math.floor(lz["h"]) - EJE_T) * pr)]
+                tam = [math.floor(math.floor(lz["w"]) * pr), math.floor(math.floor(lz["h"]) * pr)]
                 if min(tam) > 0:
                     out["rgb"] = base64.b64decode(await s.evalua(RGB + "(" + json.dumps(tam) + ")"))
                     out["rgb_tam"] = tam
@@ -485,12 +542,19 @@ def esperado_mapa(vio: dict, e: dict) -> dict | None:
     a, b = epoch_ms(q["desde"]), epoch_ms(q["hasta"])
     inst = list(range(-(-a // (c * 1000)) * c * 1000, b, c * 1000)) if c else []
     cols = columnas(d0, e, inst, epoch_ms(d0["as_of"]))
+    # (149 B) la capa honda se junta a las columnas de la primera respuesta (las que se recuperan despues no la llevan:
+    # la pagina tampoco); la respuesta, la ultima con cuerpo
+    hr = [p for p in vio.get("honda") or [] if p.get("cuerpo")]
+    honda = junta_honda(cols, hr[-1]["cuerpo"] if hr else None, e, d0["paso"])
     for p in resp[1:]:
         d = p["cuerpo"]
         nuevas = {x["ts"]: x for x in columnas(d, e, [x["ts"] for x in cols if x["estado"] == "pendiente"],
                                                epoch_ms(d["as_of"]))}
         cols = [nuevas.get(x["ts"], x) if x["estado"] == "pendiente" else x for x in cols]
-    return {"q": q, "d": d0, "cols": cols}
+    for j, x in enumerate(cols):
+        x["j"] = j
+    hu = [p for p in vio.get("huella") or [] if p.get("cuerpo")]
+    return {"q": q, "d": d0, "cols": cols, "honda": honda, "huella": hu[-1]["cuerpo"] if hu else None}
 
 
 def juez_puntos(vio: dict) -> list[list[int]]:
@@ -570,8 +634,10 @@ def cada_pixel(vio: dict, eje: dict, cols: list[dict], bien_de, tramos: list, pa
     rgb, tam = vio.get("rgb"), vio.get("rgb_tam")
     if not rgb or not tam:
         return 0, 0, 1, ["R1: no se pudieron leer los pixeles del mapa"]
-    W, H = tam
-    pr = (vio.get("lienzo") or {}).get("pr") or 1
+    lz = vio.get("lienzo") or {}
+    pr = lz.get("pr") or 1
+    S = tam[0]  # el buffer es el lienzo entero: el mapa es su rectangulo de arriba a la izquierda
+    W, H = min(S, math.floor((math.floor(lz["w"]) - EJE_P) * pr)), min(tam[1], math.floor((math.floor(lz["h"]) - EJE_T) * pr))
     filas = eje["hi"] - eje["lo"] + 1
     ex, ey = 2 * eje["ver"] / (eje["ancho"] * pr), 2 * filas / (eje["alto"] * pr)
     x0 = 2 * (eje["fin"] - eje["ver"] + 1)
@@ -606,7 +672,7 @@ def cada_pixel(vio: dict, eje: dict, cols: list[dict], bien_de, tramos: list, pa
             esperadas[cand] = b"".join(acepta(c[0][0], k, c[0][1], qy)[0] if c else b"\0\0\1" for c in porx)
     bien, bajo, n_malos, malos = 0, 0, 0, []
     for Y in range(H):
-        base, yc, cand_y = Y * W * 3, Y + 0.5, pory[Y]
+        base, yc, cand_y = Y * S * 3, Y + 0.5, pory[Y]
         fila, exp = rgb[base:base + 3 * W], esperadas.get(cand_y, b"")
         if fila == exp:
             bien += W
@@ -638,6 +704,194 @@ def cada_pixel(vio: dict, eje: dict, cols: list[dict], bien_de, tramos: list, pa
     return bien, bajo, n_malos, malos
 
 
+def jsround(x: float) -> int:
+    return math.floor(x + 0.5)
+
+
+def juzga_alrededor(vio: dict, e: dict, esp: dict, eje: dict, m: dict, cols: list[dict], j0: int, j1: int,
+                    bien_de) -> tuple[list, int]:
+    """(149 B) LO DE ALREDEDOR DEL MAPA, recalculado de lo servido y leido en los pixeles del lienzo: las lineas de la
+    mejor compra / venta y la del ultimo precio, la banda «ahora» (la ultima columna estirada), el perfil del libro de
+    ahora, el de lo negociado en lo visible (footprint 1m) y el volumen por minuto de debajo. -> (malos, pixeles leidos)."""
+    malos: list = []
+    leidos = 0
+    rgb, tam = vio.get("rgb"), vio.get("rgb_tam") or [0, 0]
+    pr = (vio.get("lienzo") or {}).get("pr") or 1
+    paso = esp["d"]["paso"]
+    P = float(paso)
+    ancho, alto, fh, lo, hi, bs = eje["ancho"], eje["alto"], eje["fila"], eje["lo"], eje["hi"], eje["columna"]
+    n, cada_ms = len(cols), int(esp["q"].get("cada") or 0) * 1000
+
+    def pix(x: float, y: float):
+        X, Y = math.floor(x * pr), math.floor(y * pr)
+        if not rgb or not (0 <= X < tam[0] and 0 <= Y < tam[1]):
+            return None
+        o = 3 * (Y * tam[0] + X)
+        return tuple(rgb[o:o + 3])
+
+    def igual(v, c, tol: int = 2) -> bool:
+        return v is not None and all(abs(a - b) <= tol for a, b in zip(v, c, strict=True))
+
+    def cerca(a, b) -> bool:
+        return abs(a - b) <= 1e-9 * max(1.0, abs(b)) + 1e-6
+
+    def y_de(k: int) -> float:
+        return (hi - k) * fh
+
+    def y_precio(p) -> float:
+        return jsround((hi + 1 - float(p) / P) * fh) + 0.5
+
+    def x_de(j: int) -> float:
+        return ancho - (eje["fin"] - j + 1) * bs
+
+    def corrida(Y: int, xa: float, xb: float, color) -> int:
+        """Cuantos pixeles de la fila de pantalla Y, entre xa y xb (CSS), son del color."""
+        return sum(1 for X in range(math.floor(xa * pr), math.floor(xb * pr))
+                   if igual(pix((X + 0.5) / pr, (Y + 0.5) / pr), color))
+
+    entero = abs(pr - round(pr)) < 1e-9  # con un DPR fraccionario las lineas de 1 px se reparten: no se leen
+    # el ultimo precio: el cierre de la ultima vela del footprint
+    velas = ((esp.get("huella") or {}).get("velas")) or []
+    u = m.get("ultimo")
+    if velas:
+        v_ = velas[-1]
+        if not u or u.get("precio") != v_["cierre"] or u.get("ts") != v_["ts"] or u.get("y") != y_precio(v_["cierre"]):
+            malos.append(f"el ultimo precio pintado {u} y la ultima vela servida cierra en {v_['cierre']} ({v_['ts']})")
+        elif entero and 0 <= u["y"] < alto:
+            for x in (ancho * 0.25, ancho * 0.75, ancho + AHORA_PX / 2):
+                leidos += 1
+                if not igual(pix(x, u["y"]), REFERENCIA):
+                    malos.append(f"la linea del ultimo precio no esta en y={u['y']} x={x:.0f}: el pixel es {pix(x, u['y'])}")
+                    break
+    elif u:
+        malos.append(f"pinta un ultimo precio {u} y no hay velas servidas")
+    # las lineas de la mejor compra y venta, en el centro de cada escalon
+    uy = (u or {}).get("y")
+    for pc in (m.get("columnas") or []) if entero and bs * pr >= 4 else []:
+        if pc["estado"] != "foto" or pc.get("y_compra") is None or pc["x0"] < 0 or pc["x0"] + bs > ancho:
+            continue
+        for campo in ("y_compra", "y_venta"):
+            y = pc[campo]
+            if not 0 <= y < alto:
+                continue
+            col = REFERENCIA if y == uy else VENTA if campo == "y_venta" or y == pc["y_venta"] else COMPRA
+            leidos += 1
+            if not igual(pix(pc["x0"] + bs / 2, y), col):
+                malos.append(f"columna {pc['ts']}: la linea de {campo[2:]} en y={y} no se ve (el pixel es "
+                             f"{pix(pc['x0'] + bs / 2, y)})")
+                break
+    # la banda «ahora»
+    c_n = cols[-1] if cols else None
+    ja = n - 1 if c_n and j1 == n - 1 and c_n["estado"] == "foto" and c_n["suma"] else None
+    ah = m.get("ahora") or {}
+    vieja = ja is not None and ah.get("j") is None and not e.get("hasta") and "vieja" in str(ah.get("motivo"))
+    if vieja:
+        ja = None
+    if ah.get("j") != ja:
+        malos.append(f"«ahora» estira la columna {ah.get('j')} ({ah.get('motivo')}) y le toca la {ja}")
+    lineas = [y for y in (uy, c_n and (c_n["suma"] or {}).get("compra") and y_precio(c_n["suma"]["compra"]),
+                          c_n and (c_n["suma"] or {}).get("venta") and y_precio(c_n["suma"]["venta"])) if y]
+    for k in range(lo, hi + 1):
+        y = y_de(k) + fh / 2
+        if any(abs(y - z) < 4 for z in lineas):
+            continue
+        bien = bien_de(cols[ja], k, 0) if ja is not None else [FONDO]
+        for x in (ancho + 7, ancho + 21):
+            leidos += 1
+            v = pix(x, y)
+            if not any(igual(v, b, 1) for b in bien):
+                malos.append(f"«ahora» nivel {k * P:g}: el pixel es {v} y tenia que ser {bien[0]}"
+                             + (f" (la columna {isoz(cols[ja]['ts'])})" if ja is not None else " (el fondo)"))
+                break
+    # el perfil del libro de ahora
+    x_perf = ancho + AHORA_PX + VOLUMEN_PX
+    pf = m.get("perfil") or {}
+    esperado = []
+    if ja is not None:
+        s = cols[ja]["suma"]
+        fs = [(k, unidad(s["c"][k] + s["v"][k], k, paso, e["unidad"]), "v" if s["v"][k] > s["c"][k] else "c")
+              for k in range(max(lo, s["lo"]), min(hi, s["hi"]) + 1) if k in s["n"]]
+        tope = max([0.0] + [q for _, q, _ in fs])
+        esperado = [(k, q, lado, (PERFIL_PX - 4) * q / tope if tope > 0 else 0) for k, q, lado in fs]
+    decl = pf.get("barras") or []
+    if len(decl) != len(esperado) or any(a[0] != b[0] or a[2] != b[2] or not cerca(a[1], b[1]) or not cerca(a[3], b[3])
+                                         for a, b in zip(decl, esperado, strict=False)):
+        malos.append(f"el perfil del libro declara {len(decl)} barras ({decl[:1]}) y de la columna «ahora» salen "
+                     f"{len(esperado)} ({esperado[:1]})")
+    for k, _, lado, largo in esperado if fh * pr >= 2 else []:
+        Y = math.floor((y_de(k) + fh / 2) * pr)
+        vistos = corrida(Y, x_perf + 2, x_perf + PERFIL_PX - 1, VENTA if lado == "v" else COMPRA)
+        leidos += 1
+        if abs(vistos - largo * pr) > 1.5:
+            malos.append(f"el perfil del libro, nivel {k * P:g}: {vistos} pixeles de su lado y la barra mide "
+                         f"{largo * pr:.1f}")
+            break
+    # lo negociado en lo visible: las velas 1m que tocan [ts j0, ts j1 + cada)
+    vol = m.get("volumen") or {}
+    if velas and cols and j0 <= j1:
+        tA, tB = cols[j0]["ts"], cols[j1]["ts"] + cada_ms
+        dentro = [x for x in velas if not (epoch_ms(x["ts"]) + 60000 <= tA or epoch_ms(x["ts"]) >= tB)]
+        niv: dict = {}
+        for x in dentro:
+            for y in x.get("niveles") or []:
+                z = niv.setdefault(jsround(float(y["nivel"]) / P), [0.0, 0.0])
+                z[0] += float(y["compra"])
+                z[1] += float(y["venta"])
+        fs = [(k, *niv[k]) for k in range(lo, hi + 1) if k in niv]
+        tope = max([0.0] + [max(c, v) for _, c, v in fs])
+        r_ = (VOLUMEN_PX - 4) / tope if tope > 0 else 0
+        esperado = [(k, c, v, r_ * c, r_ * v) for k, c, v in fs]
+        decl = vol.get("barras") or []
+        if (vol.get("desde"), vol.get("hasta")) != (isoz(tA), isoz(tB)) or len(decl) != len(esperado) or any(
+                a[0] != b[0] or not all(cerca(a[i], b[i]) for i in range(1, 5)) for a, b in zip(decl, esperado, strict=False)):
+            malos.append(f"el perfil de lo negociado declara {vol.get('desde')}-{vol.get('hasta')} y {len(decl)} barras "
+                         f"({decl[:1]}); lo visible es {isoz(tA)}-{isoz(tB)} con {len(esperado)} ({esperado[:1]})")
+        x_vol = ancho + AHORA_PX
+        for k, _, _, lc, lv in esperado if fh * pr >= 4 else []:
+            for dy, largo_, color in ((fh / 4, lc, COMPRA), (3 * fh / 4, lv, VENTA)):
+                vistos = corrida(math.floor((y_de(k) + dy) * pr), x_vol + 2, x_vol + VOLUMEN_PX - 1, color)
+                leidos += 1
+                if abs(vistos - largo_ * pr) > 1.5:
+                    malos.append(f"el perfil de lo negociado, nivel {k * P:g}: {vistos} pixeles de "
+                                 f"{'compra' if color == COMPRA else 'venta'} y la barra mide {largo_ * pr:.1f}")
+                    break
+        # el volumen por minuto, debajo, alineado con el tiempo del mapa
+        bt = max([0.0] + [float(x["compra"]) + float(x["venta"]) for x in dentro])
+        xt0 = x_de(j0)
+        esperado = []
+        for x in dentro:
+            t_ = epoch_ms(x["ts"])
+            esperado.append((x["ts"], float(x["compra"]), float(x["venta"]), xt0 + (t_ - tA) / cada_ms * bs,
+                             xt0 + (t_ + 60000 - tA) / cada_ms * bs))
+        decl = (m.get("bajo") or {}).get("velas") or []
+        if len(decl) != len(esperado) or any(isoz(epoch_ms(a[0])) != isoz(epoch_ms(b[0])) or not all(
+                cerca(a[i], b[i]) for i in range(1, 5)) for a, b in zip(decl, esperado, strict=False)):
+            malos.append(f"el volumen de debajo declara {len(decl)} velas ({decl[:1]}) y lo visible da {len(esperado)} "
+                         f"({esperado[:1]})")
+        hb, base = BAJO_PX - 4, alto + BAJO_PX
+        for ts_, c, v, x0, x1 in esperado:
+            wb = max(1, x1 - x0 - 1)
+            if wb * pr < 2 or x0 + 0.5 < 0 or x0 + 0.5 + wb > ancho:
+                continue
+            X = (x0 + 0.5 + wb / 2)
+            nc = sum(1 for Y in range(math.floor(alto * pr), math.floor(base * pr)) if igual(pix(X, (Y + 0.5) / pr), COMPRA))
+            nv = sum(1 for Y in range(math.floor(alto * pr), math.floor(base * pr)) if igual(pix(X, (Y + 0.5) / pr), VENTA))
+            leidos += 1
+            hc, hv = (hb * c / bt, hb * v / bt) if bt > 0 else (0, 0)
+
+            def filas(y0: float, y1: float) -> tuple:  # (enteras, tocadas): un borde fraccionario se mezcla
+                a_, b_ = y0 * pr, y1 * pr
+                return max(0, math.floor(b_) - math.ceil(a_)), max(0, math.ceil(b_) - math.floor(a_))
+            fc, fv = filas(base - hc, base), filas(base - hc - hv, base - hc)
+            if not (fc[0] <= nc <= fc[1] and fv[0] <= nv <= fv[1]):
+                malos.append(f"el volumen de debajo, minuto {ts_}: {nc} pixeles de compra y {nv} de venta; tocan "
+                             f"{hc * pr:.1f} y {hv * pr:.1f} (entre {fc} y {fv})")
+                break
+    elif vol.get("barras") or (m.get("bajo") or {}).get("velas"):
+        malos.append("pinta volumen y no hay velas servidas a la vista")
+    return malos, leidos
+
+
 def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str) -> None:
     m = (vio.get("pintado") or {}).get("mapa") or {}
     eje, pintadas = m.get("eje"), m.get("columnas") or []
@@ -651,7 +905,19 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
     m_r1, m_col, m_celda, m_color, m_pix, m_todo = [], [], [], [], [], []
     pix_ok, pix_saltados, celdas = 0, 0, 0
     j0, j1 = max(0, math.floor(eje["fin"] - eje["ver"] + 1)), min(len(cols) - 1, math.ceil(eje["fin"]))
-    indice = percentil(cols, esp["d"]["paso"], e["unidad"])  # la escala es la de TODA la ventana (P1 eligio B; P2)
+    # (149 B) los cortes de lo VISIBLE (columnas j0..j1, niveles del eje), recalculados aqui
+    indice, corte, n_corte = cortes(cols, j0, j1, eje["lo"], eje["hi"], esp["d"]["paso"], e["unidad"])
+    esc = m.get("escala") or {}
+    if esc.get("tipo") != "cortes de lo visible" or esc.get("celdas") != n_corte or any(
+            (x is None) != (y is None) or (x is not None and abs(x - y) > 1e-9 * max(1, abs(y)))
+            for x, y in zip(esc.get("corte") or [None, None], corte, strict=False)):
+        m_color.append(f"la escala declara {esc.get('tipo')} cortes {esc.get('corte')} sobre {esc.get('celdas')} celdas "
+                       f"y los de lo visible son {list(corte)} sobre {n_corte}")
+    hd = m.get("honda") or {}
+    if bool(hd.get("pinta")) != esp["honda"]["pinta"] or (esp["honda"]["pinta"] and hd.get("columnas")
+                                                         != esp["honda"]["columnas"]):
+        m_col.append(f"capa honda: la pagina dice {hd.get('pinta')} en {hd.get('columnas')} columnas y lo servido da "
+                     f"{esp['honda']['pinta']} en {esp['honda']['columnas']}")
     px = vio.get("pixeles") or {}
     vistas_ts = [epoch_ms(c["ts"]) for c in pintadas if c.get("origen") != "vivo"]
     if vistas_ts != [c["ts"] for c in cols[j0:j1 + 1]][:len(vistas_ts)]:
@@ -664,24 +930,32 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
     def bien_de(c: dict, k: int, q_: int) -> list[tuple]:
         """Los colores que puede tener el cuadrito q_ del nivel k en la columna c (su color: el percentil +-1)."""
         s = c["suma"]
+        if c["estado"] == "hueco":
+            return [HUECO_RAYA if (c["j"] + k) % 3 == 0 else HUECO]
         if c["estado"] != "foto":
-            return [HUECO if c["estado"] == "hueco" else PENDIENTE]
-        if not (s and k in s["n"]) or q_ >= cuadritos(s["n"][k], s["N"]):
-            return [DESCONOCIDO]
+            return [PENDIENTE]
+        if not (s and k in s["n"]):
+            return [DESCONOCIDO]  # (149 B) un parcial lleva el color entero (P2: a); lo dice el tooltip
         ix = indice(unidad(s["c"][k] + s["v"][k], k, paso, e["unidad"]))
-        return [FONDO] if ix < 0 else [LUT[i] for i in (ix, ix - 1, ix + 1) if 0 <= i <= 255]  # el exacto, primero
+        lut = LUT_V if s["v"][k] > s["c"][k] else LUT_C  # el lado mayor manda; empate, compra
+        return [FONDO] if ix < 0 else [lut[i] for i in (ix, ix - 1, ix + 1) if 0 <= i <= 255]  # el exacto, primero
 
-    # las lineas del precio: por los centros de las columnas con foto, de una a la siguiente (un hueco las corta); un
-    # pixel a menos de 4 px de una de ellas (su halo es de 4 px) no se lee
+    # (149 B) las lineas del precio, en escalones de 1 px sin halo: por columna con foto, un tramo horizontal de x0 a
+    # x0 + w y uno vertical desde la anterior con foto; y el ultimo precio de lado a lado. A menos de 4 px no se lee.
     tramos = []
     for campo in ("y_compra", "y_venta"):
         ant = None
         for pc in pintadas:
             y_ = pc.get(campo)
-            p_ = (pc["x0"] + w / 2, y_) if y_ is not None and pc["estado"] == "foto" else None
-            if ant and p_:
-                tramos.append((ant, p_))
-            ant = p_
+            if y_ is None or pc["estado"] != "foto":
+                ant = None
+                continue
+            tramos.append(((pc["x0"], y_), (pc["x0"] + w, y_)))
+            if ant is not None and ant != y_:
+                tramos.append(((pc["x0"], min(ant, y_)), (pc["x0"], max(ant, y_))))
+            ant = y_
+    if (m.get("ultimo") or {}).get("y") is not None:
+        tramos.append(((0.0, m["ultimo"]["y"]), (float(eje["ancho"]), m["ultimo"]["y"])))
 
     cerca: dict = {}  # los tramos por la x entera que tocan (con 710 columnas son ~1400: recorrerlos todos tarda)
     for tr in tramos:
@@ -691,7 +965,7 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
     def bajo_el_precio(x_: float, y_: float) -> bool:
         for (xa, ya), (xb, yb) in cerca.get(math.floor(x_), ()):
             if xa - 4 <= x_ <= xb + 4:
-                yl = ya + (yb - ya) * min(1.0, max(0.0, (x_ - xa) / (xb - xa)))
+                yl = ya + (yb - ya) * min(1.0, max(0.0, (x_ - xa) / max(1e-9, xb - xa)))
                 if abs(y_ - yl) <= 4 + abs(yb - ya) * 4 / max(1e-9, xb - xa):
                     return True
         return False
@@ -731,7 +1005,10 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
             if conocida:
                 celdas += 1
                 cc, vv, n = s["c"][k], s["v"][k], s["n"][k]
-                _, pc_c, pc_v, pc_n, pc_i = decl[k]
+                _, pc_c, pc_v, pc_n, pc_i, pc_l, pc_h = decl[k]
+                if pc_l != ("v" if vv > cc else "c") or pc_h != (s.get("h") or {}).get(k, 0):
+                    m_celda.append(f"columna {pc['ts']} nivel {k * float(paso):g}: lado {pc_l} y {pc_h} de capa honda; "
+                                 f"lo servido da {'v' if vv > cc else 'c'} y {(s.get('h') or {}).get(k, 0)}")
                 if abs(pc_c - cc) > 1e-9 * max(1, abs(cc)) or abs(pc_v - vv) > 1e-9 * max(1, abs(vv)) or pc_n != n:
                     m_celda.append(f"columna {pc['ts']} nivel {k * float(paso):g}: pinta compra {pc_c} venta {pc_v} "
                                  f"({pc_n} de {s['N']}) y lo servido da {cc} / {vv} ({n} de {s['N']})")
@@ -739,7 +1016,7 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                 if abs(pc_i - ix) > 1:
                     m_color.append(f"columna {pc['ts']} nivel {k * float(paso):g}: color {pc_i} y el percentil de la "
                                  f"ventana da {ix}")
-                esperado_q = (ix, cuadritos(n, s["N"]))
+                esperado_q = (ix, 4)
             # los pixeles de sus cuatro cuadritos (en pixeles de pantalla: CSS x devicePixelRatio)
             y0 = (eje["hi"] - k) * fh
             for q_, (sx, sy) in enumerate(SUB):
@@ -757,7 +1034,8 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                     m_pix.append(f"columna {pc['ts']} nivel {k * float(paso):g} cuadrito {q_}: el pixel es {v} y tenia "
                                  f"que ser {bien[0]} ({'HUECO' if c['estado'] == 'hueco' else 'sin escribir' if c['estado'] == 'pendiente' else 'DESCONOCIDO' if esperado_q is None or q_ >= esperado_q[1] else 'su color'})")
     todos_bien, todos_bajo, n_todo, m_todo = cada_pixel(vio, eje, cols, bien_de, tramos, paso)
-    malos = m_r1 + m_col + m_celda + m_color + m_pix + m_todo
+    m_alr, alr_leidos = juzga_alrededor(vio, e, esp, eje, m, cols, j0, j1, bien_de)
+    malos = m_r1 + m_col + m_celda + m_color + m_pix + m_alr + m_todo
     cuantos = len(malos) - len(m_todo) + n_todo
     if malos:
         rojos.append(f"(F) {pref} el mapa no pinta lo servido: {malos[0]}" + (f" (y {cuantos - 1} mas)" if cuantos > 1 else ""))
@@ -772,7 +1050,8 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                 f"{', el recorte se ejercita' if r1['ver'] < r1['quiere'] else ''}) y {eje['hi'] - eje['lo'] + 1} de "
                 f"{r1['conocidos']} niveles (caben {r1['cy']}); cada pixel del mapa "
                 f"({'x'.join(str(z) for z in vio.get('rgb_tam') or ['?', '?'])} de pantalla): {todos_bien} de su celda, "
-                f"{todos_bajo} bajo el precio, {n_todo} de otra cosa")
+                f"{todos_bajo} bajo el precio, {n_todo} de otra cosa; alrededor (ahora, perfiles, volumen, lineas): "
+                f"{alr_leidos} lecturas, {len(m_alr)} malas; capa honda en {esp['honda']['columnas']} columnas")
 
 
 # --------------------------------------------------------------------------------------------- la escalera
