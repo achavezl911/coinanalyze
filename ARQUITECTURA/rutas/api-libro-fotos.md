@@ -77,7 +77,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K110-el-libro.sh:18`, `harness/checks/K111-banco.py:14`, `harness/checks/K111-banco.py:20`, `harness/checks/K111-banco.py:177` _(+3)_ |
+| **checks** | — | `harness/checks/K110-el-libro.sh:18`, `harness/checks/K111-banco.py:14`, `harness/checks/K111-banco.py:28`, `harness/checks/K111-banco.py:205` _(+3)_ |
 | **tests** | `tests/test_libro.py:587` | — |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
