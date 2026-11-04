@@ -38445,8 +38445,8 @@
           "menciones": [
             "harness/checks/K110-el-libro.sh:18",
             "harness/checks/K111-banco.py:14",
-            "harness/checks/K111-banco.py:28",
-            "harness/checks/K111-banco.py:205",
+            "harness/checks/K111-banco.py:30",
+            "harness/checks/K111-banco.py:208",
             "harness/checks/K111-control.bash:13",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:15",
             "harness/checks/K111-libro.py:31"
@@ -38595,7 +38595,7 @@
           "llamadas": [],
           "menciones": [
             "harness/checks/K111-banco.py:16",
-            "harness/checks/K111-banco.py:290"
+            "harness/checks/K111-banco.py:293"
           ]
         }
       },
@@ -38828,8 +38828,8 @@
           ],
           "menciones": [
             "harness/checks/K110-libro.py:561",
-            "harness/checks/K111-banco.py:30",
-            "harness/checks/K111-banco.py:219"
+            "harness/checks/K111-banco.py:32",
+            "harness/checks/K111-banco.py:222"
           ]
         },
         "tests": {
@@ -40699,7 +40699,7 @@
             "harness/checks/K113-raton.py:892"
           ],
           "menciones": [
-            "harness/checks/K111-banco.py:252",
+            "harness/checks/K111-banco.py:255",
             "harness/checks/K113-raton.py:405"
           ]
         }
@@ -40962,8 +40962,8 @@
           ],
           "menciones": [
             "harness/checks/K109-banco.py:12",
-            "harness/checks/K111-banco.py:22",
-            "harness/checks/K111-banco.py:328"
+            "harness/checks/K111-banco.py:23",
+            "harness/checks/K111-banco.py:348"
           ]
         }
       },
@@ -41512,7 +41512,7 @@
             "harness/checks/K112-banco.py:137"
           ],
           "menciones": [
-            "harness/checks/K111-banco.py:268"
+            "harness/checks/K111-banco.py:271"
           ]
         }
       },
@@ -48147,10 +48147,10 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K111-libro.py:461",
-            "harness/checks/K111-libro.py:1568",
-            "harness/checks/K111-libro.py:1573",
-            "harness/checks/K111-libro.py:1576",
+            "harness/checks/K111-libro.py:488",
+            "harness/checks/K111-libro.py:1676",
+            "harness/checks/K111-libro.py:1681",
+            "harness/checks/K111-libro.py:1684",
             "harness/checks/K44-control.bash:1186",
             "harness/checks/K44-control.bash:1187",
             "harness/checks/K44-control.bash:1197",
@@ -48160,9 +48160,9 @@
           ],
           "menciones": [
             "harness/checks/K111-banco.py:11",
-            "harness/checks/K111-banco.py:29",
             "harness/checks/K111-banco.py:31",
-            "harness/checks/K111-banco.py:194",
+            "harness/checks/K111-banco.py:33",
+            "harness/checks/K111-banco.py:197",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:4",
             "harness/checks/K113-el-raton-y-el-aspecto.sh:19",
             "harness/checks/K113-raton.py:37",

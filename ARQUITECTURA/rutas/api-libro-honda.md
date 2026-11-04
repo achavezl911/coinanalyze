@@ -67,7 +67,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | — | `harness/checks/K111-banco.py:16`, `harness/checks/K111-banco.py:290` |
+| **checks** | — | `harness/checks/K111-banco.py:16`, `harness/checks/K111-banco.py:293` |
 
 **Nadie la llama.** Sus 2 rastros son todos MENCION -comentario,
 docstring o documento-. Es la forma del patron que en esta casa se ha repetido
