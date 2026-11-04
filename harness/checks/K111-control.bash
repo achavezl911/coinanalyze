@@ -114,7 +114,7 @@ for p in $P1 $P2; do
   ss -ltn 2>/dev/null | grep -q ":$p " || { echo "control: el banco de $p no arranco: $(tail -1 "$T/banco1.log") $(tail -1 "$T/banco2.log")"; exit 2; }
 done
 BUENO=$(escenario)
-rc=$(k111 $P1 "$DB"); HK_BUENA=$(huella_k111); guarda el_bueno_es_verde
+rc=$(k111 $P1 "$DB" K111_PIEZAS="$T/piezas_bueno"); HK_BUENA=$(huella_k111); guarda el_bueno_es_verde
 comprueba el_bueno_es_verde "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K111' && echo 0 || echo 1)" \
   "rc=$rc · escenario $BUENO · $(head -1 "$T/sal" | cut -c1-60) · huella $HK_BUENA"
 grep -E '^   · \((S|F|C)' "$T/sal" | cut -c1-170 | sed 's/^/        /'
@@ -236,10 +236,18 @@ comprueba invocacion_ajena "$([ "$rc" = 0 ] && echo 0 || echo 1)" "rc=$rc · $(h
 
 echo "== restaurado"
 FIN=$(escenario)
-rc=$(k111 $P1 "$DB"); HK_FIN=$(huella_k111)
-guarda escenario_restaurado  # (149 r2) su huella no repitio la del bueno en ctl1 y ctl2: la diferencia, contra el_bueno_es_verde.sal
+rc=$(k111 $P1 "$DB" K111_PIEZAS="$T/piezas_fin"); HK_FIN=$(huella_k111)
+guarda escenario_restaurado  # (149 r2) su huella no repitio la del bueno en 3 de 4 corridas, y la causa NO SE SUPO
+# (149 B) por eso K111 escribe cada pieza de su huella (K111_PIEZAS) y, si no repite, la linea dice DONDE: la vista, el
+# caracter y lo que habia alrededor antes y despues
+difpiezas() {
+  awk -F'\t' 'NR == FNR { a[FNR] = $0; next }
+    a[FNR] != $0 { x = a[FNR]; for (i = 1; i <= length($0) && substr($0, i, 1) == substr(x, i, 1); i++) ;
+      print "difiere " $1 " en el caracter " i ": " substr(x, i < 60 ? 1 : i - 60, 120) " -> " substr($0, i < 60 ? 1 : i - 60, 120); exit }' "$1" "$2"
+}
+DIFP=$(difpiezas "$T/piezas_bueno" "$T/piezas_fin" 2>&1 | cut -c1-400)
 comprueba escenario_restaurado "$([ "$FIN" = "$BUENO" ] && [ "$rc" = 0 ] && [ "$HK_FIN" = "$HK_BUENA" ] && echo 0 || echo 1)" \
-  "escenario $BUENO -> $FIN · huella de K111 $HK_BUENA -> $HK_FIN · rc=$rc"
+  "escenario $BUENO -> $FIN · huella de K111 $HK_BUENA -> $HK_FIN · rc=$rc${DIFP:+ · $DIFP}"
 ARBOL_DESPUES=$(git -C "$REPO" status --porcelain 2>/dev/null | sha256sum | cut -c1-12)
 comprueba arbol_intacto "$([ "$ARBOL_ANTES" = "$ARBOL_DESPUES" ] && echo 0 || echo 1)" "git status del arbol $ARBOL_ANTES -> $ARBOL_DESPUES"
 

@@ -18,6 +18,14 @@
   margin: 0 8px;
 }
 
+/* (149 B) pantalla baja (1366x768): la leyenda queda bajo el pliegue y el cuerpo llega hasta la lectura; con la fila
+ * de 16 px (libro-escalera.js) la escalera ensena 18 filas o mas, donde con 460 px de cuerpo ensenaba 11 */
+@media (max-height: 819px) {
+  .cuerpo {
+    min-height: max(460px, calc(100vh - 205px));
+  }
+}
+
 .cuerpo .grafico {
   margin: 0;
 }

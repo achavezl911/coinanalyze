@@ -380,6 +380,13 @@ def juzga_raton(vio: dict, rojos: list, info: list, pref: str) -> None:
                     + ("" if bordes > 1 else " (el borde no se movio: no ejercita la rejilla)"))
 
 
+def piezas(vista: str, pieza: str) -> None:
+    """(149 B) Con K111_PIEZAS=<fichero>, cada pieza de la huella, entera, a ese fichero: dos corridas se comparan con diff."""
+    if os.environ.get("K111_PIEZAS"):
+        with open(os.environ["K111_PIEZAS"], "a") as f:
+            f.write(f"{vista}\t{pieza}\n")
+
+
 async def mira(K, vista: str, cab: dict, vivo: bool, ancho: int = ANCHO, alto: int = ALTO, dpr: float = 1) -> dict:
     out = {"vista": vista, "excepciones": [], "fotos": [], "ultimo": [], "cinta": [], "perfil": [], "ws": [], "ws_abiertos": 0,
            "pantalla": [ancho, alto, dpr]}
@@ -1309,18 +1316,22 @@ def juzga() -> int:
             mapa = {k: v for k, v in (pin.get("mapa") or {}).items() if k != "cuadro"}
             # (149 r3) sin «piezas»: son los ms de cada pieza de pinta() (U7b), cambian en cada corrida
             esc = {k: v for k, v in (pin.get("escalera") or {}).items() if k not in ("cuadro", "ahora_ms", "ms", "piezas")}
-            huella.update(json.dumps([vista, mapa, esc, vio.get("filas"), [p["url"].split("?", 1)[-1] for p in vio["fotos"]],
+            pieza = json.dumps([vista, mapa, esc, vio.get("filas"), [p["url"].split("?", 1)[-1] for p in vio["fotos"]],
                                       [p.get("cuerpo") and {k: v for k, v in p["cuerpo"].items() if k != "as_of"}
                                        for p in vio["fotos"]], sorted((vio.get("pixeles") or {}).items()),
                                       vio.get("pantalla"), vio.get("lienzo"), vio.get("encaje"),
                                       hashlib.sha256(vio.get("rgb") or b"").hexdigest()],
-                                     sort_keys=True, default=str).encode())
+                                     sort_keys=True, default=str)
+            huella.update(pieza.encode())
+            piezas(vista, pieza)
         elif [ancho, alto] == [ANCHO, ALTO]:  # (149 r2) la vista viva chica solo esta por el raton: no repite el vivo
             # (149 r3) del vivo, solo lo que no depende de la hora del aviso reproducido: el canal y QUE venues. El
             # estado de cada uno y el tipo de su ultimo mensaje si dependen, y movian la huella de un escenario igual
             # (escenario_restaurado, K111-control); lo que condenan ya entra por los rotulos de lo condenado
-            huella.update(json.dumps([vista, (vio.get("canal") or {}).get("dice"),
-                                      sorted(str(x.get("venue")) for x in vio.get("ven") or [])]).encode())
+            pieza = json.dumps([vista, (vio.get("canal") or {}).get("dice"),
+                                sorted(str(x.get("venue")) for x in vio.get("ven") or [])])
+            huella.update(pieza.encode())
+            piezas(vista, pieza)
         if not x or "hasta=" not in vista:
             continue
         try:
@@ -1328,6 +1339,7 @@ def juzga() -> int:
         except (Canal, IndexError) as exc:
             nomed.append(f"(S) [{vista}] sin canal a libro_foto: {str(exc)[:160]}")
     # el vivo no entra en la huella (no se repite): entran los rotulos de lo condenado, que si
+    piezas("rotulos", json.dumps(sorted({r.split(":", 1)[0] for r in rojos})))
     huella.update(json.dumps(sorted({r.split(":", 1)[0] for r in rojos})).encode())
     cola = f" · sujeto: {sujeto} · {declara} · huella {huella.hexdigest()[:16]}"
     if rojos:

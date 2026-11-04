@@ -53,6 +53,7 @@ CREATE TABLE libro_foto (ts timestamptz NOT NULL, venue text NOT NULL, symbol te
 """
 
 
+BORDE_S = 4  # el borde del libro vivo late con este semiperiodo (borde_que_late)
 CINTA_CICLO_MS = 8000  # la cinta del banco: CINTA_POR_CICLO operaciones cada 8 s
 CINTA_POR_CICLO = 14
 
@@ -106,6 +107,21 @@ def sirve(a: argparse.Namespace) -> int:
         except OSError:
             return ""
 
+    def borde_que_late(carga_: str) -> str:
+        """Cuatro segundos si, cuatro no, cada libro pierde su 40 % mas lejano por los dos lados: el borde se mueve
+        siempre durante los 20 s de raton quieto, y la rejilla se ejercita por construccion, no por el mercado."""
+        if int(time.time() / BORDE_S) % 2 == 0:
+            return carga_
+        try:
+            d = json.loads(carga_)
+            for lado, k in (("c", "kc"), ("v", "kv")):
+                if isinstance(d.get(lado), list) and len(d[lado]) > 4:
+                    d[lado] = d[lado][: max(2, len(d[lado]) * 6 // 10)]
+                    d[k] = len(d[lado])
+        except (TypeError, ValueError):
+            return carga_
+        return json.dumps(d, separators=(",", ":"))
+
     async def alimenta() -> None:
         """Los avisos grabados, en bucle y a su ritmo, por NOTIFY libro en la base del banco."""
         with lzma.open(a.avisos, "rt") as f:
@@ -122,6 +138,7 @@ def sirve(a: argparse.Namespace) -> int:
                     with contextlib.suppress(KeyError, TypeError, ValueError):
                         d = json.loads(carga_)
                         estado["ref"][d["s"]] = ((float(d["b"]) + float(d["a"])) / 2, float(d.get("p") or 1))
+                    carga_ = borde_que_late(carga_)
                     p = plantado()
                     if p.startswith("sin_libro:") and time.time() - estado["carga"] > 1.5:
                         d = json.loads(carga_)

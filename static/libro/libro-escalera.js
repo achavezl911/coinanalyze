@@ -23,6 +23,8 @@
 
 const ESC_RANCIO_S = 10;
 const ESC_FILA_DEF = 18;
+const ESC_FILA_BAJA = 16;
+const ESC_PANTALLA_BAJA = 820;  // px CSS de alto: por debajo, la fila de 16 (y la hoja de pantalla baja)
 const ESC_FILA_MIN = 14;
 const ESC_FILA_MAX = 28;
 const ESC_RECENTRA_FILAS = 10;
@@ -70,12 +72,19 @@ function modeloEscalera(venues, libros, paso, unidad, ahoraMs) {
   return { venues: filasVenue, suma, filas: escaleraFamilia(suma, paso, unidad) };
 }
 
+// (149 B) en una pantalla baja (1366x768) la fila por defecto es de 16 px: con la de 18 cabian 11 filas, y con la hoja
+// de pantalla baja de libro.css y esta, 18 o mas
+function filaDef() {
+  return typeof window !== 'undefined' && window.innerHeight > 0 && window.innerHeight < ESC_PANTALLA_BAJA
+    ? ESC_FILA_BAJA : ESC_FILA_DEF;
+}
+
 function leeFila() {
   try {
     const n = Number(window.localStorage.getItem('libro.fila'));
-    return n >= ESC_FILA_MIN && n <= ESC_FILA_MAX ? n : ESC_FILA_DEF;
+    return n >= ESC_FILA_MIN && n <= ESC_FILA_MAX ? n : filaDef();
   } catch (e) {
-    return ESC_FILA_DEF;
+    return filaDef();
   }
 }
 
