@@ -237,7 +237,7 @@ juzga_plantado ausente_con_color F "el mapa no pinta lo servido: .*tenia que ser
 planta_pagina libro/libro-app.js 's/^  const hDesde = isoZ(Math\.floor(Date\.parse(w\.desde) \/ 60000) \* 60000);$/  const hDesde = isoZ(Math.floor(Date.parse(w.desde) \/ 60000) * 60000 + 10000);/' 1; m=$?
 juzga_plantado footprint_fuera_de_vela P "pide el footprint fuera del contrato de la ruta: desde=.* y le responde 422" $m "el footprint con desde al borde de 10 s (el 422 de produccion)"
 planta_pagina libro/libro-app.js 's/^const HONDA_EN_VIVO = true;$/const HONDA_EN_VIVO = false;/' 1; m=$?
-juzga_plantado vivo_sin_honda F "la capa honda del vivo no es la servida .*(vivo) declara honda \[\] y la regla da \[" $m "la capa honda solo en la historia"
+juzga_plantado vivo_sin_honda F "la capa honda del vivo no es la servida .*\(vivo\) declara honda \[\] y la regla da \[" $m "la capa honda solo en la historia"
 
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"
