@@ -20,7 +20,8 @@ Lo que sirve (uvicorn, con la CSP de produccion copiada de app/api.py):
                                  de cada 20 (mas de 75 s: la pagina no puede estirar la de antes) y sirve una rancia
                                  de cada 40
     /api/orderflow/footprint     (149 B) el footprint 1m DE MENTIRA: por minuto, nueve niveles alrededor del medio de la
-                                 primera foto del minuto, compra y venta deterministas
+                                 primera foto del minuto, compra y venta deterministas; desde/hasta con la regla de
+                                 la ruta real (app.orderflow_lectura.instante y ventana): fuera del borde de vela, 422
     cualquier otra /api/*        503 «banco»
 Con --avisos, un ALIMENTADOR publica en <dsn>, por NOTIFY libro, los avisos GRABADOS del relevo de verdad (el colector
 del arbol contra los venues, x1-tmp/c145/p3), en bucle y a su ritmo: el relevo del arbol los oye como los del colector.
@@ -107,7 +108,7 @@ def sirve(a: argparse.Namespace) -> int:
     from fastapi.responses import JSONResponse, Response
 
     from app import libro_lectura as lec
-    from app.orderflow_lectura import Peticion
+    from app.orderflow_lectura import MARCOS, RANGO_MAXIMO, Peticion, instante, ventana
 
     sobre = Path(a.sobre) if a.sobre else None
     estado: dict = {"carga": 0.0, "ref": {}, "ops": {}}
@@ -328,11 +329,16 @@ def sirve(a: argparse.Namespace) -> int:
     @api.get("/api/orderflow/footprint")
     async def footprint(symbol: str, paso: str, desde: str = "", hasta: str = "", venues: str = "", marco: str = "1m",
                         unidad: str = "base") -> Response:
-        if not desde or not hasta or marco != "1m":
-            return JSONResponse({"detail": "banco: el footprint solo 1m y con desde y hasta"}, status_code=422)
-        d0 = datetime.fromisoformat(desde.replace("Z", "+00:00"))
-        d1 = datetime.fromisoformat(hasta.replace("Z", "+00:00"))
-        d0 = datetime.fromtimestamp((int(d0.timestamp()) + 59) // 60 * 60, UTC)
+        # desde/hasta con la MISMA regla que la ruta real (149 B r1): app.orderflow_lectura, importada, no copiada
+        try:
+            if marco not in MARCOS:
+                raise Peticion(f"marco tiene que ser uno de {', '.join(MARCOS)}")
+            d0, d1 = instante(desde, "desde"), instante(hasta, "hasta")
+            ventana(d0, d1, RANGO_MAXIMO, MARCOS[marco])
+        except Peticion as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=422)
+        if marco != "1m":
+            return JSONResponse({"detail": "banco: el footprint solo 1m"}, status_code=422)
         P = Decimal(paso)
         vs = [v for v in venues.split(",") if v]
         try:

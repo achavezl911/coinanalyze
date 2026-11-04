@@ -27,6 +27,7 @@ const RUTA_CINTA = '/api/orderflow/cinta';
 const RUTA_PERFIL = '/api/orderflow/perfil';
 const RUTA_HONDA = '/api/libro/honda';
 const RUTA_HUELLA = '/api/orderflow/footprint';
+const HUELLA_RETRASO_S = 10; // cuanto despues del borde de minuto se vuelve a pedir el footprint en vivo
 const CINTA_S = 1; // la cinta de la vista, una pagina por segundo (minutos=1, limit=1000), sin solapar
 const PERFIL_S = 60; // el maximo y minimo de la sesion UTC, del perfil desde las 00:00Z
 const TIEMPOS_MAX = 2000;
@@ -40,7 +41,7 @@ let FALLO = null;
 let CARGA = 0;
 let DESFASE = 0; // la hora del servidor menos la de esta pagina (de as_of)
 const VIVO = { canal: 'ninguno', ws: null, motivoWs: null, sondeo: null, pidiendo: false, reintento: null,
-               columna: null, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
+               columna: null, huella: null, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
 // EL VOLUMEN RECIENTE (L-07): lo que la cinta ya conto (sumaReciente), si contesta, y el perfil de la sesion UTC
 const CINTA = { rec: recienteVacio(), estado: 'pendiente', fallo: null, pidiendo: false, latido: null,
                 perfil: null, perfilFallo: null, pidiendoPerfil: false, latidoPerfil: null };
@@ -51,7 +52,7 @@ window.LIBRO_HITOS = { listo: false, vivo_listo: false, vista: null, peticiones:
 // `congela()` (para K111): el vivo deja de tocar la pantalla -ni mensajes, ni sondeo, ni columnas- y se repinta; asi lo
 // pintado es lo de los mensajes ya procesados, que se cuentan por canal en `recibidos` (los primeros N marcos del
 // websocket, o las primeras N respuestas del sondeo, son exactamente los que la pantalla uso).
-Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0 },
+Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0, huella: 0 },
                                     congelado: false, tiempos: [],
                                     congela: () => congela() });
 window.LIBRO_PINTADO = { mapa: null, escalera: null };
@@ -81,12 +82,16 @@ async function carga() {
   const venues = venuesVista();
   const w = ventanaLibro(VISTA, ahora());
   // la historia, la capa honda (desde 75 s antes: la primera columna puede usar una foto de antes de la ventana) y el
-  // footprint 1m de la ventana, a la vez
+  // footprint 1m de la ventana, a la vez. EL FOOTPRINT (149 B r1) con el contrato de la ruta real: desde y hasta en
+  // borde de minuto, SIEMPRE los dos (fuera de borde, o sin hasta, contesta 422): desde al borde por debajo, hasta al
+  // de por encima; lo que cae fuera de la ventana del mapa no se pinta
   const q = { symbol: VISTA.activo, venues: venues.join(','), hasta: w.hasta };
+  const hDesde = isoZ(Math.floor(Date.parse(w.desde) / 60000) * 60000);
+  const hHasta = isoZ(Math.ceil(Date.parse(w.hasta) / 60000) * 60000);
   const [sobre, honda, huella] = await Promise.all([
     pedir(RUTA_FOTOS, Object.assign({ desde: w.desde, paso: VISTA.paso, cada: w.cada }, q)),
     pedir(RUTA_HONDA, Object.assign({ desde: isoZ(Date.parse(w.desde) - HONDA_RANCIA_S * 1000) }, q)),
-    pedir(RUTA_HUELLA, Object.assign({ desde: w.desde, marco: '1m', paso: VISTA.paso, unidad: 'base' }, q)),
+    pedir(RUTA_HUELLA, Object.assign({}, q, { desde: hDesde, hasta: hHasta, marco: '1m', paso: VISTA.paso, unidad: 'base' })),
   ]);
   [sobre, honda, huella].forEach(apuntar);
   if (mia !== CARGA) return;
@@ -100,7 +105,8 @@ async function carga() {
                cada: w.cada, unidad: VISTA.unidad, desde: w.desde, hasta: w.hasta, asOfMs: asOf,
                fijo: !!VISTA.hasta, aviso: sobre.datos.aviso,
                columnas: columnasDeFotos(sobre.datos, venues, w.columnas, asOf), ahora,
-               huella: huella.ok ? { desde: w.desde, hasta: w.hasta, velas: huella.datos.velas || [] } : null,
+               huella: huella.ok ? { desde: hDesde, hasta: hHasta, velas: huella.datos.velas || [] } : null,
+               huellaUltimo: Date.parse(hHasta) - 60000,
                huellaFallo: huella.ok ? null : 'el footprint respondió ' + (huella.http || 'nada') };
     // la capa honda, junta a las columnas de la historia (las del vivo no la llevan): al paso guardado, el de omision
     MODELO.honda = honda.ok ? juntaHonda(MODELO.columnas, honda.datos, venues, MODELO.paso, LIBRO_PASO[VISTA.activo])
@@ -254,6 +260,43 @@ function programaColumna() {
   }, Math.max(0, t - ahora()));
 }
 
+/* EL FOOTPRINT EN VIVO (149 B r1): cada minuto CERRADO se vuelve a pedir, desde el ultimo minuto pedido (el que estaba
+ * en curso, o el primero que fallo) hasta el borde de minuto siguiente; sus velas sustituyen a las que tenia de ese
+ * desde en adelante, y las de antes de la primera columna del mapa se tiran: el volumen de debajo y el perfil de lo
+ * negociado siguen al mapa. Cada respuesta procesada se cuenta en `recibidos.huella`. */
+function programaHuella() {
+  const t = Math.floor(ahora() / 60000) * 60000 + 60000;
+  VIVO.huella = setTimeout(() => {
+    lateHuella(CARGA, t);
+    programaHuella();
+  }, Math.max(0, t - ahora()) + HUELLA_RETRASO_S * 1000);
+}
+
+async function lateHuella(mia, t) {
+  if (!MODELO || MODELO.fijo || window.LIBRO_HITOS.congelado) return;
+  const desde = Math.min(MODELO.huellaUltimo, t - 60000);
+  const hasta = t + 60000;
+  const sobre = await pedir(RUTA_HUELLA, { symbol: MODELO.activo, venues: MODELO.venues.join(','), desde: isoZ(desde),
+                                          hasta: isoZ(hasta), marco: '1m', paso: MODELO.paso, unidad: 'base' });
+  apuntar(sobre);
+  if (mia !== CARGA || !MODELO || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.huella += 1;
+  if (!sobre.ok) {
+    MODELO.huellaFallo = 'el footprint respondió ' + (sobre.http || 'nada');
+    return;
+  }
+  const primera = MODELO.columnas.length ? Math.floor(MODELO.columnas[0].ts / 60000) * 60000 : desde;
+  const viejas = MODELO.huella ? MODELO.huella.velas.filter((v) => {
+    const ts = Date.parse(v.ts);
+    return ts < desde && ts >= primera;
+  }) : [];
+  MODELO.huella = { desde: isoZ(Math.max(primera, MODELO.huella ? Date.parse(MODELO.huella.desde) : desde)),
+                    hasta: isoZ(hasta), velas: viejas.concat(sobre.datos.velas || []) };
+  MODELO.huellaUltimo = t;
+  MODELO.huellaFallo = null;
+  EL_MAPA.actualiza();
+}
+
 function arrancaVivo() {
   VIVO.libros = {};
   VIVO.canal = 'ninguno';
@@ -266,6 +309,7 @@ function arrancaVivo() {
     pintaEstado();
   }, 1000);
   programaColumna();
+  programaHuella();
   CINTA.latido = setInterval(() => lateCinta(CARGA), CINTA_S * 1000);
   CINTA.latidoPerfil = setInterval(() => lateSesion(CARGA), PERFIL_S * 1000);
   lateCinta(CARGA);
@@ -325,9 +369,9 @@ function paraVivo() {
   paraCinta();
   Object.assign(CINTA, { rec: recienteVacio(), estado: 'pendiente', fallo: null, perfil: null, perfilFallo: null });
   paraSondeo();
-  [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
+  [VIVO.reintento, VIVO.columna, VIVO.huella].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
-  VIVO.reintento = VIVO.columna = VIVO.tic = null;
+  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.tic = null;
   if (VIVO.ws) {
     const ws = VIVO.ws;
     VIVO.ws = null;
@@ -383,9 +427,9 @@ function ultimaFotoComoVivo() {
 function congela() {
   window.LIBRO_HITOS.congelado = true;
   paraSondeo();
-  [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
+  [VIVO.reintento, VIVO.columna, VIVO.huella].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
-  VIVO.reintento = VIVO.columna = VIVO.tic = null;
+  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.tic = null;
   paraCinta();
   repinta();
 }

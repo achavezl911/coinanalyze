@@ -553,8 +553,16 @@ def esperado_mapa(vio: dict, e: dict) -> dict | None:
         cols = [nuevas.get(x["ts"], x) if x["estado"] == "pendiente" else x for x in cols]
     for j, x in enumerate(cols):
         x["j"] = j
-    hu = [p for p in vio.get("huella") or [] if p.get("cuerpo")]
-    return {"q": q, "d": d0, "cols": cols, "honda": honda, "huella": hu[-1]["cuerpo"] if hu else None}
+    # (149 B r1) el footprint: cada respuesta sustituye las velas de su desde en adelante (la de la carga, y en el vivo
+    # las de cada minuto cerrado)
+    velas, hay = [], False
+    for p in vio.get("huella") or []:
+        if not p.get("cuerpo"):
+            continue
+        hd = epoch_ms(urllib.parse.parse_qs(urllib.parse.urlparse(p["url"]).query)["desde"][0])
+        velas = [x for x in velas if epoch_ms(x["ts"]) < hd] + list(p["cuerpo"].get("velas") or [])
+        hay = True
+    return {"q": q, "d": d0, "cols": cols, "honda": honda, "huella": {"velas": velas} if hay else None}
 
 
 def juez_puntos(vio: dict) -> list[list[int]]:
@@ -1383,6 +1391,16 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
         malos.append(f"desde-hasta {q.get('desde')} - {q.get('hasta')} y su hash pide {e['ventana']} hasta {e['hasta']}")
     if malos:
         rojos.append(f"(P) {pref} pide lo que su hash no dice: {'; '.join(malos)}")
+    # (149 B r1) EL FOOTPRINT CON EL CONTRATO DE LA RUTA REAL: desde y hasta, los dos, en borde de minuto; y la respuesta,
+    # 200 (en produccion, un desde al borde de 10 s daba 422 y el perfil de volumen salia vacio sin que nada lo dijera)
+    for p in vio.get("huella") or []:
+        hq = {k: v[0] for k, v in urllib.parse.parse_qs(urllib.parse.urlparse(p["url"]).query).items()}
+        fuera = [k for k in ("desde", "hasta") if k not in hq or epoch_ms(hq[k]) % 60000]
+        if fuera or p.get("estado") not in (200, None):  # None: en vuelo al congelar
+            rojos.append(f"(P) {pref} pide el footprint fuera del contrato de la ruta: "
+                         f"{', '.join(f'{k}={hq.get(k)}' for k in fuera) or 'desde-hasta en borde'} y le responde "
+                         f"{p.get('estado')}")
+            break
     fam = sorted(e["venues"])
     pedidos, servidos, pintados = sorted(q.get("venues", "").split(",")), sorted(esp["d"].get("venues") or []), \
         sorted(pin["mapa"].get("venues") or [])

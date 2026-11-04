@@ -27,6 +27,8 @@
 #   (F) 149 rB, el mapa: lado_cambiado · honda_rancia_pintada (75 -> 750 s) · honda_de_otro_paso (suelo -> redondeo)
 #       honda_pisa_el_vivo · extension_de_otra_columna · perfil_desalineado · volumen_de_otro_minuto
 #       rango_de_otra_ventana (cortes de toda la historia) · ausente_con_color
+#   (P) footprint_fuera_de_vela   (149 rB r1) el footprint pedido con desde al borde de 10 s (10 s pasado el minuto, para
+#                                 que caiga fuera de vela en TODAS las vistas): el banco contesta 422 como produccion
 # Y tres escenarios BUENOS mas que tienen que salir VERDE: vivo_por_sondeo (el websocket rechazado), hueco_en_medio (la
 # base con el hueco y la pagina buena) y sin_libro_dicho (el venue sin libro y la pagina buena: lo dice y no suma).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina («FALTA DESPLEGAR») · sin_chromium · sin_fotos (la base vacia) · sin_canal.
@@ -223,6 +225,8 @@ planta_pagina libro/libro-mapa.js 's/escalaCortes(m\.columnas, j0, j1, /escalaCo
 juzga_plantado rango_de_otra_ventana F "el mapa no pinta lo servido: (la escala declara|columna .* nivel .*color [0-9-]+ y el percentil)" $m "los cortes de toda la historia y no de lo visible"
 planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return \[MAPA_COLOR\.desconocido, null\];/!s.n[k - s.lo]) return [MAPA_LUT_COMPRA[40], null];/' 1; m=$?
 juzga_plantado ausente_con_color F "el mapa no pinta lo servido: .*tenia que ser \(26, 26, 26\) \(DESCONOCIDO\)" $m "lo desconocido con un color de la paleta"
+planta_pagina libro/libro-app.js 's/^  const hDesde = isoZ(Math\.floor(Date\.parse(w\.desde) \/ 60000) \* 60000);$/  const hDesde = isoZ(Math.floor(Date.parse(w.desde) \/ 60000) * 60000 + 10000);/' 1; m=$?
+juzga_plantado footprint_fuera_de_vela P "pide el footprint fuera del contrato de la ruta: desde=.* y le responde 422" $m "el footprint con desde al borde de 10 s (el 422 de produccion)"
 
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"
