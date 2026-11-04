@@ -3030,6 +3030,10 @@ CREATE TABLE IF NOT EXISTS orderflow_hora_hecha (
                                          'okx_spot', 'okx_swap', 'coinbase_spot', 'bitget_usdt', 'deribit_perp')),
     symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
     hecha timestamptz NOT NULL DEFAULT now(),
+    -- min y max del nivel de esa hora y venue (NULL si no tuvo celdas): el paso auto de 1h/4h/1d sale de aqui
+    lo numeric,
+    hi numeric,
+    CHECK ((lo IS NULL) = (hi IS NULL) AND lo <= hi),
     PRIMARY KEY (symbol, ts, venue)
 );
 CREATE INDEX IF NOT EXISTS orderflow_hora_hecha_ts_idx ON orderflow_hora_hecha (ts);

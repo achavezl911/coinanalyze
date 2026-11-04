@@ -208,8 +208,9 @@ class Settings(BaseSettings):
     # La cobertura de los minutos completos se poda con las celdas; la de los incompletos no se poda.
     ORDERFLOW_TAPE_RETENTION_HOURS: int = Field(default=48, ge=1, le=168)
     ORDERFLOW_CELL_RETENTION_DAYS: int = Field(default=30, ge=1, le=365)
-    # OF-1b · las celdas sumadas por hora (orderflow_celda_hora). PENDIENTE de P1.
-    ORDERFLOW_CELL_HOUR_RETENTION_DAYS: int = Field(default=30, ge=1, le=365)
+    # OF-1b · las celdas sumadas por hora (orderflow_celda_hora). P1: el dia mayor de la muestra (BTC+ETH, 10-30)
+    # ocupa 35.1 MB; con SOL (x1.162 por filas del 11-03) 40.8 MB. 23 dias son 24 particiones vivas: 979 MB < 1 GB.
+    ORDERFLOW_CELL_HOUR_RETENTION_DAYS: int = Field(default=23, ge=1, le=365)
     ORDERFLOW_LARGE_RETENTION_DAYS: int = Field(default=365, ge=1, le=3650)
     # OF-4a · app/libro.py. Las fotos del libro: 3 dias caben en 3 GiB aun con todas las fotos a banda llena (2.37 GiB;
     # con lo medido, 1.68). 4 serian 3.16 a banda llena (P2 de la campana 144). La cobertura de los minutos completos se
