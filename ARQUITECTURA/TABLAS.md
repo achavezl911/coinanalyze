@@ -67,11 +67,11 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 57 tablas del esquema |
+| | de 58 tablas del esquema |
 |---|---|
-| de SERIE | **34** |
+| de SERIE | **35** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **27** |
+| de serie que NO declaran ninguna | **28** |
 
 | tabla | columnas de cobertura |
 |---|---|
@@ -83,7 +83,7 @@ Definiciones, escritas antes del recuento:
 | `spot_trades_agg` | `covered_seconds`, `venue_count` |
 | `spot_trades_realtime` | `venue_count` |
 
-**Las 27 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 28 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
@@ -99,6 +99,7 @@ distinguir un periodo vacio de uno no medido:
 - `funding_rate`
 - `libro_cobertura`
 - `libro_foto`
+- `libro_honda`
 - `liquidations`
 - `liquidations_realtime`
 - `long_short_ratio`
@@ -253,7 +254,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2296`, 10 columnas.
+`sql/schema.sql:2298`, 10 columnas.
 
 La escriben:
 
@@ -329,7 +330,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2708`, 8 columnas.
+`sql/schema.sql:2710`, 8 columnas.
 
 La escriben:
 
@@ -342,7 +343,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2671`, 26 columnas.
+`sql/schema.sql:2673`, 26 columnas.
 
 La escriben:
 
@@ -355,7 +356,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2661`, 6 columnas.
+`sql/schema.sql:2663`, 6 columnas.
 
 La escriben:
 
@@ -368,7 +369,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2849`, 12 columnas.
+`sql/schema.sql:2851`, 12 columnas.
 
 La escriben:
 
@@ -743,7 +744,7 @@ La escriben:
 
 ### orderflow_paso
 
-`sql/schema.sql:2934`, 2 columnas.
+`sql/schema.sql:2936`, 2 columnas.
 
 **PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena
 algo fuera del paquete analizado, o el SQL se arma en ejecucion.
@@ -854,7 +855,7 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2483`, 8 columnas.
+`sql/schema.sql:2485`, 8 columnas.
 
 La escriben:
 
@@ -941,8 +942,9 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `bot_operacion` — la escriben 1: `app/bot/servicio.py:884`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
-- `libro_cobertura` — la escriben 2: `app/libro.py:1030`, `app/libro.py:810`
+- `libro_cobertura` — la escriben 2: `app/libro.py:1031`, `app/libro.py:810`
 - `libro_foto` — la escriben 1: `app/libro.py:806`
+- `libro_honda` — la escriben 1: `app/libro_honda.py:189`
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`

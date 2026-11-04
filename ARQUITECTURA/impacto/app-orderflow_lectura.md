@@ -16,7 +16,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/orderflow_lectura.py:72` · clave completa `app.orderflow_lectura.activo_de`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -33,13 +33,13 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 16 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 17 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## pasos
 
 `app/orderflow_lectura.py:97` · clave completa `app.orderflow_lectura.pasos`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -62,7 +62,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/orderflow_lectura.py:50` · clave completa `app.orderflow_lectura.texto`
 
-**Radio exacto: 1 rutas** de 92 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -79,5 +79,5 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 28 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 30 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

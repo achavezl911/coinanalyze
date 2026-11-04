@@ -14,6 +14,8 @@ PARTITIONED_TEMPORAL_TABLES = frozenset(
         "orderflow_cinta",
         # OF-4a (app/libro.py). Tambien en las dos copias vivas de las funciones de sql/schema.sql.
         "libro_foto",
+        # 151-A (app/libro_honda.py). Igual que libro_foto.
+        "libro_honda",
     }
 )
 

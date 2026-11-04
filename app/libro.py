@@ -1026,6 +1026,7 @@ async def poda(pool: asyncpg.Pool, own: ServiceOwnership) -> None:
                 async with fenced_transaction(conn, own):
                     await conn.execute("SET LOCAL statement_timeout = '300s'")
                     await apply_temporal_retention(conn, "libro_foto", s.LIBRO_RETENTION_DAYS * 24)
+                    await apply_temporal_retention(conn, "libro_honda", s.LIBRO_RETENTION_DAYS * 24)  # 151-A
                     await conn.execute(
                         "DELETE FROM libro_cobertura WHERE segundos = 60 AND ts < now() - make_interval(days => $1)",
                         s.LIBRO_RETENTION_DAYS)
@@ -1037,6 +1038,8 @@ async def poda(pool: asyncpg.Pool, own: ServiceOwnership) -> None:
 
 
 async def run() -> None:
+    from app import libro_honda  # 151-A: la capa honda importa de aqui
+
     settings = get_settings()
     configure_logging(settings.LOG_LEVEL)
     own = await acquire_service_lock(settings, SERVICIO)
@@ -1074,6 +1077,7 @@ async def run() -> None:
         asyncio.create_task(latido(pool, own, todos, alm, salud), name="latido"),
         asyncio.create_task(poda(pool, own), name="poda"),
         *(asyncio.create_task(escucha(VENUES[v], libros[v], salud, cliente), name=v) for v in VENUES),
+        asyncio.create_task(libro_honda.honda(libros, pool, own, cliente), name="honda"),
     ]
     try:
         await wait_for_stop_or_lock_loss(stop, lock_monitor, critical_tasks=tuple(tareas))

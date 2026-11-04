@@ -36,28 +36,29 @@
     }
   },
   "catalogo_lineas": {
-    "bot_crudo": "`sql/schema.sql:3335`, 4 columnas",
-    "bot_estado": "`sql/schema.sql:3287`, 3 columnas",
-    "bot_evaluacion": "`sql/schema.sql:3243`, 9 columnas",
-    "bot_evento": "`sql/schema.sql:3228`, 8 columnas",
-    "bot_llamada": "`sql/schema.sql:3256`, 11 columnas",
-    "bot_operacion": "`sql/schema.sql:3271`, 12 columnas",
+    "bot_crudo": "`sql/schema.sql:3376`, 4 columnas",
+    "bot_estado": "`sql/schema.sql:3328`, 3 columnas",
+    "bot_evaluacion": "`sql/schema.sql:3284`, 9 columnas",
+    "bot_evento": "`sql/schema.sql:3269`, 8 columnas",
+    "bot_llamada": "`sql/schema.sql:3297`, 11 columnas",
+    "bot_operacion": "`sql/schema.sql:3312`, 12 columnas",
     "daily_session_agg": "`sql/schema.sql:1032`, 37 columnas",
     "daily_verdict": "`sql/schema.sql:1073`, 17 columnas",
-    "daily_verdict_outcome": "`sql/schema.sql:2296`, 10 columnas",
+    "daily_verdict_outcome": "`sql/schema.sql:2298`, 10 columnas",
     "daily_verdict_snapshot": "`sql/schema.sql:1099`, 26 columnas",
     "data_gap": "`sql/schema.sql:1412`, 22 columnas",
-    "entrada_latido": "`sql/schema.sql:2708`, 8 columnas",
-    "entrada_registro": "`sql/schema.sql:2671`, 26 columnas",
-    "entrada_reglamento": "`sql/schema.sql:2661`, 6 columnas",
-    "entrada_resultado": "`sql/schema.sql:2849`, 12 columnas",
+    "entrada_latido": "`sql/schema.sql:2710`, 8 columnas",
+    "entrada_registro": "`sql/schema.sql:2673`, 26 columnas",
+    "entrada_reglamento": "`sql/schema.sql:2663`, 6 columnas",
+    "entrada_resultado": "`sql/schema.sql:2851`, 12 columnas",
     "external_api_rate_event": "`sql/schema.sql:1309`, 3 columnas",
     "external_macro_observation": "`sql/schema.sql:1234`, 5 columnas",
     "funding_rate": "`sql/schema.sql:146`, 7 columnas",
     "futures_trades_agg": "`sql/schema.sql:273`, 11 columnas",
     "futures_trades_realtime": "`sql/schema.sql:256`, 11 columnas",
-    "libro_cobertura": "`sql/schema.sql:3176`, 9 columnas",
-    "libro_foto": "`sql/schema.sql:3157`, 13 columnas",
+    "libro_cobertura": "`sql/schema.sql:3180`, 9 columnas",
+    "libro_foto": "`sql/schema.sql:3161`, 13 columnas",
+    "libro_honda": "`sql/schema.sql:3210`, 17 columnas",
     "liquidations": "`sql/schema.sql:174`, 5 columnas",
     "liquidations_realtime": "`sql/schema.sql:339`, 8 columnas",
     "long_short_ratio": "`sql/schema.sql:187`, 6 columnas",
@@ -73,22 +74,22 @@
     "open_interest_daily": "`sql/schema.sql:128`, 10 columnas",
     "orderbook_depth": "`sql/schema.sql:329`, 6 columnas",
     "orderbook_snapshot": "`sql/schema.sql:287`, 19 columnas",
-    "orderflow_celda": "`sql/schema.sql:2941`, 10 columnas",
-    "orderflow_cinta": "`sql/schema.sql:2957`, 8 columnas",
-    "orderflow_cobertura": "`sql/schema.sql:2987`, 10 columnas",
-    "orderflow_grande": "`sql/schema.sql:2970`, 9 columnas",
-    "orderflow_paso": "`sql/schema.sql:2934`, 2 columnas",
+    "orderflow_celda": "`sql/schema.sql:2943`, 10 columnas",
+    "orderflow_cinta": "`sql/schema.sql:2959`, 8 columnas",
+    "orderflow_cobertura": "`sql/schema.sql:2989`, 10 columnas",
+    "orderflow_grande": "`sql/schema.sql:2972`, 9 columnas",
+    "orderflow_paso": "`sql/schema.sql:2936`, 2 columnas",
     "pipeline_heartbeat": "`sql/schema.sql:1284`, 4 columnas",
     "predicted_funding_rate": "`sql/schema.sql:160`, 7 columnas",
     "scalp_signal_snapshot": "`sql/schema.sql:381`, 16 columnas",
-    "schema_migration": "`sql/schema.sql:1641`, 2 columnas",
+    "schema_migration": "`sql/schema.sql:1643`, 2 columnas",
     "service_ownership": "`sql/schema.sql:1291`, 5 columnas",
     "signal_execution_snapshot": "`sql/schema.sql:793`, 21 columnas",
     "signal_observation": "`sql/schema.sql:415`, 34 columnas",
     "signal_outcome": "`sql/schema.sql:565`, 27 columnas",
-    "signal_outcome_final_visibility": "`sql/schema.sql:2483`, 8 columnas",
+    "signal_outcome_final_visibility": "`sql/schema.sql:2485`, 8 columnas",
     "signal_replay_frame": "`sql/schema.sql:751`, 7 columnas",
-    "signal_research_bundle_visibility": "`sql/schema.sql:2412`, 9 columnas",
+    "signal_research_bundle_visibility": "`sql/schema.sql:2414`, 9 columnas",
     "signal_walk_forward_manifest": "`sql/schema.sql:895`, 12 columnas",
     "spot_trades_agg": "`sql/schema.sql:198`, 15 columnas",
     "spot_trades_realtime": "`sql/schema.sql:228`, 11 columnas",
@@ -304,6 +305,13 @@
       "por_alter": []
     },
     "libro_foto": {
+      "columnas_de_cobertura": [],
+      "cuantitativas": [],
+      "distingue_corto_de_ausente": false,
+      "es_serie": true,
+      "por_alter": []
+    },
+    "libro_honda": {
       "columnas_de_cobertura": [],
       "cuantitativas": [],
       "distingue_corto_de_ausente": false,
@@ -976,8 +984,8 @@
     },
     "app.api.flujo": {
       "fichero": "app/api.py",
-      "linea": 4184,
-      "sitio": "`app/api.py:4184`"
+      "linea": 4199,
+      "sitio": "`app/api.py:4199`"
     },
     "app.api.funding_context_endpoint": {
       "fichero": "app/api.py",
@@ -986,8 +994,8 @@
     },
     "app.api.health": {
       "fichero": "app/api.py",
-      "linea": 3983,
-      "sitio": "`app/api.py:3983`"
+      "linea": 3998,
+      "sitio": "`app/api.py:3998`"
     },
     "app.api.historical_interval_value": {
       "fichero": "app/api.py",
@@ -1001,8 +1009,8 @@
     },
     "app.api.index": {
       "fichero": "app/api.py",
-      "linea": 4199,
-      "sitio": "`app/api.py:4199`"
+      "linea": 4214,
+      "sitio": "`app/api.py:4214`"
     },
     "app.api.latest_snapshot": {
       "fichero": "app/api.py",
@@ -1016,18 +1024,23 @@
     },
     "app.api.libro": {
       "fichero": "app/api.py",
-      "linea": 4191,
-      "sitio": "`app/api.py:4191`"
+      "linea": 4206,
+      "sitio": "`app/api.py:4206`"
     },
     "app.api.libro_cobertura": {
       "fichero": "app/api.py",
-      "linea": 3927,
-      "sitio": "`app/api.py:3927`"
+      "linea": 3942,
+      "sitio": "`app/api.py:3942`"
     },
     "app.api.libro_fotos": {
       "fichero": "app/api.py",
       "linea": 3911,
       "sitio": "`app/api.py:3911`"
+    },
+    "app.api.libro_honda": {
+      "fichero": "app/api.py",
+      "linea": 3928,
+      "sitio": "`app/api.py:3928`"
     },
     "app.api.libro_referencia": {
       "fichero": "app/api.py",
@@ -1036,8 +1049,8 @@
     },
     "app.api.libro_ultimo": {
       "fichero": "app/api.py",
-      "linea": 3960,
-      "sitio": "`app/api.py:3960`"
+      "linea": 3975,
+      "sitio": "`app/api.py:3975`"
     },
     "app.api.liquidation_levels": {
       "fichero": "app/api.py",
@@ -1076,18 +1089,18 @@
     },
     "app.api.mesa": {
       "fichero": "app/api.py",
-      "linea": 4168,
-      "sitio": "`app/api.py:4168`"
+      "linea": 4183,
+      "sitio": "`app/api.py:4183`"
     },
     "app.api.mesa_decide": {
       "fichero": "app/api.py",
-      "linea": 4112,
-      "sitio": "`app/api.py:4112`"
+      "linea": 4127,
+      "sitio": "`app/api.py:4127`"
     },
     "app.api.mesa_entradas": {
       "fichero": "app/api.py",
-      "linea": 4151,
-      "sitio": "`app/api.py:4151`"
+      "linea": 4166,
+      "sitio": "`app/api.py:4166`"
     },
     "app.api.metric_baselines": {
       "fichero": "app/api.py",
@@ -1171,8 +1184,8 @@
     },
     "app.api.panel": {
       "fichero": "app/api.py",
-      "linea": 4178,
-      "sitio": "`app/api.py:4178`"
+      "linea": 4193,
+      "sitio": "`app/api.py:4193`"
     },
     "app.api.passive_flow_endpoint": {
       "fichero": "app/api.py",
@@ -1326,13 +1339,13 @@
     },
     "app.api.stream": {
       "fichero": "app/api.py",
-      "linea": 4103,
-      "sitio": "`app/api.py:4103`"
+      "linea": 4118,
+      "sitio": "`app/api.py:4118`"
     },
     "app.api.stream_generator": {
       "fichero": "app/api.py",
-      "linea": 4055,
-      "sitio": "`app/api.py:4055`"
+      "linea": 4070,
+      "sitio": "`app/api.py:4070`"
     },
     "app.api.structure": {
       "fichero": "app/api.py",
@@ -2061,38 +2074,38 @@
     },
     "app.libro_lectura._escalera": {
       "fichero": "app/libro_lectura.py",
-      "linea": 263,
-      "sitio": "`app/libro_lectura.py:263`"
+      "linea": 326,
+      "sitio": "`app/libro_lectura.py:326`"
     },
     "app.libro_lectura.mensaje": {
       "fichero": "app/libro_lectura.py",
-      "linea": 280,
-      "sitio": "`app/libro_lectura.py:280`"
+      "linea": 343,
+      "sitio": "`app/libro_lectura.py:343`"
     },
     "app.libro_lectura.parametros": {
       "fichero": "app/libro_lectura.py",
-      "linea": 291,
-      "sitio": "`app/libro_lectura.py:291`"
+      "linea": 354,
+      "sitio": "`app/libro_lectura.py:354`"
     },
     "app.libro_lectura.paso_de": {
       "fichero": "app/libro_lectura.py",
-      "linea": 58,
-      "sitio": "`app/libro_lectura.py:58`"
+      "linea": 59,
+      "sitio": "`app/libro_lectura.py:59`"
     },
     "app.libro_lectura.reagrega": {
       "fichero": "app/libro_lectura.py",
-      "linea": 70,
-      "sitio": "`app/libro_lectura.py:70`"
+      "linea": 71,
+      "sitio": "`app/libro_lectura.py:71`"
     },
     "app.libro_lectura.ultimo": {
       "fichero": "app/libro_lectura.py",
-      "linea": 373,
-      "sitio": "`app/libro_lectura.py:373`"
+      "linea": 436,
+      "sitio": "`app/libro_lectura.py:436`"
     },
     "app.libro_lectura.venues_de": {
       "fichero": "app/libro_lectura.py",
-      "linea": 48,
-      "sitio": "`app/libro_lectura.py:48`"
+      "linea": 49,
+      "sitio": "`app/libro_lectura.py:49`"
     },
     "app.metrics.current_nyse_start": {
       "fichero": "app/metrics.py",
@@ -3642,6 +3655,7 @@
         "llamadores_hasta_k": [
           "app.api.libro_cobertura",
           "app.api.libro_fotos",
+          "app.api.libro_honda",
           "app.api.libro_referencia",
           "app.api.orderflow_cinta",
           "app.api.orderflow_cobertura",
@@ -3658,6 +3672,7 @@
         "por_llamada": [
           "/api/libro/cobertura",
           "/api/libro/fotos",
+          "/api/libro/honda",
           "/api/libro/referencia",
           "/api/orderflow/cinta",
           "/api/orderflow/cobertura",
@@ -3677,8 +3692,8 @@
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
-        "total": 14,
-        "total_exacto": 14
+        "total": 15,
+        "total_exacto": 15
       },
       "app.api._parse_heartbeat_detail": {
         "cota_mas_ancha_que_k0": false,
@@ -3740,6 +3755,7 @@
           "app.api.level_breakout_endpoint",
           "app.api.libro_cobertura",
           "app.api.libro_fotos",
+          "app.api.libro_honda",
           "app.api.libro_referencia",
           "app.api.libro_ultimo",
           "app.api.orderflow_cinta",
@@ -3767,6 +3783,7 @@
           "/api/level/breakout",
           "/api/libro/cobertura",
           "/api/libro/fotos",
+          "/api/libro/honda",
           "/api/libro/referencia",
           "/api/libro/ultimo",
           "/api/orderflow/cinta",
@@ -3795,8 +3812,8 @@
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
-        "total": 24,
-        "total_exacto": 24
+        "total": 25,
+        "total_exacto": 25
       },
       "app.api.ai_context": {
         "cota_mas_ancha_que_k0": false,
@@ -4177,7 +4194,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4184",
+        "sitio": "app/api.py:4199",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4216,7 +4233,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3983",
+        "sitio": "app/api.py:3998",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -4287,7 +4304,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4199",
+        "sitio": "app/api.py:4214",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4338,7 +4355,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4191",
+        "sitio": "app/api.py:4206",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4353,7 +4370,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3927",
+        "sitio": "app/api.py:3942",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4369,6 +4386,21 @@
         "por_tabla": [],
         "por_tabla_k0": [],
         "sitio": "app/api.py:3911",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
+      "app.api.libro_honda": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [],
+        "por_llamada": [
+          "/api/libro/honda"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/api.py:3928",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4398,7 +4430,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:3960",
+        "sitio": "app/api.py:3975",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4567,7 +4599,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4168",
+        "sitio": "app/api.py:4183",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4582,7 +4614,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4112",
+        "sitio": "app/api.py:4127",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4597,7 +4629,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4151",
+        "sitio": "app/api.py:4166",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4865,7 +4897,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4178",
+        "sitio": "app/api.py:4193",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -4985,6 +5017,7 @@
           "app.api.entradas",
           "app.api.libro_cobertura",
           "app.api.libro_fotos",
+          "app.api.libro_honda",
           "app.api.libro_referencia",
           "app.api.libro_ultimo",
           "app.api.mesa_entradas",
@@ -5011,6 +5044,7 @@
           "/api/entradas",
           "/api/libro/cobertura",
           "/api/libro/fotos",
+          "/api/libro/honda",
           "/api/libro/referencia",
           "/api/libro/ultimo",
           "/api/mesa/entradas",
@@ -5038,8 +5072,8 @@
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
-        "total": 24,
-        "total_exacto": 24
+        "total": 25,
+        "total_exacto": 25
       },
       "app.api.records": {
         "cota_mas_ancha_que_k0": true,
@@ -5460,7 +5494,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4103",
+        "sitio": "app/api.py:4118",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -5477,7 +5511,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/api.py:4055",
+        "sitio": "app/api.py:4070",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -11030,6 +11064,7 @@
           "app.libro.declara_parada_anterior",
           "app.libro.poda",
           "app.libro.vuelca",
+          "app.libro_honda.una",
           "app.orderflow.declara_parada_anterior",
           "app.orderflow.poda",
           "app.orderflow.vuelca",
@@ -11228,6 +11263,9 @@
           ],
           "libro_foto": [
             "app.libro.escribe_minuto"
+          ],
+          "libro_honda": [
+            "app.libro_honda.una"
           ],
           "liquidations": [
             "app.daily_agg.apply_retention",
@@ -11499,6 +11537,8 @@
           "app.libro.poda",
           "app.libro.run",
           "app.libro.vuelca",
+          "app.libro_honda.honda",
+          "app.libro_honda.una",
           "app.orderflow.declara_parada_anterior",
           "app.orderflow.escritor",
           "app.orderflow.latido",
@@ -11705,6 +11745,9 @@
           ],
           "libro_foto": [
             "app.libro.escribe_minuto"
+          ],
+          "libro_honda": [
+            "app.libro_honda.una"
           ],
           "liquidations": [
             "app.daily_agg.apply_retention",
@@ -21206,7 +21249,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:263",
+        "sitio": "app/libro_lectura.py:326",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21226,7 +21269,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:280",
+        "sitio": "app/libro_lectura.py:343",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21246,7 +21289,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:291",
+        "sitio": "app/libro_lectura.py:354",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21266,7 +21309,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:58",
+        "sitio": "app/libro_lectura.py:59",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21285,7 +21328,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:70",
+        "sitio": "app/libro_lectura.py:71",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21302,7 +21345,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:373",
+        "sitio": "app/libro_lectura.py:436",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -21314,6 +21357,7 @@
         "llamadores_hasta_k": [
           "app.libro_lectura.cobertura",
           "app.libro_lectura.fotos",
+          "app.libro_lectura.honda",
           "app.libro_lectura.parametros",
           "app.libro_lectura.ultimo",
           "app.libro_lectura.vivo"
@@ -21323,7 +21367,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/libro_lectura.py:48",
+        "sitio": "app/libro_lectura.py:49",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -22602,6 +22646,7 @@
         "llamadores_hasta_k": [
           "app.libro_lectura.cobertura",
           "app.libro_lectura.fotos",
+          "app.libro_lectura.honda",
           "app.libro_lectura.parametros",
           "app.libro_lectura.ultimo",
           "app.libro_lectura.vivo",
@@ -22665,6 +22710,8 @@
           "app.libro_lectura._escalera",
           "app.libro_lectura._lado",
           "app.libro_lectura.fotos",
+          "app.libro_lectura.honda",
+          "app.libro_lectura.honda_fila",
           "app.libro_lectura.mensaje",
           "app.libro_lectura.parametros",
           "app.libro_lectura.paso_de",
@@ -22773,7 +22820,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/partitioning.py:30",
+        "sitio": "app/partitioning.py:32",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22945,7 +22992,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/partitioning.py:25",
+        "sitio": "app/partitioning.py:27",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -32787,17 +32834,17 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 455,
-    "rutas": 92,
-    "rutas_con_campos": 83,
+    "funciones_alcanzables": 456,
+    "rutas": 93,
+    "rutas_con_campos": 84,
     "rutas_sin_campos": 9,
     "sin_clave_temporal": 26,
-    "sin_consumidor": 7,
-    "sin_declarar": 24,
-    "sin_llamada": 17,
+    "sin_consumidor": 8,
+    "sin_declarar": 25,
+    "sin_llamada": 18,
     "solo_mencion": 10,
     "tablas_alcanzadas": 35,
-    "tablas_catalogo": 57
+    "tablas_catalogo": 58
   },
   "rutas": [
     {
@@ -32831,17 +32878,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 4198,
+      "decorador_linea": 4213,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4205,
+      "fin": 4220,
       "forma": [],
       "handler": "app.api.index",
       "impacto_del_handler": 1,
-      "linea": 4199,
+      "linea": 4214,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -37458,19 +37505,19 @@
     {
       "camino": "/api/healthz",
       "campos": {
-        "database": "literal en app/api.py:4036",
-        "governed_services": "literal en app/api.py:4039",
-        "informative_services": "literal en app/api.py:4040",
-        "informative_services.failing": "literal en app/api.py:4046",
-        "informative_services.lag_seconds": "literal en app/api.py:4044",
-        "informative_services.max_age_seconds": "literal en app/api.py:4045",
-        "informative_services.service": "literal en app/api.py:4042",
-        "informative_services.status": "literal en app/api.py:4043",
-        "missing_services": "literal en app/api.py:4037",
-        "missing_symbols": "literal en app/api.py:4038",
-        "services": "literal en app/api.py:4050",
-        "status": "literal en app/api.py:4031",
-        "symbols": "literal en app/api.py:4051"
+        "database": "literal en app/api.py:4051",
+        "governed_services": "literal en app/api.py:4054",
+        "informative_services": "literal en app/api.py:4055",
+        "informative_services.failing": "literal en app/api.py:4061",
+        "informative_services.lag_seconds": "literal en app/api.py:4059",
+        "informative_services.max_age_seconds": "literal en app/api.py:4060",
+        "informative_services.service": "literal en app/api.py:4057",
+        "informative_services.status": "literal en app/api.py:4058",
+        "missing_services": "literal en app/api.py:4052",
+        "missing_symbols": "literal en app/api.py:4053",
+        "services": "literal en app/api.py:4065",
+        "status": "literal en app/api.py:4046",
+        "symbols": "literal en app/api.py:4066"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -37557,19 +37604,19 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 3982,
+      "decorador_linea": 3997,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4052,
+      "fin": 4067,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.health",
       "impacto_del_handler": 8,
-      "linea": 3983,
+      "linea": 3998,
       "llama_directo": [
         "app.api.records",
         "app.db.db_identity",
@@ -38296,19 +38343,19 @@
         "fichero": "declarada/api-libro-cobertura.md",
         "secciones": []
       },
-      "decorador_linea": 3926,
+      "decorador_linea": 3941,
       "familia_ventana": {
         "candidata": null,
         "por": "parametros ['desde', 'hasta', 'symbol', 'venues']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 3937,
+      "fin": 3952,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.libro_cobertura",
       "impacto_del_handler": 1,
-      "linea": 3927,
+      "linea": 3942,
       "llama_directo": [
         "app.api._orderflow"
       ],
@@ -38510,6 +38557,122 @@
       "tipo_retorno": "dict[str, Any]"
     },
     {
+      "camino": "/api/libro/honda",
+      "campos": {
+        "as_of": "literal en app/api.py:3733"
+      },
+      "campos_pendientes": [
+        "el objeto se expande con **respuesta, que no se resuelve en el arbol: sus campos no se pueden derivar"
+      ],
+      "cierre": [
+        "app.api._orderflow",
+        "app.api._utc_iso",
+        "app.api.rechaza_parametros_desconocidos"
+      ],
+      "cierre_indirecto": [
+        "app.api._utc_iso",
+        "app.api.rechaza_parametros_desconocidos"
+      ],
+      "claves_temporales": [
+        "as_of"
+      ],
+      "codigos": [
+        {
+          "codigo": 422,
+          "detalle": null,
+          "donde": "app/api.py:2596",
+          "propio": false
+        },
+        {
+          "codigo": 422,
+          "detalle": null,
+          "donde": "app/api.py:3732",
+          "propio": false
+        }
+      ],
+      "consumidores": {},
+      "consumo": {
+        "llamada_desde_el_panel": false,
+        "n_llamadas": 0,
+        "n_menciones": 0,
+        "sin_ninguno": true,
+        "solo_mencion": false
+      },
+      "declarada": {
+        "completa": false,
+        "existe": false,
+        "faltan": [
+          "PREGUNTA",
+          "VENTANA",
+          "PROMESA",
+          "SUPERFICIE"
+        ],
+        "fichero": "declarada/api-libro-honda.md",
+        "secciones": []
+      },
+      "decorador_linea": 3927,
+      "familia_ventana": {
+        "candidata": null,
+        "por": "parametros ['desde', 'hasta', 'symbol', 'venues']: no encaja en 1/2/3 sin leerla"
+      },
+      "fichero": "app/api.py",
+      "fin": 3938,
+      "forma": [
+        "objeto"
+      ],
+      "handler": "app.api.libro_honda",
+      "impacto_del_handler": 1,
+      "linea": 3928,
+      "llama_directo": [
+        "app.api._orderflow"
+      ],
+      "llama_fuera": [],
+      "metodos": [
+        "GET"
+      ],
+      "parametros": [
+        {
+          "defecto": null,
+          "lo_inyecta_el_framework": true,
+          "nombre": "request",
+          "obligatorio": false,
+          "tipo": "Request"
+        },
+        {
+          "defecto": null,
+          "lo_inyecta_el_framework": false,
+          "nombre": "symbol",
+          "obligatorio": true,
+          "tipo": "str"
+        },
+        {
+          "defecto": "None",
+          "lo_inyecta_el_framework": false,
+          "nombre": "venues",
+          "obligatorio": false,
+          "tipo": "str | None"
+        },
+        {
+          "defecto": "None",
+          "lo_inyecta_el_framework": false,
+          "nombre": "desde",
+          "obligatorio": false,
+          "tipo": "str | None"
+        },
+        {
+          "defecto": "None",
+          "lo_inyecta_el_framework": false,
+          "nombre": "hasta",
+          "obligatorio": false,
+          "tipo": "str | None"
+        }
+      ],
+      "tablas_dudosas": [],
+      "tablas_escribe": [],
+      "tablas_lee": [],
+      "tipo_retorno": "dict[str, Any]"
+    },
+    {
       "camino": "/api/libro/referencia",
       "campos": {
         "as_of": "literal en app/api.py:3733"
@@ -38600,7 +38763,7 @@
     {
       "camino": "/api/libro/ultimo",
       "campos": {
-        "as_of": "literal en app/api.py:3973"
+        "as_of": "literal en app/api.py:3988"
       },
       "campos_pendientes": [
         "el objeto se expande con **respuesta, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -38645,7 +38808,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:3972",
+          "donde": "app/api.py:3987",
           "propio": true
         }
       ],
@@ -38687,19 +38850,19 @@
         "fichero": "declarada/api-libro-ultimo.md",
         "secciones": []
       },
-      "decorador_linea": 3959,
+      "decorador_linea": 3974,
       "familia_ventana": {
         "candidata": null,
         "por": "parametros ['niveles', 'paso', 'symbol', 'venues']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 3973,
+      "fin": 3988,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.libro_ultimo",
       "impacto_del_handler": 1,
-      "linea": 3960,
+      "linea": 3975,
       "llama_directo": [
         "app.api._utc_iso",
         "app.api.rechaza_parametros_desconocidos",
@@ -39567,7 +39730,7 @@
         {
           "codigo": 422,
           "detalle": null,
-          "donde": "app/api.py:4123",
+          "donde": "app/api.py:4138",
           "propio": true
         }
       ],
@@ -39628,17 +39791,17 @@
         "fichero": "declarada/api-mesa-decide.md",
         "secciones": []
       },
-      "decorador_linea": 4111,
+      "decorador_linea": 4126,
       "familia_ventana": {
         "candidata": null,
         "por": "parametros ['frame', 'symbol']: no encaja en 1/2/3 sin leerla"
       },
       "fichero": "app/api.py",
-      "fin": 4147,
+      "fin": 4162,
       "forma": [],
       "handler": "app.api.mesa_decide",
       "impacto_del_handler": 1,
-      "linea": 4112,
+      "linea": 4127,
       "llama_directo": [
         "app.ai_context.build_mesa_decide",
         "app.api.scalp_persistence",
@@ -39924,19 +40087,19 @@
         "fichero": "declarada/api-mesa-entradas.md",
         "secciones": []
       },
-      "decorador_linea": 4150,
+      "decorador_linea": 4165,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4164,
+      "fin": 4179,
       "forma": [
         "objeto"
       ],
       "handler": "app.api.mesa_entradas",
       "impacto_del_handler": 1,
-      "linea": 4151,
+      "linea": 4166,
       "llama_directo": [
         "app.api.rechaza_parametros_desconocidos",
         "app.api.validate_symbol",
@@ -46158,17 +46321,17 @@
           "SUPERFICIE"
         ]
       },
-      "decorador_linea": 4102,
+      "decorador_linea": 4117,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4108,
+      "fin": 4123,
       "forma": [],
       "handler": "app.api.stream",
       "impacto_del_handler": 1,
-      "linea": 4103,
+      "linea": 4118,
       "llama_directo": [
         "app.api.stream_generator"
       ],
@@ -47928,17 +48091,17 @@
         "fichero": "declarada/flujo.md",
         "secciones": []
       },
-      "decorador_linea": 4183,
+      "decorador_linea": 4198,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4187,
+      "fin": 4202,
       "forma": [],
       "handler": "app.api.flujo",
       "impacto_del_handler": 1,
-      "linea": 4184,
+      "linea": 4199,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -48016,17 +48179,17 @@
         "fichero": "declarada/libro.md",
         "secciones": []
       },
-      "decorador_linea": 4190,
+      "decorador_linea": 4205,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4195,
+      "fin": 4210,
       "forma": [],
       "handler": "app.api.libro",
       "impacto_del_handler": 1,
-      "linea": 4191,
+      "linea": 4206,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -48141,17 +48304,17 @@
         "fichero": "declarada/mesa.md",
         "secciones": []
       },
-      "decorador_linea": 4167,
+      "decorador_linea": 4182,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4174,
+      "fin": 4189,
       "forma": [],
       "handler": "app.api.mesa",
       "impacto_del_handler": 1,
-      "linea": 4168,
+      "linea": 4183,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -48345,17 +48508,17 @@
         "fichero": "declarada/panel.md",
         "secciones": []
       },
-      "decorador_linea": 4177,
+      "decorador_linea": 4192,
       "familia_ventana": {
         "candidata": 1,
         "por": "solo pide symbol (o nada): estado ambiente"
       },
       "fichero": "app/api.py",
-      "fin": 4180,
+      "fin": 4195,
       "forma": [],
       "handler": "app.api.panel",
       "impacto_del_handler": 1,
-      "linea": 4178,
+      "linea": 4193,
       "llama_directo": [],
       "llama_fuera": [
         "FileResponse"
@@ -48717,7 +48880,7 @@
         {
           "funcion": "app.libro_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/libro_lectura.py:156"
+          "sitio": "app/libro_lectura.py:157"
         },
         {
           "funcion": "app.orderflow_lectura.cobertura",
@@ -49110,7 +49273,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:4072"
+          "sitio": "app/api.py:4087"
         },
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
@@ -49494,7 +49657,7 @@
         {
           "funcion": "app.api.health",
           "origen": "literal",
-          "sitio": "app/api.py:4008"
+          "sitio": "app/api.py:4023"
         },
         {
           "funcion": "app.api.latest_snapshot",
@@ -50081,7 +50244,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:4083"
+          "sitio": "app/api.py:4098"
         },
         {
           "funcion": "app.entradas.insumos.libro",
@@ -50129,7 +50292,7 @@
         {
           "funcion": "app.libro.run",
           "origen": "literal",
-          "sitio": "app/libro.py:1048"
+          "sitio": "app/libro.py:1051"
         },
         {
           "funcion": "app.orderflow.run",
@@ -50184,7 +50347,7 @@
         {
           "funcion": "app.api.health",
           "origen": "literal",
-          "sitio": "app/api.py:4002"
+          "sitio": "app/api.py:4017"
         },
         {
           "funcion": "app.db.heartbeat_component",
@@ -50981,7 +51144,7 @@
         {
           "funcion": "app.api.stream_generator",
           "origen": "literal",
-          "sitio": "app/api.py:4061"
+          "sitio": "app/api.py:4076"
         },
         {
           "funcion": "app.scalp_logic.scalp_context",
@@ -51330,7 +51493,7 @@
         {
           "funcion": "app.libro.poda",
           "origen": "literal",
-          "sitio": "app/libro.py:1030",
+          "sitio": "app/libro.py:1031",
           "verbo": "DELETE"
         },
         {
@@ -51344,7 +51507,7 @@
         {
           "funcion": "app.libro.poda",
           "origen": "literal",
-          "sitio": "app/libro.py:1030"
+          "sitio": "app/libro.py:1031"
         },
         {
           "funcion": "app.libro.declara_parada_anterior",
@@ -51354,7 +51517,7 @@
         {
           "funcion": "app.libro_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/libro_lectura.py:148"
+          "sitio": "app/libro_lectura.py:149"
         }
       ]
     },
@@ -51371,7 +51534,29 @@
         {
           "funcion": "app.libro_lectura.fotos",
           "origen": "constante FOTOS_SQL",
-          "sitio": "app/libro_lectura.py:90"
+          "sitio": "app/libro_lectura.py:91"
+        }
+      ]
+    },
+    "libro_honda": {
+      "escritores": [
+        {
+          "funcion": "app.libro_honda.una",
+          "origen": "constante HONDA_SQL",
+          "sitio": "app/libro_honda.py:189",
+          "verbo": "INSERT"
+        }
+      ],
+      "lectores": [
+        {
+          "funcion": "app.libro_lectura.honda",
+          "origen": "constante HONDA_ULTIMA_SQL",
+          "sitio": "app/libro_lectura.py:173"
+        },
+        {
+          "funcion": "app.libro_lectura.honda",
+          "origen": "constante HONDA_RANGO_SQL",
+          "sitio": "app/libro_lectura.py:176"
         }
       ]
     },
