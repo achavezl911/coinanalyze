@@ -273,6 +273,44 @@ def cortes(cols: list[dict], j0: int, j1: int, lo: int, hi: int, paso: str, u: s
     return indice, (a, b), len(xs)
 
 
+def honda_por_venue(fotos: list) -> dict:
+    por: dict = {}
+    for x in fotos:
+        por.setdefault(x["venue"], []).append((epoch_ms(x["ts"]), x))
+    for xs in por.values():
+        xs.sort(key=lambda y: y[0])
+    return por
+
+
+def extras_honda(por: dict, venues: list, t: int, alcance: dict, paso: str, guardado: str) -> list:
+    """La regla de la capa honda para UNA columna en t: por venue, su ultima foto con ts <= t, de no mas de 75 s, no
+    rancia y con niveles; sus niveles (por suelo al paso de la vista) solo fuera del alcance vivo de ese venue
+    (alcance[venue] = (lo, hi), o ninguno). -> [(venue, edad_s, {k: [compra, venta]})]"""
+    s_, m_ = float(guardado), round(float(paso) / float(guardado))
+    extras = []
+    for venue in venues:
+        ant = [y for y in por.get(venue, []) if y[0] <= t]
+        if not ant:
+            continue
+        t_, f = ant[-1]
+        if t - t_ > HONDA_RANCIA_MS or f.get("rancia") or (not f.get("compras") and not f.get("ventas")):
+            continue
+        L = alcance.get(venue)
+        niv: dict = {}
+        for lado, campo, sig in ((0, "compras", -1), (1, "ventas", 1)):
+            if not f.get(campo):
+                continue
+            k0 = round(float(f[campo]["desde"]) / s_)
+            for i, q in enumerate(f[campo]["cantidades"]):
+                k = (k0 + sig * i) // m_
+                if L and (k >= L[0] if lado == 0 else k <= L[1]):
+                    continue
+                niv.setdefault(k, [0.0, 0.0])[lado] += float(q)
+        if niv:
+            extras.append((venue, (t - t_) / 1000, niv))
+    return extras
+
+
 def junta_honda(cols: list[dict], d: dict | None, e: dict, paso: str) -> dict:
     """(149 B) LA CAPA HONDA, recalculada aqui: por venue de la familia, su ULTIMA foto honda con ts <= t, de no mas de
     75 s, no rancia y con niveles; sus niveles (al paso guardado, por suelo al de la vista) solo ANADEN fuera del alcance
@@ -282,39 +320,17 @@ def junta_honda(cols: list[dict], d: dict | None, e: dict, paso: str) -> dict:
         return {"pinta": False, "columnas": 0}
     if Decimal(paso) % Decimal(guardado):
         return {"pinta": False, "columnas": 0}
-    s_, m_ = float(guardado), round(float(paso) / float(guardado))
-    por: dict = {}
-    for x in d["fotos"]:
-        por.setdefault(x["venue"], []).append((epoch_ms(x["ts"]), x))
-    for xs in por.values():
-        xs.sort(key=lambda y: y[0])
+    por = honda_por_venue(d["fotos"])
     cuantas = 0
     for c in cols:
         s = c["suma"]
         if c["estado"] != "foto" or not s:
             continue
-        extras = []
-        for venue in e["venues"]:
-            ant = [y for y in por.get(venue, []) if y[0] <= c["ts"]]
-            if not ant:
-                continue
-            t_, f = ant[-1]
-            if c["ts"] - t_ > HONDA_RANCIA_MS or f.get("rancia") or (not f.get("compras") and not f.get("ventas")):
-                continue
-            vivo = next((y for y in c["fotos"] if y["venue"] == venue), None)
-            L = libro(vivo["venue"], vivo["compra"], vivo["venta"], vivo["compras"], vivo["ventas"], paso) if vivo else None
-            niv: dict = {}
-            for lado, campo, sig in ((0, "compras", -1), (1, "ventas", 1)):
-                if not f.get(campo):
-                    continue
-                k0 = round(float(f[campo]["desde"]) / s_)
-                for i, q in enumerate(f[campo]["cantidades"]):
-                    k = (k0 + sig * i) // m_
-                    if L and (k >= L["lo"] if lado == 0 else k <= L["hi"]):
-                        continue
-                    niv.setdefault(k, [0.0, 0.0])[lado] += float(q)
-            if niv:
-                extras.append((venue, (c["ts"] - t_) / 1000, niv))
+        alc = {}
+        for y in c["fotos"]:
+            L = libro(y["venue"], y["compra"], y["venta"], y["compras"], y["ventas"], paso)
+            alc[y["venue"]] = (L["lo"], L["hi"])
+        extras = extras_honda(por, e["venues"], c["ts"], alc, paso, guardado)
         if not extras:
             continue
         cuantas += 1
@@ -545,7 +561,7 @@ def esperado_mapa(vio: dict, e: dict) -> dict | None:
     # (149 B) la capa honda se junta a las columnas de la primera respuesta (las que se recuperan despues no la llevan:
     # la pagina tampoco); la respuesta, la ultima con cuerpo
     hr = [p for p in vio.get("honda") or [] if p.get("cuerpo")]
-    honda = junta_honda(cols, hr[-1]["cuerpo"] if hr else None, e, d0["paso"])
+    honda = junta_honda(cols, hr[-1 if e["hasta"] else 0]["cuerpo"] if hr else None, e, d0["paso"])
     for p in resp[1:]:
         d = p["cuerpo"]
         nuevas = {x["ts"]: x for x in columnas(d, e, [x["ts"] for x in cols if x["estado"] == "pendiente"],
@@ -1423,8 +1439,64 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
             juzga_escalera(vio, e, libros, estados, rojos, info, pref, casa, nomed)
     else:
         juzga_vivo(vio, e, rojos, nomed, info, pref, casa)
+        juzga_honda_vivo(vio, e, rojos, info, pref)
         juzga_raton(vio, rojos, info, pref)
     return {"e": e, "q": q, "d": esp["d"], "K110": K110}
+
+
+def juzga_honda_vivo(vio: dict, e: dict, rojos: list, info: list, pref: str) -> None:
+    """(149 B r1) LA CAPA HONDA DEL VIVO con la regla de la historia: las fotos de la respuesta de la carga y de las
+    primeras recibidos.honda del vivo (por venue|ts, manda la ultima); por columna con foto a la vista, la honda que
+    declara (venue y edad) y, en cada nivel que no conoce el libro vivo de NINGUN venue (su alcance declarado), compra,
+    venta y h son la suma de la capa honda; y un nivel hondo a la vista que no declara, falta."""
+    m = (vio.get("pintado") or {}).get("mapa") or {}
+    if not (m.get("honda") or {}).get("pinta"):
+        return
+    hr = [p for p in vio.get("honda") or [] if p.get("cuerpo")][: 1 + (vio.get("recibidos") or {}).get("honda", 0)]
+    fotos: dict = {}
+    for p in hr:
+        for x in p["cuerpo"].get("fotos") or []:
+            fotos[(x["venue"], x["ts"])] = x
+    por = honda_por_venue(list(fotos.values()))
+    eje, guardado, paso = m.get("eje") or {}, PASO_GUARDADO[e["activo"]], e["paso"]
+    malos, ncol, nviv, nceldas = [], 0, 0, 0
+    for c in m.get("columnas") or []:
+        if c["estado"] != "foto":
+            continue
+        t, alc = epoch_ms(c["ts"]), c.get("alcance") or {}
+        ex = extras_honda(por, e["venues"], t, alc, paso, guardado)
+        dice = sorted((h["venue"], round(h["edad_s"], 3)) for h in c.get("honda") or [])
+        quiere = sorted((v, round(a, 3)) for v, a, _ in ex)
+        ncol += 1 if quiere else 0
+        nviv += 1 if quiere and c["origen"] == "vivo" else 0
+        if dice != quiere:
+            malos.append(f"{c['ts']} ({c['origen']}) declara honda {dice} y la regla da {quiere}")
+            continue
+        fuera = lambda k, alc=alc: all(not (lo <= k <= hi) for lo, hi in alc.values())  # noqa: E731
+        esp: dict = {}
+        for _, _, niv in ex:
+            for k, (qc, qv) in niv.items():
+                if fuera(k):
+                    x = esp.setdefault(k, [0.0, 0.0, 0])
+                    x[0], x[1], x[2] = x[0] + qc, x[1] + qv, x[2] + 1
+        dec = {x[0]: x for x in c.get("celdas") or []}
+        for k, (qc, qv, h) in esp.items():
+            if not (eje.get("lo", k) <= k <= eje.get("hi", k)):
+                continue
+            nceldas += 1
+            x = dec.get(k)
+            if x is None or abs(x[1] - qc) > 1e-6 * max(1, qc) or abs(x[2] - qv) > 1e-6 * max(1, qv) or x[6] != h:
+                malos.append(f"{c['ts']} ({c['origen']}) nivel {k}: declara "
+                             f"{'nada' if x is None else [x[1], x[2], x[6]]} y la capa honda da {[qc, qv, h]}")
+                break
+        for k, x in dec.items():
+            if fuera(k) and k not in esp and x[6]:
+                malos.append(f"{c['ts']} ({c['origen']}) nivel {k}: declara h={x[6]} y la capa honda no lo conoce")
+                break
+    if malos:
+        rojos.append(f"(F) {pref} la capa honda del vivo no es la servida ({len(malos)} columna(s)): {malos[0]}")
+    info.append(f"(F) {pref} capa honda del vivo: {len(hr)} respuesta(s), {ncol} columna(s) a la vista con honda "
+                f"({nviv} del vivo), {nceldas} nivel(es) solo hondos comparados")
 
 
 def juzga_vivo(vio: dict, e: dict, rojos: list, nomed: list, info: list, pref: str, casa) -> None:

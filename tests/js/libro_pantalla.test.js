@@ -142,6 +142,18 @@ test('la capa honda: la ultima foto con ts <= t y no mas de 75 s; solo anade fue
   assert.deepStrictEqual([s.c[8099 - s.lo], s.n[8099 - s.lo], s.h[8099 - s.lo], s.c[8100 - s.lo], s.h[8100 - s.lo]],
     [1, 1, 1, 1, 0]);
   assert.deepStrictEqual(s.honda, [{ venue: 'okx_swap', edad_s: 10 }]);
+  // (149 B r1) volver a juntar no suma dos veces: parte de la suma sin honda
+  C.juntaHonda([col], d, ['okx_swap', 'bitget_usdt'], '10', '10');
+  assert.deepStrictEqual([col.suma.c[8097 - col.suma.lo], col.suma.n[8097 - col.suma.lo]], [3, 1]);
+  // una columna del vivo: su libro sale de col.libros; desdeMs deja quietas las de antes; sin foto valida, sin honda
+  const vivo = { ts: t0 + 120000, estado: 'foto', origen: 'vivo', suma: C.sumaFamilia([viva], 4), libros: [viva] };
+  const antes = { ts: t0 + 40000, estado: 'foto', suma: C.sumaFamilia([viva], 4), libros: [viva] };
+  const rv = C.juntaHonda([antes, vivo, col], d, ['okx_swap'], '10', '10', t0 + 60000);
+  assert.deepStrictEqual([rv.columnas, vivo.suma.honda, antes.suma.honda], [2, [{ venue: 'okx_swap', edad_s: 20 }],
+    undefined]);
+  assert.deepStrictEqual([vivo.suma.lo, vivo.suma.hi], [8096, 8104]);
+  C.juntaHonda([vivo], { fotos: [] }, ['okx_swap'], '10', '10');
+  assert.deepStrictEqual([vivo.suma.lo, vivo.suma.hi, vivo.suma.honda], [8100, 8101, undefined]);
   // un paso mas fino que el guardado no se pinta, y se dice
   const f = C.juntaHonda([], d, ['okx_swap'], '5', '10');
   assert.strictEqual(f.pinta, false);

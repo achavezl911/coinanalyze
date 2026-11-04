@@ -28,6 +28,10 @@ const RUTA_PERFIL = '/api/orderflow/perfil';
 const RUTA_HONDA = '/api/libro/honda';
 const RUTA_HUELLA = '/api/orderflow/footprint';
 const HUELLA_RETRASO_S = 10; // cuanto despues del borde de minuto se vuelve a pedir el footprint en vivo
+// LA CAPA HONDA EN VIVO (149 B r1): cada HONDA_CADA_S (en su rejilla, HONDA_RETRASO_S despues) se pide lo nuevo
+const HONDA_EN_VIVO = true;
+const HONDA_CADA_S = 30;
+const HONDA_RETRASO_S = 5;
 const CINTA_S = 1; // la cinta de la vista, una pagina por segundo (minutos=1, limit=1000), sin solapar
 const PERFIL_S = 60; // el maximo y minimo de la sesion UTC, del perfil desde las 00:00Z
 const TIEMPOS_MAX = 2000;
@@ -41,7 +45,7 @@ let FALLO = null;
 let CARGA = 0;
 let DESFASE = 0; // la hora del servidor menos la de esta pagina (de as_of)
 const VIVO = { canal: 'ninguno', ws: null, motivoWs: null, sondeo: null, pidiendo: false, reintento: null,
-               columna: null, huella: null, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
+               columna: null, huella: null, honda: null, pidiendoHonda: false, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
 // EL VOLUMEN RECIENTE (L-07): lo que la cinta ya conto (sumaReciente), si contesta, y el perfil de la sesion UTC
 const CINTA = { rec: recienteVacio(), estado: 'pendiente', fallo: null, pidiendo: false, latido: null,
                 perfil: null, perfilFallo: null, pidiendoPerfil: false, latidoPerfil: null };
@@ -52,7 +56,7 @@ window.LIBRO_HITOS = { listo: false, vivo_listo: false, vista: null, peticiones:
 // `congela()` (para K111): el vivo deja de tocar la pantalla -ni mensajes, ni sondeo, ni columnas- y se repinta; asi lo
 // pintado es lo de los mensajes ya procesados, que se cuentan por canal en `recibidos` (los primeros N marcos del
 // websocket, o las primeras N respuestas del sondeo, son exactamente los que la pantalla uso).
-Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0, huella: 0 },
+Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0, huella: 0, honda: 0 },
                                     congelado: false, tiempos: [],
                                     congela: () => congela() });
 window.LIBRO_PINTADO = { mapa: null, escalera: null };
@@ -108,8 +112,11 @@ async function carga() {
                huella: huella.ok ? { desde: hDesde, hasta: hHasta, velas: huella.datos.velas || [] } : null,
                huellaUltimo: Date.parse(hHasta) - 60000,
                huellaFallo: huella.ok ? null : 'el footprint respondió ' + (huella.http || 'nada') };
-    // la capa honda, junta a las columnas de la historia (las del vivo no la llevan): al paso guardado, el de omision
-    MODELO.honda = honda.ok ? juntaHonda(MODELO.columnas, honda.datos, venues, MODELO.paso, LIBRO_PASO[VISTA.activo])
+    // la capa honda, junta a las columnas de la historia y, en vivo, a las nuevas (anadeHonda): al paso guardado
+    MODELO.hondaFotos = new Map();
+    MODELO.hondaUltima = null;
+    if (honda.ok) anadeHonda(honda.datos);
+    MODELO.honda = honda.ok ? rejuntaHonda()
       : { pinta: false, motivo: 'la capa honda respondió ' + (honda.http || 'nada'), columnas: 0 };
     EL_MAPA.pon(MODELO, VISTA.ver);
     pideEscalera();
@@ -142,6 +149,7 @@ function recuperaPendientes(mia) {
     const nuevas = new Map(columnasDeFotos(sobre.datos, MODELO.venues, inst, Date.parse(sobre.datos.as_of))
       .map((c) => [c.ts, c]));
     MODELO.columnas = MODELO.columnas.map((c) => nuevas.get(c.ts) || c);
+    if (HONDA_EN_VIVO && MODELO.honda && MODELO.honda.pinta) MODELO.honda = rejuntaHonda(desde);
     EL_MAPA.actualiza();
   }, Math.max(1000, espera));
 }
@@ -251,9 +259,10 @@ function programaColumna() {
     const suma = sumaFamilia(vivos, MODELO.N);
     const ultima = MODELO.columnas[MODELO.columnas.length - 1];
     if (!ultima || t > ultima.ts) {
-      MODELO.columnas.push({ ts: t, estado: suma ? 'foto' : 'hueco', origen: 'vivo', suma });
+      MODELO.columnas.push({ ts: t, estado: suma ? 'foto' : 'hueco', origen: 'vivo', suma, libros: vivos });
       const sobra = MODELO.columnas.length - 2 * Math.ceil((LIBRO_VENTANAS[VISTA.ventana] * 60) / MODELO.cada);
       if (sobra > 0) MODELO.columnas.splice(0, sobra);
+      if (HONDA_EN_VIVO && MODELO.honda && MODELO.honda.pinta) MODELO.honda = rejuntaHonda(t);
       EL_MAPA.actualiza();
     }
     programaColumna();
@@ -297,6 +306,59 @@ async function lateHuella(mia, t) {
   EL_MAPA.actualiza();
 }
 
+/* LA CAPA HONDA EN VIVO (149 B r1). Las fotos recibidas se guardan por venue|ts (la ultima respuesta manda); al llegar
+ * una nueva se vuelven a juntar las columnas desde su ts (una foto de ts x solo cambia columnas de ts >= x: las de los
+ * ultimos 75 s, o menos). Cada HONDA_CADA_S se pide desde la ultima foto recibida menos 75 s (lo que una foto
+ * escrita tarde puede cambiar) hasta el siguiente borde de la rejilla. Cada respuesta procesada se cuenta en
+ * `recibidos.honda` (K111 rehace la junta con las primeras N). La misma regla que la historia: juntaHonda. */
+function anadeHonda(d) {
+  let min = null;
+  ((d && d.fotos) || []).forEach((f) => {
+    MODELO.hondaFotos.set(f.venue + '|' + f.ts, f);
+    const t = Date.parse(f.ts);
+    if (min === null || t < min) min = t;
+    if (MODELO.hondaUltima === null || t > MODELO.hondaUltima) MODELO.hondaUltima = t;
+  });
+  const primera = MODELO.columnas.length ? MODELO.columnas[0].ts - HONDA_RANCIA_S * 1000 : null;
+  if (primera !== null) {
+    MODELO.hondaFotos.forEach((f, k) => { if (Date.parse(f.ts) < primera) MODELO.hondaFotos.delete(k); });
+  }
+  return min;
+}
+
+function rejuntaHonda(desdeMs) {
+  return juntaHonda(MODELO.columnas, { fotos: [...MODELO.hondaFotos.values()] }, MODELO.venues, MODELO.paso,
+                    LIBRO_PASO[MODELO.activo], desdeMs);
+}
+
+function programaHonda() {
+  const c = HONDA_CADA_S * 1000;
+  const t = Math.floor(ahora() / c) * c + c;
+  VIVO.honda = setTimeout(() => {
+    lateHonda(CARGA, t);
+    programaHonda();
+  }, Math.max(0, t - ahora()) + HONDA_RETRASO_S * 1000);
+}
+
+async function lateHonda(mia, t) {
+  if (!MODELO || MODELO.fijo || !MODELO.honda || !MODELO.honda.pinta || VIVO.pidiendoHonda
+      || window.LIBRO_HITOS.congelado) return;
+  const desde = Math.max(MODELO.hondaUltima === null ? Date.parse(MODELO.desde) : MODELO.hondaUltima,
+                         MODELO.columnas.length ? MODELO.columnas[0].ts : 0) - HONDA_RANCIA_S * 1000;
+  VIVO.pidiendoHonda = true;
+  const sobre = await pedir(RUTA_HONDA, { symbol: MODELO.activo, venues: MODELO.venues.join(','), desde: isoZ(desde),
+                                         hasta: isoZ(t + HONDA_CADA_S * 1000) });
+  VIVO.pidiendoHonda = false;
+  apuntar(sobre);
+  if (mia !== CARGA || !MODELO || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.honda += 1;
+  if (!sobre.ok) return; // la junta de antes sigue: se dice en el canal de la capa por la linea de debajo
+  const min = anadeHonda(sobre.datos);
+  if (min === null) return;
+  MODELO.honda = rejuntaHonda(min);
+  EL_MAPA.actualiza();
+}
+
 function arrancaVivo() {
   VIVO.libros = {};
   VIVO.canal = 'ninguno';
@@ -310,6 +372,7 @@ function arrancaVivo() {
   }, 1000);
   programaColumna();
   programaHuella();
+  if (HONDA_EN_VIVO) programaHonda();
   CINTA.latido = setInterval(() => lateCinta(CARGA), CINTA_S * 1000);
   CINTA.latidoPerfil = setInterval(() => lateSesion(CARGA), PERFIL_S * 1000);
   lateCinta(CARGA);
@@ -369,9 +432,10 @@ function paraVivo() {
   paraCinta();
   Object.assign(CINTA, { rec: recienteVacio(), estado: 'pendiente', fallo: null, perfil: null, perfilFallo: null });
   paraSondeo();
-  [VIVO.reintento, VIVO.columna, VIVO.huella].forEach((t) => { if (t !== null) clearTimeout(t); });
+  [VIVO.reintento, VIVO.columna, VIVO.huella, VIVO.honda].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
-  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.tic = null;
+  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.honda = VIVO.tic = null;
+  VIVO.pidiendoHonda = false;
   if (VIVO.ws) {
     const ws = VIVO.ws;
     VIVO.ws = null;
@@ -427,9 +491,10 @@ function ultimaFotoComoVivo() {
 function congela() {
   window.LIBRO_HITOS.congelado = true;
   paraSondeo();
-  [VIVO.reintento, VIVO.columna, VIVO.huella].forEach((t) => { if (t !== null) clearTimeout(t); });
+  [VIVO.reintento, VIVO.columna, VIVO.huella, VIVO.honda].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
-  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.tic = null;
+  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.honda = VIVO.tic = null;
+  VIVO.pidiendoHonda = false;
   paraCinta();
   repinta();
 }
@@ -611,7 +676,9 @@ function pintaLeyenda(esc, m) {
   const u = m.unidad === 'usd' ? ' USD' : ' ' + m.activo;
   tx.textContent = esc.corte[0] === null ? 'sin cantidades a la vista'
     : 'p' + esc.percentiles[0] + ' ' + cifra(esc.corte[0]) + u + ' → p' + esc.percentiles[1] + ' ' + cifra(esc.corte[1])
-      + u + ' (de ' + esc.n + ' celdas a la vista) · gris: desconocido · rayado: sin datos';
+      + u + ' (de ' + esc.n + ' celdas a la vista) · gris: desconocido · rayado: sin datos · un nivel que conocen menos'
+      + ' venues que la familia no se atenúa (lo dice «n de N» al leerlo): en perp solo okx_swap y bitget guardan la'
+      + ' capa honda, así que n de N mide lo que guardamos, no la liquidez del mercado';
 }
 
 function cambia(cambios) {

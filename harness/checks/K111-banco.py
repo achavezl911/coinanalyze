@@ -18,7 +18,8 @@ Lo que sirve (uvicorn, con la CSP de produccion copiada de app/api.py):
                                  compra) que arranca TRES pasos dentro del libro vivo (la pagina tiene que dejar mandar
                                  al vivo) y llega al 1 % (ETH al 2 %), con muros cada 37 niveles; okx_swap calla 2 min
                                  de cada 20 (mas de 75 s: la pagina no puede estirar la de antes) y sirve una rancia
-                                 de cada 40
+                                 de cada 40. En vivo (149 B r1), las de los ultimos 150 s, alrededor de la mejor
+                                 compra / venta del relevo del banco por ese venue, memorizadas
     /api/orderflow/footprint     (149 B) el footprint 1m DE MENTIRA: por minuto, nueve niveles alrededor del medio de la
                                  primera foto del minuto, compra y venta deterministas; desde/hasta con la regla de
                                  la ruta real (app.orderflow_lectura.instante y ventana): fuera del borde de vela, 422
@@ -111,7 +112,7 @@ def sirve(a: argparse.Namespace) -> int:
     from app.orderflow_lectura import MARCOS, RANGO_MAXIMO, Peticion, instante, ventana
 
     sobre = Path(a.sobre) if a.sobre else None
-    estado: dict = {"carga": 0.0, "ref": {}, "ops": {}}
+    estado: dict = {"carga": 0.0, "ref": {}, "ops": {}, "mejor": {}, "honda_viva": {}}
 
     def plantado() -> str:
         try:
@@ -150,6 +151,7 @@ def sirve(a: argparse.Namespace) -> int:
                     with contextlib.suppress(KeyError, TypeError, ValueError):
                         d = json.loads(carga_)
                         estado["ref"][d["s"]] = ((float(d["b"]) + float(d["a"])) / 2, float(d.get("p") or 1))
+                        estado["mejor"][(d["s"], d["v"])] = (str(d["b"]), str(d["a"]))
                     carga_ = borde_que_late(carga_)
                     p = plantado()
                     if p.startswith("sin_libro:") and time.time() - estado["carga"] > 1.5:
@@ -304,6 +306,23 @@ def sirve(a: argparse.Namespace) -> int:
             fs = await fotos_de(symbol, vs, d0, d1, str(P), 30) if vs and d1 > d0 else []
         except Peticion as exc:
             return JSONResponse({"detail": str(exc)}, status_code=422)
+        # (149 B r1) EN VIVO: las fotos de los ultimos 150 s, que la base del banco no tiene (las suyas son de otro dia):
+        # cada 30 s por venue, alrededor de la mejor compra / venta que el relevo del banco mando por ese venue al
+        # pedirse por primera vez, y memorizadas (otra peticion del mismo instante trae la misma foto)
+        ahora_s = int(time.time())
+        viva = estado["honda_viva"]
+        for t in range(max(int(d0.timestamp()), ahora_s - 150) // 30 * 30, min(int(d1.timestamp()), ahora_s + 1), 30):
+            if t < int(d0.timestamp()):
+                continue
+            for v in vs:
+                if (activo, v, t) not in viva and (activo, v) in estado["mejor"]:
+                    b_, a_ = estado["mejor"][(activo, v)]
+                    viva[(activo, v, t)] = {"ts": datetime.fromtimestamp(t, UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                            "venue": v, "compra": b_, "venta": a_}
+                if (activo, v, t) in viva:
+                    fs.append(viva[(activo, v, t)])
+        for k in [k for k in viva if k[2] < ahora_s - 3600]:
+            del viva[k]
         for f in fs:
             t = int(datetime.fromisoformat(f["ts"].replace("Z", "+00:00")).timestamp())
             if f["venue"] == "okx_swap" and (t // 30) % 40 in (10, 11, 12, 13):

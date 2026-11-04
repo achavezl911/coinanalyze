@@ -29,6 +29,8 @@
 #       rango_de_otra_ventana (cortes de toda la historia) · ausente_con_color
 #   (P) footprint_fuera_de_vela   (149 rB r1) el footprint pedido con desde al borde de 10 s (10 s pasado el minuto, para
 #                                 que caiga fuera de vela en TODAS las vistas): el banco contesta 422 como produccion
+#   (F) vivo_sin_honda            (149 rB r1) la capa honda solo en la historia: el vivo ni la pide ni la junta a sus
+#                                 columnas (ni a las que recupera); las primeras del vivo tienen foto honda de la carga
 # Y tres escenarios BUENOS mas que tienen que salir VERDE: vivo_por_sondeo (el websocket rechazado), hueco_en_medio (la
 # base con el hueco y la pagina buena) y sin_libro_dicho (el venue sin libro y la pagina buena: lo dice y no suma).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina («FALTA DESPLEGAR») · sin_chromium · sin_fotos (la base vacia) · sin_canal.
@@ -227,6 +229,8 @@ planta_pagina libro/libro-mapa.js 's/!s\.n\[k - s\.lo\]) return \[MAPA_COLOR\.de
 juzga_plantado ausente_con_color F "el mapa no pinta lo servido: .*tenia que ser \(26, 26, 26\) \(DESCONOCIDO\)" $m "lo desconocido con un color de la paleta"
 planta_pagina libro/libro-app.js 's/^  const hDesde = isoZ(Math\.floor(Date\.parse(w\.desde) \/ 60000) \* 60000);$/  const hDesde = isoZ(Math.floor(Date.parse(w.desde) \/ 60000) * 60000 + 10000);/' 1; m=$?
 juzga_plantado footprint_fuera_de_vela P "pide el footprint fuera del contrato de la ruta: desde=.* y le responde 422" $m "el footprint con desde al borde de 10 s (el 422 de produccion)"
+planta_pagina libro/libro-app.js 's/^const HONDA_EN_VIVO = true;$/const HONDA_EN_VIVO = false;/' 1; m=$?
+juzga_plantado vivo_sin_honda F "la capa honda del vivo no es la servida .*(vivo) declara honda \[\] y la regla da \[" $m "la capa honda solo en la historia"
 
 echo "== tres escenarios buenos mas: tienen que salir VERDE"
 echo sin_ws > "$T/plantado"

@@ -443,7 +443,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
                   mejor_compra: s ? s.mejorCompra : null, mejor_venta: s ? s.mejorVenta : null,
                   y_compra: s ? Math.round(yPrecio(s.mejorCompra)) + 0.5 : null,
                   y_venta: s ? Math.round(yPrecio(s.mejorVenta)) + 0.5 : null,
-                  honda: s && s.honda ? s.honda : [], celdas: [] };
+                  honda: s && s.honda ? s.honda : [], alcance: alcanceColumna(col, m.paso), celdas: [] };
       if (s && col.estado === 'foto') {
         for (let k = Math.max(lo, s.lo); k <= Math.min(hi, s.hi); k++) {
           const d = celda(m, j, k, esc)[1];

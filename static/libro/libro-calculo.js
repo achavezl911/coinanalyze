@@ -339,32 +339,49 @@ function sumaConHonda(s, extras) {
                                 honda: extras.map((e) => ({ venue: e.venue, edad_s: e.edad_s })) });
 }
 
-/* Junta la capa honda a las columnas con foto (en su sitio). -> {pinta, motivo, columnas: cuantas la llevan}. */
-function juntaHonda(columnas, d, venues, paso, pasoGuardado) {
+/* Junta la capa honda a las columnas con foto (en su sitio). -> {pinta, motivo, columnas: cuantas la llevan}.
+ * Se puede volver a juntar (149 B r1, el vivo): la suma sin honda se guarda en `col.sinHonda` la primera vez y cada
+ * junta parte de ella; `desdeMs` junta solo las columnas con ts >= desdeMs (las que una foto nueva puede cambiar). El
+ * libro vivo de cada venue sale de `col.libros` (las columnas del vivo) o de `col.fotos` (las de la historia). */
+function juntaHonda(columnas, d, venues, paso, pasoGuardado, desdeMs) {
   if (!d || !d.fotos) return { pinta: false, motivo: 'sin capa honda', columnas: 0 };
   if (!esMultiplo(paso, pasoGuardado)) {
     return { pinta: false, motivo: 'paso ' + paso + ' más fino que el guardado de la capa honda (' + pasoGuardado
       + '): no se pinta', columnas: 0 };
   }
   const por = hondaPorVenue(d);
-  let cuantas = 0;
   columnas.forEach((col) => {
-    if (col.estado !== 'foto' || !col.suma) return;
+    if (col.estado !== 'foto' || !col.suma || (desdeMs !== undefined && col.ts < desdeMs)) return;
+    if (!col.sinHonda) col.sinHonda = col.suma;
     const extras = [];
     venues.forEach((venue) => {
       const x = hondaEn(por, venue, col.ts);
       if (!x) return;
-      const f = (col.fotos || []).find((y) => y.venue === venue);
-      const L = f ? libroDe(f.venue, f.compra, f.venta, f.compras, f.ventas, paso) : null;
+      let L = (col.libros || []).find((y) => y.venue === venue) || null;
+      if (!col.libros) {
+        const f = (col.fotos || []).find((y) => y.venue === venue);
+        L = f ? libroDe(f.venue, f.compra, f.venta, f.compras, f.ventas, paso) : null;
+      }
       const niveles = nivelesHondos(x.f, L, paso, pasoGuardado);
       if (niveles.size) extras.push({ venue, edad_s: x.edad_s, niveles });
     });
-    if (extras.length) {
-      col.suma = sumaConHonda(col.suma, extras);
-      cuantas += 1;
-    }
+    col.suma = extras.length ? sumaConHonda(col.sinHonda, extras) : col.sinHonda;
   });
+  const cuantas = columnas.filter((col) => col.suma && col.suma.honda && col.suma.honda.length).length;
   return { pinta: true, motivo: null, columnas: cuantas };
+}
+
+/* Lo que conoce el libro vivo de cada venue en una columna con foto, {venue: [lo, hi]} (de `col.libros`, el vivo, o de
+ * `col.fotos`, la historia): dentro manda el vivo y la capa honda no anade. Se guarda en la columna (se declara en cada
+ * pintado). */
+function alcanceColumna(col, paso) {
+  if (col.estado !== 'foto') return null;
+  if (!col.alcance) {
+    const ls = col.libros || (col.fotos || []).map((f) => libroDe(f.venue, f.compra, f.venta, f.compras, f.ventas, paso));
+    col.alcance = {};
+    ls.forEach((L) => { col.alcance[L.venue] = [L.lo, L.hi]; });
+  }
+  return col.alcance;
 }
 
 function escaleraFamilia(s, paso, unidad) {
@@ -558,7 +575,7 @@ if (typeof module !== 'undefined' && module.exports) {
     LIBRO_ACTIVOS, LIBRO_VENUES, LIBRO_PASO, LIBRO_VENTANAS, LIBRO_ESCRITO_S, libroVenues, rotuloFamilia, esMultiplo,
     leeHashLibro, escribeHashLibro, cadaPara, ventanaLibro, kDe, nivelTexto, libroDe, enNivel, sumaFamilia,
     estadoColumna, columnasDeFotos, fotoComoAviso, enUnidad, MAPA_PERCENTILES, percentilDe, escalaCortes,
-    HONDA_RANCIA_S, hondaPorVenue, hondaEn, nivelesHondos, sumaConHonda, juntaHonda, escaleraFamilia,
+    HONDA_RANCIA_S, hondaPorVenue, hondaEn, nivelesHondos, sumaConHonda, juntaHonda, alcanceColumna, escaleraFamilia,
     ESC_GRANDE_X, RECIENTE_VUELVE_MS, RECIENTE_HUECO_MS, p95, medidasVisibles, fraccionBarra, esGrande,
     totalesVisibles, recienteVacio, sumaReciente, limpiaReciente, recienteEn, extremosSesion,
   };
