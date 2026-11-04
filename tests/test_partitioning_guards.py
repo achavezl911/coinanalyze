@@ -37,7 +37,8 @@ def test_managed_table_set_is_exactly_the_partitioned_tables() -> None:
     # La lista tambien esta escrita en sql/schema.sql, en drop_expired_temporal_partitions
     # y en ensure_temporal_partitions. Si aqui se anade una tabla y alli no, la tabla se
     # queda sin particiones nuevas y sin retencion, en silencio: por eso se fija.
-    # Las cinco de siempre mas las dos de OF-1 (campana 140) y la de OF-4a (campana 144).
+    # Las cinco de siempre mas las dos de OF-1 (campana 140), la de OF-4a (campana 144)
+    # y libro_honda, el libro profundo de la campana 151-A.
     assert frozenset(
         {
             "futures_trades_realtime",
@@ -48,6 +49,7 @@ def test_managed_table_set_is_exactly_the_partitioned_tables() -> None:
             "orderflow_celda",
             "orderflow_cinta",
             "libro_foto",
+            "libro_honda",
         }
     ) == PARTITIONED_TEMPORAL_TABLES
 

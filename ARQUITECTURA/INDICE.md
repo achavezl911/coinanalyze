@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-92 rutas descubiertas en el arbol. Para trabajar sobre una,
+93 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -34,6 +34,7 @@
 | `/api/level/breakout` | GET | 1 | 1 | 15 | [ficha](rutas/api-level-breakout.md) |
 | `/api/libro/cobertura` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-cobertura.md) |
 | `/api/libro/fotos` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-fotos.md) |
+| `/api/libro/honda` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-honda.md) |
 | `/api/libro/referencia` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-referencia.md) |
 | `/api/libro/ultimo` | GET | 1 | 1 | 13 | [ficha](rutas/api-libro-ultimo.md) |
 | `/api/liquidation-map` | GET | 16 | 2 | 6 | [ficha](rutas/api-liquidation-map.md) |
@@ -102,7 +103,7 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-9 de 92. Cada una con su motivo en la ficha.
+9 de 93. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento

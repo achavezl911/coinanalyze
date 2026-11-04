@@ -452,6 +452,23 @@ function pintaLiq(ctx, caja, g, xT, d) {
 /* ------------------------------------------------------------- las grandes sobre el footprint */
 /* Un circulo por operacion grande, en SU vela (a su hora dentro de la vela) y a su precio. Llamado desde
  * flujo-dibujo.js con el contexto del footprint, ya recortado a su ancho. */
+/* REMATE 4 (148): donde caeran las grandes, por vela ({ i: [[y, r]] }), con la geometria de pintaGrandes: el
+ * footprint solo le quita el carril a la cifra de venta de la fila que una grande puede tapar. */
+function grandesPorVela(g, y, m, i0, i1) {
+  const d = IND.grandes;
+  const out = {};
+  if (!d || !(VISTA.ind || []).includes('grandes') || i1 < i0) return out;
+  const mMs = FLUJO_MARCOS[m.marco] * 60000;
+  const t0 = Date.parse(m.velas[0].ts);
+  const usdMax = Math.max(0, ...d.operaciones.map((o) => Number(o.usd) || 0)) || 1;
+  d.operaciones.forEach((o) => {
+    const i = Math.floor((Date.parse(o.ts) - t0) / mMs);
+    if (i < i0 || i > i1) return;
+    (out[i] = out[i] || []).push([y(Number(o.precio)), 2 + 4 * Math.sqrt(Math.min(1, Math.max(0, Number(o.usd) / usdMax)))]);
+  });
+  return out;
+}
+
 function pintaGrandes(ctx, g, y, m, i0, i1) {
   const d = IND.grandes;
   if (!d || !(VISTA.ind || []).includes('grandes') || i1 < i0) return null;

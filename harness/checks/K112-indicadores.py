@@ -488,6 +488,7 @@ def juzga_vista(vista: str, vio: dict, rojos: list, nomed: list, info: list, cas
         visibles.append((i, v, r))
     # (C) remate 3: las celdas del footprint, sus barras, pastillas, POC, franja y que ninguna grande tape una cifra
     celdas_ok = juzga_celdas(pin, e, visibles, malos["C"])
+    juzga_cifras(pin, visibles, malos["C"])
     # ---------------------------------------------------------------- (P) y (V): lo pedido
     paneles_pedidos = [c for c in PANELES if c in e["ind"]]
     red = {r: [x for x in vio["red"] if x["ruta"] == r] for r in (RUTA_IND, RUTA_GR, RUTA_ORD)}
@@ -795,6 +796,62 @@ def juzga_liq(caja: dict, d: dict, xT, ancho: float, y_de, malos: list) -> int:
 def _redondea(x: float) -> int:
     """Math.round de JS (la mitad hacia arriba)."""
     return math.floor(x + 0.5)
+
+
+DECIMALES = {"BTC": 3, "ETH": 2, "SOL": 1}  # static/flujo/flujo-calculo.js
+
+
+def cifra_e04(t, dec: int) -> str:
+    """cifraE04 de flujo-calculo.js (E-04): lo que se escribe en una celda; K112 solo usa su LARGO."""
+    x = float(t)
+    a = abs(x)
+    if x == 0:
+        return "0"
+
+    def mil(d: float, suf: str) -> str:
+        s = f"{x / d:.1f}"
+        return mil(1e6, "M") if abs(float(s)) >= 1000 and suf == "K" else s + suf
+    if a >= 1e6:
+        return mil(1e6, "M")
+    if a >= 1e3:
+        return mil(1e3, "K")
+    s = f"{x:.{max(0, dec - (0 if a < 10 else 1 if a < 100 else 2))}f}"
+    if abs(float(s)) >= 1000:
+        return mil(1e3, "K")
+    return s if float(s) != 0 else f"{x:.1g}"
+
+
+def juzga_cifras(pin: dict, visibles: list, malos: list) -> None:
+    """REMATE 4 (148): las cifras de bid x ask, recontadas con una regla PROPIA y no la de la pagina. La compra va a la
+    derecha del eje y el carril de las grandes esta en el borde IZQUIERDO: la compra que cabe en su media vela (su largo
+    en monospace + 4 px <= ancho / 2, SIN el carril) se escribe, y ninguna cifra sale de su media vela (que una grande no
+    tape la venta lo juzga juzga_celdas). El ancho de un caracter sale de las cifras escritas o, sin ninguna, de 0,61 x
+    la fuente (DejaVu Sans Mono es 0,602 em), con 1 px de holgura antes de condenar."""
+    esc = pin.get("escala") or {}
+    if pin.get("celda") != "bidask" or pin.get("numeros") is False or (esc.get("fila") or 0) < 10:
+        return
+    dec = 0 if pin.get("unidad") == "usd" else DECIMALES.get(pin.get("activo"), 2)
+    anchos = [(f[k][1] - f[k][0]) / len(f[t]) for _i, _v, r in visibles for f in r.get("niveles") or []
+              for k, t in (("caja_venta", "texto_venta"), ("caja_compra", "texto_compra")) if f.get(k) and f.get(t)]
+    cw = max(anchos) if anchos else 0.61 * (esc.get("fuente") or 9)
+    for _i, _v, r in visibles:
+        x0, w = r["x0"], r["ancho"]
+        eje = x0 + w // 2
+        for f in r.get("niveles") or []:
+            if f.get("filtro") in ("escondida", "atenuada") or f.get("compra") is None \
+                    or f.get("y1", 0) < esc["arriba"] - 1 or f.get("y0", 0) > esc["abajo"] + 1:
+                continue
+            donde = f"vela {r['ts'][5:16]} nivel {f['nivel']}"
+            tc = cifra_e04(f["compra"], dec)
+            cv, cc = f.get("caja_venta"), f.get("caja_compra")
+            if not f.get("texto_compra") and len(tc) * cw + 4 <= w / 2 - 1:
+                malos.append(f"{donde}: la compra «{tc}» cabe en su media vela ({len(tc) * cw:.1f} + 4 px de {w / 2:g}) y "
+                             "no se escribe")
+                return
+            if (cc and (cc[0] < eje - 0.5 or cc[1] > x0 + w + 0.5)) or (cv and (cv[0] < x0 - 0.5 or cv[1] > eje + 0.5)):
+                malos.append(f"{donde}: una cifra sale de su media vela (venta {cv}, compra {cc}; eje {eje}, vela {x0} a "
+                             f"{x0 + w})")
+                return
 
 
 def juzga_celdas(pin: dict, e: dict, visibles: list, malos: list) -> int:

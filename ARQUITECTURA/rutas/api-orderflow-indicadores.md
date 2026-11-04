@@ -67,7 +67,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:940`, `harness/checks/K112-banco.py:133`, `harness/checks/K112-control.bash:174`, `harness/checks/K112-control.bash:232` | — |
+| **checks** | `harness/checks/K108-orderflow.py:940`, `harness/checks/K112-banco.py:133`, `harness/checks/K112-control.bash:176`, `harness/checks/K112-control.bash:242` | — |
 
 **No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
@@ -105,9 +105,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
-| `app.api._orderflow` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
+| `app.api._orderflow` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
 | `app.api.orderflow_indicadores` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

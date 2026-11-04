@@ -1499,7 +1499,8 @@ BEGIN
         'scalp_signal_snapshot',
         'orderflow_celda',
         'orderflow_cinta',
-        'libro_foto'
+        'libro_foto',
+        'libro_honda'
     ] LOOP
         parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
         IF parent_oid IS NULL OR NOT EXISTS (
@@ -1557,7 +1558,8 @@ DECLARE
         'scalp_signal_snapshot',
         'orderflow_celda',
         'orderflow_cinta',
-        'libro_foto'
+        'libro_foto',
+        'libro_honda'
     ];
     schema_name text := current_schema();
     parent_oid regclass;
@@ -3032,7 +3034,8 @@ BEGIN
         'scalp_signal_snapshot',
         'orderflow_celda',
         'orderflow_cinta',
-        'libro_foto'
+        'libro_foto',
+        'libro_honda'
     ] LOOP
         parent_oid := to_regclass(format('%I.%I', schema_name, managed_table));
         IF parent_oid IS NULL OR NOT EXISTS (
@@ -3090,7 +3093,8 @@ DECLARE
         'scalp_signal_snapshot',
         'orderflow_celda',
         'orderflow_cinta',
-        'libro_foto'
+        'libro_foto',
+        'libro_honda'
     ];
     schema_name text := current_schema();
     parent_oid regclass;
@@ -3187,6 +3191,43 @@ CREATE TABLE IF NOT EXISTS libro_cobertura (
     PRIMARY KEY (symbol, ts, venue)
 );
 CREATE INDEX IF NOT EXISTS libro_cobertura_ts_idx ON libro_cobertura (ts);
+
+SELECT ensure_temporal_partitions();
+
+COMMIT;
+
+-- =========================================================================================
+-- CAMPANA 151 · LIBRO PROFUNDO, RONDA A (app/libro_honda.py). Bloque ADITIVO: una tabla NUEVA, libro_foto no se toca.
+--   libro_honda  cada HONDA_S segundos por (venue, activo) que entra: una foto REST honda (okx books-full, bitget
+--                merge-depth) AL PASO de libro_foto, por lado DESDE el borde del alcance vivo HACIA FUERA, hasta +-2 %
+--                del precio o el alcance de la foto, lo que llegue antes. Nunca un nivel a medio conocer: un cubo
+--                agrupado que no parte el paso deja ese lado sin niveles (NULL). vivo_* es el alcance vivo del instante
+--                (lo que manda dentro), precio el medio del libro vivo, alcance_* lo que cubre la foto REST.
+-- RETENCION: la de libro_foto, por el mismo mecanismo (su nombre en las dos copias vivas de las funciones de particion).
+-- =========================================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS libro_honda (
+    ts timestamptz NOT NULL,
+    venue text NOT NULL CHECK (venue IN ('okx_swap', 'okx_spot', 'bitget_usdt')),
+    symbol text NOT NULL CHECK (symbol IN ('BTC', 'ETH', 'SOL')),
+    ts_libro timestamptz NOT NULL,
+    fuente text NOT NULL,
+    paso numeric NOT NULL CHECK (paso > 0),
+    cubo numeric NOT NULL CHECK (cubo > 0),
+    precio numeric NOT NULL CHECK (precio > 0),
+    vivo_compra numeric NOT NULL CHECK (vivo_compra > 0),
+    vivo_venta numeric NOT NULL CHECK (vivo_venta > 0),
+    compra_nivel numeric CHECK (compra_nivel >= 0),
+    compras numeric[] CHECK (cardinality(compras) >= 1 AND 0 <= ALL (compras)),
+    venta_nivel numeric CHECK (venta_nivel >= 0),
+    ventas numeric[] CHECK (cardinality(ventas) >= 1 AND 0 <= ALL (ventas)),
+    alcance_compra numeric CHECK (alcance_compra > 0),
+    alcance_venta numeric CHECK (alcance_venta > 0),
+    bytes_red integer NOT NULL CHECK (bytes_red >= 0),
+    CHECK ((compra_nivel IS NULL) = (compras IS NULL) AND (venta_nivel IS NULL) = (ventas IS NULL)),
+    PRIMARY KEY (symbol, ts, venue)
+) PARTITION BY RANGE (ts);
 
 SELECT ensure_temporal_partitions();
 

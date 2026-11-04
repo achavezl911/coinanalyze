@@ -208,6 +208,13 @@ function creaLienzo(canvas, op) {
     return a;
   }
 
+  /* REMATE 4: el carril que le toca a la venta de la fila y0..y1 de la vela i: el entero si una grande de esa vela
+   * puede tapar una cifra de la fila (su circulo cruza la franja de la fuente), 0 si no */
+  function carrilVenta(carril, i, y0, y1, f) {
+    const ym = (y0 + y1) / 2;
+    return carril && (L.grandes[i] || []).some(([yy, r]) => Math.abs(yy - ym) < r + f / 2) ? carril : 0;
+  }
+
   /* REMATE 1: las celdas a la vista que pintaVela puede escribir (sus mismas condiciones y textos), para fuenteVista */
   function fuenteDeLaVista(ctx, g, y, m, i0, i1) {
     const tope = fuenteDe(L.fila);
@@ -227,13 +234,10 @@ function creaLienzo(canvas, op) {
         if (fil === 'escondida' || fil === 'atenuada' || y1 < g.arriba - 1 || y0 > g.abajo + 1) return;
         const x = des[k] || {};
         const d = Number(l.delta);
-        if (modo === 'bidask') {
-          celdas.push({ hueco: w / 2 - carril, piezas: [[cifraE04(l.venta, dec), !!x.dv], [cifraE04(l.compra, dec), !!x.dc]] });
-        } else if (modo === 'des') {
-          const piezas = [];
-          if (x.dv) piezas.push([cifraE04(l.venta, dec), true]);
-          if (x.dc) piezas.push([cifraE04(l.compra, dec), true]);
-          if (piezas.length) celdas.push({ hueco: w / 2 - carril, piezas });
+        // REMATE 4: cada lado es su celda; el carril esta en el borde IZQUIERDO y solo resta del lado de venta
+        if (modo === 'bidask' || modo === 'des') {
+          if (modo === 'bidask' || x.dv) celdas.push({ hueco: w / 2 - carrilVenta(carril, i, y0, y1, tope), piezas: [[cifraE04(l.venta, dec), !!x.dv || modo === 'des']] });
+          if (modo === 'bidask' || x.dc) celdas.push({ hueco: w / 2, piezas: [[cifraE04(l.compra, dec), !!x.dc || modo === 'des']] });
         } else {
           const t = modo === 'delta' ? (d > 0 ? '+' : '') + cifraE04(l.delta, dec)
             : modo === 'trades' ? cifraE04(l.operaciones, 0) : cifraE04(l.total, dec);
@@ -308,6 +312,7 @@ function creaLienzo(canvas, op) {
     const { lo, hi } = escala(g, paso);
     const alto = g.abajo - g.arriba;
     const y = (p) => g.arriba + ((hi - p) / (hi - lo)) * alto;
+    L.grandes = typeof grandesPorVela === 'function' ? grandesPorVela(g, y, m, i0, i1) : {};
     L.fuente = fuenteDeLaVista(ctx, g, y, m, i0, i1);
     reg.escala = { lo, hi, arriba: g.arriba, abajo: g.abajo, modo: L.modoY, fila: L.fila, centro: L.centro,
                    fuente: L.fuente, fuente_tope: fuenteDe(L.fila), resumen: g.resumen };
@@ -547,10 +552,14 @@ function creaLienzo(canvas, op) {
         // F-02: la venta del agresor (bid) a la izquierda del eje de la vela, la compra (ask) a la derecha
         const tv = cifraE04(l.venta, dec);
         const tc = cifraE04(l.compra, dec);
-        const hueco = w / 2 - carril;
-        const lados = modo === 'bidask' ? [['venta', tv, !!x.dv], ['compra', tc, !!x.dc]]
-          : [['venta', tv, true], ['compra', tc, true]].filter((p) => (p[0] === 'venta' ? x.dv : x.dc));
-        if (lados.length && lados.every((p) => ancho(p[1], p[2]) + 4 <= hueco)) {
+        // REMATE 4 (148): cada lado se escribe si cabe en SU media vela; el carril de las grandes esta en el borde
+        // IZQUIERDO y solo resta de la venta, y solo en la fila que una grande de esta vela puede tapar (con el carril
+        // en los dos lados, BTC 1m no escribia nada; con el carril en toda venta, 11 de 441 en el banco de K112)
+        const hueco = { venta: w / 2 - carrilVenta(carril, iv, y0, y1, fuente), compra: w / 2 };
+        const lados = (modo === 'bidask' ? [['venta', tv, !!x.dv], ['compra', tc, !!x.dc]]
+          : [['venta', tv, true], ['compra', tc, true]].filter((p) => (p[0] === 'venta' ? x.dv : x.dc)))
+          .filter((p) => ancho(p[1], p[2]) + 4 <= hueco[p[0]]);
+        if (lados.length) {
           piezas = lados.map((p) => (p[0] === 'venta' ? [p[1], eje - 3, 'right', p[2], 'venta', '_venta']
             : [p[1], eje + 3, 'left', p[2], 'compra', '_compra']));
         }

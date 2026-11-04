@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro_cobertura` · `app/api.py:3935` (cuerpo hasta la 3945) · decorador en la linea 3934.
+Handler `libro_cobertura` · `app/api.py:3950` (cuerpo hasta la 3960) · decorador en la linea 3949.
 
 ## Parametros de entrada
 
@@ -106,9 +106,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.api._utc_iso` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
-| `app.api.rechaza_parametros_desconocidos` | 24 | **0** | 0 | **24** | [impacto](../impacto/app-api.md) |
-| `app.api._orderflow` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-api.md) |
+| `app.api._utc_iso` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
+| `app.api.rechaza_parametros_desconocidos` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
+| `app.api._orderflow` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-api.md) |
 | `app.api.libro_cobertura` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
