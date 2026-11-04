@@ -13,6 +13,14 @@ Lo que sirve (uvicorn, con la CSP de produccion copiada de app/api.py):
                                  que pinta mal SIN tocar el arbol)
     /api/libro/fotos, /ultimo    app/libro_lectura.py DEL ARBOL sobre <dsn>, con el `as_of` de la API
     /api/libro/vivo (websocket)  el del arbol: su relevo escucha NOTIFY libro en <dsn>
+    /api/libro/honda             (149 B) la capa honda DE MENTIRA, determinista, sacada de las fotos de <dsn>: una foto
+                                 cada 30 s por venue de libro_honda (okx_swap, okx_spot, bitget_usdt; bitget solo
+                                 compra) que arranca TRES pasos dentro del libro vivo (la pagina tiene que dejar mandar
+                                 al vivo) y llega al 1 % (ETH al 2 %), con muros cada 37 niveles; okx_swap calla 2 min
+                                 de cada 20 (mas de 75 s: la pagina no puede estirar la de antes) y sirve una rancia
+                                 de cada 40
+    /api/orderflow/footprint     (149 B) el footprint 1m DE MENTIRA: por minuto, nueve niveles alrededor del medio de la
+                                 primera foto del minuto, compra y venta deterministas
     cualquier otra /api/*        503 «banco»
 Con --avisos, un ALIMENTADOR publica en <dsn>, por NOTIFY libro, los avisos GRABADOS del relevo de verdad (el colector
 del arbol contra los venues, x1-tmp/c145/p3), en bucle y a su ritmo: el relevo del arbol los oye como los del colector.
@@ -44,6 +52,9 @@ TIPOS = {".html": "text/html; charset=utf-8", ".js": "application/javascript; ch
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; "
        "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
        "form-action 'none'")
+HONDA = {"okx_swap": True, "okx_spot": True, "bitget_usdt": False}  # venue -> sirve ventas
+HONDA_PASO = {"BTC": Decimal("10"), "ETH": Decimal("0.5"), "SOL": Decimal("0.02")}  # el paso guardado (libro_honda)
+HONDA_ALCANCE = {"BTC": Decimal("0.01"), "ETH": Decimal("0.02"), "SOL": Decimal("0.011")}
 DDL = """
 CREATE TABLE orderflow_paso (symbol text PRIMARY KEY, paso numeric NOT NULL);
 CREATE TABLE libro_foto (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL, ts_libro timestamptz NOT NULL,
@@ -265,6 +276,88 @@ def sirve(a: argparse.Namespace) -> int:
                    for j in range(-6, 7)] if ref else []
         return JSONResponse({"symbol": symbol, "desde": desde, "hasta": hasta, "paso": paso, "unidad": unidad,
                              "niveles": niveles, "as_of": as_of()})
+
+    def q_honda(ks: int, t: int) -> str:
+        q = Decimal(5 + (ks * 7 + t // 30) % 13) / 10
+        return format((q * 25 if ks % 37 == 0 else q).normalize(), "f")
+
+    async def fotos_de(symbol: str, venues: list[str], desde: datetime, hasta: datetime, paso: str, cada: int) -> list:
+        async with estado["pool"].acquire() as conn:
+            d = await lec.fotos(conn, symbol=symbol, desde=desde.isoformat(), hasta=hasta.isoformat(),
+                                venues=",".join(venues), paso=paso, cada=cada)
+        return d.get("fotos") or []
+
+    @api.get("/api/libro/honda")
+    async def honda(symbol: str, venues: str = "", desde: str = "", hasta: str = "") -> Response:
+        activo = symbol.upper().replace("USDT", "")
+        P = HONDA_PASO.get(activo)
+        vs = [v for v in venues.split(",") if v in HONDA]
+        if P is None or not desde or not hasta:
+            return JSONResponse({"detail": "banco: la capa honda solo con desde y hasta, de BTC, ETH o SOL"},
+                                status_code=422)
+        d0 = datetime.fromisoformat(desde.replace("Z", "+00:00"))
+        d1 = datetime.fromisoformat(hasta.replace("Z", "+00:00"))
+        d0 = datetime.fromtimestamp((int(d0.timestamp()) + 29) // 30 * 30, UTC)
+        salida = []
+        try:
+            fs = await fotos_de(symbol, vs, d0, d1, str(P), 30) if vs and d1 > d0 else []
+        except Peticion as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=422)
+        for f in fs:
+            t = int(datetime.fromisoformat(f["ts"].replace("Z", "+00:00")).timestamp())
+            if f["venue"] == "okx_swap" and (t // 30) % 40 in (10, 11, 12, 13):
+                continue
+            rancia = (t // 30) % 40 == 25
+            mid = (Decimal(f["compra"]) + Decimal(f["venta"])) / 2
+            n = int(mid * HONDA_ALCANCE[activo] / P)
+            kc = int(Decimal(f["compra"]) // P) - 3
+            kv = -(-Decimal(f["venta"]) // P) + 3
+            compras = {"desde": format((kc * P).normalize(), "f"), "cantidades": [q_honda(kc - i, t) for i in range(n)]}
+            ventas = {"desde": format((int(kv) * P).normalize(), "f"),
+                      "cantidades": [q_honda(int(kv) + i, t) for i in range(n)]} if HONDA[f["venue"]] else None
+            salida.append({"ts": f["ts"], "venue": f["venue"], "ts_libro": f["ts"], "edad_s": 0.0, "rancia": rancia,
+                           "fuente": "banco", "paso": format(P.normalize(), "f"), "cubo": None, "precio": str(mid),
+                           "vivo": {"compra": f["compra"], "venta": f["venta"]},
+                           "alcance": {"compra": compras["desde"], "venta": ventas["desde"] if ventas else None},
+                           "compras": None if rancia else compras, "ventas": None if rancia else ventas})
+        salida.sort(key=lambda x: (x["ts"], x["venue"]))
+        return JSONResponse({"que": "la capa honda DE MENTIRA del banco", "symbol": symbol, "venues": vs,
+                             "rancia_s": 75, "nivel": "precio", "orden": "desde el borde vivo hacia fuera",
+                             "unidad": "base", "frontera": None, "fotos": salida, "as_of": as_of()})
+
+    @api.get("/api/orderflow/footprint")
+    async def footprint(symbol: str, paso: str, desde: str = "", hasta: str = "", venues: str = "", marco: str = "1m",
+                        unidad: str = "base") -> Response:
+        if not desde or not hasta or marco != "1m":
+            return JSONResponse({"detail": "banco: el footprint solo 1m y con desde y hasta"}, status_code=422)
+        d0 = datetime.fromisoformat(desde.replace("Z", "+00:00"))
+        d1 = datetime.fromisoformat(hasta.replace("Z", "+00:00"))
+        d0 = datetime.fromtimestamp((int(d0.timestamp()) + 59) // 60 * 60, UTC)
+        P = Decimal(paso)
+        vs = [v for v in venues.split(",") if v]
+        try:
+            fs = await fotos_de(symbol, vs, d0, d1, paso, 60) if vs and d1 > d0 else []
+        except Peticion as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=422)
+        velas = []
+        for ts in sorted({f["ts"] for f in fs}):
+            f = next(x for x in fs if x["ts"] == ts)
+            t = int(datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp())
+            mid = (Decimal(f["compra"]) + Decimal(f["venta"])) / 2
+            k0 = int(mid // P)
+            niveles = []
+            for j in range(-4, 5):
+                c = round(0.1 * (1 + ((k0 + j) * 3 + t // 60) % 9), 3)
+                v = round(0.1 * (1 + ((k0 + j) * 5 + t // 60 * 2) % 7), 3)
+                niveles.append({"nivel": format(((k0 + j) * P).normalize(), "f"), "compra": c, "venta": v,
+                                "delta": round(c - v, 3), "total": round(c + v, 3), "operaciones": 3})
+            c = round(sum(x["compra"] for x in niveles), 3)
+            v = round(sum(x["venta"] for x in niveles), 3)
+            velas.append({"ts": ts, "apertura": str(mid), "cierre": str(mid), "compra": c, "venta": v,
+                          "delta": round(c - v, 3), "total": round(c + v, 3), "operaciones": 27, "niveles": niveles})
+        return JSONResponse({"symbol": symbol, "marco": marco, "paso": paso, "unidad": unidad, "venues": vs,
+                             "desde": desde, "hasta": hasta, "velas": velas, "tope_velas": 1500, "tope_celdas": 50000,
+                             "as_of": as_of()})
 
     @api.get("/api/{resto:path}")
     async def otra(resto: str) -> Response:
