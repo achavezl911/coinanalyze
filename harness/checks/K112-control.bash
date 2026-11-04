@@ -198,8 +198,10 @@ planta_pagina flujo/flujo-calculo.js "s/Object\.assign(e, { fondo: 'perfil', fra
 juzga_plantado relleno_por_omision C "se pinta el fondo|paso de color" $m "el relleno por omision en vez del perfil"
 planta_pagina flujo/flujo-dibujo.js 's/^      if (fuerte) {$/      if (false) {/' 1; m=$?
 juzga_plantado desequilibrio_sin_pastilla C "sin su pastilla" $m "el desequilibrio en negrita sin su pastilla"
-planta_pagina flujo/flujo-indicadores.js 's/^    const x = x0 + 4;$/    const x = x0 + Math.floor(w \/ 2) - 6;/' 1; m=$?
-juzga_plantado grande_sobre_cifra C "tapa la cifra" $m "las grandes 6 px a la izquierda del eje, sobre la cifra de venta"
+# remate 4: a la DERECHA del eje. A la izquierda no mordia desde A (ff8ded0, corrida de 2eb4968: solo F): la venta de
+# la fila con grande pierde el carril y no se escribe, y la grande no tapa nada. La compra no lo pierde
+planta_pagina flujo/flujo-indicadores.js 's/^    const x = x0 + 4;$/    const x = x0 + Math.floor(w \/ 2) + 6;/' 1; m=$?
+juzga_plantado grande_sobre_cifra C "tapa la cifra" $m "las grandes 6 px a la derecha del eje, sobre la cifra de compra"
 # remate 4: la venta de una fila con grande escrita sin restar el carril, y el carril restado tambien a la compra
 planta_pagina flujo/flujo-dibujo.js 's/^    return carril \&\& (L\.grandes\[i\] || \[\])\.some(/    return false \&\& (L.grandes[i] || []).some(/' 1; m=$?
 juzga_plantado venta_sin_carril C "tapa la cifra" $m "la venta de la fila con grande sin restar el carril"

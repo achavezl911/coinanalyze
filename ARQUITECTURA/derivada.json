@@ -41233,7 +41233,7 @@
             "harness/checks/K108-orderflow.py:940",
             "harness/checks/K112-banco.py:133",
             "harness/checks/K112-control.bash:176",
-            "harness/checks/K112-control.bash:247"
+            "harness/checks/K112-control.bash:249"
           ],
           "menciones": []
         }
@@ -48018,7 +48018,7 @@
             "harness/checks/K112-banco.py:236",
             "harness/checks/K112-banco.py:237",
             "harness/checks/K112-banco.py:238",
-            "harness/checks/K112-control.bash:244",
+            "harness/checks/K112-control.bash:246",
             "harness/checks/K112-indicadores.py:402",
             "harness/checks/K112-indicadores.py:1307",
             "harness/checks/K112-indicadores.py:1314",
