@@ -994,6 +994,11 @@ def juzga_mapa(vio: dict, e: dict, esp: dict, rojos: list, info: list, pref: str
                 yy = (eje["hi"] + 1 - float(precio) / float(paso)) * fh
                 if abs((pc.get(campo) or -1e9) - yy) > 1.01:
                     m_col.append(f"columna {pc['ts']}: la linea de {campo[2:]} esta en y={pc.get(campo)} y su precio en {yy:.1f}")
+        cortas = [x for x in pc.get("celdas") or [] if len(x) != 7]
+        if cortas:  # un contrato viejo (o roto) se condena; no tumba la sonda
+            m_celda.append(f"columna {pc['ts']}: {len(cortas)} celdas declaradas sin las 7 piezas [k, c, v, n, ix, "
+                           f"lado, h] ({cortas[0]})")
+            continue
         decl = {x[0]: x for x in pc.get("celdas") or []}
         for k in range(eje["lo"], eje["hi"] + 1):
             conocida = bool(c["estado"] == "foto" and s and k in s["n"])
