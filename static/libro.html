@@ -86,20 +86,34 @@
         </table>
       </aside>
     </div>
-    <div class="lectura encaje" id="encaje"></div>
+    <div class="lectura encaje-fila">
+      <div class="encaje" id="encaje"></div>
+      <div class="intensidad" title="intensidad: los dos cortes de color, en percentiles de las cantidades a la vista">
+        <label>intensidad <input type="range" id="int-bajo" min="0" max="99" value="20" aria-label="corte bajo (percentil)"></label>
+        <input type="range" id="int-alto" min="1" max="100" value="98" aria-label="corte alto (percentil)">
+        <canvas id="mapa-leyenda" width="160" height="13"></canvas>
+        <span id="mapa-cortes"></span>
+      </div>
+    </div>
     <div class="lectura" id="lectura" aria-live="polite"></div>
 
     <footer class="leyenda">
       <p>
         <b>El mapa:</b> una columna por instante (cada foto del libro, o una de cada tantas para que la historia quepa en
-        una petición), una fila por nivel al paso; el color es el PUESTO de la cantidad del nivel entre las celdas de la
-        ventana (su percentil: más claro, más cantidad; la cifra la dice la lectura bajo el ratón). Encima,
-        <span class="muestra mc"></span> la mejor compra y <span class="muestra mv"></span> la mejor venta de la familia.
+        una petición), una fila por nivel al paso. Cada celda, del color de su lado MAYOR: compra en azul, venta en
+        rojo; cuanto más cantidad, más vivo. La intensidad sale de dos cortes sobre las cantidades A LA VISTA (por
+        omisión los percentiles 20 y 98; el mando los mueve): por debajo del bajo, el fondo; entre los dos, lineal; por
+        encima del alto, color lleno (un muro lejano sale como una línea viva). Debajo del mapa, los dos degradados con
+        sus cortes. Encima, <span class="muestra mc"></span> la mejor compra y <span class="muestra mv"></span> la mejor
+        venta de la familia, en escalones, y <span class="muestra ultimo"></span> el último precio.
         <span class="muestra desconocido"></span> DESCONOCIDO: ningún venue de la familia conoce ese nivel en ese
-        instante (su libro no llega tan lejos): no es cero. Un nivel que solo conocen algunos se pinta en damero: de cada
-        cuatro cuadritos, tantos de color como venues lo conocen (2 de 4 venues, 2 de 4 cuadritos), y la lectura dice
-        cuántos. <span class="muestra hueco-libro"></span> HUECO: ningún venue tenía libro válido en ese instante; no se
-        rellena ni se estira. <span class="muestra pendiente"></span> sin escribir aún: la base escribe cada minuto.
+        instante (su libro no llega tan lejos): no es cero. Un nivel que solo conocen algunos se pinta igual; cuántos lo
+        conocen lo dice la lectura. Fuera del alcance del libro vivo, la CAPA HONDA (una foto cada 30 s de los venues
+        que la guardan; la lectura dice de hace cuánto). <span class="muestra hueco-libro"></span> sin datos (HUECO):
+        ningún venue tenía libro válido en ese instante; no se rellena ni se estira. <span class="muestra pendiente"></span>
+        sin escribir aún: la base escribe cada minuto. A la derecha: «ahora», la última columna estirada (si no es
+        vieja ni hueco); el volumen negociado por nivel en lo visible (footprint 1m: compra arriba, venta abajo), y el
+        libro de ahora por nivel. Debajo, el volumen negociado por minuto.
       </p>
       <p>
         <b>La escalera:</b> el libro VIVO por nivel: compra y venta (suma de los venues de la familia que conocen el

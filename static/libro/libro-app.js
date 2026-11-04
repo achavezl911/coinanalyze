@@ -25,6 +25,13 @@ const SONDEO_S = 1;
 const REINTENTO_WS_S = 30;
 const RUTA_CINTA = '/api/orderflow/cinta';
 const RUTA_PERFIL = '/api/orderflow/perfil';
+const RUTA_HONDA = '/api/libro/honda';
+const RUTA_HUELLA = '/api/orderflow/footprint';
+const HUELLA_RETRASO_S = 10; // cuanto despues del borde de minuto se vuelve a pedir el footprint en vivo
+// LA CAPA HONDA EN VIVO (149 B r1): cada HONDA_CADA_S (en su rejilla, HONDA_RETRASO_S despues) se pide lo nuevo
+const HONDA_EN_VIVO = true;
+const HONDA_CADA_S = 30;
+const HONDA_RETRASO_S = 5;
 const CINTA_S = 1; // la cinta de la vista, una pagina por segundo (minutos=1, limit=1000), sin solapar
 const PERFIL_S = 60; // el maximo y minimo de la sesion UTC, del perfil desde las 00:00Z
 const TIEMPOS_MAX = 2000;
@@ -38,7 +45,7 @@ let FALLO = null;
 let CARGA = 0;
 let DESFASE = 0; // la hora del servidor menos la de esta pagina (de as_of)
 const VIVO = { canal: 'ninguno', ws: null, motivoWs: null, sondeo: null, pidiendo: false, reintento: null,
-               columna: null, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
+               columna: null, huella: null, honda: null, pidiendoHonda: false, tic: null, libros: {}, fallo: null, relevo: null, pendiente: false };
 // EL VOLUMEN RECIENTE (L-07): lo que la cinta ya conto (sumaReciente), si contesta, y el perfil de la sesion UTC
 const CINTA = { rec: recienteVacio(), estado: 'pendiente', fallo: null, pidiendo: false, latido: null,
                 perfil: null, perfilFallo: null, pidiendoPerfil: false, latidoPerfil: null };
@@ -49,7 +56,7 @@ window.LIBRO_HITOS = { listo: false, vivo_listo: false, vista: null, peticiones:
 // `congela()` (para K111): el vivo deja de tocar la pantalla -ni mensajes, ni sondeo, ni columnas- y se repinta; asi lo
 // pintado es lo de los mensajes ya procesados, que se cuentan por canal en `recibidos` (los primeros N marcos del
 // websocket, o las primeras N respuestas del sondeo, son exactamente los que la pantalla uso).
-Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0 },
+Object.assign(window.LIBRO_HITOS, { recibidos: { websocket: 0, sondeo: 0, cinta: 0, perfil: 0, huella: 0, honda: 0 },
                                     congelado: false, tiempos: [],
                                     congela: () => congela() });
 window.LIBRO_PINTADO = { mapa: null, escalera: null };
@@ -78,9 +85,19 @@ async function carga() {
   pintaEstado('pidiendo la historia…');
   const venues = venuesVista();
   const w = ventanaLibro(VISTA, ahora());
-  const sobre = await pedir(RUTA_FOTOS, { symbol: VISTA.activo, venues: venues.join(','), desde: w.desde,
-                                          hasta: w.hasta, paso: VISTA.paso, cada: w.cada });
-  apuntar(sobre);
+  // la historia, la capa honda (desde 75 s antes: la primera columna puede usar una foto de antes de la ventana) y el
+  // footprint 1m de la ventana, a la vez. EL FOOTPRINT (149 B r1) con el contrato de la ruta real: desde y hasta en
+  // borde de minuto, SIEMPRE los dos (fuera de borde, o sin hasta, contesta 422): desde al borde por debajo, hasta al
+  // de por encima; lo que cae fuera de la ventana del mapa no se pinta
+  const q = { symbol: VISTA.activo, venues: venues.join(','), hasta: w.hasta };
+  const hDesde = isoZ(Math.floor(Date.parse(w.desde) / 60000) * 60000);
+  const hHasta = isoZ(Math.ceil(Date.parse(w.hasta) / 60000) * 60000);
+  const [sobre, honda, huella] = await Promise.all([
+    pedir(RUTA_FOTOS, Object.assign({ desde: w.desde, paso: VISTA.paso, cada: w.cada }, q)),
+    pedir(RUTA_HONDA, Object.assign({ desde: isoZ(Date.parse(w.desde) - HONDA_RANCIA_S * 1000) }, q)),
+    pedir(RUTA_HUELLA, Object.assign({}, q, { desde: hDesde, hasta: hHasta, marco: '1m', paso: VISTA.paso, unidad: 'base' })),
+  ]);
+  [sobre, honda, huella].forEach(apuntar);
   if (mia !== CARGA) return;
   if (!sobre.ok) {
     FALLO = sobre;
@@ -91,7 +108,16 @@ async function carga() {
     MODELO = { activo: VISTA.activo, familia: VISTA.familia, venues, N: venues.length, paso: sobre.datos.paso,
                cada: w.cada, unidad: VISTA.unidad, desde: w.desde, hasta: w.hasta, asOfMs: asOf,
                fijo: !!VISTA.hasta, aviso: sobre.datos.aviso,
-               columnas: columnasDeFotos(sobre.datos, venues, w.columnas, asOf) };
+               columnas: columnasDeFotos(sobre.datos, venues, w.columnas, asOf), ahora,
+               huella: huella.ok ? { desde: hDesde, hasta: hHasta, velas: huella.datos.velas || [] } : null,
+               huellaUltimo: Date.parse(hHasta) - 60000,
+               huellaFallo: huella.ok ? null : 'el footprint respondió ' + (huella.http || 'nada') };
+    // la capa honda, junta a las columnas de la historia y, en vivo, a las nuevas (anadeHonda): al paso guardado
+    MODELO.hondaFotos = new Map();
+    MODELO.hondaUltima = null;
+    if (honda.ok) anadeHonda(honda.datos);
+    MODELO.honda = honda.ok ? rejuntaHonda()
+      : { pinta: false, motivo: 'la capa honda respondió ' + (honda.http || 'nada'), columnas: 0 };
     EL_MAPA.pon(MODELO, VISTA.ver);
     pideEscalera();
     if (!VISTA.hasta) {
@@ -123,6 +149,7 @@ function recuperaPendientes(mia) {
     const nuevas = new Map(columnasDeFotos(sobre.datos, MODELO.venues, inst, Date.parse(sobre.datos.as_of))
       .map((c) => [c.ts, c]));
     MODELO.columnas = MODELO.columnas.map((c) => nuevas.get(c.ts) || c);
+    if (HONDA_EN_VIVO && MODELO.honda && MODELO.honda.pinta) MODELO.honda = rejuntaHonda(desde);
     EL_MAPA.actualiza();
   }, Math.max(1000, espera));
 }
@@ -232,13 +259,104 @@ function programaColumna() {
     const suma = sumaFamilia(vivos, MODELO.N);
     const ultima = MODELO.columnas[MODELO.columnas.length - 1];
     if (!ultima || t > ultima.ts) {
-      MODELO.columnas.push({ ts: t, estado: suma ? 'foto' : 'hueco', origen: 'vivo', suma });
+      MODELO.columnas.push({ ts: t, estado: suma ? 'foto' : 'hueco', origen: 'vivo', suma, libros: vivos });
       const sobra = MODELO.columnas.length - 2 * Math.ceil((LIBRO_VENTANAS[VISTA.ventana] * 60) / MODELO.cada);
       if (sobra > 0) MODELO.columnas.splice(0, sobra);
+      if (HONDA_EN_VIVO && MODELO.honda && MODELO.honda.pinta) MODELO.honda = rejuntaHonda(t);
       EL_MAPA.actualiza();
     }
     programaColumna();
   }, Math.max(0, t - ahora()));
+}
+
+/* EL FOOTPRINT EN VIVO (149 B r1): cada minuto CERRADO se vuelve a pedir, desde el ultimo minuto pedido (el que estaba
+ * en curso, o el primero que fallo) hasta el borde de minuto siguiente; sus velas sustituyen a las que tenia de ese
+ * desde en adelante, y las de antes de la primera columna del mapa se tiran: el volumen de debajo y el perfil de lo
+ * negociado siguen al mapa. Cada respuesta procesada se cuenta en `recibidos.huella`. */
+function programaHuella() {
+  const t = Math.floor(ahora() / 60000) * 60000 + 60000;
+  VIVO.huella = setTimeout(() => {
+    lateHuella(CARGA, t);
+    programaHuella();
+  }, Math.max(0, t - ahora()) + HUELLA_RETRASO_S * 1000);
+}
+
+async function lateHuella(mia, t) {
+  if (!MODELO || MODELO.fijo || window.LIBRO_HITOS.congelado) return;
+  const desde = Math.min(MODELO.huellaUltimo, t - 60000);
+  const hasta = t + 60000;
+  const sobre = await pedir(RUTA_HUELLA, { symbol: MODELO.activo, venues: MODELO.venues.join(','), desde: isoZ(desde),
+                                          hasta: isoZ(hasta), marco: '1m', paso: MODELO.paso, unidad: 'base' });
+  apuntar(sobre);
+  if (mia !== CARGA || !MODELO || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.huella += 1;
+  if (!sobre.ok) {
+    MODELO.huellaFallo = 'el footprint respondió ' + (sobre.http || 'nada');
+    return;
+  }
+  const primera = MODELO.columnas.length ? Math.floor(MODELO.columnas[0].ts / 60000) * 60000 : desde;
+  const viejas = MODELO.huella ? MODELO.huella.velas.filter((v) => {
+    const ts = Date.parse(v.ts);
+    return ts < desde && ts >= primera;
+  }) : [];
+  MODELO.huella = { desde: isoZ(Math.max(primera, MODELO.huella ? Date.parse(MODELO.huella.desde) : desde)),
+                    hasta: isoZ(hasta), velas: viejas.concat(sobre.datos.velas || []) };
+  MODELO.huellaUltimo = t;
+  MODELO.huellaFallo = null;
+  EL_MAPA.actualiza();
+}
+
+/* LA CAPA HONDA EN VIVO (149 B r1). Las fotos recibidas se guardan por venue|ts (la ultima respuesta manda); al llegar
+ * una nueva se vuelven a juntar las columnas desde su ts (una foto de ts x solo cambia columnas de ts >= x: las de los
+ * ultimos 75 s, o menos). Cada HONDA_CADA_S se pide desde la ultima foto recibida menos 75 s (lo que una foto
+ * escrita tarde puede cambiar) hasta el siguiente borde de la rejilla. Cada respuesta procesada se cuenta en
+ * `recibidos.honda` (K111 rehace la junta con las primeras N). La misma regla que la historia: juntaHonda. */
+function anadeHonda(d) {
+  let min = null;
+  ((d && d.fotos) || []).forEach((f) => {
+    MODELO.hondaFotos.set(f.venue + '|' + f.ts, f);
+    const t = Date.parse(f.ts);
+    if (min === null || t < min) min = t;
+    if (MODELO.hondaUltima === null || t > MODELO.hondaUltima) MODELO.hondaUltima = t;
+  });
+  const primera = MODELO.columnas.length ? MODELO.columnas[0].ts - HONDA_RANCIA_S * 1000 : null;
+  if (primera !== null) {
+    MODELO.hondaFotos.forEach((f, k) => { if (Date.parse(f.ts) < primera) MODELO.hondaFotos.delete(k); });
+  }
+  return min;
+}
+
+function rejuntaHonda(desdeMs) {
+  return juntaHonda(MODELO.columnas, { fotos: [...MODELO.hondaFotos.values()] }, MODELO.venues, MODELO.paso,
+                    LIBRO_PASO[MODELO.activo], desdeMs);
+}
+
+function programaHonda() {
+  const c = HONDA_CADA_S * 1000;
+  const t = Math.floor(ahora() / c) * c + c;
+  VIVO.honda = setTimeout(() => {
+    lateHonda(CARGA, t);
+    programaHonda();
+  }, Math.max(0, t - ahora()) + HONDA_RETRASO_S * 1000);
+}
+
+async function lateHonda(mia, t) {
+  if (!MODELO || MODELO.fijo || !MODELO.honda || !MODELO.honda.pinta || VIVO.pidiendoHonda
+      || window.LIBRO_HITOS.congelado) return;
+  const desde = Math.max(MODELO.hondaUltima === null ? Date.parse(MODELO.desde) : MODELO.hondaUltima,
+                         MODELO.columnas.length ? MODELO.columnas[0].ts : 0) - HONDA_RANCIA_S * 1000;
+  VIVO.pidiendoHonda = true;
+  const sobre = await pedir(RUTA_HONDA, { symbol: MODELO.activo, venues: MODELO.venues.join(','), desde: isoZ(desde),
+                                         hasta: isoZ(t + HONDA_CADA_S * 1000) });
+  VIVO.pidiendoHonda = false;
+  apuntar(sobre);
+  if (mia !== CARGA || !MODELO || window.LIBRO_HITOS.congelado) return;
+  window.LIBRO_HITOS.recibidos.honda += 1;
+  if (!sobre.ok) return; // la junta de antes sigue: se dice en el canal de la capa por la linea de debajo
+  const min = anadeHonda(sobre.datos);
+  if (min === null) return;
+  MODELO.honda = rejuntaHonda(min);
+  EL_MAPA.actualiza();
 }
 
 function arrancaVivo() {
@@ -253,6 +371,8 @@ function arrancaVivo() {
     pintaEstado();
   }, 1000);
   programaColumna();
+  programaHuella();
+  if (HONDA_EN_VIVO) programaHonda();
   CINTA.latido = setInterval(() => lateCinta(CARGA), CINTA_S * 1000);
   CINTA.latidoPerfil = setInterval(() => lateSesion(CARGA), PERFIL_S * 1000);
   lateCinta(CARGA);
@@ -312,9 +432,10 @@ function paraVivo() {
   paraCinta();
   Object.assign(CINTA, { rec: recienteVacio(), estado: 'pendiente', fallo: null, perfil: null, perfilFallo: null });
   paraSondeo();
-  [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
+  [VIVO.reintento, VIVO.columna, VIVO.huella, VIVO.honda].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
-  VIVO.reintento = VIVO.columna = VIVO.tic = null;
+  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.honda = VIVO.tic = null;
+  VIVO.pidiendoHonda = false;
   if (VIVO.ws) {
     const ws = VIVO.ws;
     VIVO.ws = null;
@@ -370,15 +491,16 @@ function ultimaFotoComoVivo() {
 function congela() {
   window.LIBRO_HITOS.congelado = true;
   paraSondeo();
-  [VIVO.reintento, VIVO.columna].forEach((t) => { if (t !== null) clearTimeout(t); });
+  [VIVO.reintento, VIVO.columna, VIVO.huella, VIVO.honda].forEach((t) => { if (t !== null) clearTimeout(t); });
   if (VIVO.tic !== null) clearInterval(VIVO.tic);
-  VIVO.reintento = VIVO.columna = VIVO.tic = null;
+  VIVO.reintento = VIVO.columna = VIVO.huella = VIVO.honda = VIVO.tic = null;
+  VIVO.pidiendoHonda = false;
   paraCinta();
   repinta();
 }
 
 function repinta() {
-  if (EL_MAPA) EL_MAPA.pinta();
+  if (EL_MAPA) EL_MAPA.pinta(true);
   if (LA_ESCALERA) pintaEscaleraYa();
   pintaEstado();
 }
@@ -488,7 +610,75 @@ function lectura(col, k) {
   const u = (q) => cifra(enUnidad(q, k, MODELO.paso, VISTA.unidad));
   caja.textContent = t + nivel + ' · compra ' + u(s.c[x]) + ' · venta ' + u(s.v[x]) + ' · lo conocen ' + s.n[x] + ' de '
     + s.N + ' venues' + (s.n[x] < s.N ? ' (la suma es de esos)' : '') + ' · mejor compra ' + s.mejorCompra
-    + ' · mejor venta ' + s.mejorVenta + (col.origen === 'vivo' ? ' · columna del vivo' : '');
+    + ' · mejor venta ' + s.mejorVenta + (col.origen === 'vivo' ? ' · columna del vivo' : '')
+    + (s.c[x] > 0 && s.v[x] > 0 ? ' · compra y venta a la vez (venues cruzados): pinta el lado mayor' : '')
+    + (s.h && s.h[x] ? ' · capa honda, foto de hace ' + s.honda.map((y) => y.venue + ' ' + Math.round(y.edad_s) + ' s')
+      .join(', ') : '');
+}
+
+/* ------------------------------------------------------------------ el mando de intensidad y la leyenda
+ * Dos asas en percentiles (los cortes de lo visible); se recuerdan en localStorage si el navegador deja. */
+const INTENSIDAD_CLAVE = 'libro.intensidad';
+
+function montaIntensidad() {
+  const a = document.getElementById('int-bajo');
+  const b = document.getElementById('int-alto');
+  if (!a || !b) return;
+  try {
+    const x = JSON.parse(window.localStorage.getItem(INTENSIDAD_CLAVE) || 'null');
+    if (Array.isArray(x) && x.length === 2 && x[0] >= 0 && x[1] <= 100 && x[0] < x[1]) [a.value, b.value] = x;
+  } catch (e) {
+    // sin localStorage (o con basura): los de omision
+  }
+  const mueve = (ev) => {
+    let lo = Number(a.value);
+    let hi = Number(b.value);
+    if (lo >= hi) {
+      if (ev && ev.target === a) lo = hi - 1;
+      else hi = lo + 1;
+      a.value = lo;
+      b.value = hi;
+    }
+    try {
+      window.localStorage.setItem(INTENSIDAD_CLAVE, JSON.stringify([lo, hi]));
+    } catch (e) {
+      // no se recuerda: no pasa nada
+    }
+    EL_MAPA.percentiles([lo, hi]);
+  };
+  a.addEventListener('input', mueve);
+  b.addEventListener('input', mueve);
+  if (Number(a.value) !== MAPA_PERCENTILES[0] || Number(b.value) !== MAPA_PERCENTILES[1]) mueve();
+}
+
+/* La leyenda: los dos degradados con sus cortes en la unidad de la vista, el desconocido y el «sin datos». */
+function pintaLeyenda(esc, m) {
+  const cv = document.getElementById('mapa-leyenda');
+  const tx = document.getElementById('mapa-cortes');
+  if (!cv || !tx) return;
+  const g = cv.getContext('2d');
+  const w = cv.width - 40;
+  [[MAPA_LUT_COMPRA, 0], [MAPA_LUT_VENTA, 7]].forEach(([lut, y]) => {
+    for (let x = 0; x < w; x++) {
+      const c = lut[Math.floor((255 * x) / (w - 1))];
+      g.fillStyle = 'rgb(' + c.join(',') + ')';
+      g.fillRect(x, y, 1, 6);
+    }
+  });
+  g.fillStyle = 'rgb(' + MAPA_COLOR.desconocido.join(',') + ')';
+  g.fillRect(w + 4, 0, 14, 13);
+  for (let x = 0; x < 14; x++) {
+    for (let y = 0; y < 13; y++) {
+      g.fillStyle = 'rgb(' + colorHueco(x, y).join(',') + ')';
+      g.fillRect(w + 22 + x, y, 1, 1);
+    }
+  }
+  const u = m.unidad === 'usd' ? ' USD' : ' ' + m.activo;
+  tx.textContent = esc.corte[0] === null ? 'sin cantidades a la vista'
+    : 'p' + esc.percentiles[0] + ' ' + cifra(esc.corte[0]) + u + ' → p' + esc.percentiles[1] + ' ' + cifra(esc.corte[1])
+      + u + ' (de ' + esc.n + ' celdas a la vista) · gris: desconocido · rayado: sin datos · un nivel que conocen menos'
+      + ' venues que la familia no se atenúa (lo dice «n de N» al leerlo): en perp solo okx_swap y bitget guardan la'
+      + ' capa honda, así que n de N mide lo que guardamos, no la liquidez del mercado';
 }
 
 function cambia(cambios) {
@@ -504,7 +694,8 @@ function aplicaHash() {
 }
 
 function arranca() {
-  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'));
+  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'), pintaLeyenda);
+  montaIntensidad();
   LA_ESCALERA = creaEscalera(document.getElementById('escalera'), { pide: pideEscalera, limpia: limpiaCinta });
   [['sel-activo', 'activo'], ['sel-familia', 'familia'], ['sel-ventana', 'ventana'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {

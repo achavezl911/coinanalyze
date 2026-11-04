@@ -65,12 +65,13 @@ Llamadas directas del handler:
 docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
 comentario no tiene consumidor, tiene quien habla de ella.
 
-**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,
-`harness/checks`, `tests`, `tools` ni `README.md`.
+| donde | llamadas | menciones |
+|---|---|---|
+| **checks** | — | `harness/checks/K111-banco.py:16`, `harness/checks/K111-banco.py:293` |
 
-No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
-nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
-veces. **Merece una mirada, no una conclusion.**
+**Nadie la llama.** Sus 2 rastros son todos MENCION -comentario,
+docstring o documento-. Es la forma del patron que en esta casa se ha repetido
+nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
 
 ## Ventana · con que clave la declara (derivado)
 

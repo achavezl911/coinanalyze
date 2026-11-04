@@ -210,40 +210,178 @@ function enUnidad(q, k, paso, unidad) {
   return unidad === 'usd' ? q * (k + 0.5) * Number(paso) : q;
 }
 
-/* ------------------------------------------------------------------ la escala de color del mapa
- * EL PERCENTIL (P2): el indice de color de una cantidad es su puesto entre las celdas CONOCIDAS con cantidad de las
- * columnas j0..j1 (en la pantalla, la ventana entera: P1 eligio el mapa de bits hecho una vez),
- * floor(256 * (cuantas tienen menos) / cuantas), de 0 a 255; un cero conocido es el fondo (-1). Medido sobre fotos
- * reales de produccion (x1-tmp/c145/p2): ninguna escala fija sirve a la vez a los perpetuos (colas estrechas: el p99 es
- * ~3x la mediana) y a los libros profundos (spot, Coinbase, Deribit: de 29 a 360x); el percentil es la unica que deja
- * ver los muros en todas las ventanas medidas. */
-function escalaPercentil(columnas, j0, j1, paso, unidad) {
+/* ------------------------------------------------------------------ la escala de color del mapa (149 B)
+ * LOS DOS CORTES DE LO VISIBLE: sobre las cantidades > 0 de las celdas conocidas A LA VISTA (columnas j0..j1 con foto,
+ * niveles lo..hi), el corte bajo es su percentil pLo y el alto su pHi (por omision 20 y 98; los mueve el mando de
+ * intensidad). Percentil p de n valores ordenados: el de puesto floor(p / 100 * (n - 1)). Por debajo del corte bajo, el
+ * fondo; entre los dos, lineal (indice 0..255); por encima del alto, saturado (255): un muro sale como una linea viva,
+ * sin marca aparte. Un cero conocido es el fondo (-1). Antes (145 P2) era el percentil de la ventana entera: un muro de
+ * otra hora apagaba lo que se mira. */
+const MAPA_PERCENTILES = [20, 98];
+
+function percentilDe(ord, p) {
+  return ord.length ? ord[Math.min(ord.length - 1, Math.floor((p / 100) * (ord.length - 1)))] : null;
+}
+
+function escalaCortes(columnas, j0, j1, lo, hi, paso, unidad, pc) {
+  const [pLo, pHi] = pc || MAPA_PERCENTILES;
   const xs = [];
-  for (let j = j0; j <= j1; j++) {
+  for (let j = Math.max(0, j0); j <= j1; j++) {
     const col = columnas[j];
     const s = col && col.estado === 'foto' ? col.suma : null;
     if (!s) continue;
-    for (let i = 0; i < s.n.length; i++) {
-      const q = s.n[i] ? enUnidad(s.c[i] + s.v[i], s.lo + i, paso, unidad) : 0;
+    for (let k = Math.max(lo, s.lo); k <= Math.min(hi, s.hi); k++) {
+      const i = k - s.lo;
+      const q = s.n[i] ? enUnidad(s.c[i] + s.v[i], k, paso, unidad) : 0;
       if (q > 0) xs.push(q);
     }
   }
   const ord = Float64Array.from(xs).sort();
-  const n = ord.length;
+  const a = percentilDe(ord, pLo);
+  const b = percentilDe(ord, pHi);
   return {
-    n,
+    n: ord.length,
+    percentiles: [pLo, pHi],
+    corte: [a, b],
     indice(q) {
-      if (!(q > 0) || !n) return -1;
-      let a = 0;
-      let b = n;
-      while (a < b) {
-        const m = (a + b) >> 1;
-        if (ord[m] < q) a = m + 1;
-        else b = m;
-      }
-      return Math.min(255, Math.floor((256 * a) / n));
+      if (!(q > 0) || !ord.length || q < a) return -1;
+      if (q >= b) return 255;
+      return Math.min(255, Math.floor((255 * (q - a)) / (b - a)));
     },
   };
+}
+
+/* ------------------------------------------------------------------ la capa honda (149 B)
+ * /api/libro/honda: por venue, una foto cada 30 s con la escalera al paso GUARDADO desde el borde del alcance vivo hacia
+ * fuera (compras.desde hacia abajo, ventas.desde hacia arriba). Una columna en el instante t usa, por venue, su ULTIMA
+ * foto honda con ts <= t y t - ts <= HONDA_RANCIA_S; sin ella, o rancia (sin niveles), ese venue no conoce esos
+ * niveles. Dentro del alcance vivo DE ESE VENUE en esa columna manda el vivo: la honda solo ANADE niveles de fuera
+ * (compras por debajo de su lo, ventas por encima de su hi). Al paso de la vista P = m x paso guardado, por suelo; un
+ * paso que no es multiplo no se pinta (lo dice la linea de debajo del mapa). Cuenta en n como un venue mas que conoce. */
+const HONDA_RANCIA_S = 75; // app/libro_honda.py RANCIA_S
+
+function hondaPorVenue(d) {
+  const m = new Map();
+  ((d && d.fotos) || []).forEach((f) => {
+    if (!m.has(f.venue)) m.set(f.venue, []);
+    m.get(f.venue).push({ t: Date.parse(f.ts), f });
+  });
+  m.forEach((xs) => xs.sort((x, y) => x.t - y.t));
+  return m;
+}
+
+/* La foto honda de un venue para el instante t: la ultima con ts <= t, si no tiene mas de HONDA_RANCIA_S y trae niveles. */
+function hondaEn(porVenue, venue, t) {
+  const xs = porVenue.get(venue);
+  if (!xs || !xs.length) return null;
+  let a = 0;
+  let b = xs.length;
+  while (a < b) {
+    const m = (a + b) >> 1;
+    if (xs[m].t <= t) a = m + 1;
+    else b = m;
+  }
+  const x = a ? xs[a - 1] : null;
+  if (!x || t - x.t > HONDA_RANCIA_S * 1000 || x.f.rancia || (!x.f.compras && !x.f.ventas)) return null;
+  return { edad_s: (t - x.t) / 1000, f: x.f };
+}
+
+/* Los niveles (al paso de la vista) que una foto honda anade a un venue cuyo libro vivo es L (o null): Map k -> [c, v].
+ * Aritmetica entera en pasos guardados: m = P / paso guardado. */
+function nivelesHondos(f, L, paso, pasoGuardado) {
+  const s = Number(pasoGuardado);
+  const m = Math.round(Number(paso) / s);
+  const out = new Map();
+  const pon = (ks, lado, q) => {
+    const k = Math.floor(ks / m);
+    if (L && (lado === 0 ? k >= L.lo : k <= L.hi)) return;
+    const x = out.get(k) || [0, 0];
+    x[lado] += Number(q);
+    out.set(k, x);
+  };
+  if (f.compras) {
+    const k0 = Math.round(Number(f.compras.desde) / s);
+    f.compras.cantidades.forEach((q, i) => pon(k0 - i, 0, q));
+  }
+  if (f.ventas) {
+    const k0 = Math.round(Number(f.ventas.desde) / s);
+    f.ventas.cantidades.forEach((q, i) => pon(k0 + i, 1, q));
+  }
+  return out;
+}
+
+/* La suma de la familia con los niveles hondos de `extras` ([{venue, edad_s, niveles}]): cada uno suma en c/v, cuenta
+ * en n y en h (cuantos de los que lo conocen son de la capa honda). */
+function sumaConHonda(s, extras) {
+  let lo = s.lo;
+  let hi = s.hi;
+  extras.forEach((e) => e.niveles.forEach((_, k) => {
+    lo = Math.min(lo, k);
+    hi = Math.max(hi, k);
+  }));
+  const filas = hi - lo + 1;
+  const c = new Float64Array(filas);
+  const v = new Float64Array(filas);
+  const n = new Uint8Array(filas);
+  const h = new Uint8Array(filas);
+  for (let i = 0; i < s.n.length; i++) {
+    c[s.lo - lo + i] = s.c[i];
+    v[s.lo - lo + i] = s.v[i];
+    n[s.lo - lo + i] = s.n[i];
+  }
+  extras.forEach((e) => e.niveles.forEach((x, k) => {
+    c[k - lo] += x[0];
+    v[k - lo] += x[1];
+    n[k - lo] += 1;
+    h[k - lo] += 1;
+  }));
+  return Object.assign({}, s, { lo, hi, c, v, n, h,
+                                honda: extras.map((e) => ({ venue: e.venue, edad_s: e.edad_s })) });
+}
+
+/* Junta la capa honda a las columnas con foto (en su sitio). -> {pinta, motivo, columnas: cuantas la llevan}.
+ * Se puede volver a juntar (149 B r1, el vivo): la suma sin honda se guarda en `col.sinHonda` la primera vez y cada
+ * junta parte de ella; `desdeMs` junta solo las columnas con ts >= desdeMs (las que una foto nueva puede cambiar). El
+ * libro vivo de cada venue sale de `col.libros` (las columnas del vivo) o de `col.fotos` (las de la historia). */
+function juntaHonda(columnas, d, venues, paso, pasoGuardado, desdeMs) {
+  if (!d || !d.fotos) return { pinta: false, motivo: 'sin capa honda', columnas: 0 };
+  if (!esMultiplo(paso, pasoGuardado)) {
+    return { pinta: false, motivo: 'paso ' + paso + ' más fino que el guardado de la capa honda (' + pasoGuardado
+      + '): no se pinta', columnas: 0 };
+  }
+  const por = hondaPorVenue(d);
+  columnas.forEach((col) => {
+    if (col.estado !== 'foto' || !col.suma || (desdeMs !== undefined && col.ts < desdeMs)) return;
+    if (!col.sinHonda) col.sinHonda = col.suma;
+    const extras = [];
+    venues.forEach((venue) => {
+      const x = hondaEn(por, venue, col.ts);
+      if (!x) return;
+      let L = (col.libros || []).find((y) => y.venue === venue) || null;
+      if (!col.libros) {
+        const f = (col.fotos || []).find((y) => y.venue === venue);
+        L = f ? libroDe(f.venue, f.compra, f.venta, f.compras, f.ventas, paso) : null;
+      }
+      const niveles = nivelesHondos(x.f, L, paso, pasoGuardado);
+      if (niveles.size) extras.push({ venue, edad_s: x.edad_s, niveles });
+    });
+    col.suma = extras.length ? sumaConHonda(col.sinHonda, extras) : col.sinHonda;
+  });
+  const cuantas = columnas.filter((col) => col.suma && col.suma.honda && col.suma.honda.length).length;
+  return { pinta: true, motivo: null, columnas: cuantas };
+}
+
+/* Lo que conoce el libro vivo de cada venue en una columna con foto, {venue: [lo, hi]} (de `col.libros`, el vivo, o de
+ * `col.fotos`, la historia): dentro manda el vivo y la capa honda no anade. Se guarda en la columna (se declara en cada
+ * pintado). */
+function alcanceColumna(col, paso) {
+  if (col.estado !== 'foto') return null;
+  if (!col.alcance) {
+    const ls = col.libros || (col.fotos || []).map((f) => libroDe(f.venue, f.compra, f.venta, f.compras, f.ventas, paso));
+    col.alcance = {};
+    ls.forEach((L) => { col.alcance[L.venue] = [L.lo, L.hi]; });
+  }
+  return col.alcance;
 }
 
 function escaleraFamilia(s, paso, unidad) {
@@ -436,7 +574,8 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     LIBRO_ACTIVOS, LIBRO_VENUES, LIBRO_PASO, LIBRO_VENTANAS, LIBRO_ESCRITO_S, libroVenues, rotuloFamilia, esMultiplo,
     leeHashLibro, escribeHashLibro, cadaPara, ventanaLibro, kDe, nivelTexto, libroDe, enNivel, sumaFamilia,
-    estadoColumna, columnasDeFotos, fotoComoAviso, enUnidad, escalaPercentil, escaleraFamilia,
+    estadoColumna, columnasDeFotos, fotoComoAviso, enUnidad, MAPA_PERCENTILES, percentilDe, escalaCortes,
+    HONDA_RANCIA_S, hondaPorVenue, hondaEn, nivelesHondos, sumaConHonda, juntaHonda, alcanceColumna, escaleraFamilia,
     ESC_GRANDE_X, RECIENTE_VUELVE_MS, RECIENTE_HUECO_MS, p95, medidasVisibles, fraccionBarra, esGrande,
     totalesVisibles, recienteVacio, sumaReciente, limpiaReciente, recienteEn, extremosSesion,
   };

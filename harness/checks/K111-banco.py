@@ -13,6 +13,16 @@ Lo que sirve (uvicorn, con la CSP de produccion copiada de app/api.py):
                                  que pinta mal SIN tocar el arbol)
     /api/libro/fotos, /ultimo    app/libro_lectura.py DEL ARBOL sobre <dsn>, con el `as_of` de la API
     /api/libro/vivo (websocket)  el del arbol: su relevo escucha NOTIFY libro en <dsn>
+    /api/libro/honda             (149 B) la capa honda DE MENTIRA, determinista, sacada de las fotos de <dsn>: una foto
+                                 cada 30 s por venue de libro_honda (okx_swap, okx_spot, bitget_usdt; bitget solo
+                                 compra) que arranca TRES pasos dentro del libro vivo (la pagina tiene que dejar mandar
+                                 al vivo) y llega al 1 % (ETH al 2 %), con muros cada 37 niveles; okx_swap calla 2 min
+                                 de cada 20 (mas de 75 s: la pagina no puede estirar la de antes) y sirve una rancia
+                                 de cada 40. En vivo (149 B r1), las de los ultimos 150 s, alrededor de la mejor
+                                 compra / venta del relevo del banco por ese venue, memorizadas
+    /api/orderflow/footprint     (149 B) el footprint 1m DE MENTIRA: por minuto, nueve niveles alrededor del medio de la
+                                 primera foto del minuto, compra y venta deterministas; desde/hasta con la regla de
+                                 la ruta real (app.orderflow_lectura.instante y ventana): fuera del borde de vela, 422
     cualquier otra /api/*        503 «banco»
 Con --avisos, un ALIMENTADOR publica en <dsn>, por NOTIFY libro, los avisos GRABADOS del relevo de verdad (el colector
 del arbol contra los venues, x1-tmp/c145/p3), en bucle y a su ritmo: el relevo del arbol los oye como los del colector.
@@ -44,6 +54,9 @@ TIPOS = {".html": "text/html; charset=utf-8", ".js": "application/javascript; ch
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; "
        "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
        "form-action 'none'")
+HONDA = {"okx_swap": True, "okx_spot": True, "bitget_usdt": False}  # venue -> sirve ventas
+HONDA_PASO = {"BTC": Decimal("10"), "ETH": Decimal("0.5"), "SOL": Decimal("0.02")}  # el paso guardado (libro_honda)
+HONDA_ALCANCE = {"BTC": Decimal("0.01"), "ETH": Decimal("0.02"), "SOL": Decimal("0.011")}
 DDL = """
 CREATE TABLE orderflow_paso (symbol text PRIMARY KEY, paso numeric NOT NULL);
 CREATE TABLE libro_foto (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL, ts_libro timestamptz NOT NULL,
@@ -53,6 +66,7 @@ CREATE TABLE libro_foto (ts timestamptz NOT NULL, venue text NOT NULL, symbol te
 """
 
 
+BORDE_S = 4  # el borde del libro vivo late con este semiperiodo (borde_que_late)
 CINTA_CICLO_MS = 8000  # la cinta del banco: CINTA_POR_CICLO operaciones cada 8 s
 CINTA_POR_CICLO = 14
 
@@ -95,16 +109,31 @@ def sirve(a: argparse.Namespace) -> int:
     from fastapi.responses import JSONResponse, Response
 
     from app import libro_lectura as lec
-    from app.orderflow_lectura import Peticion
+    from app.orderflow_lectura import MARCOS, RANGO_MAXIMO, Peticion, instante, ventana
 
     sobre = Path(a.sobre) if a.sobre else None
-    estado: dict = {"carga": 0.0, "ref": {}, "ops": {}}
+    estado: dict = {"carga": 0.0, "ref": {}, "ops": {}, "mejor": {}, "honda_viva": {}}
 
     def plantado() -> str:
         try:
             return Path(a.plantado).read_text().strip() if a.plantado else ""
         except OSError:
             return ""
+
+    def borde_que_late(carga_: str) -> str:
+        """Cuatro segundos si, cuatro no, cada libro pierde su 40 % mas lejano por los dos lados: el borde se mueve
+        siempre durante los 20 s de raton quieto, y la rejilla se ejercita por construccion, no por el mercado."""
+        if int(time.time() / BORDE_S) % 2 == 0:
+            return carga_
+        try:
+            d = json.loads(carga_)
+            for lado, k in (("c", "kc"), ("v", "kv")):
+                if isinstance(d.get(lado), list) and len(d[lado]) > 4:
+                    d[lado] = d[lado][: max(2, len(d[lado]) * 6 // 10)]
+                    d[k] = len(d[lado])
+        except (TypeError, ValueError):
+            return carga_
+        return json.dumps(d, separators=(",", ":"))
 
     async def alimenta() -> None:
         """Los avisos grabados, en bucle y a su ritmo, por NOTIFY libro en la base del banco."""
@@ -122,6 +151,8 @@ def sirve(a: argparse.Namespace) -> int:
                     with contextlib.suppress(KeyError, TypeError, ValueError):
                         d = json.loads(carga_)
                         estado["ref"][d["s"]] = ((float(d["b"]) + float(d["a"])) / 2, float(d.get("p") or 1))
+                        estado["mejor"][(d["s"], d["v"])] = (str(d["b"]), str(d["a"]))
+                    carga_ = borde_que_late(carga_)
                     p = plantado()
                     if p.startswith("sin_libro:") and time.time() - estado["carga"] > 1.5:
                         d = json.loads(carga_)
@@ -248,6 +279,110 @@ def sirve(a: argparse.Namespace) -> int:
                    for j in range(-6, 7)] if ref else []
         return JSONResponse({"symbol": symbol, "desde": desde, "hasta": hasta, "paso": paso, "unidad": unidad,
                              "niveles": niveles, "as_of": as_of()})
+
+    def q_honda(ks: int, t: int) -> str:
+        q = Decimal(5 + (ks * 7 + t // 30) % 13) / 10
+        return format((q * 25 if ks % 37 == 0 else q).normalize(), "f")
+
+    async def fotos_de(symbol: str, venues: list[str], desde: datetime, hasta: datetime, paso: str, cada: int) -> list:
+        async with estado["pool"].acquire() as conn:
+            d = await lec.fotos(conn, symbol=symbol, desde=desde.isoformat(), hasta=hasta.isoformat(),
+                                venues=",".join(venues), paso=paso, cada=cada)
+        return d.get("fotos") or []
+
+    @api.get("/api/libro/honda")
+    async def honda(symbol: str, venues: str = "", desde: str = "", hasta: str = "") -> Response:
+        activo = symbol.upper().replace("USDT", "")
+        P = HONDA_PASO.get(activo)
+        vs = [v for v in venues.split(",") if v in HONDA]
+        if P is None or not desde or not hasta:
+            return JSONResponse({"detail": "banco: la capa honda solo con desde y hasta, de BTC, ETH o SOL"},
+                                status_code=422)
+        d0 = datetime.fromisoformat(desde.replace("Z", "+00:00"))
+        d1 = datetime.fromisoformat(hasta.replace("Z", "+00:00"))
+        d0 = datetime.fromtimestamp((int(d0.timestamp()) + 29) // 30 * 30, UTC)
+        salida = []
+        try:
+            fs = await fotos_de(symbol, vs, d0, d1, str(P), 30) if vs and d1 > d0 else []
+        except Peticion as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=422)
+        # (149 B r1) EN VIVO: las fotos de los ultimos 150 s, que la base del banco no tiene (las suyas son de otro dia):
+        # cada 30 s por venue, alrededor de la mejor compra / venta que el relevo del banco mando por ese venue al
+        # pedirse por primera vez, y memorizadas (otra peticion del mismo instante trae la misma foto)
+        ahora_s = int(time.time())
+        viva = estado["honda_viva"]
+        for t in range(max(int(d0.timestamp()), ahora_s - 150) // 30 * 30, min(int(d1.timestamp()), ahora_s + 1), 30):
+            if t < int(d0.timestamp()):
+                continue
+            for v in vs:
+                if (activo, v, t) not in viva and (activo, v) in estado["mejor"]:
+                    b_, a_ = estado["mejor"][(activo, v)]
+                    viva[(activo, v, t)] = {"ts": datetime.fromtimestamp(t, UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                                            "venue": v, "compra": b_, "venta": a_}
+                if (activo, v, t) in viva:
+                    fs.append(viva[(activo, v, t)])
+        for k in [k for k in viva if k[2] < ahora_s - 3600]:
+            del viva[k]
+        for f in fs:
+            t = int(datetime.fromisoformat(f["ts"].replace("Z", "+00:00")).timestamp())
+            if f["venue"] == "okx_swap" and (t // 30) % 40 in (10, 11, 12, 13):
+                continue
+            rancia = (t // 30) % 40 == 25
+            mid = (Decimal(f["compra"]) + Decimal(f["venta"])) / 2
+            n = int(mid * HONDA_ALCANCE[activo] / P)
+            kc = int(Decimal(f["compra"]) // P) - 3
+            kv = -(-Decimal(f["venta"]) // P) + 3
+            compras = {"desde": format((kc * P).normalize(), "f"), "cantidades": [q_honda(kc - i, t) for i in range(n)]}
+            ventas = {"desde": format((int(kv) * P).normalize(), "f"),
+                      "cantidades": [q_honda(int(kv) + i, t) for i in range(n)]} if HONDA[f["venue"]] else None
+            salida.append({"ts": f["ts"], "venue": f["venue"], "ts_libro": f["ts"], "edad_s": 0.0, "rancia": rancia,
+                           "fuente": "banco", "paso": format(P.normalize(), "f"), "cubo": None, "precio": str(mid),
+                           "vivo": {"compra": f["compra"], "venta": f["venta"]},
+                           "alcance": {"compra": compras["desde"], "venta": ventas["desde"] if ventas else None},
+                           "compras": None if rancia else compras, "ventas": None if rancia else ventas})
+        salida.sort(key=lambda x: (x["ts"], x["venue"]))
+        return JSONResponse({"que": "la capa honda DE MENTIRA del banco", "symbol": symbol, "venues": vs,
+                             "rancia_s": 75, "nivel": "precio", "orden": "desde el borde vivo hacia fuera",
+                             "unidad": "base", "frontera": None, "fotos": salida, "as_of": as_of()})
+
+    @api.get("/api/orderflow/footprint")
+    async def footprint(symbol: str, paso: str, desde: str = "", hasta: str = "", venues: str = "", marco: str = "1m",
+                        unidad: str = "base") -> Response:
+        # desde/hasta con la MISMA regla que la ruta real (149 B r1): app.orderflow_lectura, importada, no copiada
+        try:
+            if marco not in MARCOS:
+                raise Peticion(f"marco tiene que ser uno de {', '.join(MARCOS)}")
+            d0, d1 = instante(desde, "desde"), instante(hasta, "hasta")
+            ventana(d0, d1, RANGO_MAXIMO, MARCOS[marco])
+        except Peticion as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=422)
+        if marco != "1m":
+            return JSONResponse({"detail": "banco: el footprint solo 1m"}, status_code=422)
+        P = Decimal(paso)
+        vs = [v for v in venues.split(",") if v]
+        try:
+            fs = await fotos_de(symbol, vs, d0, d1, paso, 60) if vs and d1 > d0 else []
+        except Peticion as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=422)
+        velas = []
+        for ts in sorted({f["ts"] for f in fs}):
+            f = next(x for x in fs if x["ts"] == ts)
+            t = int(datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp())
+            mid = (Decimal(f["compra"]) + Decimal(f["venta"])) / 2
+            k0 = int(mid // P)
+            niveles = []
+            for j in range(-4, 5):
+                c = round(0.1 * (1 + ((k0 + j) * 3 + t // 60) % 9), 3)
+                v = round(0.1 * (1 + ((k0 + j) * 5 + t // 60 * 2) % 7), 3)
+                niveles.append({"nivel": format(((k0 + j) * P).normalize(), "f"), "compra": c, "venta": v,
+                                "delta": round(c - v, 3), "total": round(c + v, 3), "operaciones": 3})
+            c = round(sum(x["compra"] for x in niveles), 3)
+            v = round(sum(x["venta"] for x in niveles), 3)
+            velas.append({"ts": ts, "apertura": str(mid), "cierre": str(mid), "compra": c, "venta": v,
+                          "delta": round(c - v, 3), "total": round(c + v, 3), "operaciones": 27, "niveles": niveles})
+        return JSONResponse({"symbol": symbol, "marco": marco, "paso": paso, "unidad": unidad, "venues": vs,
+                             "desde": desde, "hasta": hasta, "velas": velas, "tope_velas": 1500, "tope_celdas": 50000,
+                             "as_of": as_of()})
 
     @api.get("/api/{resto:path}")
     async def otra(resto: str) -> Response:

@@ -32839,10 +32839,10 @@
     "rutas_con_campos": 84,
     "rutas_sin_campos": 9,
     "sin_clave_temporal": 26,
-    "sin_consumidor": 8,
+    "sin_consumidor": 7,
     "sin_declarar": 25,
     "sin_llamada": 18,
-    "solo_mencion": 10,
+    "solo_mencion": 11,
     "tablas_alcanzadas": 35,
     "tablas_catalogo": 58
   },
@@ -38445,8 +38445,8 @@
           "menciones": [
             "harness/checks/K110-el-libro.sh:18",
             "harness/checks/K111-banco.py:14",
-            "harness/checks/K111-banco.py:20",
-            "harness/checks/K111-banco.py:177",
+            "harness/checks/K111-banco.py:30",
+            "harness/checks/K111-banco.py:208",
             "harness/checks/K111-control.bash:13",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:15",
             "harness/checks/K111-libro.py:31"
@@ -38590,13 +38590,21 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "checks": {
+          "llamadas": [],
+          "menciones": [
+            "harness/checks/K111-banco.py:16",
+            "harness/checks/K111-banco.py:293"
+          ]
+        }
+      },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 0,
-        "sin_ninguno": true,
-        "solo_mencion": false
+        "n_menciones": 2,
+        "sin_ninguno": false,
+        "solo_mencion": true
       },
       "declarada": {
         "completa": false,
@@ -38820,8 +38828,8 @@
           ],
           "menciones": [
             "harness/checks/K110-libro.py:561",
-            "harness/checks/K111-banco.py:22",
-            "harness/checks/K111-banco.py:191"
+            "harness/checks/K111-banco.py:32",
+            "harness/checks/K111-banco.py:222"
           ]
         },
         "tests": {
@@ -40691,7 +40699,7 @@
             "harness/checks/K113-raton.py:892"
           ],
           "menciones": [
-            "harness/checks/K111-banco.py:224",
+            "harness/checks/K111-banco.py:255",
             "harness/checks/K113-raton.py:405"
           ]
         }
@@ -40953,14 +40961,16 @@
             "harness/checks/K112-banco.py:131"
           ],
           "menciones": [
-            "harness/checks/K109-banco.py:12"
+            "harness/checks/K109-banco.py:12",
+            "harness/checks/K111-banco.py:23",
+            "harness/checks/K111-banco.py:348"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 6,
-        "n_menciones": 1,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -41502,7 +41512,7 @@
             "harness/checks/K112-banco.py:137"
           ],
           "menciones": [
-            "harness/checks/K111-banco.py:240"
+            "harness/checks/K111-banco.py:271"
           ]
         }
       },
@@ -48137,10 +48147,10 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K111-libro.py:399",
-            "harness/checks/K111-libro.py:1277",
-            "harness/checks/K111-libro.py:1282",
-            "harness/checks/K111-libro.py:1285",
+            "harness/checks/K111-libro.py:488",
+            "harness/checks/K111-libro.py:1676",
+            "harness/checks/K111-libro.py:1681",
+            "harness/checks/K111-libro.py:1684",
             "harness/checks/K44-control.bash:1186",
             "harness/checks/K44-control.bash:1187",
             "harness/checks/K44-control.bash:1197",
@@ -48150,9 +48160,9 @@
           ],
           "menciones": [
             "harness/checks/K111-banco.py:11",
-            "harness/checks/K111-banco.py:21",
-            "harness/checks/K111-banco.py:23",
-            "harness/checks/K111-banco.py:166",
+            "harness/checks/K111-banco.py:31",
+            "harness/checks/K111-banco.py:33",
+            "harness/checks/K111-banco.py:197",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:4",
             "harness/checks/K113-el-raton-y-el-aspecto.sh:19",
             "harness/checks/K113-raton.py:37",

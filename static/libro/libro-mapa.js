@@ -1,59 +1,71 @@
 'use strict';
-/* EL MAPA DE LIQUIDEZ · el lienzo (campana 145, OF-4b).
+/* EL MAPA DE LIQUIDEZ · el lienzo (campana 145, OF-4b; profesional en la 149 B).
  * ---------------------------------------------------------------------------
- * UN MAPA DE BITS, NO UN RECTANGULO POR CELDA. Lo decidio P1 con el criterio archivado antes de medir
- * (entregas/20261018-0444-libro-pantalla-prediccion.md): en Chromium sin cabeza en 143, con fotos reales de produccion
- * (BTC perpetuos 1 h y 4 h), un fillRect por celda dio un p95 de 50-67 ms por fotograma; el mapa de bits, 16.7-16.8 ms,
- * hecho una vez (B) o rehecho en cada fotograma con lo visible (B'); entre los dos, el criterio se queda con el de menos
- * trabajo por fotograma, B (pintar p95 0.6-0.7 ms contra 5.7-8.5; x1-tmp/c145/p1, tres repeticiones). Cada celda son
- * 2x2 pixeles del mapa de bits de TODA la ventana, que se rehace solo cuando cambian las columnas (llega una del vivo);
- * por fotograma, UN drawImage escalado y sin suavizado, y encima el precio y los ejes.
+ * UN MAPA DE BITS, NO UN RECTANGULO POR CELDA (145 P1, entregas/20261018-0444-libro-pantalla-prediccion.md): cada celda
+ * son 2x2 pixeles del mapa de bits de TODA la ventana, que se rehace cuando cambian las columnas o los cortes de color;
+ * por fotograma, UN drawImage escalado y sin suavizado, y encima el precio, los perfiles y los ejes.
  *
  * LO QUE SE PINTA EN CADA CELDA (columna = un instante, fila = un nivel al paso):
- *   la cantidad de la familia     su color: su PERCENTIL entre las celdas de la ventana (escalaPercentil, P2); un
- *                                 cero CONOCIDO es el fondo
- *   un nivel que conocen n de N   damero: de los 4 subpixeles, round(4n/N) del color y el resto DESCONOCIDO
- *   un nivel que no conoce nadie  DESCONOCIDO, nunca el fondo (nunca cero)
- *   un instante HUECO             la columna entera de su color: ningun venue tenia libro; no se rellena ni se estira
+ *   la cantidad de la familia     BICROMO (E-02): el lado mayor manda; compra en la familia de MAPA_COLOR.compra, venta
+ *                                 en la de MAPA_COLOR.venta, 256 escalones del fondo al color lleno. El indice sale de
+ *                                 los dos cortes de lo VISIBLE (escalaCortes: p20 y p98 por omision, el mando de
+ *                                 intensidad los mueve): debajo, el fondo; entre, lineal; encima, saturado (los muros
+ *                                 salen como lineas vivas). Un cero CONOCIDO es el fondo.
+ *   un nivel que conocen n de N   el MISMO color (P2, entregas/20261104-0722-libro-pro-b-prediccion.md); n de N lo dice
+ *                                 la lectura. El damero de la 145 se fue.
+ *   un nivel que no conoce nadie  DESCONOCIDO: un neutro apenas distinto del fondo, nunca un color de la paleta
+ *   un instante HUECO             rayado tenue, y «sin datos» debajo: ningun venue tenia libro; no se rellena
  *   un instante sin escribir aun  la columna de su color
- * Encima, la mejor compra y la mejor venta de la familia en cada instante.
+ * La capa honda (/api/libro/honda) entra en la suma de cada columna antes de pintar (libro-calculo.js, juntaHonda).
+ * Alrededor: la mejor compra y la mejor venta en escalones de 1 px, el ultimo precio en el acento; a la derecha la
+ * banda «ahora» (la ultima columna estirada), el perfil del volumen negociado de lo visible (footprint 1m) y el perfil
+ * del libro de ahora; debajo, el volumen por minuto.
  *
- * CADA PIXEL ES DE UNA CELDA (el remate de la campana, R1). Una celda tiene al menos 2x2 pixeles de PANTALLA, uno por
- * cuadrito: con menos, el drawImage sin suavizado REDUCE y el vecino mas cercano ensena unas celdas y esconde otras (con
- * 720 columnas en 1420 px, 488 pixeles de K111 caian en otra celda). Lo que no cabe NO SE ALEJA: en horizontal se ven
- * las columnas mas nuevas que caben y el resto arrastrando (la rueda no aleja mas); en vertical, si los niveles conocidos
- * no caben, una banda en la mejor compra de la columna mas nueva a la vista. La linea de debajo del mapa lo dice, y el
- * contrato tambien (eje.caben, eje.pedido, eje.n, eje.datos).
+ * CADA PIXEL ES DE UNA CELDA (145 R1): una celda tiene al menos 2x2 pixeles de PANTALLA. Lo que no cabe NO SE ALEJA; la
+ * linea de debajo del mapa lo dice, y el contrato tambien.
  *
- * EL CONTRATO DE LO PINTADO, que lee K111: cada vez que pinta, el lienzo deja en `window.LIBRO_PINTADO.mapa` lo que
- * ACABA de dibujar: la escala, el eje (que nivel va en que pixel) y, por columna visible, su instante, su estado, sus
- * pixeles, los venues con foto, las mejores y su y, y por celda conocida su nivel, compra, venta, cuantos la conocen y
- * su indice de color. K111 no se lo cree a pies juntillas: lee los pixeles del lienzo.
+ * EL CONTRATO DE LO PINTADO, que lee K111: `window.LIBRO_PINTADO.mapa`: la escala (sus cortes y de que celdas salen), el
+ * eje, por columna visible sus celdas [k, compra, venta, n, indice, lado, n_honda] (reg.celdas = 'declaradas'; en un
+ * gesto quedan 'pendientes' hasta EL_MAPA.declara() o DECLARA_MS despues), y la banda «ahora», el perfil del
+ * libro, el del volumen y el volumen de abajo. K111 no se lo cree: lo recalcula de las respuestas y lee los pixeles.
  */
 
-const MAPA = { EJE_P: 76, EJE_T: 20 };
+const MAPA = { EJE_P: 76, EJE_T: 20, AHORA: 28, VOLUMEN: 64, PERFIL: 64, BAJO: 40 };
+MAPA.DERECHA = MAPA.AHORA + MAPA.VOLUMEN + MAPA.PERFIL + MAPA.EJE_P; // lo que no es mapa, a la derecha
+MAPA.ABAJO = MAPA.BAJO + MAPA.EJE_T; // y debajo
+MAPA.DECLARA_MS = 250; // las celdas del contrato, tanto despues del ultimo cuadro (fuera del gesto)
+MAPA.GESTO_MS = 250; // un gesto (rueda, arrastre) dura hasta tanto despues de su ultimo evento: sin recortes
 const MAPA_COLOR = {
-  fondo: [10, 13, 18], desconocido: [46, 46, 46], hueco: [70, 48, 20], pendiente: [30, 36, 46],
-  compra: '#60a5fa', venta: '#e05a5a', eje: '#8891a0', // E-02 (OF-6a): el comprador comun
-  rampa: [[28, 30, 72], [86, 30, 110], [190, 50, 70], [245, 140, 40], [255, 245, 180]],
+  fondo: [10, 13, 18], desconocido: [26, 26, 26], hueco: [34, 29, 22], hueco_raya: [52, 42, 26], pendiente: [30, 36, 46],
+  compra: '#60a5fa', venta: '#e05a5a', eje: '#8891a0', // E-02 (OF-6a): los colores propios de cada lado
+  referencia: '#f2cc60', // el acento de la casa (--acento de flujo.css): el ultimo precio
 };
-// la rampa en 256 escalones (de la cantidad mas pequena a la mayor)
-const MAPA_LUT = (() => {
+function hexRgb(h) {
+  return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+}
+/* Las dos familias, 256 escalones cada una: del fondo (0) al color lleno del lado (255), en linea recta. */
+function lutLado(hex) {
+  const a = MAPA_COLOR.fondo;
+  const b = hexRgb(hex);
   const out = [];
-  const r = MAPA_COLOR.rampa;
-  for (let i = 0; i < 256; i++) {
-    const x = (i / 255) * (r.length - 1);
-    const a = Math.min(r.length - 2, Math.floor(x));
-    const f = x - a;
-    out.push(r[a].map((c, j) => Math.round(c + (r[a + 1][j] - c) * f)));
-  }
+  for (let i = 0; i < 256; i++) out.push(a.map((c, j) => Math.round(c + ((b[j] - c) * i) / 255)));
   return out;
-})();
-// los subpixeles que se colorean, en este orden: con 2 de 4, un damero
-const MAPA_SUB = [[0, 0], [1, 1], [1, 0], [0, 1]];
+}
+const MAPA_LUT_COMPRA = lutLado(MAPA_COLOR.compra);
+const MAPA_LUT_VENTA = lutLado(MAPA_COLOR.venta);
 
-function cuadritos(n, N) {
-  return n >= N ? 4 : Math.max(1, Math.round((4 * n) / N));
+function luminancia(c) {
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+
+/* El color de un instante HUECO en (columna j, nivel k): rayas diagonales, una de cada tres. */
+function colorHueco(j, k) {
+  return (j + k) % 3 === 0 ? MAPA_COLOR.hueco_raya : MAPA_COLOR.hueco;
+}
+
+/* El lado de una celda: el mayor manda (0 compra, 1 venta; empate, compra). */
+function ladoDe(c, v) {
+  return v > c ? 1 : 0;
 }
 
 function rgb(c) {
@@ -62,7 +74,7 @@ function rgb(c) {
 
 /* Las columnas y los niveles que caben en un lienzo de W x H (CSS) con pr pixeles de pantalla por pixel CSS: 2 por celda. */
 function cabenEn(W, H, pr) {
-  return [Math.max(1, Math.floor(((W - MAPA.EJE_P) * pr) / 2)), Math.max(1, Math.floor(((H - MAPA.EJE_T) * pr) / 2))];
+  return [Math.max(1, Math.floor(((W - MAPA.DERECHA) * pr) / 2)), Math.max(1, Math.floor(((H - MAPA.ABAJO) * pr) / 2))];
 }
 
 /* Las columnas a la vista: las pedidas (al menos 10), nunca mas de las que hay ni de las que caben. */
@@ -77,14 +89,32 @@ function bandaDe(lo, hi, cy, kb) {
   return [a, a + cy - 1];
 }
 
-function creaMapa(canvas, alLeer, aviso) {
+/* La columna «ahora»: la ultima de la ventana, si esta a la vista, tiene foto y no es vieja (en vivo: mas de dos
+ * `cada` y 5 s). -> [indice, null] o [null, motivo]. */
+function columnaAhora(m, j1, ahoraMs) {
+  const n = m.columnas.length;
+  if (j1 !== n - 1) return [null, 'la columna más nueva no está a la vista'];
+  if (!m.fijo && ahoraMs !== null && ahoraMs - m.columnas[n - 1].ts > 2 * m.cada * 1000 + 5000) return [null, 'la última columna es vieja'];
+  // (149 B r1) las «sin escribir aún» del final no se estiran ni tapan la banda: se salta a la más nueva CONOCIDA, y se
+  // dice cuál (su hora en el rótulo). Si esa es un hueco o no tiene libro, no hay banda.
+  let j = n - 1;
+  while (j > 0 && m.columnas[j].estado === 'pendiente') j--;
+  const c = m.columnas[j];
+  if (c.estado !== 'foto' || !c.suma) return [null, 'la última columna conocida es ' + (c.estado === 'hueco' ? 'un HUECO' : c.estado === 'pendiente' ? 'sin escribir aún' : 'sin libro')];
+  if (j < n - 1) return [j, 'las ' + (n - 1 - j) + ' últimas están sin escribir aún: es la de ' + isoZ(c.ts)];
+  return [n - 1, null];
+}
+
+function creaMapa(canvas, alLeer, aviso, alEscala) {
   const L = { cv: canvas, ctx: canvas.getContext('2d'), pr: window.devicePixelRatio || 1, W: 0, H: 0, modelo: null,
               fin: 0, ver: 0, pedido: 0, sigue: true, pendiente: false, cuadros: 0, arrastre: null, bmp: null,
-              esc: null, clave: null, aviso };
+              esc: null, escClave: null, escT: -Infinity, escN: 0, escTimer: null, gestoT: -Infinity, clave: null, aviso,
+              alEscala,
+              pc: MAPA_PERCENTILES.slice() };
 
   function mide() {
     const r = L.cv.parentElement.getBoundingClientRect();
-    L.W = Math.max(200, Math.floor(r.width));
+    L.W = Math.max(200 + MAPA.DERECHA, Math.floor(r.width));
     L.H = Math.max(200, Math.floor(r.height));
     L.cv.width = L.W * L.pr;
     L.cv.height = L.H * L.pr;
@@ -113,42 +143,38 @@ function creaMapa(canvas, alLeer, aviso) {
     return kMin === Infinity ? null : [kMin, kMax];
   }
 
+  /* El color de la celda (columna j, nivel k) y lo que el contrato dice de ella. */
+  function celda(m, j, k, esc, soloColor) {
+    const col = m.columnas[j];
+    const s = col.suma;
+    if (col.estado === 'hueco') return soloColor ? colorHueco(j, k) : [colorHueco(j, k), null];
+    if (col.estado !== 'foto') return soloColor ? MAPA_COLOR[col.estado] : [MAPA_COLOR[col.estado], null];
+    if (!s || k < s.lo || k > s.hi || !s.n[k - s.lo]) return soloColor ? MAPA_COLOR.desconocido : [MAPA_COLOR.desconocido, null];
+    const i = k - s.lo;
+    const ix = esc.indice(enUnidad(s.c[i] + s.v[i], k, m.paso, m.unidad));
+    const lado = ladoDe(s.c[i], s.v[i]);
+    const color = ix < 0 ? MAPA_COLOR.fondo : (lado ? MAPA_LUT_VENTA : MAPA_LUT_COMPRA)[ix];
+    return soloColor ? color : [color, [k, s.c[i], s.v[i], s.n[i], ix, lado ? 'v' : 'c', s.h ? s.h[i] : 0]];
+  }
+
   /* El mapa de bits de las columnas [j0, j1] y las filas [kLo, kHi] (k alto arriba), con la escala `esc`. */
   function mapaDeBits(m, j0, j1, kLo, kHi, esc) {
     const w = 2 * (j1 - j0 + 1);
     const h = 2 * (kHi - kLo + 1);
     const img = new ImageData(w, h);
     const px = img.data;
-    const pon = (x, y, c) => {
-      const o = (y * w + x) * 4;
-      px[o] = c[0];
-      px[o + 1] = c[1];
-      px[o + 2] = c[2];
-      px[o + 3] = 255;
-    };
     for (let j = j0; j <= j1; j++) {
-      const col = m.columnas[j];
       const x0 = 2 * (j - j0);
-      const s = col.suma;
       for (let k = kHi; k >= kLo; k--) {
+        const c = celda(m, j, k, esc, true);
         const y0 = 2 * (kHi - k);
-        let base;
-        let color = null;
-        let sub = 0;
-        if (col.estado !== 'foto') base = MAPA_COLOR[col.estado];
-        else if (!s || k < s.lo || k > s.hi || !s.n[k - s.lo]) base = MAPA_COLOR.desconocido;
-        else {
-          const i = k - s.lo;
-          const ix = esc.indice(enUnidad(s.c[i] + s.v[i], k, m.paso, m.unidad));
-          sub = cuadritos(s.n[i], s.N);
-          color = ix < 0 ? MAPA_COLOR.fondo : MAPA_LUT[ix];
-          base = sub === 4 ? color : MAPA_COLOR.desconocido;
+        for (let q = 0; q < 4; q++) {
+          const o = ((y0 + (q >> 1)) * w + x0 + (q & 1)) * 4;
+          px[o] = c[0];
+          px[o + 1] = c[1];
+          px[o + 2] = c[2];
+          px[o + 3] = 255;
         }
-        pon(x0, y0, base);
-        pon(x0 + 1, y0, base);
-        pon(x0, y0 + 1, base);
-        pon(x0 + 1, y0 + 1, base);
-        for (let q = 0; q < sub && sub < 4; q++) pon(x0 + MAPA_SUB[q][0], y0 + MAPA_SUB[q][1], color);
       }
     }
     const cv = document.createElement('canvas');
@@ -158,8 +184,38 @@ function creaMapa(canvas, alLeer, aviso) {
     return cv;
   }
 
+  /* Lo negociado de las velas del footprint que tocan [tA, tB): por nivel (al paso de la vista) y por minuto. */
+  function negociado(m, tA, tB) {
+    const h = m.huella;
+    if (!h || !h.velas) return null;
+    // (149 B r1, P4) la respuesta se lee UNA vez por huella y paso, no en cada cuadro del gesto
+    if (L.huellaDe !== h || L.huellaPaso !== m.paso) {
+      const P = Number(m.paso);
+      L.huellaDe = h;
+      L.huellaPaso = m.paso;
+      L.huellaLeida = h.velas.map((x) => {
+        const t = Date.parse(x.ts);
+        return [t, Number(x.compra), Number(x.venta), isoZ(t),
+                (x.niveles || []).map((y) => [Math.round(Number(y.nivel) / P), Number(y.compra), Number(y.venta)])];
+      });
+    }
+    const niveles = new Map();
+    const velas = [];
+    L.huellaLeida.forEach(([t, c, v, iso, nv]) => {
+      if (t + 60000 <= tA || t >= tB) return;
+      velas.push([t, c, v, iso]);
+      nv.forEach(([k, yc, yv]) => {
+        const z = niveles.get(k) || [0, 0];
+        z[0] += yc;
+        z[1] += yv;
+        niveles.set(k, z);
+      });
+    });
+    return { niveles, velas };
+  }
+
   /* ------------------------------------------------------------ pintar */
-  function pinta() {
+  function pinta(forzar) {
     const ctx = L.ctx;
     ctx.setTransform(L.pr, 0, 0, L.pr, 0, 0);
     ctx.imageSmoothingEnabled = false;
@@ -177,14 +233,14 @@ function creaMapa(canvas, alLeer, aviso) {
       if (L.aviso) L.aviso.textContent = '';
       return;
     }
-    const ancho = L.W - MAPA.EJE_P;
-    const alto = L.H - MAPA.EJE_T;
+    const ancho = L.W - MAPA.DERECHA;
+    const alto = L.H - MAPA.ABAJO;
     const n = m.columnas.length;
     const [cx, cy] = cabenEn(L.W, L.H, L.pr);
     const j0 = Math.max(0, Math.floor(L.fin - L.ver + 1));
     const j1 = Math.min(n - 1, Math.ceil(L.fin));
-    // lo visible en vertical: lo que conocen las columnas que se ven, con dos filas de margen; si no cabe, la banda de
-    // la mejor compra de la columna mas nueva a la vista que tiene libro
+    // lo visible en vertical: lo que conocen (vivo y capa honda) las columnas que se ven, con dos filas de margen; si
+    // no cabe, la banda de la mejor compra de la columna mas nueva a la vista que tiene libro
     let lo = Infinity;
     let hi = -Infinity;
     let kb = null;
@@ -200,100 +256,257 @@ function creaMapa(canvas, alLeer, aviso) {
     const datos = [lo - 2, hi + 2];
     [lo, hi] = bandaDe(datos[0], datos[1], cy, kb === null ? Math.floor((datos[0] + datos[1]) / 2) : kb);
     const filas = hi - lo + 1;
-    // el mapa de bits de TODA la ventana (P1: B), con la escala (P2) de toda la ventana: se rehace cuando cambian las
-    // columnas; sus filas, las de la ventana con dos de margen (las que puede pedir lo visible)
-    const clave = [n, m.columnas[0].ts, m.columnas[n - 1].ts, r[0], r[1], m.unidad, m.version || 0].join('|');
-    if (clave !== L.clave) {
-      L.esc = escalaPercentil(m.columnas, 0, n - 1, m.paso, m.unidad);
-      L.bmp = mapaDeBits(m, 0, n - 1, r[0] - 2, r[1] + 2, L.esc);
-      L.clave = clave;
+    // los cortes de color, de lo VISIBLE: como mucho una vez por segundo, salvo `forzar` (K111). (149 B r1, P4) Durante
+    // un gesto (rueda o arrastre hace menos de GESTO_MS) no se rehacen: rehacerlos tira el mapa de bits de toda la
+    // ventana y ese cuadro pasaba de 50 ms con datos de produccion; se rehacen al quedarse quieto
+    const escClave = [j0, j1, lo, hi, L.pc.join(','), m.unidad, m.version || 0, n, m.columnas[0].ts].join('|');
+    if (escClave !== L.escClave) {
+      const t = performance.now();
+      const enGesto = t - L.gestoT < MAPA.GESTO_MS;
+      if (forzar || !L.esc || (!enGesto && t - L.escT >= 1000)) {
+        L.esc = escalaCortes(m.columnas, j0, j1, lo, hi, m.paso, m.unidad, L.pc);
+        L.esc.columnas = [isoZ(m.columnas[j0].ts), isoZ(m.columnas[j1].ts)];
+        L.esc.niveles = [lo, hi];
+        L.escClave = escClave;
+        L.escT = t;
+        L.escN += 1;
+        if (L.alEscala) L.alEscala(L.esc, m);
+      } else if (!L.escTimer) {
+        L.escTimer = setTimeout(() => {
+          L.escTimer = null;
+          pide();
+        }, Math.max(enGesto ? MAPA.GESTO_MS - (t - L.gestoT) : 0, 1000 - (t - L.escT)) + 5);
+      }
     }
     const esc = L.esc;
+    // el mapa de bits de TODA la ventana (145 P1: B), con los cortes de ahora: se rehace cuando cambian las columnas o
+    // los cortes; sus filas, las de la ventana con dos de margen (las que puede pedir lo visible)
+    const clave = [n, m.columnas[0].ts, m.columnas[n - 1].ts, r[0], r[1], m.unidad, m.version || 0, L.escN].join('|');
+    if (clave !== L.clave) {
+      L.bmp = mapaDeBits(m, 0, n - 1, r[0] - 2, r[1] + 2, esc);
+      L.clave = clave;
+    }
     const bs = ancho / L.ver;
     const fh = alto / filas;
     const xDe = (j) => ancho - (L.fin - j + 1) * bs;
     const yDe = (k) => (hi - k) * fh; // el borde de ARRIBA de la fila k
     const yPrecio = (p) => (hi + 1 - Number(p) / Number(m.paso)) * fh;
+    const cadaMs = m.cada * 1000;
+    const xT = (t) => xDe(j0) + ((t - m.columnas[j0].ts) / cadaMs) * bs;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, 0, ancho, alto);
     ctx.clip();
     ctx.drawImage(L.bmp, 2 * (L.fin - L.ver + 1), 2 * (r[1] + 2 - hi), 2 * L.ver, 2 * filas, 0, 0, ancho, alto);
-    // el precio encima: la mejor compra y la mejor venta de la familia en cada instante (con un halo oscuro, para que
-    // se lea sobre cualquier color del mapa); juntas redondas: lo que tapa queda a menos de 3 px de su trazo (un pico
-    // de inglete llegaria a 20)
-    ctx.lineJoin = 'round';
+    ctx.restore();
+    // la banda «ahora»: la ultima columna CONOCIDA estirada hasta el borde (si esta a la vista, tiene foto y no es vieja)
+    const [ja, porQueNo] = columnaAhora(m, j1, m.ahora ? m.ahora() : null);
+    if (ja !== null) {
+      ctx.drawImage(L.bmp, 2 * ja, 2 * (r[1] + 2 - hi), 2, 2 * filas, ancho, 0, MAPA.AHORA, alto);
+    }
+    // el precio: la mejor compra y la mejor venta en escalones de 1 px, sin halo; el ultimo precio en el acento
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, ancho + MAPA.AHORA, alto);
+    ctx.clip();
+    ctx.lineWidth = 1;
     [['mejorCompra', MAPA_COLOR.compra], ['mejorVenta', MAPA_COLOR.venta]].forEach(([campo, color]) => {
       ctx.beginPath();
       let dentro = false;
       for (let j = j0; j <= j1; j++) {
         const s = m.columnas[j].suma;
-        if (!s) {
+        if (!s || m.columnas[j].estado !== 'foto') {
           dentro = false;
           continue;
         }
-        const x = xDe(j) + bs / 2;
-        const y = yPrecio(s[campo]);
-        if (dentro) ctx.lineTo(x, y);
-        else ctx.moveTo(x, y);
+        const y = Math.round(yPrecio(s[campo])) + 0.5;
+        if (dentro) ctx.lineTo(xDe(j), y);
+        else ctx.moveTo(xDe(j), y);
+        ctx.lineTo(xDe(j) + bs, y);
         dentro = true;
       }
-      ctx.strokeStyle = 'rgba(0,0,0,0.75)';
-      ctx.lineWidth = 4;
-      ctx.stroke();
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
       ctx.stroke();
     });
+    const tA = m.columnas[j0].ts;
+    const tB = m.columnas[j1].ts + cadaMs;
+    const neg = negociado(m, tA, tB);
+    let ultimo = null;
+    if (m.huella && m.huella.velas && m.huella.velas.length) {
+      const v = m.huella.velas[m.huella.velas.length - 1];
+      ultimo = { precio: v.cierre, ts: v.ts, y: Math.round(yPrecio(v.cierre)) + 0.5 };
+      ctx.beginPath();
+      ctx.moveTo(0, ultimo.y);
+      ctx.lineTo(ancho + MAPA.AHORA, ultimo.y);
+      ctx.strokeStyle = MAPA_COLOR.referencia;
+      ctx.stroke();
+    }
     ctx.restore();
-    // los ejes
+    // a la derecha: el perfil de lo negociado en lo visible (dos barras por nivel: compra arriba, venta abajo) y el del
+    // libro de ahora (una barra por nivel, del color de su lado mayor), con la escala vertical del mapa
+    const xVol = ancho + MAPA.AHORA;
+    const xPerf = xVol + MAPA.VOLUMEN;
+    const barras = (x0, w, filasDe) => {
+      let tope = 0;
+      filasDe.forEach((f) => {
+        tope = Math.max(tope, f[1], f[2]);
+      });
+      return { tope, largo: (q) => (tope > 0 ? ((w - 4) * q) / tope : 0) };
+    };
+    const volumen = { desde: isoZ(tA), hasta: isoZ(tB), barras: [], tope: 0,
+                      pedido: m.huella ? [m.huella.desde, m.huella.hasta] : null };
+    if (neg) {
+      const fs = [];
+      for (let k = lo; k <= hi; k++) {
+        const z = neg.niveles.get(k);
+        if (z) fs.push([k, z[0], z[1]]);
+      }
+      const b = barras(xVol, MAPA.VOLUMEN, fs);
+      volumen.tope = b.tope;
+      fs.forEach(([k, c, v]) => {
+        const y = yDe(k);
+        const hm = fh / 2;
+        ctx.fillStyle = MAPA_COLOR.compra;
+        ctx.fillRect(xVol + 2, y, b.largo(c), hm);
+        ctx.fillStyle = MAPA_COLOR.venta;
+        ctx.fillRect(xVol + 2, y + hm, b.largo(v), hm);
+        volumen.barras.push([k, c, v, b.largo(c), b.largo(v)]);
+      });
+    }
+    const perfil = { ts: ja === null ? null : isoZ(m.columnas[ja].ts), x0: xPerf + 2, barras: [], tope: 0, motivo: porQueNo };
+    if (ja !== null) {
+      const s = m.columnas[ja].suma;
+      const fs = [];
+      for (let k = Math.max(lo, s.lo); k <= Math.min(hi, s.hi); k++) {
+        const i = k - s.lo;
+        if (s.n[i]) fs.push([k, enUnidad(s.c[i] + s.v[i], k, m.paso, m.unidad), 0, ladoDe(s.c[i], s.v[i])]);
+      }
+      const b = barras(xPerf, MAPA.PERFIL, fs);
+      perfil.tope = b.tope;
+      fs.forEach(([k, q, , lado]) => {
+        ctx.fillStyle = lado ? MAPA_COLOR.venta : MAPA_COLOR.compra;
+        ctx.fillRect(xPerf + 2, yDe(k), b.largo(q), fh);
+        perfil.barras.push([k, q, lado ? 'v' : 'c', b.largo(q)]);
+      });
+    }
+    // debajo: el volumen por minuto, compra abajo y venta encima, alineado con el tiempo del mapa
+    const bajo = { tope: 0, velas: [] };
+    if (neg) {
+      neg.velas.forEach((x) => {
+        bajo.tope = Math.max(bajo.tope, x[1] + x[2]);
+      });
+      const hb = MAPA.BAJO - 4;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, alto, ancho, MAPA.BAJO);
+      ctx.clip();
+      neg.velas.forEach(([t, c, v, iso]) => {
+        const x0 = xT(t);
+        const x1 = xT(t + 60000);
+        const hc = bajo.tope > 0 ? (hb * c) / bajo.tope : 0;
+        const hv = bajo.tope > 0 ? (hb * v) / bajo.tope : 0;
+        const base = alto + MAPA.BAJO;
+        ctx.fillStyle = MAPA_COLOR.compra;
+        ctx.fillRect(x0 + 0.5, base - hc, Math.max(1, x1 - x0 - 1), hc);
+        ctx.fillStyle = MAPA_COLOR.venta;
+        ctx.fillRect(x0 + 0.5, base - hc - hv, Math.max(1, x1 - x0 - 1), hv);
+        bajo.velas.push([iso, c, v, x0, x1]);
+      });
+      ctx.restore();
+    }
+    // los ejes: los precios a la derecha del todo; las horas debajo, sin pisar los huecos («sin datos») ni «ahora»
     ctx.fillStyle = MAPA_COLOR.eje;
     ctx.font = '10px ui-monospace, monospace';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
+    const xEje = xPerf + MAPA.PERFIL + 6;
     const cada = Math.max(1, Math.ceil(28 / fh));
     for (let k = Math.ceil(lo / cada) * cada; k <= hi; k += cada) {
-      ctx.fillText(nivelTexto(k, m.paso), ancho + 6, yDe(k) + fh / 2);
+      ctx.fillText(nivelTexto(k, m.paso), xEje, yDe(k) + fh / 2);
     }
+    const yT = L.H - MAPA.EJE_T / 2;
     ctx.textAlign = 'center';
+    const huecos = [];
+    for (let j = j0; j <= j1; j++) {
+      if (m.columnas[j].estado !== 'hueco') continue;
+      if (huecos.length && huecos[huecos.length - 1][1] === j - 1) huecos[huecos.length - 1][1] = j;
+      else huecos.push([j, j]);
+    }
+    const enHueco = (x) => huecos.some(([a, b]) => x >= xDe(a) - 30 && x <= xDe(b) + bs + 30);
     const ct = Math.max(1, Math.ceil(80 / bs));
     for (let j = Math.ceil(j0 / ct) * ct; j <= j1; j += ct) {
-      if (xDe(j) + bs / 2 < 30) continue;
-      ctx.fillText(new Date(m.columnas[j].ts).toISOString().slice(11, 19), xDe(j) + bs / 2, L.H - MAPA.EJE_T / 2);
+      const x = xDe(j) + bs / 2;
+      if (x < 30 || x > ancho - 24 || enHueco(x)) continue;
+      ctx.fillText(new Date(m.columnas[j].ts).toISOString().slice(11, 19), x, yT);
     }
+    ctx.fillStyle = rgb(MAPA_COLOR.hueco_raya.map((c) => Math.min(255, c * 3)));
+    huecos.forEach(([a, b]) => {
+      ctx.fillText('sin datos', Math.max(24, Math.min(ancho - 24, (xDe(a) + xDe(b) + bs) / 2)), yT);
+    });
+    ctx.fillStyle = MAPA_COLOR.eje;
+    if (ja !== null && ja < n - 1) {
+      ctx.textAlign = 'left';
+      ctx.fillText(new Date(m.columnas[ja].ts).toISOString().slice(11, 19), ancho + 2, yT);
+    } else ctx.fillText(ja === null ? '—' : 'ahora', ancho + MAPA.AHORA / 2, yT);
     // el contrato: lo que ACABA de pintarse
-    Object.assign(reg, { escala: { tipo: 'percentil de la ventana', celdas: esc.n, desde: isoZ(m.columnas[0].ts),
-                                   hasta: isoZ(m.columnas[n - 1].ts) },
+    Object.assign(reg, { escala: { tipo: 'cortes de lo visible', percentiles: esc.percentiles, corte: esc.corte,
+                                   celdas: esc.n, columnas: esc.columnas, niveles: esc.niveles },
                          eje: { lo, hi, fila: fh, columna: bs, fin: L.fin, ver: L.ver, ancho, alto, pr: L.pr,
-                                caben: [cx, cy], pedido: L.pedido, n, datos } });
+                                caben: [cx, cy], pedido: L.pedido, n, datos },
+                         honda: m.honda || null,
+                         ahora: { j: ja, ts: ja === null ? null : isoZ(m.columnas[ja].ts), x0: ancho, x1: ancho + MAPA.AHORA,
+                                  motivo: porQueNo },
+                         perfil, volumen, bajo, ultimo });
+    const porDeclarar = [];
     for (let j = j0; j <= j1; j++) {
       const col = m.columnas[j];
       const s = col.suma;
       const x0 = xDe(j);
-      const c = { ts: isoZ(col.ts), estado: col.estado, origen: col.origen, x0, x1: x0 + bs,
+      if (!col.tsIso) col.tsIso = isoZ(col.ts);
+      const c = { ts: col.tsIso, estado: col.estado, origen: col.origen, x0, x1: x0 + bs,
                   venues: s ? s.venues : [], lo: s ? s.lo : null, hi: s ? s.hi : null,
                   mejor_compra: s ? s.mejorCompra : null, mejor_venta: s ? s.mejorVenta : null,
-                  y_compra: s ? yPrecio(s.mejorCompra) : null, y_venta: s ? yPrecio(s.mejorVenta) : null, celdas: [] };
-      if (s && col.estado === 'foto') {
-        for (let k = Math.max(lo, s.lo); k <= Math.min(hi, s.hi); k++) {
-          const i = k - s.lo;
-          if (!s.n[i]) continue;
-          const q = enUnidad(s.c[i] + s.v[i], k, m.paso, m.unidad);
-          c.celdas.push([k, s.c[i], s.v[i], s.n[i], esc.indice(q)]);
-        }
-      }
+                  y_compra: s ? Math.round(yPrecio(s.mejorCompra)) + 0.5 : null,
+                  y_venta: s ? Math.round(yPrecio(s.mejorVenta)) + 0.5 : null,
+                  honda: s && s.honda ? s.honda : [], alcance: alcanceColumna(col, m.paso), celdas: [] };
+      if (s && col.estado === 'foto') porDeclarar.push([c, j, Math.max(lo, s.lo), Math.min(hi, s.hi)]);
       reg.columnas.push(c);
     }
     window.LIBRO_PINTADO.mapa = reg;
-    // lo que se ve del mapa, dicho: cuanto de la ventana y por que no mas
+    // (149 B r1, P4) las celdas del contrato NO se declaran en cada cuadro: son cada celda conocida a la vista (BTC perp
+    // 1 h con la capa honda, ~69 k arrays) y eran el coste del gesto (celda + recolector, perfil de CDP), no el mapa de
+    // bits. Se declaran con `forzar`, cuando se pide el contrato (declara(), lo llama K111 al leer) o DECLARA_MS despues
+    // del ultimo cuadro; hasta entonces reg.celdas = 'pendientes'.
+    reg.celdas = 'pendientes';
+    L.declara = () => {
+      L.declara = null;
+      if (L.declTimer) clearTimeout(L.declTimer);
+      L.declTimer = null;
+      porDeclarar.forEach(([c, j, a, b]) => {
+        for (let k = a; k <= b; k++) {
+          const d = celda(m, j, k, esc)[1];
+          if (d) c.celdas.push(d);
+        }
+      });
+      reg.celdas = 'declaradas';
+    };
+    if (L.declTimer) clearTimeout(L.declTimer);
+    L.declTimer = null;
+    if (forzar) L.declara();
+    else L.declTimer = setTimeout(() => L.declara && L.declara(), MAPA.DECLARA_MS);
+    // lo que se ve del mapa, dicho: cuanto de la ventana y por que no mas; la capa honda; el footprint
     const conocidos = datos[1] - datos[0] + 1;
     if (L.aviso) {
+      const hh = (iso) => (iso ? String(iso).slice(11, 16) : '?');
       L.aviso.textContent = 'mapa: ' + L.ver + ' de ' + n + ' columnas y ' + filas + ' de ' + conocidos + ' niveles a la'
         + ' vista (cada celda, al menos 2×2 píxeles de pantalla)'
         + (L.ver < Math.min(n, Math.max(10, Math.round(L.pedido))) ? ' · en este ancho caben ' + cx + ' columnas: no se'
           + ' aleja más; las demás, arrastrando' : '')
         + (filas < conocidos ? ' · en este alto caben ' + cy + ' niveles: los de la mejor compra de la última columna;'
-          + ' con un paso mayor caben más' : '');
+          + ' con un paso mayor caben más' : '')
+        + (m.honda ? ' · capa honda: ' + (m.honda.pinta ? m.honda.columnas + ' de ' + n + ' columnas' : m.honda.motivo) : '')
+        + (m.huella ? ' · volumen: footprint 1m de ' + hh(m.huella.desde) + ' a ' + hh(m.huella.hasta) + 'Z, a la vista '
+          + hh(volumen.desde) + '–' + hh(volumen.hasta) + 'Z' : m.huellaFallo ? ' · volumen: ' + m.huellaFallo : '');
     }
   }
 
@@ -314,12 +527,13 @@ function creaMapa(canvas, alLeer, aviso) {
     const y = ev.clientY - r.top;
     const j = Math.floor(L.fin + 1 - (reg.eje.ancho - x) / reg.eje.columna);
     const col = m.columnas[j];
-    if (!col || x > reg.eje.ancho) return alLeer(null);
+    if (!col || x > reg.eje.ancho || y > reg.eje.alto) return alLeer(null);
     alLeer(col, Math.floor(reg.eje.hi + 1 - y / reg.eje.fila));
   }
 
   L.cv.addEventListener('wheel', (ev) => {
     ev.preventDefault();
+    L.gestoT = performance.now();
     L.pedido = L.ver * (ev.deltaY > 0 ? 1.12 : 1 / 1.12);
     acota();
     pide();
@@ -332,7 +546,8 @@ function creaMapa(canvas, alLeer, aviso) {
   });
   L.cv.addEventListener('mousemove', (ev) => {
     if (L.arrastre && L.modelo) {
-      L.fin = L.arrastre.fin - (ev.clientX - L.arrastre.x) / ((L.W - MAPA.EJE_P) / L.ver);
+      L.gestoT = performance.now();
+      L.fin = L.arrastre.fin - (ev.clientX - L.arrastre.x) / ((L.W - MAPA.DERECHA) / L.ver);
       acota();
       pide();
     }
@@ -351,6 +566,8 @@ function creaMapa(canvas, alLeer, aviso) {
     pon(modelo, ver) {
       L.modelo = modelo;
       L.clave = null;
+      L.escClave = null;
+      L.esc = null;
       L.bmp = null;
       const n = modelo ? modelo.columnas.length : 0;
       L.pedido = ver || n;
@@ -358,7 +575,7 @@ function creaMapa(canvas, alLeer, aviso) {
       acota();
       pide();
     },
-    /* columnas nuevas (el vivo): si se miraba el final, se sigue mirando */
+    /* columnas nuevas (el vivo), o el footprint que llega: si se miraba el final, se sigue mirando */
     actualiza() {
       if (!L.modelo) return;
       L.modelo.version = (L.modelo.version || 0) + 1;
@@ -366,11 +583,22 @@ function creaMapa(canvas, alLeer, aviso) {
       acota();
       pide();
     },
+    /* el mando de intensidad: los dos percentiles de los cortes */
+    percentiles(pc) {
+      L.pc = pc.slice();
+      L.escClave = null;
+      pinta(true);
+    },
+    /* el contrato entero ya: declara las celdas del ultimo cuadro si estaban pendientes */
+    declara() {
+      if (L.declara) L.declara();
+    },
     pinta,
     pide,
   };
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { MAPA, MAPA_COLOR, MAPA_LUT, MAPA_SUB, cuadritos, cabenEn, verEfectivo, bandaDe };
+  module.exports = { MAPA, MAPA_COLOR, MAPA_LUT_COMPRA, MAPA_LUT_VENTA, lutLado, luminancia, colorHueco, ladoDe,
+                     columnaAhora, cabenEn, verEfectivo, bandaDe };
 }
