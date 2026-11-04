@@ -805,14 +805,21 @@ def juzga_alrededor(vio: dict, e: dict, esp: dict, eje: dict, m: dict, cols: lis
                              f"{pix(pc['x0'] + bs / 2, y)})")
                 break
     # la banda «ahora»
-    c_n = cols[-1] if cols else None
-    ja = n - 1 if c_n and j1 == n - 1 and c_n["estado"] == "foto" and c_n["suma"] else None
+    # (149 B r1) las «sin escribir aun» del final se saltan: la banda es la mas nueva CONOCIDA, y la declara
+    jn = n - 1
+    while jn > 0 and cols[jn]["estado"] == "pendiente":
+        jn -= 1
+    c_n = cols[jn] if cols else None
+    ja = jn if c_n and j1 == n - 1 and c_n["estado"] == "foto" and c_n["suma"] else None
     ah = m.get("ahora") or {}
     vieja = ja is not None and ah.get("j") is None and not e.get("hasta") and "vieja" in str(ah.get("motivo"))
     if vieja:
         ja = None
     if ah.get("j") != ja:
         malos.append(f"«ahora» estira la columna {ah.get('j')} ({ah.get('motivo')}) y le toca la {ja}")
+    elif ja is not None and ja < n - 1 and isoz(cols[ja]["ts"]) not in str(ah.get("motivo")):
+        malos.append(f"«ahora» estira la conocida {isoz(cols[ja]['ts'])} con {n - 1 - ja} sin escribir detras y no "
+                     f"lo dice ({ah.get('motivo')})")
     lineas = [y for y in (uy, c_n and (c_n["suma"] or {}).get("compra") and y_precio(c_n["suma"]["compra"]),
                           c_n and (c_n["suma"] or {}).get("venta") and y_precio(c_n["suma"]["venta"])) if y]
     for k in range(lo, hi + 1):

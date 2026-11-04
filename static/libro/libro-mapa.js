@@ -90,10 +90,15 @@ function bandaDe(lo, hi, cy, kb) {
  * `cada` y 5 s). -> [indice, null] o [null, motivo]. */
 function columnaAhora(m, j1, ahoraMs) {
   const n = m.columnas.length;
-  const c = m.columnas[n - 1];
   if (j1 !== n - 1) return [null, 'la columna más nueva no está a la vista'];
-  if (c.estado !== 'foto' || !c.suma) return [null, 'la última columna es ' + (c.estado === 'hueco' ? 'un HUECO' : c.estado === 'pendiente' ? 'sin escribir aún' : 'sin libro')];
-  if (!m.fijo && ahoraMs !== null && ahoraMs - c.ts > 2 * m.cada * 1000 + 5000) return [null, 'la última columna es vieja'];
+  if (!m.fijo && ahoraMs !== null && ahoraMs - m.columnas[n - 1].ts > 2 * m.cada * 1000 + 5000) return [null, 'la última columna es vieja'];
+  // (149 B r1) las «sin escribir aún» del final no se estiran ni tapan la banda: se salta a la más nueva CONOCIDA, y se
+  // dice cuál (su hora en el rótulo). Si esa es un hueco o no tiene libro, no hay banda.
+  let j = n - 1;
+  while (j > 0 && m.columnas[j].estado === 'pendiente') j--;
+  const c = m.columnas[j];
+  if (c.estado !== 'foto' || !c.suma) return [null, 'la última columna conocida es ' + (c.estado === 'hueco' ? 'un HUECO' : c.estado === 'pendiente' ? 'sin escribir aún' : 'sin libro')];
+  if (j < n - 1) return [j, 'las ' + (n - 1 - j) + ' últimas están sin escribir aún: es la de ' + isoZ(c.ts)];
   return [n - 1, null];
 }
 
@@ -279,7 +284,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     ctx.clip();
     ctx.drawImage(L.bmp, 2 * (L.fin - L.ver + 1), 2 * (r[1] + 2 - hi), 2 * L.ver, 2 * filas, 0, 0, ancho, alto);
     ctx.restore();
-    // la banda «ahora»: la ultima columna estirada hasta el borde (si esta a la vista, tiene foto y no es vieja)
+    // la banda «ahora»: la ultima columna CONOCIDA estirada hasta el borde (si esta a la vista, tiene foto y no es vieja)
     const [ja, porQueNo] = columnaAhora(m, j1, m.ahora ? m.ahora() : null);
     if (ja !== null) {
       ctx.drawImage(L.bmp, 2 * ja, 2 * (r[1] + 2 - hi), 2, 2 * filas, ancho, 0, MAPA.AHORA, alto);
@@ -424,7 +429,10 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
       ctx.fillText('sin datos', Math.max(24, Math.min(ancho - 24, (xDe(a) + xDe(b) + bs) / 2)), yT);
     });
     ctx.fillStyle = MAPA_COLOR.eje;
-    ctx.fillText(ja === null ? '—' : 'ahora', ancho + MAPA.AHORA / 2, yT);
+    if (ja !== null && ja < n - 1) {
+      ctx.textAlign = 'left';
+      ctx.fillText(new Date(m.columnas[ja].ts).toISOString().slice(11, 19), ancho + 2, yT);
+    } else ctx.fillText(ja === null ? '—' : 'ahora', ancho + MAPA.AHORA / 2, yT);
     // el contrato: lo que ACABA de pintarse
     Object.assign(reg, { escala: { tipo: 'cortes de lo visible', percentiles: esc.percentiles, corte: esc.corte,
                                    celdas: esc.n, columnas: esc.columnas, niveles: esc.niveles },

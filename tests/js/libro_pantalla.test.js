@@ -208,6 +208,28 @@ test('cada celda, al menos 2x2 pixeles de pantalla: lo que no cabe no se aleja, 
   assert.deepStrictEqual(Mp.bandaDe(100, 400, 101, 390), [300, 400]);
 });
 
+test('«ahora» con las ultimas sin escribir aun: la mas nueva CONOCIDA, con su hora; hueco o vieja, sin banda', () => {
+  const Mp = require('../../static/libro/libro-mapa.js');
+  const t0 = Date.parse('2026-11-04T12:00:00Z');
+  const col = (i, estado) => ({ ts: t0 + i * 10000, estado, suma: estado === 'foto' ? { lo: 1, hi: 2 } : null });
+  const m = (es, fijo = false) => ({ fijo, cada: 10, columnas: es.map((e, i) => col(i, e)) });
+  const ahora = t0 + 6 * 10000;
+  // cuatro sin escribir detras (el BTC perp de la carga, medida del operador): la de las 12:00:10, y lo dice
+  const [j, porQue] = Mp.columnaAhora(m(['foto', 'foto', 'pendiente', 'pendiente', 'pendiente', 'pendiente']), 5, ahora);
+  assert.strictEqual(j, 1);
+  assert.match(porQue, /las 4 últimas están sin escribir aún: es la de 2026-11-04T12:00:10Z/);
+  assert.deepStrictEqual(Mp.columnaAhora(m(['foto', 'foto']), 1, t0 + 10000), [1, null]);
+  // la conocida es un hueco: sin banda (ni se salta el hueco para buscar otra)
+  assert.deepStrictEqual(Mp.columnaAhora(m(['foto', 'hueco', 'pendiente']), 2, t0 + 20000),
+                         [null, 'la última columna conocida es un HUECO']);
+  // todas sin escribir: sin banda
+  assert.strictEqual(Mp.columnaAhora(m(['pendiente', 'pendiente']), 1, ahora)[0], null);
+  // la mas nueva fuera de la vista o la rejilla parada (vieja): sin banda
+  assert.strictEqual(Mp.columnaAhora(m(['foto', 'pendiente']), 0, ahora)[0], null);
+  assert.deepStrictEqual(Mp.columnaAhora(m(['foto', 'pendiente']), 1, t0 + 60000),
+                         [null, 'la última columna es vieja']);
+});
+
 // ------------------------------------------------------------------ la escalera profesional (campana 149, ronda A)
 test('las barras: p95 de lo visible en UNA escala para los dos lados, y min(1, q/tope)', () => {
   assert.strictEqual(C.p95([]), null);
