@@ -25,6 +25,14 @@
 # OF-6a (campana 148), los dos defectos del juez que encontro el ataque de la 146:
 #   (F) unidad_mal_escrita        la cabecera del delta dice «en ETH» en la vista EN USD (P146-1)
 #   (F) filtro_agrupado           el filtro de 4 cifras escrito «5.000» en vez de como la pagina, «5000» (P146-2)
+# remate 3 (148), el perfil compra-venta por (C) y el tiempo agotado por (S):
+#   (C) barra_de_otro_lado        la barra de venta pintada con el volumen de compra
+#   (C) barra_otra_escala         las barras con la escala al doble del mayor lado de su vela
+#   (C) relleno_por_omision       la vista por omision pinta el relleno en vez del perfil compra-venta
+#   (C) desequilibrio_sin_pastilla  la cifra fuerte en negrita sin su pastilla
+#   (C) grande_sobre_cifra        las grandes 6 px a la izquierda del eje de su vela, encima de la cifra de venta
+#   (C) poc_fuera_de_su_fila      la linea del POC una fila por debajo de la suya
+#   (S) timeout_como_500          una copia de app/ sin la clausula del tiempo agotado: la ruta no dice 503
 #   V   k112_de_d91d935           el K112 de antes, con las vistas nuevas, contra la pagina buena: ROJO (el defecto era suyo)
 # Y un escenario BUENO mas que tiene que salir VERDE: hueco_en_medio (la base con huecos y la pagina buena: los dice).
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina y sujeto_anterior_a_of5a («FALTA DESPLEGAR») · sin_chromium · sin_dato ·
@@ -121,7 +129,9 @@ BUENO=$(escenario)
 rc=$(k112 $P1 "$DB"); HK_BUENA=$(huella_k112)
 comprueba el_bueno_es_verde "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K112' && echo 0 || echo 1)" \
   "rc=$rc · escenario $BUENO · $(head -1 "$T/sal" | cut -c1-60) · huella $HK_BUENA"
-grep -E '^   · \((S|F)' "$T/sal" | cut -c1-170 | sed 's/^/        /'
+# remate 4: el primer hallazgo de un bueno que no sale VERDE, ENTERO (la auditoria del remate 3 lo vio cortado)
+[ "$rc" = 0 ] || grep -m1 '^   · ' "$T/sal" | sed 's/^/        PRIMER FALLO: /'
+grep -E '^   · \((S|F)' "$T/sal" | cut -c1-400 | sed 's/^/        /'
 
 echo "== los brazos: cada plantado, por el brazo que lo tiene que condenar"
 planta_pagina() {  # fichero(en static/) patron-sed mordidas-esperadas -> 0 si mordio exactamente
@@ -134,7 +144,7 @@ juzga_plantado() {  # nombre brazo patron mordio(0/1) que [puerto] [base] [etiqu
   local antes despues rc visto hk p=${6:-$P1} b=${7:-$DB}
   antes=$BUENO; despues=$(escenario "${8:-buena}")
   rc=$(k112 "$p" "$b"); hk=$(huella_k112)
-  visto=$(grep -E "\\($2\\) .*($3)" "$T/sal" | head -1 | cut -c1-150)
+  visto=$(grep -E "\\($2\\) .*($3)" "$T/sal" | head -1 | cut -c1-400)
   comprueba "$1" "$([ "$4" = 0 ] && [ "$rc" = 1 ] && [ -n "$visto" ] && [ "$antes" != "$despues" ] && [ "$hk" != "$HK_BUENA" ] && echo 0 || echo 1)" \
     "rc=$rc · escenario $antes -> $despues · huella $hk · ${visto:-NO SALE ($2) $3: $(grep -m1 '^   · ' "$T/sal" | cut -c1-110)} · $5"
   restaura
@@ -143,7 +153,7 @@ juzga_bueno() {  # nombre patron-de-info que [puerto] [base] [etiqueta]
   local despues rc visto hk p=${4:-$P1} b=${5:-$DB}
   despues=$(escenario "${6:-buena}")
   rc=$(k112 "$p" "$b"); hk=$(huella_k112)
-  visto=$(grep -E "$2" "$T/sal" | head -1 | cut -c1-150)
+  visto=$(grep -E "$2" "$T/sal" | head -1 | cut -c1-400)
   comprueba "$1" "$([ "$rc" = 0 ] && head -1 "$T/sal" | grep -q '^VERDE  K112' && [ -n "$visto" ] && [ "$BUENO" != "$despues" ] && echo 0 || echo 1)" \
     "rc=$rc · escenario $BUENO -> $despues · huella $hk · ${visto:-NO SALE: $2 · $(head -1 "$T/sal" | cut -c1-90)} · $3"
   restaura
@@ -179,6 +189,37 @@ planta_pagina flujo/flujo-indicadores.js "s/  const ctxTit = { familia: FAMILIAS
 juzga_plantado unidad_mal_escrita F "delta: su cabecera dice .*en ETH" $m "la vista en USD con la cabecera en ETH"
 planta_pagina flujo/flujo-cinta.js "s/Number(filtro)\.toLocaleString('es-ES')/Number(filtro).toLocaleString('de-DE')/" 1; m=$?
 juzga_plantado filtro_agrupado F "la cinta dice .*5\.000 USD" $m "el filtro de 4 cifras con punto de miles"
+# remate 3 (148): las celdas del perfil compra-venta, por (C); y el tiempo agotado de la ruta, por (S)
+planta_pagina flujo/flujo-dibujo.js 's/const lv = ladoMax > 0 ? Math\.round((media \* Number(l\.venta))/const lv = ladoMax > 0 ? Math.round((media * Number(l.compra))/' 1; m=$?
+juzga_plantado barra_de_otro_lado C "barras venta .* lo servido" $m "la barra de venta con el volumen de compra"
+planta_pagina flujo/flujo-dibujo.js 's/ladoMax = Math\.max(ladoMax, Number(l\.compra), Number(l\.venta));/ladoMax = Math.max(ladoMax, 2 * Number(l.compra), 2 * Number(l.venta));/' 1; m=$?
+juzga_plantado barra_otra_escala C "la escala de sus barras" $m "las barras a la mitad de su escala"
+planta_pagina flujo/flujo-calculo.js "s/Object\.assign(e, { fondo: 'perfil', franja: true });/Object.assign(e, { fondo: 'relleno', franja: true });/" 1; m=$?
+juzga_plantado relleno_por_omision C "se pinta el fondo|paso de color" $m "el relleno por omision en vez del perfil"
+planta_pagina flujo/flujo-dibujo.js 's/^      if (fuerte) {$/      if (false) {/' 1; m=$?
+juzga_plantado desequilibrio_sin_pastilla C "sin su pastilla" $m "el desequilibrio en negrita sin su pastilla"
+# remate 4: a la DERECHA del eje. A la izquierda no mordia desde A (ff8ded0, corrida de 2eb4968: solo F): la venta de
+# la fila con grande pierde el carril y no se escribe, y la grande no tapa nada. La compra no lo pierde
+planta_pagina flujo/flujo-indicadores.js 's/^    const x = x0 + 4;$/    const x = x0 + Math.floor(w \/ 2) + 6;/' 1; m=$?
+juzga_plantado grande_sobre_cifra C "tapa la cifra" $m "las grandes 6 px a la derecha del eje, sobre la cifra de compra"
+# remate 4: la venta de una fila con grande escrita sin restar el carril, y el carril restado tambien a la compra
+planta_pagina flujo/flujo-dibujo.js 's/^    return carril \&\& (L\.grandes\[i\] || \[\])\.some(/    return false \&\& (L.grandes[i] || []).some(/' 1; m=$?
+juzga_plantado venta_sin_carril C "tapa la cifra" $m "la venta de la fila con grande sin restar el carril"
+planta_pagina flujo/flujo-dibujo.js 's/^        const hueco = { venta: w \/ 2 - carrilVenta(carril, iv, y0, y1, fuente), compra: w \/ 2 };$/        const hueco = { venta: w \/ 2 - carril, compra: w \/ 2 - carril };/' 1; m=$?
+juzga_plantado carril_en_la_compra C "la compra .* cabe en su media vela" $m "el carril restado de los dos lados (la auditoria del remate 3)"
+planta_pagina flujo/flujo-dibujo.js 's/const yl = Math\.floor((y0 + y1) \/ 2);/const yl = Math.floor((y0 + y1) \/ 2) + (y1 - y0);/' 1; m=$?
+juzga_plantado poc_fuera_de_su_fila C "linea del POC" $m "la linea del POC una fila por debajo"
+# remate 4 (D, 2e): el cuerpo de la vela al reves (apertura en el cierre) y el de la vela siguiente
+planta_pagina flujo/flujo-dibujo.js 's/const ya = Math\.round(y(Number(oc\.apertura)));/const ya = Math.round(y(Number(oc.cierre)));/;s/const yc = Math\.round(y(Number(oc\.cierre)));/const yc = Math.round(y(Number(oc.apertura)));/' 2; m=$?
+juzga_plantado cuerpo_al_reves F "el cuerpo pintado .* no es el servido" $m "el cuerpo de la vela pintado del cierre a la apertura"
+planta_pagina flujo/flujo-dibujo.js 's/^    const oc = v; /    const oc = m.velas[iv + 1] || v; /' 1; m=$?
+juzga_plantado cuerpo_de_otra_vela F "el cuerpo pintado .* no es el servido" $m "cada vela con el cuerpo de la siguiente"
+mkdir -p "$T/sobre/k112app"; ln -s "$REPO/static" "$T/sobre/k112app/static"; cp -r "$REPO/app" "$T/sobre/k112app/app"; rm -rf "$T/sobre/k112app/app/__pycache__"
+sed -i 's/^    except asyncpg\.QueryCanceledError as exc:$/    except ZeroDivisionError as exc:/' "$T/sobre/k112app/app/api.py"
+m=$([ "$(diff "$REPO/app/api.py" "$T/sobre/k112app/app/api.py" | grep -c '^>')" = 1 ] && echo 0 || echo 1)
+export K112_APP="$T/sobre/k112app"
+juzga_plantado timeout_como_500 S "no dice 503 con su porque" $m "la consulta cancelada sale como 500"
+unset K112_APP; rm -rf "$T/sobre/k112app"
 
 echo "== V: el K112 de d91d935 (antes de arreglar P146-1 y P146-2) con las vistas nuevas, contra la pagina buena"
 mkdir -p "$T/viejo/harness/checks"
@@ -188,13 +229,16 @@ sed -i -e 's|#ETH/15m/perp/hasta={h}/ver=96|#ETH/15m/perp/unidad=usd/hasta={h}/v
        -e 's|/cinta=20000", 1280|/cinta=5000", 1280|' "$T/viejo/harness/checks/K112-indicadores.py"
 m=$([ "$(git -C "$REPO" show d91d935:harness/checks/K112-indicadores.py | diff - "$T/viejo/harness/checks/K112-indicadores.py" | grep -c '^>')" = 2 ] && echo 0 || echo 1)
 rc=$(k112 $P1 "$DB" K112_REPO="$T/viejo" K112_PY="$PY")
-visto=$(grep -E '^   · \(F\) .*(tiene que decir .*en ETH|tiene que decir .*5\.000 USD)' "$T/sal" | head -1 | cut -c1-150)
+visto=$(grep -E '^   · \(F\) .*(tiene que decir .*en ETH|tiene que decir .*5\.000 USD)' "$T/sal" | head -1 | cut -c1-400)
 comprueba k112_de_d91d935 "$([ "$m" = 0 ] && [ "$rc" = 1 ] && [ -n "$visto" ] && echo 0 || echo 1)" \
   "rc=$rc · sed $m · ${visto:-NO SALE: $(head -1 "$T/sal" | cut -c1-110)} · el juez viejo pide «en ETH» y «5.000»"
 rm -rf "$T/viejo"
 
 echo "== un escenario bueno mas: tiene que salir VERDE"
 juzga_bueno hueco_en_medio '^   · \(F\)\(G\) \[BTC 1m perp 1920x1080\] .*\(([1-9][0-9]*) huecos\)' "la base con huecos y la pagina buena" "$P2" "${DB}_hueco" hueco
+# remate 4 (C): una grande en la VELA EN CURSO (copia de la ultima grande de BTC con ts = ahora), la pagina buena: VERDE
+psql -h "$H" -d "${DB}_hueco" -q -v ON_ERROR_STOP=1 -c "CREATE TEMP TABLE g AS SELECT * FROM orderflow_grande WHERE symbol='BTC' AND ts <= now() ORDER BY ts DESC LIMIT 1; UPDATE g SET ts = now(), id = id || '-viva'; INSERT INTO orderflow_grande SELECT * FROM g" || exit 2
+juzga_bueno grande_viva '^   · \(F\)\(G\) \[BTC 1m perp VIVO 1920x1080\] .* [1-9][0-9]* grandes en su vela' "una grande en la vela en curso" "$P2" "${DB}_hueco" grande_viva
 
 echo "== lo que no se puede medir: NO MEDIDO, ni ROJO ni VERDE"
 echo sin_pagina > "$T/plantado"

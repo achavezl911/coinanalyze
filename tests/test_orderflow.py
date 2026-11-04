@@ -386,6 +386,26 @@ async def test_footprint_y_perfil_salen_de_las_celdas_en_texto_exacto(conn):
             await lec.footprint(conn, **kw)
 
 
+async def test_apertura_y_cierre_de_cada_vela_salen_de_la_cinta_del_venue_de_referencia(conn):
+    a, b, c = of._ts(M), of._ts(M + 60), of._ts(M + 120)
+    await _celdas(conn, [(t, "binance_usdm", D(100), D(1), D(1), D(100), D(100), 1, 1) for t in (a, b, c)])
+    s = lambda t, x: t + timedelta(seconds=x)  # noqa: E731
+    filas = [(s(a, 5), "binance_usdm", "90", "1", "90", True, "a0"),        # la mas antigua: la vela a pudo perder la suya
+             (s(b, 1), "binance_usdm", "100", "1", "100", True, "x2"), (s(b, 1), "binance_usdm", "101", "1", "101", True, "x1"),
+             (s(b, 30), "binance_usdm", "105", "1", "105", False, "x3"), (s(b, 30), "binance_usdm", "104", "1", "104", True, "x4"),
+             (s(b, 59), "bybit_linear", "999", "1", "999", True, "y1"), (s(c, 10), "bybit_linear", "998", "1", "998", True, "y2")]
+    await conn.executemany("""INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id)
+                              VALUES ($1,$2,'BTC',$3::numeric,$4::numeric,$5::numeric,$6,$7)""", filas)
+    fp = await lec.footprint(conn, symbol="BTC", desde=lec.iso(a), hasta=lec.iso(of._ts(M + 180)), marco="1m",
+                             paso="1", venues="binance_usdm,bybit_linear", unidad="base")
+    json.dumps(fp)
+    assert fp["apertura_cierre"]["venue"] == "binance_usdm"
+    # a: antes de lo que guarda la cinta; b: a igualdad de hora decide el id, y el bybit no cuenta; c: sin binance_usdm
+    assert [(v["apertura"], v["cierre"]) for v in fp["velas"]] == [(None, None), ("101", "104"), (None, None)]
+    assert lec.venue_referencia(["okx_spot", "binance_spot"]) == "binance_spot"
+    assert lec.venue_referencia(["okx_spot", "bybit_spot"]) == "okx_spot"
+
+
 async def test_footprint_con_paso_automatico_y_la_value_area_de_cada_vela(conn):
     a = of._ts(M)
     # una vela que toca 61 niveles al paso 1: el paso automatico es 5 (13 niveles); la siguiente vela, vacia
@@ -773,3 +793,25 @@ async def test_las_rutas_de_of5a_dicen_422_y_no_recortan_en_silencio(conn, monke
     with pytest.raises(HTTPException) as exc:
         await api.orderflow_ordenes(_Peticion(symbol="BTC"), symbol="BTC", desde=lec.iso(_m(-120)), limit=5)
     assert exc.value.status_code == 422 and "60 min" in exc.value.detail
+
+
+class _ConexionCancelada:
+    """Una conexion cuya consulta cancela el statement_timeout de app/db.py, como la de ETH 1d en 140."""
+
+    async def fetch(self, *_a, **_k):
+        raise asyncpg.QueryCanceledError("canceling statement due to statement timeout")
+
+
+async def test_footprint_con_tiempo_agotado_dice_503_con_su_porque(monkeypatch):
+    # REMATE 3 (148): una consulta cancelada por tiempo es 503 con su porque, nunca 500
+    async def pasos(_conn):
+        return {"BTC": Decimal("0.1")}
+
+    monkeypatch.setattr(lec, "pasos", pasos)
+    monkeypatch.setattr(api.app.state, "pool", _Pool(_ConexionCancelada()), raising=False)
+    desde, hasta = "2026-10-20T00:00:00Z", "2026-11-03T00:00:00Z"
+    with pytest.raises(HTTPException) as exc:
+        await api.orderflow_footprint(_Peticion(symbol="BTC", marco="1d", desde=desde, hasta=hasta, paso="auto"),
+                                      symbol="BTC", marco="1d", desde=desde, hasta=hasta, paso="auto")
+    assert exc.value.status_code == 503
+    assert exc.value.detail == "la consulta paso de 20 s: pide menos velas o un marco menor"

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro_fotos` · `app/api.py:3911` (cuerpo hasta la 3923) · decorador en la linea 3910.
+Handler `libro_fotos` · `app/api.py:3919` (cuerpo hasta la 3931) · decorador en la linea 3918.
 
 ## Parametros de entrada
 

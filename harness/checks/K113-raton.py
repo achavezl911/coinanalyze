@@ -71,7 +71,7 @@ HASTA = os.environ.get("K113_HASTA", "")
 ESPERA_VELA_S = float(os.environ.get("K113_ESPERA_VELA", "75"))
 RUTA_FP, RUTA_SES, RUTA_PERFIL = "/api" + "/orderflow/footprint", "/api" + "/orderflow/sesiones", "/api" + "/orderflow/perfil"
 # LO DECIDIDO, escrito aqui y no leido de la pagina (la investigacion, P2 de la 148 y OF-2):
-EJE_P, EJE_T, CABEZA, FILA_RES = 76, 20, 16, 16
+EJE_P, EJE_T, CABEZA, FILA_RES = 76, 20, 16, 18
 FILA_TEXTO, FILA_DEFECTO, ESPACIADO = 10, 12, 81
 PASOS, CORTE = 20, 0.98
 DECIMALES = {"BTC": 3, "ETH": 2, "SOL": 1}
@@ -543,6 +543,10 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
     por_ts = {ms(x["ts"]): (i, x) for i, x in enumerate(velas)}
     g = geo(pin)
     esc = pin["escala"]
+    # remate 3: con el perfil compra-venta no hay paso de color (F-04 es del relleno), el desequilibrio sin cifra es su
+    # barra fuerte y no un borde, y el carril de las grandes sale del hueco de la cifra
+    relleno = pin.get("fondo") == "relleno"
+    car = 0 if relleno else (pin.get("carril") or 0)
     paso = D(pin["paso"])
     pf = float(paso)
     dec = 0 if pin.get("unidad") == "usd" else DECIMALES.get(pin.get("activo"), 2)
@@ -615,7 +619,7 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
                 J.mal("F", pref, f"vela {r['ts'][11:16]} nivel {n}: desequilibrios {(f['dc'], f['dv'], f['ac'], f['av'])} y la "
                                  f"regla (F-05) da {d}")
             dentro = f["filtro"] != "escondida" and not (f["y1"] < esc["arriba"] - 1 or f["y0"] > esc["abajo"] + 1)
-            k = paso_color(float(s_[campo]), ref) if dentro else -1
+            k = paso_color(float(s_[campo]), ref) if dentro and relleno else -1
             if f.get("paso_color") != k:
                 J.mal("F", pref, f"vela {r['ts'][11:16]} nivel {n}: paso de color {f.get('paso_color')} y su {campo} contra la "
                                  f"referencia ({ref_modo}, {ref:.6g}) da {k} (F-04)")
@@ -628,7 +632,7 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
     medidas = await anchos(v, piezas)
 
     def cabe_a(exp: list, w: float, fz: int) -> bool:
-        hueco = w / 2 if exp and exp[0][2] != "uno" else w
+        hueco = (w / 2 if exp and exp[0][2] != "uno" else w) - car
         return all(medidas[(t, f"{'bold ' if ng else ''}{fz}px ui-monospace, monospace")] + 4 <= hueco for t, ng, _ in exp)
     # remate 1: UNA fuente por vista, la mayor entre 9 y fuenteDe(fila) con la que cabe toda cifra que cabe a 9 px
     salen = [(x[5], x[1]) for x in plan if x[6] and cabe_a(x[5], x[1], 9)]
@@ -641,12 +645,12 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
         quien = f"vela {r['ts'][11:16]} nivel {n}"
         xc = r["x0"] + w / 2
         if exp and exp[0][2] != "uno":
-            cabe = cand and all(medidas[(t, f"{'bold ' if ng else ''}{fuente}px ui-monospace, monospace")] + 4 <= w / 2
+            cabe = cand and all(medidas[(t, f"{'bold ' if ng else ''}{fuente}px ui-monospace, monospace")] + 4 <= w / 2 - car
                                 for t, ng, _ in exp)
             pintados = (f.get("texto_venta"), f.get("texto_compra"))
             quiero = (exp[0][0], exp[1][0]) if cabe else (None, None)
         else:
-            cabe = cand and all(medidas[(t, f"{'bold ' if ng else ''}{fuente}px ui-monospace, monospace")] + 4 <= w
+            cabe = cand and all(medidas[(t, f"{'bold ' if ng else ''}{fuente}px ui-monospace, monospace")] + 4 <= w - car
                                 for t, ng, _ in exp)
             pintados = (f.get("texto"),)
             quiero = (exp[0][0],) if cabe and exp else (None,)
@@ -681,8 +685,10 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
                 J.mal("F", pref, f"{quien}: «{p}» {'sin' if fuerte else 'en'} negrita y {'es' if fuerte else 'no es'} un "
                                  "desequilibrio de su lado (F-05)")
         if (d[0] or d[1]) and all(p is None for p in pintados) and f["filtro"] not in ("escondida",) and \
-                not (f["y1"] < esc["arriba"] - 1 or f["y0"] > esc["abajo"] + 1) and not f.get("borde"):
-            J.mal("F", pref, f"{quien}: desequilibrio sin cifra y sin su borde de 1 px (F-05)")
+                not (f["y1"] < esc["arriba"] - 1 or f["y0"] > esc["abajo"] + 1) and \
+                not f.get("borde" if relleno else "barra_fuerte"):
+            J.mal("F", pref, f"{quien}: desequilibrio sin cifra y sin su "
+                             f"{'borde de 1 px' if relleno else 'barra en el color fuerte'} (F-05)")
     return {"velas": velas, "n_textos": n_textos, "g": g}
 
 
@@ -757,6 +763,7 @@ async def juzga_resumen(v: Vista, c: dict, e: dict, velas: list, arranques: dict
         hueco = x["estado"] == "hueco"
         tot = float(x["total"])
         quiero = {"vol": None if hueco else x["total"], "delta": None if hueco else x["delta"],
+                  "compra": None if hueco else x["compra"], "venta": None if hueco else x["venta"],
                   "deltap": None if hueco or not tot else (float(x["delta"]) / tot) * 100,
                   "cvd": cvd[i][0], "ops": None if hueco else str(x["operaciones"])}
         for f in filas:
@@ -1162,7 +1169,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
         if not b["sigue"] or abs(b["fin"] - (len(velas_aplicadas(await v.cosecha(), K112, e["marco"])) - 1)) > 0.01:
             J.mal("R", pref, f"la tecla Fin no vuelve a seguir la ultima vela: sigue {b['sigue']}, fin {b['fin']} (I-05)")
     # F-01: los modos de la celda, sin volver a pedir nada
-    for modo in (("delta", "trades", "volumen", "perfil", "bidask") if completo else ("delta", "bidask")):
+    for modo in (("delta", "trades", "volumen", "bidask") if completo else ("delta", "bidask")):
         await v.clic_en(f"#sel-celda button[data-valor={modo}]")
         await v.s.drena(0.3)
         pr = await paso(f"celda {modo}")
@@ -1207,6 +1214,7 @@ async def recorrido_color(v: Vista, out: dict, ctx: dict, paso, L, g0: dict, xm:
     J, pref = ctx["J"], ctx["pref"]
     resultados, diag = {}, {}
     xu = g0["ancho"] - 10  # junto a la ultima vela
+    await v.clic_en("#sel-fondo button[data-valor=delta]")  # remate 3: el paso de color es del relleno
     for ref in ("visible", "sesion"):
         # Fin, AUTO (doble clic en el eje: el precio centrado en la ultima vela) y el precio alejado (Ctrl+rueda: MANUAL)
         await v.tecla("End")

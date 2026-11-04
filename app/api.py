@@ -3738,6 +3738,9 @@ async def orderflow_referencia(request: Request) -> dict[str, Any]:
     return await _orderflow(request, (), orderflow_lectura.referencia)
 
 
+FOOTPRINT_TIEMPO_AGOTADO = "la consulta paso de 20 s: pide menos velas o un marco menor"
+
+
 @app.get("/api/orderflow/footprint")
 async def orderflow_footprint(
     request: Request,
@@ -3749,10 +3752,15 @@ async def orderflow_footprint(
     venues: str | None = None,
     unidad: str | None = None,
 ) -> dict[str, Any]:
-    return await _orderflow(
-        request, ("symbol", "desde", "hasta", "marco", "paso", "venues", "unidad"), orderflow_lectura.footprint,
-        symbol=symbol, desde=desde, hasta=hasta, marco=marco, paso=paso, venues=venues, unidad=unidad,
-    )
+    # REMATE 3 (148): ETH 1d dio «HTTP 500» (medido por el operador el 2026-11-03): la consulta paso del statement_timeout
+    # de 20 s (app/db.py) y asyncpg la cancelo. Un tiempo agotado no es un fallo del servidor: 503 con su porque.
+    try:
+        return await _orderflow(
+            request, ("symbol", "desde", "hasta", "marco", "paso", "venues", "unidad"), orderflow_lectura.footprint,
+            symbol=symbol, desde=desde, hasta=hasta, marco=marco, paso=paso, venues=venues, unidad=unidad,
+        )
+    except asyncpg.QueryCanceledError as exc:
+        raise HTTPException(status_code=503, detail=FOOTPRINT_TIEMPO_AGOTADO) from exc
 
 
 @app.get("/api/orderflow/perfil")

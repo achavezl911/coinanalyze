@@ -14,7 +14,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`rechaza_parametros_desconocidos`](#rechaza-parametros-desconocidos) | 2587 | 25 | **0** | 0 | **25** |
 | [`_orderflow`](#-orderflow) | 3724 | 15 | **0** | 0 | **15** |
 | [`_asienta_resultados`](#-asienta-resultados) | 156 | 0 | **0** | 8 ↑ | **0** |
-| [`health`](#health) | 3998 | 1 | **0** | 8 ↑ | **1** |
+| [`health`](#health) | 4006 | 1 | **0** | 8 ↑ | **1** |
 | [`lifespan`](#lifespan) | 172 | 0 | **0** | 8 ↑ | **0** |
 | [`historical_interval_value`](#historical-interval-value) | 260 | 7 | **0** | 0 | **7** |
 | [`mask_gapped_series_rows`](#mask-gapped-series-rows) | 271 | 7 | **0** | 0 | **7** |
@@ -49,42 +49,42 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`entradas`](#entradas) | 1318 | 1 | **0** | 0 | **1** |
 | [`external_macro_endpoint`](#external-macro-endpoint) | 2205 | 1 | **0** | 0 | **1** |
 | [`flow_spot_vs_perp`](#flow-spot-vs-perp) | 1779 | 1 | **0** | 0 | **1** |
-| [`flujo`](#flujo) | 4199 | 1 | **0** | 0 | **1** |
+| [`flujo`](#flujo) | 4207 | 1 | **0** | 0 | **1** |
 | [`funding_context_endpoint`](#funding-context-endpoint) | 1943 | 1 | **0** | 0 | **1** |
 | [`hypothesis`](#hypothesis) | 1401 | 1 | **0** | 0 | **1** |
-| [`index`](#index) | 4214 | 1 | **0** | 0 | **1** |
+| [`index`](#index) | 4222 | 1 | **0** | 0 | **1** |
 | [`level_breakout_endpoint`](#level-breakout-endpoint) | 2076 | 1 | **0** | 0 | **1** |
-| [`libro`](#libro) | 4206 | 1 | **0** | 0 | **1** |
-| [`libro_cobertura`](#libro-cobertura) | 3942 | 1 | **0** | 0 | **1** |
-| [`libro_fotos`](#libro-fotos) | 3911 | 1 | **0** | 0 | **1** |
-| [`libro_honda`](#libro-honda) | 3928 | 1 | **0** | 0 | **1** |
-| [`libro_referencia`](#libro-referencia) | 3906 | 1 | **0** | 0 | **1** |
-| [`libro_ultimo`](#libro-ultimo) | 3975 | 1 | **0** | 0 | **1** |
+| [`libro`](#libro) | 4214 | 1 | **0** | 0 | **1** |
+| [`libro_cobertura`](#libro-cobertura) | 3950 | 1 | **0** | 0 | **1** |
+| [`libro_fotos`](#libro-fotos) | 3919 | 1 | **0** | 0 | **1** |
+| [`libro_honda`](#libro-honda) | 3936 | 1 | **0** | 0 | **1** |
+| [`libro_referencia`](#libro-referencia) | 3914 | 1 | **0** | 0 | **1** |
+| [`libro_ultimo`](#libro-ultimo) | 3983 | 1 | **0** | 0 | **1** |
 | [`liquidation_levels`](#liquidation-levels) | 3082 | 1 | **0** | 0 | **1** |
 | [`liquidation_map_endpoint`](#liquidation-map-endpoint) | 1950 | 1 | **0** | 0 | **1** |
 | [`liquidation_series`](#liquidation-series) | 1103 | 1 | **0** | 0 | **1** |
 | [`macro_context_endpoint`](#macro-context-endpoint) | 2198 | 1 | **0** | 0 | **1** |
 | [`market_impact_endpoint`](#market-impact-endpoint) | 1385 | 1 | **0** | 0 | **1** |
 | [`market_memory_endpoint`](#market-memory-endpoint) | 2222 | 1 | **0** | 0 | **1** |
-| [`mesa`](#mesa) | 4183 | 1 | **0** | 0 | **1** |
-| [`mesa_decide`](#mesa-decide) | 4127 | 1 | **0** | 0 | **1** |
-| [`mesa_entradas`](#mesa-entradas) | 4166 | 1 | **0** | 0 | **1** |
+| [`mesa`](#mesa) | 4191 | 1 | **0** | 0 | **1** |
+| [`mesa_decide`](#mesa-decide) | 4135 | 1 | **0** | 0 | **1** |
+| [`mesa_entradas`](#mesa-entradas) | 4174 | 1 | **0** | 0 | **1** |
 | [`metric_baselines`](#metric-baselines) | 1609 | 1 | **0** | 0 | **1** |
 | [`ohlcv`](#ohlcv) | 710 | 1 | **0** | 0 | **1** |
 | [`oi`](#oi) | 1054 | 1 | **0** | 0 | **1** |
 | [`oi_context_endpoint`](#oi-context-endpoint) | 2148 | 1 | **0** | 0 | **1** |
-| [`orderflow_cinta`](#orderflow-cinta) | 3775 | 1 | **0** | 0 | **1** |
-| [`orderflow_cobertura`](#orderflow-cobertura) | 3805 | 1 | **0** | 0 | **1** |
-| [`orderflow_footprint`](#orderflow-footprint) | 3742 | 1 | **0** | 0 | **1** |
-| [`orderflow_grandes`](#orderflow-grandes) | 3790 | 1 | **0** | 0 | **1** |
-| [`orderflow_indicadores`](#orderflow-indicadores) | 3873 | 1 | **0** | 0 | **1** |
-| [`orderflow_ordenes`](#orderflow-ordenes) | 3887 | 1 | **0** | 0 | **1** |
-| [`orderflow_perfil`](#orderflow-perfil) | 3759 | 1 | **0** | 0 | **1** |
+| [`orderflow_cinta`](#orderflow-cinta) | 3783 | 1 | **0** | 0 | **1** |
+| [`orderflow_cobertura`](#orderflow-cobertura) | 3813 | 1 | **0** | 0 | **1** |
+| [`orderflow_footprint`](#orderflow-footprint) | 3745 | 1 | **0** | 0 | **1** |
+| [`orderflow_grandes`](#orderflow-grandes) | 3798 | 1 | **0** | 0 | **1** |
+| [`orderflow_indicadores`](#orderflow-indicadores) | 3881 | 1 | **0** | 0 | **1** |
+| [`orderflow_ordenes`](#orderflow-ordenes) | 3895 | 1 | **0** | 0 | **1** |
+| [`orderflow_perfil`](#orderflow-perfil) | 3767 | 1 | **0** | 0 | **1** |
 | [`orderflow_referencia`](#orderflow-referencia) | 3737 | 1 | **0** | 0 | **1** |
-| [`orderflow_sesiones`](#orderflow-sesiones) | 3821 | 1 | **0** | 0 | **1** |
-| [`orderflow_tpo`](#orderflow-tpo) | 3838 | 1 | **0** | 0 | **1** |
-| [`orderflow_vwap`](#orderflow-vwap) | 3854 | 1 | **0** | 0 | **1** |
-| [`panel`](#panel) | 4193 | 1 | **0** | 0 | **1** |
+| [`orderflow_sesiones`](#orderflow-sesiones) | 3829 | 1 | **0** | 0 | **1** |
+| [`orderflow_tpo`](#orderflow-tpo) | 3846 | 1 | **0** | 0 | **1** |
+| [`orderflow_vwap`](#orderflow-vwap) | 3862 | 1 | **0** | 0 | **1** |
+| [`panel`](#panel) | 4201 | 1 | **0** | 0 | **1** |
 | [`passive_flow_endpoint`](#passive-flow-endpoint) | 2176 | 1 | **0** | 0 | **1** |
 | [`positioning`](#positioning) | 1393 | 1 | **0** | 0 | **1** |
 | [`price_barriers_endpoint`](#price-barriers-endpoint) | 1993 | 1 | **0** | 0 | **1** |
@@ -111,8 +111,8 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`signals_visibility`](#signals-visibility) | 2992 | 1 | **0** | 0 | **1** |
 | [`snapshot`](#snapshot) | 690 | 1 | **0** | 0 | **1** |
 | [`statistical_alerts`](#statistical-alerts) | 1901 | 1 | **0** | 0 | **1** |
-| [`stream`](#stream) | 4118 | 1 | **0** | 0 | **1** |
-| [`stream_generator`](#stream-generator) | 4070 | 1 | **0** | 0 | **1** |
+| [`stream`](#stream) | 4126 | 1 | **0** | 0 | **1** |
+| [`stream_generator`](#stream-generator) | 4078 | 1 | **0** | 0 | **1** |
 | [`structure`](#structure) | 2319 | 1 | **0** | 0 | **1** |
 | [`structure_detail_endpoint`](#structure-detail-endpoint) | 2191 | 1 | **0** | 0 | **1** |
 | [`swing_score_endpoint`](#swing-score-endpoint) | 2162 | 1 | **0** | 0 | **1** |
@@ -471,7 +471,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## health
 
-`app/api.py:3998` · clave completa `app.api.health`
+`app/api.py:4006` · clave completa `app.api.health`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 8** (mas ancha)
 
@@ -1368,7 +1368,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## flujo
 
-`app/api.py:4199` · clave completa `app.api.flujo`
+`app/api.py:4207` · clave completa `app.api.flujo`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1437,7 +1437,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## index
 
-`app/api.py:4214` · clave completa `app.api.index`
+`app/api.py:4222` · clave completa `app.api.index`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1483,7 +1483,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## libro
 
-`app/api.py:4206` · clave completa `app.api.libro`
+`app/api.py:4214` · clave completa `app.api.libro`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1506,7 +1506,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## libro_cobertura
 
-`app/api.py:3942` · clave completa `app.api.libro_cobertura`
+`app/api.py:3950` · clave completa `app.api.libro_cobertura`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1529,7 +1529,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## libro_fotos
 
-`app/api.py:3911` · clave completa `app.api.libro_fotos`
+`app/api.py:3919` · clave completa `app.api.libro_fotos`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1552,7 +1552,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## libro_honda
 
-`app/api.py:3928` · clave completa `app.api.libro_honda`
+`app/api.py:3936` · clave completa `app.api.libro_honda`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1575,7 +1575,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## libro_referencia
 
-`app/api.py:3906` · clave completa `app.api.libro_referencia`
+`app/api.py:3914` · clave completa `app.api.libro_referencia`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1598,7 +1598,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## libro_ultimo
 
-`app/api.py:3975` · clave completa `app.api.libro_ultimo`
+`app/api.py:3983` · clave completa `app.api.libro_ultimo`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1759,7 +1759,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## mesa
 
-`app/api.py:4183` · clave completa `app.api.mesa`
+`app/api.py:4191` · clave completa `app.api.mesa`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1782,7 +1782,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## mesa_decide
 
-`app/api.py:4127` · clave completa `app.api.mesa_decide`
+`app/api.py:4135` · clave completa `app.api.mesa_decide`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1805,7 +1805,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## mesa_entradas
 
-`app/api.py:4166` · clave completa `app.api.mesa_entradas`
+`app/api.py:4174` · clave completa `app.api.mesa_entradas`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1920,7 +1920,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_cinta
 
-`app/api.py:3775` · clave completa `app.api.orderflow_cinta`
+`app/api.py:3783` · clave completa `app.api.orderflow_cinta`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1943,7 +1943,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_cobertura
 
-`app/api.py:3805` · clave completa `app.api.orderflow_cobertura`
+`app/api.py:3813` · clave completa `app.api.orderflow_cobertura`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1966,7 +1966,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_footprint
 
-`app/api.py:3742` · clave completa `app.api.orderflow_footprint`
+`app/api.py:3745` · clave completa `app.api.orderflow_footprint`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -1989,7 +1989,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_grandes
 
-`app/api.py:3790` · clave completa `app.api.orderflow_grandes`
+`app/api.py:3798` · clave completa `app.api.orderflow_grandes`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2012,7 +2012,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_indicadores
 
-`app/api.py:3873` · clave completa `app.api.orderflow_indicadores`
+`app/api.py:3881` · clave completa `app.api.orderflow_indicadores`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2035,7 +2035,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_ordenes
 
-`app/api.py:3887` · clave completa `app.api.orderflow_ordenes`
+`app/api.py:3895` · clave completa `app.api.orderflow_ordenes`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2058,7 +2058,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_perfil
 
-`app/api.py:3759` · clave completa `app.api.orderflow_perfil`
+`app/api.py:3767` · clave completa `app.api.orderflow_perfil`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2104,7 +2104,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_sesiones
 
-`app/api.py:3821` · clave completa `app.api.orderflow_sesiones`
+`app/api.py:3829` · clave completa `app.api.orderflow_sesiones`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2127,7 +2127,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_tpo
 
-`app/api.py:3838` · clave completa `app.api.orderflow_tpo`
+`app/api.py:3846` · clave completa `app.api.orderflow_tpo`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2150,7 +2150,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderflow_vwap
 
-`app/api.py:3854` · clave completa `app.api.orderflow_vwap`
+`app/api.py:3862` · clave completa `app.api.orderflow_vwap`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2173,7 +2173,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## panel
 
-`app/api.py:4193` · clave completa `app.api.panel`
+`app/api.py:4201` · clave completa `app.api.panel`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2794,7 +2794,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## stream
 
-`app/api.py:4118` · clave completa `app.api.stream`
+`app/api.py:4126` · clave completa `app.api.stream`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -2817,7 +2817,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## stream_generator
 
-`app/api.py:4070` · clave completa `app.api.stream_generator`
+`app/api.py:4078` · clave completa `app.api.stream_generator`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 

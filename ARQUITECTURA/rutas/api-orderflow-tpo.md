@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `orderflow_tpo` · `app/api.py:3838` (cuerpo hasta la 3850) · decorador en la linea 3837.
+Handler `orderflow_tpo` · `app/api.py:3846` (cuerpo hasta la 3858) · decorador en la linea 3845.
 
 ## Parametros de entrada
 

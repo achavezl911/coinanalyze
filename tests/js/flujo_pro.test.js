@@ -54,7 +54,7 @@ test('F-10: el CVD de sesion, exacto, desde su inicio; con su arranque si empezo
   assert.deepStrictEqual(F.cvdSesion([v('2026-10-18T07:59:00Z', '1'), v('2026-10-18T08:00:00Z', '1')], asia, {})
     .map((x) => x.sesion), [Date.parse('2026-10-18T00:00:00Z'), null]);
   assert.deepStrictEqual(F.resumenVela({ estado: 'completa', total: '4', delta: '-1', operaciones: 7 }, { valor: '2' }),
-    { vol: '4', delta: '-1', deltap: '-25', cvd: '2', ops: '7' });
+    { vol: '4', compra: undefined, venta: undefined, delta: '-1', deltap: '-25', cvd: '2', ops: '7' });
   assert.strictEqual(F.resumenVela({ estado: 'hueco', total: '0', delta: '0', operaciones: 0 }, null).vol, null);
 });
 
@@ -68,4 +68,36 @@ test('el hash de OF-6a: la celda, el color, las filas y los dos ejes van y vuelv
   assert.deepStrictEqual([malo.celda, malo.color, malo.ref, malo.filas, malo.x, malo.y, malo.fila],
     ['bidask', 'delta', 'vela', [], null, null, null]);
   assert.strictEqual(F.escribeHash(malo), '#BTC/1m/perp/filas=ninguna');
+});
+
+test('remate 3: CELDA (fondo) y la franja van y vuelven por el hash; el perfil viejo de la celda ya no es un modo', () => {
+  const h = '#SOL/1d/perp/celda=des/color=volumen/fondo=relleno/franja=no';
+  const e = F.leeHash(h);
+  assert.deepStrictEqual([e.celda, e.color, e.fondo, e.franja], ['des', 'volumen', 'relleno', false]);
+  assert.strictEqual(F.escribeHash(e), h);
+  const omision = F.leeHash('#SOL/1d/perp/celda=perfil/fondo=otro/franja=si');
+  assert.deepStrictEqual([omision.celda, omision.fondo, omision.franja], ['bidask', 'perfil', true]);
+  assert.strictEqual(F.escribeHash(omision), '#SOL/1d/perp');
+  assert.deepStrictEqual(F.FILAS_RESUMEN, ['vol', 'compra', 'venta', 'delta', 'deltap', 'cvd', 'ops']);
+  const r = F.resumenVela({ estado: 'completa', total: '5', compra: '3', venta: '2', delta: '1', operaciones: 4 }, null);
+  assert.deepStrictEqual([r.compra, r.venta], ['3', '2']);
+  assert.deepStrictEqual([F.resumenVela({ estado: 'hueco' }, null).compra, F.resumenVela({ estado: 'hueco' }, null).venta],
+    [null, null]);
+});
+
+test('remate 3: el paso auto de 4h y 1d es el mas fino de la escalera que mete la ultima vela en el 70 % del alto', () => {
+  // ultima vela de 140.0 a 149.9 al paso servido 0.1: 100 niveles a 0.1, 50 a 0.2, 20 a 0.5
+  const rangos = [[150, 160], [140, 149.9]];
+  // alto 1000: 0.7 x 1000 / 4 = 175 filas -> cabe 0.1 (100 niveles)
+  const a = F.pasoFino(rangos, 0.1, 0.1, 1000, 4);
+  assert.deepStrictEqual([a.paso, a.niveles, a.fila], [0.1, 100, 7]);
+  assert.strictEqual(a.celdas, 101 + 100);
+  // alto 400: 70 filas -> 0.1 no cabe, 0.2 (50) si
+  assert.deepStrictEqual([F.pasoFino(rangos, 0.1, 0.1, 400, 4).paso, F.pasoFino(rangos, 0.1, 0.1, 400, 4).niveles], [0.2, 50]);
+  // el tope de celdas manda aunque la ultima quepa: 600 velas de 100 niveles a 0.1 son 60 000 > 50 000
+  const muchas = Array.from({ length: 600 }, () => [140, 149.9]);
+  const t = F.pasoFino(muchas, 0.1, 0.1, 1000, 4);
+  assert.strictEqual(t.paso, 0.2);
+  assert.ok(t.celdas <= F.TOPE_CELDAS);
+  assert.strictEqual(F.pasoFino([], 0.1, 0.1, 1000, 4), null);
 });

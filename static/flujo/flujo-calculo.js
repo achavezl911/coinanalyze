@@ -20,8 +20,9 @@
 
 const FLUJO_ACTIVOS = ['BTC', 'ETH', 'SOL'];
 const FLUJO_MARCOS = { '1m': 1, '5m': 5, '15m': 15, '1h': 60, '4h': 240, '1d': 1440 };
-// Las velas que se piden de historia: 240, salvo donde no caben en los 30 dias que se guardan las celdas.
-const FLUJO_HISTORIA = { '1m': 240, '5m': 240, '15m': 240, '1h': 240, '4h': 180, '1d': 30 };
+// Las velas que se piden de historia: 240, salvo donde no caben en los 30 dias que se guardan las celdas; y 1d, 14
+// (remate 3 de la 148: con 30 dias la consulta de BTC paso de los 20 s del statement_timeout, medido por el operador)
+const FLUJO_HISTORIA = { '1m': 240, '5m': 240, '15m': 240, '1h': 240, '4h': 180, '1d': 14 };
 // LAS FAMILIAS (decision del encargo, por la dispersion medida entre venues): nunca se suman dos.
 const FAMILIAS = {
   perp: { rotulo: 'perpetuos USDT', venues: ['binance_usdm', 'bybit_linear', 'okx_swap', 'bitget_usdt'] },
@@ -64,6 +65,8 @@ function leeHash(hash) {
   // la escala vertical es AUTO) y `fila` los px de una fila
   Object.assign(e, { celda: 'bidask', color: 'delta', ref: 'vela', numeros: true, filas: FILAS_RESUMEN.slice(),
                      rueda: 'zoom', x: null, y: null, fila: null });
+  // REMATE 3 (148): CELDA (`fondo`: el perfil compra-venta o el relleno de antes, con `color`) y el perfil de lo visible
+  Object.assign(e, { fondo: 'perfil', franja: true });
   const a = String(partes[0] || '').toUpperCase();
   if (FLUJO_ACTIVOS.includes(a)) e.activo = a;
   if (partes[1] && tiene(FLUJO_MARCOS, partes[1])) e.marco = partes[1];
@@ -97,6 +100,8 @@ function leeHash(hash) {
     else if (k === 'ind' && v) e.ind = leeIndicadores(v);
     else if (k === 'cinta' && positivo(v)) e.cinta = v;
     else if (k === 'celda' && CELDAS.includes(v)) e.celda = v;
+    else if (k === 'fondo' && v === 'relleno') e.fondo = v;
+    else if (k === 'franja' && v === 'no') e.franja = false;
     else if (k === 'color' && v === 'volumen') e.color = v;
     else if (k === 'ref' && (v === 'visible' || v === 'sesion')) e.ref = v;
     else if (k === 'numeros' && v === 'no') e.numeros = false;
@@ -128,6 +133,8 @@ function escribeHash(e) {
   if (e.cinta) h += '/cinta=' + e.cinta;
   if (e.celda && e.celda !== 'bidask') h += '/celda=' + e.celda;
   if (e.color === 'volumen') h += '/color=volumen';
+  if (e.fondo === 'relleno') h += '/fondo=relleno';
+  if (e.franja === false) h += '/franja=no';
   if (e.ref && e.ref !== 'vela') h += '/ref=' + e.ref;
   if (e.numeros === false) h += '/numeros=no';
   if (e.filas && e.filas.join(',') !== FILAS_RESUMEN.join(',')) h += '/filas=' + (e.filas.join(',') || 'ninguna');
@@ -361,9 +368,34 @@ function leeIndicadores(v) {
 /* ================================================================= OF-6a · EL FOOTPRINT PROFESIONAL (campana 148)
  * Lo que la pantalla escribe y como lo colorea, segun la especificacion de entregas/20261018-2130-INVESTIGACION-
  * plataformas.md (los E-xx y F-xx citados), sin cambiar nada de lo que se sirve. */
-const CELDAS = ['bidask', 'delta', 'volumen', 'trades', 'perfil']; // F-01: los modos de la celda
-const FILAS_RESUMEN = ['vol', 'delta', 'deltap', 'cvd', 'ops']; // F-10 (delta min/max no salen de lo servido)
+// F-01: las CIFRAS de la celda; remate 3: `des`, solo la del lado fuerte de cada desequilibrio (el perfil de antes es
+// ahora el fondo por omision, `fondo`)
+const CELDAS = ['bidask', 'delta', 'volumen', 'trades', 'des'];
+// F-10 (delta min/max no salen de lo servido); remate 3: compra y venta de cada vela, servidas
+const FILAS_RESUMEN = ['vol', 'compra', 'venta', 'delta', 'deltap', 'cvd', 'ops'];
 const FILA_MIN = 4;
+
+/* REMATE 3 (148), decision 8: el paso auto de 4h y 1d. De la escalera de F-03 (base x {1,2,5} x 10^e), el MAS FINO
+   con el que la ultima vela con niveles entra en el 70 % del alto con filas de filaMin px y sin que la ventana pase
+   TOPE_CELDAS (app/orderflow_lectura.py:21), contando por vela su rango / paso + 1 como cota. `rangos`: [lo, hi] de
+   cada vela con niveles, en precio, donde hi es su nivel mas alto al paso servido `pasoServido`. */
+const TOPE_CELDAS = 50000;
+function pasoFino(rangos, base, pasoServido, alto, filaMin) {
+  if (!rangos.length || !(alto > 0) || !(base > 0)) return null;
+  const niveles = (r, p) => Math.floor((r[1] + pasoServido) / p - 1e-9) - Math.floor(r[0] / p + 1e-9) + 1;
+  const ultima = rangos[rangos.length - 1];
+  for (let e = 0; e < 6; e++) {
+    for (const k of [1, 2, 5]) {
+      const p = Number((base * k * Math.pow(10, e)).toPrecision(12));
+      const n = niveles(ultima, p);
+      if (n * filaMin > 0.7 * alto) continue;
+      const celdas = rangos.reduce((s, r) => s + niveles(r, p), 0);
+      if (celdas > TOPE_CELDAS) continue;
+      return { paso: p, niveles: n, celdas, fila: Math.max(filaMin, Math.floor((0.7 * alto) / n)) };
+    }
+  }
+  return null;
+}
 const FILA_MAX = 60;
 const PASOS_COLOR = 20; // F-04: la intensidad en 20 pasos discretos
 const CORTE_COLOR = 0.98; // F-04: el corte superior, p98 de la referencia
@@ -479,9 +511,9 @@ function deEntero(n, e) {
 /* F-10: las filas de resumen de una vela, en texto: lo servido tal cual (volumen, delta, operaciones), el delta % y
  * el CVD de sesion; null = no hay dato (una vela HUECO no tiene ninguna). */
 function resumenVela(v, cvd) {
-  if (v.estado === 'hueco') return { vol: null, delta: null, deltap: null, cvd: null, ops: null };
+  if (v.estado === 'hueco') return { vol: null, compra: null, venta: null, delta: null, deltap: null, cvd: null, ops: null };
   const tot = Number(v.total);
-  return { vol: v.total, delta: v.delta, deltap: tot ? String((Number(v.delta) / tot) * 100) : null,
+  return { vol: v.total, compra: v.compra, venta: v.venta, delta: v.delta, deltap: tot ? String((Number(v.delta) / tot) * 100) : null,
            cvd: cvd ? cvd.valor : null, ops: String(v.operaciones) };
 }
 
@@ -492,7 +524,7 @@ if (typeof module !== 'undefined' && module.exports) {
   };
   Object.assign(module.exports, { SESIONES, CAPAS, SESIONES_MAXIMO, COMPUESTO_DEFECTO, TPO_SESIONES, leeSesion,
                                   inicioSesion, ventanaSesiones, ventanaCapas, estadoRango, estadoSesion, marcaCapa });
-  Object.assign(module.exports, { INDICADORES, INDICADORES_DEFECTO, leeIndicadores, decimales, entero });
+  Object.assign(module.exports, { INDICADORES, INDICADORES_DEFECTO, leeIndicadores, decimales, entero, pasoFino, TOPE_CELDAS });
   Object.assign(module.exports, { CELDAS, FILAS_RESUMEN, PASOS_COLOR, DECIMALES, cifraE04, decimalesDe, pocsDe,
                                   deEntero, referencia, pasoColor, sesionDe, cvdSesion, resumenVela });
 }

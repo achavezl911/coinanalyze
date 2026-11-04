@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `orderflow_indicadores` · `app/api.py:3873` (cuerpo hasta la 3883) · decorador en la linea 3872.
+Handler `orderflow_indicadores` · `app/api.py:3881` (cuerpo hasta la 3891) · decorador en la linea 3880.
 
 ## Parametros de entrada
 
@@ -67,7 +67,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:940`, `harness/checks/K112-banco.py:133`, `harness/checks/K112-control.bash:166`, `harness/checks/K112-control.bash:205` | — |
+| **checks** | `harness/checks/K108-orderflow.py:940`, `harness/checks/K112-banco.py:133`, `harness/checks/K112-control.bash:176`, `harness/checks/K112-control.bash:249` | — |
 
 **No la llama el panel**, pero si 4 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

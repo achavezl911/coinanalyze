@@ -452,13 +452,32 @@ function pintaLiq(ctx, caja, g, xT, d) {
 /* ------------------------------------------------------------- las grandes sobre el footprint */
 /* Un circulo por operacion grande, en SU vela (a su hora dentro de la vela) y a su precio. Llamado desde
  * flujo-dibujo.js con el contexto del footprint, ya recortado a su ancho. */
+/* REMATE 4 (148): donde caeran las grandes, por vela ({ i: [[y, r]] }), con la geometria de pintaGrandes: el
+ * footprint solo le quita el carril a la cifra de venta de la fila que una grande puede tapar. */
+function grandesPorVela(g, y, m, i0, i1) {
+  const d = IND.grandes;
+  const out = {};
+  if (!d || !(VISTA.ind || []).includes('grandes') || i1 < i0) return out;
+  const mMs = FLUJO_MARCOS[m.marco] * 60000;
+  const t0 = Date.parse(m.velas[0].ts);
+  const usdMax = Math.max(0, ...d.operaciones.map((o) => Number(o.usd) || 0)) || 1;
+  d.operaciones.forEach((o) => {
+    const i = Math.floor((Date.parse(o.ts) - t0) / mMs);
+    if (i < i0 || i > i1) return;
+    (out[i] = out[i] || []).push([y(Number(o.precio)), 2 + 4 * Math.sqrt(Math.min(1, Math.max(0, Number(o.usd) / usdMax)))]);
+  });
+  return out;
+}
+
 function pintaGrandes(ctx, g, y, m, i0, i1) {
   const d = IND.grandes;
   if (!d || !(VISTA.ind || []).includes('grandes') || i1 < i0) return null;
   const mMs = FLUJO_MARCOS[m.marco] * 60000;
   const t0 = Date.parse(m.velas[0].ts);
   const out = [];
-  const umbral = Number(d.umbral_usd_vigente) || 1;
+  // REMATE 3 (148): radio de 2 a 6 px por la raiz del USD sobre la MAYOR servida, en un carril de 8 px dentro del borde
+  // izquierdo de su vela (LZ.CARRIL deja ese carril sin cifras): ninguna grande tapa una cifra
+  const usdMax = Math.max(0, ...d.operaciones.map((o) => Number(o.usd) || 0)) || 1;
   ctx.save();
   ctx.beginPath();
   ctx.rect(0, g.arriba, g.ancho, g.abajo - g.arriba);
@@ -469,9 +488,9 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
     if (i < i0 || i > i1) return;
     const w = Math.max(1, Math.floor(g.bs * 0.86));
     const x0 = Math.round(g.x(i) - w / 2);
-    const x = x0 + (w * (t - (t0 + i * mMs))) / mMs;
+    const x = x0 + 4;
     const yy = y(Number(o.precio));
-    const r = Math.min(14, 3 + 3 * Math.sqrt(Number(o.usd) / umbral));
+    const r = 2 + 4 * Math.sqrt(Math.min(1, Math.max(0, Number(o.usd) / usdMax)));
     ctx.beginPath();
     ctx.arc(x, yy, r, 0, 2 * Math.PI);
     ctx.fillStyle = rgba(o.agresor === 'compra' ? COLOR.compra : COLOR.venta, 0.35); // E-02 (OF-6a): los tokens

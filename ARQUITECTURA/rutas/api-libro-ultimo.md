@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro_ultimo` · `app/api.py:3975` (cuerpo hasta la 3988) · decorador en la linea 3974.
+Handler `libro_ultimo` · `app/api.py:3983` (cuerpo hasta la 3996) · decorador en la linea 3982.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `libro_ultimo` · `app/api.py:3975` (cuerpo hasta la 3988) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3988 |
+| `as_of` | literal en app/api.py:3996 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 422 | — | `app/api.py:2596` | una funcion de su cierre |
-| 422 | — | `app/api.py:3987` | el propio handler |
+| 422 | — | `app/api.py:3995` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
