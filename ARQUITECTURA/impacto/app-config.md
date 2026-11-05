@@ -8,11 +8,11 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`get_settings`](#get-settings) | 302 | 3 | **0** | 58 ↑ | **3** |
+| [`get_settings`](#get-settings) | 305 | 3 | **0** | 58 ↑ | **3** |
 
 ## get_settings
 
-`app/config.py:302` · clave completa `app.config.get_settings`
+`app/config.py:305` · clave completa `app.config.get_settings`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 59** (mas ancha)
 
@@ -50,9 +50,11 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `oi_bybit` — la escribe `app.daily_agg.apply_retention`
 - `open_interest` — la escribe `app.daily_agg.apply_retention`
 - `open_interest_daily` — la escribe `app.daily_agg.rollup_open_interest_daily`
+- `orderflow_celda_hora` — la escribe `app.orderflow.suma_horas`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`, `app.orderflow.suma_horas`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -180,5 +182,5 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 17 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 18 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

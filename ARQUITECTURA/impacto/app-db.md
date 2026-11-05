@@ -85,9 +85,11 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderbook_depth` — la escribe `app.scalp_collector._write_ladders`
 - `orderbook_snapshot` — la escribe `app.scalp_collector._write_combined_books`, `app.scalp_collector.flush_books`
 - `orderflow_celda` — la escribe `app.orderflow.escribe_minutos`
+- `orderflow_celda_hora` — la escribe `app.orderflow.suma_horas`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`, `app.orderflow.suma_horas`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`, `app.db.heartbeat_shard`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
@@ -241,7 +243,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 30 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 32 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## fenced_transaction
 
@@ -295,9 +297,11 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderbook_depth` — la escribe `app.scalp_collector._write_ladders`
 - `orderbook_snapshot` — la escribe `app.scalp_collector._write_combined_books`, `app.scalp_collector.flush_books`
 - `orderflow_celda` — la escribe `app.orderflow.escribe_minutos`
+- `orderflow_celda_hora` — la escribe `app.orderflow.suma_horas`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`, `app.orderflow.suma_horas`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`, `app.db.heartbeat_shard`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
@@ -452,7 +456,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 50 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 52 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## heartbeat
 
@@ -674,6 +678,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_shard`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -981,6 +986,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -1071,6 +1077,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -1256,6 +1263,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -1346,6 +1354,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -1440,6 +1449,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -1612,6 +1622,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat_component`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 - `spot_trades_realtime` — la escribe `app.ws_collector.flush_realtime`

@@ -8,12 +8,12 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 32 | 0 | **0** | 56 ↑ | **0** |
-| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 27 | 0 | **0** | 22 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 34 | 0 | **0** | 56 ↑ | **0** |
+| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 29 | 0 | **0** | 22 ↑ | **0** |
 
 ## apply_temporal_retention
 
-`app/partitioning.py:32` · clave completa `app.partitioning.apply_temporal_retention`
+`app/partitioning.py:34` · clave completa `app.partitioning.apply_temporal_retention`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 56** (mas ancha)
 
@@ -50,9 +50,11 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `oi_bybit` — la escribe `app.daily_agg.apply_retention`
 - `open_interest` — la escribe `app.daily_agg.apply_retention`
 - `open_interest_daily` — la escribe `app.daily_agg.rollup_open_interest_daily`
+- `orderflow_celda_hora` — la escribe `app.orderflow.suma_horas`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`, `app.orderflow.suma_horas`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
@@ -181,7 +183,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## ensure_temporal_partitions
 
-`app/partitioning.py:27` · clave completa `app.partitioning.ensure_temporal_partitions`
+`app/partitioning.py:29` · clave completa `app.partitioning.ensure_temporal_partitions`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
 
@@ -211,6 +213,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `scalp_signal_snapshot` — la escribe `app.scalp_collector.persist_scalp_signals`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`

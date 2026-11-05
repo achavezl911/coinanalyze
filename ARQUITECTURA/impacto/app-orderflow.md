@@ -8,15 +8,15 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_ts`](#-ts) | 427 | 0 | **0** | 24 ↑ | **0** |
-| [`declara_hueco`](#declara-hueco) | 431 | 0 | **24** | 24 | **24** |
-| [`declara_parada_anterior`](#declara-parada-anterior) | 552 | 0 | **0** | 24 ↑ | **0** |
-| [`escribe_minutos`](#escribe-minutos) | 439 | 0 | **0** | 24 ↑ | **0** |
-| [`nivel_de`](#nivel-de) | 270 | 1 | **0** | 0 | **1** |
+| [`_ts`](#-ts) | 467 | 0 | **0** | 24 ↑ | **0** |
+| [`declara_hueco`](#declara-hueco) | 471 | 0 | **24** | 24 | **24** |
+| [`declara_parada_anterior`](#declara-parada-anterior) | 596 | 0 | **0** | 24 ↑ | **0** |
+| [`escribe_minutos`](#escribe-minutos) | 479 | 0 | **0** | 24 ↑ | **0** |
+| [`nivel_de`](#nivel-de) | 310 | 1 | **0** | 0 | **1** |
 
 ## _ts
 
-`app/orderflow.py:427` · clave completa `app.orderflow._ts`
+`app/orderflow.py:467` · clave completa `app.orderflow._ts`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 24** (mas ancha)
 
@@ -44,6 +44,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -105,7 +106,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## declara_hueco
 
-`app/orderflow.py:431` · clave completa `app.orderflow.declara_hueco`
+`app/orderflow.py:471` · clave completa `app.orderflow.declara_hueco`
 
 **Radio exacto: 24 rutas** de 93 · **cota superior: 24** (igual al exacto)
 
@@ -155,6 +156,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -216,7 +218,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## declara_parada_anterior
 
-`app/orderflow.py:552` · clave completa `app.orderflow.declara_parada_anterior`
+`app/orderflow.py:596` · clave completa `app.orderflow.declara_parada_anterior`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 24** (mas ancha)
 
@@ -246,6 +248,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -307,7 +310,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## escribe_minutos
 
-`app/orderflow.py:439` · clave completa `app.orderflow.escribe_minutos`
+`app/orderflow.py:479` · clave completa `app.orderflow.escribe_minutos`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 24** (mas ancha)
 
@@ -338,6 +341,7 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -399,7 +403,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## nivel_de
 
-`app/orderflow.py:270` · clave completa `app.orderflow.nivel_de`
+`app/orderflow.py:310` · clave completa `app.orderflow.nivel_de`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 

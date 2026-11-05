@@ -798,6 +798,12 @@ async def test_las_rutas_de_of5a_dicen_422_y_no_recortan_en_silencio(conn, monke
 class _ConexionCancelada:
     """Una conexion cuya consulta cancela el statement_timeout de app/db.py, como la de ETH 1d en 140."""
 
+    def is_in_transaction(self) -> bool:  # OF-1b: la lectura abre su foto; esta ya va dentro de una
+        return True
+
+    async def execute(self, *_a, **_k):
+        return "SET"
+
     async def fetch(self, *_a, **_k):
         raise asyncpg.QueryCanceledError("canceling statement due to statement timeout")
 
@@ -815,3 +821,111 @@ async def test_footprint_con_tiempo_agotado_dice_503_con_su_porque(monkeypatch):
                                       symbol="BTC", marco="1d", desde=desde, hasta=hasta, paso="auto")
     assert exc.value.status_code == 503
     assert exc.value.detail == "la consulta paso de 20 s: pide menos velas o un marco menor"
+
+
+# --------------------------------------------------------------------------- OF-1b: las horas sumadas
+
+
+def _hora(momento: datetime) -> datetime:
+    return momento.replace(minute=0, second=0, microsecond=0)
+
+
+H3 = _hora(datetime.now(UTC))  # la hora en curso: nunca se suma
+H0 = H3 - timedelta(hours=3)
+HORA_1 = timedelta(hours=1)
+VENUES_HORA = ("binance_usdm", "bybit_linear", "okx_swap")
+
+
+async def _cuatro_horas(conn) -> None:
+    """Cuatro horas de BTC (H0..H3) en los minutos 0, 17 y 59, dos niveles por minuto, escalas distintas, y en
+    cada hora un venue que no opero."""
+    filas = []
+    for k in range(4):
+        for minuto in (0, 17, 59):
+            ts = H0 + timedelta(hours=k, minutes=minuto)
+            for j, venue in enumerate(VENUES_HORA):
+                if (k + j) % 4 == 3:
+                    continue
+                for nivel in (D(81500 + 7 * k + 3 * j + minuto % 5), D(81540 + k)):
+                    cb, vb = D(f"0.{k}{j}{minuto:02d}1"), D(f"{j}.{k}5")
+                    filas.append((ts, venue, nivel, cb, vb, cb * nivel, vb * nivel, 1 + k, j))
+    await _celdas(conn, filas)
+
+
+VISTAS = [(m, p, u) for m in ("1h", "4h", "1d") for p in ("1", "5", "auto") for u in ("base", "usd")]
+
+
+async def _vistas(conn) -> dict:
+    out = {}
+    for marco, paso, unidad in VISTAS:
+        largo = lec.MARCOS[marco] * 60
+        a = datetime.fromtimestamp(int(H0.timestamp()) // largo * largo, UTC)
+        b = datetime.fromtimestamp(-(-int((H3 + timedelta(hours=1)).timestamp()) // largo) * largo, UTC)
+        out[marco, paso, unidad] = await lec.footprint(conn, symbol="BTC", desde=lec.iso(a), hasta=lec.iso(b),
+                                                       marco=marco, paso=paso, venues=None, unidad=unidad)
+    return out
+
+
+async def _de_minutos(conn) -> dict:
+    """Las mismas vistas leidas todas de minutos: sin ninguna marca, dentro de una transaccion que se deshace."""
+    tr = conn.transaction()
+    await tr.start()
+    try:
+        await conn.execute("DELETE FROM orderflow_hora_hecha")
+        return await _vistas(conn)
+    finally:
+        await tr.rollback()
+
+
+async def test_las_horas_sumadas_dan_el_mismo_footprint_que_los_minutos(conn):
+    pool = _Pool(conn)
+    await _cuatro_horas(conn)
+    antes = await _vistas(conn)  # sin marcas: todo de minutos
+    assert sum(len(v["niveles"]) for v in antes["1h", "1", "base"]["velas"]) > 20
+    hechas = await of.suma_horas(pool, None, 9, ahora=H3 + timedelta(minutes=30))
+    assert sorted((s, h) for s, h, _ in hechas) == sorted(
+        (s, H0 + timedelta(hours=k)) for s in ("BTC", "ETH", "SOL") for k in range(3))
+    assert await conn.fetchval("SELECT count(*) FROM orderflow_hora_hecha") == 3 * 3 * len(of.VENUES_CELDA)
+    assert await conn.fetchval("SELECT count(*) FROM orderflow_hora_hecha WHERE ts = $1", H3) == 0
+    marca = await conn.fetchrow(
+        "SELECT lo, hi FROM orderflow_hora_hecha WHERE symbol='BTC' AND venue='binance_usdm' AND ts=$1", H0)
+    assert (marca["lo"], marca["hi"]) == (D(81500), D(81540))
+    assert await _vistas(conn) == antes
+    # la tabla horaria SE LEE: una suma vieja con su marca cambia lo servido
+    tr = conn.transaction()
+    await tr.start()
+    await conn.execute("UPDATE orderflow_celda_hora SET compra_base = compra_base + 1 WHERE ts = $1", H0 + HORA_1)
+    assert (await _vistas(conn))["1h", "1", "base"] != antes["1h", "1", "base"]
+    await tr.rollback()
+    # un venue sin marca en una hora marcada se lee de minutos, y los demas de la hora
+    await conn.execute("DELETE FROM orderflow_hora_hecha WHERE symbol='BTC' AND venue='okx_swap' AND ts=$1",
+                       H0 + HORA_1)
+    assert await _vistas(conn) == antes
+    # idempotente: se vuelve a sumar solo la que perdio la marca, y la tabla queda igual
+    foto = await conn.fetch("SELECT * FROM orderflow_celda_hora ORDER BY symbol, ts, venue, nivel")
+    otra = await of.suma_horas(pool, None, 1, ahora=H3 + timedelta(minutes=30))
+    assert [(s, h) for s, h, _ in otra] == [("BTC", H0 + HORA_1)]
+    assert await conn.fetch("SELECT * FROM orderflow_celda_hora ORDER BY symbol, ts, venue, nivel") == foto
+    assert await _vistas(conn) == antes
+
+
+async def test_reescribir_un_minuto_le_quita_la_marca_a_su_hora(conn):
+    pool = _Pool(conn)
+    await _cuatro_horas(conn)
+    await of.suma_horas(pool, None, 9, ahora=H3 + timedelta(minutes=30))
+    antes = await _vistas(conn)
+    r = int((H0 + HORA_1).timestamp()) + 17 * 60  # un minuto que ya tiene celdas de binance_usdm
+    alm = _alm(inicio=r - 300)
+    _cubre_todo(alm, r - 300)
+    alm.proximo_primera = alm.proximo_final = r
+    alm.anade("binance_usdm", [_op(r * 1000 + 1_000, "81563.28", "0.5", True, "x")], ahora=r + 50.0)
+    await of.vuelca(pool, None, alm, r + 60 + of.REESCRIBE_S + 1, inicio=r - 300)
+    marcas = {f["venue"] for f in await conn.fetch(
+        "SELECT venue FROM orderflow_hora_hecha WHERE symbol='BTC' AND ts=$1", H0 + HORA_1)}
+    assert marcas == set(of.VENUES_CELDA) - {"binance_usdm"}
+    despues = await _vistas(conn)
+    assert despues == await _de_minutos(conn)
+    assert despues["1h", "1", "base"] != antes["1h", "1", "base"]
+    otra = await of.suma_horas(pool, None, 1, ahora=H3 + timedelta(minutes=30))
+    assert [(s, h) for s, h, _ in otra] == [("BTC", H0 + HORA_1)]
+    assert await _vistas(conn) == despues

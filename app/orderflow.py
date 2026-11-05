@@ -37,7 +37,7 @@ import signal
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_FLOOR, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
@@ -72,6 +72,46 @@ CINTA_TOPE = 300_000  # filas de cinta retenidas en memoria si la base no acepta
 ZERO = Decimal(0)
 BASE_INVERSO = Decimal("1e-12")  # base derivada de un inverso (amount en USD / precio)
 EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
+
+# OF-1b (campana 149) · las celdas sumadas por hora (orderflow_celda_hora) y su marca (orderflow_hora_hecha).
+VENUES_CELDA = ("binance_spot", "binance_usdm", "bybit_spot", "bybit_linear", "okx_spot", "okx_swap",
+                "coinbase_spot", "bitget_usdt", "deribit_perp")  # los nueve del CHECK de orderflow_celda
+HORA_MARGEN = timedelta(minutes=10)  # P3: la ultima escritura de un minuto llega <= 234 s despues de su inicio
+# (activo, hora) por vuelta horaria. P1 (muestra 143): 0.307 s el p99 de una hora de BTC y 0.495 s el max; 720
+# (10 dias de los 3 activos) son <= 360 s de los 3540 de la vuelta. El relleno de 23 dias (1656) entra en 3 vueltas.
+HORAS_POR_VUELTA = 720
+HORA_CERROJO = "SELECT pg_advisory_xact_lock(hashtextextended('orderflow_celda_hora', 0))"
+HORA_ORIGEN = "timestamptz '2000-01-01 00:00:00+00'"
+DESMARCA_SQL = f"""
+DELETE FROM orderflow_hora_hecha d USING unnest($1::text[], $2::timestamptz[], $3::text[]) AS b(symbol, ts, venue)
+ WHERE d.symbol = b.symbol AND d.venue = b.venue AND d.ts = date_bin(interval '1 hour', b.ts, {HORA_ORIGEN})"""
+# Las horas que tocan: cerradas hace HORA_MARGEN, enteras dentro de la retencion de los minutos (la hora del borde ya
+# perdio minutos) y sin la marca de los nueve venues. La mas reciente primero: el relleno empieza por lo que se mira.
+PENDIENTES_SQL = f"""
+WITH t AS (SELECT coalesce($1::timestamptz, now()) AS ahora)
+SELECT h.ts, s.symbol
+  FROM t, unnest($2::text[]) AS s(symbol),
+       generate_series(date_bin(interval '1 hour', t.ahora - make_interval(days => $3), {HORA_ORIGEN})
+                         + interval '1 hour',
+                       date_bin(interval '1 hour', t.ahora - $4::interval, {HORA_ORIGEN}) - interval '1 hour',
+                       interval '1 hour') AS h(ts)
+ WHERE (SELECT count(*) FROM orderflow_hora_hecha d WHERE d.symbol = s.symbol AND d.ts = h.ts) < $5
+ ORDER BY h.ts DESC, s.symbol
+ LIMIT $6"""
+SUMA_HORA_SQL = """
+INSERT INTO orderflow_celda_hora(ts,venue,symbol,nivel,compra_base,venta_base,compra_usd,venta_usd,compras,ventas)
+SELECT $2::timestamptz, venue, symbol, nivel, sum(compra_base), sum(venta_base), sum(compra_usd), sum(venta_usd),
+       sum(compras), sum(ventas)
+  FROM orderflow_celda
+ WHERE symbol = $1 AND ts >= $2::timestamptz AND ts < $2::timestamptz + interval '1 hour'
+ GROUP BY venue, symbol, nivel"""
+MARCA_SQL = """
+INSERT INTO orderflow_hora_hecha(ts, venue, symbol, lo, hi)
+SELECT $2, v.venue, $1, r.lo, r.hi
+  FROM unnest($3::text[]) AS v(venue)
+  LEFT JOIN (SELECT venue, min(nivel) AS lo, max(nivel) AS hi FROM orderflow_celda_hora
+              WHERE symbol = $1 AND ts = $2 GROUP BY venue) r USING (venue)
+ON CONFLICT (symbol, ts, venue) DO UPDATE SET hecha = now(), lo = EXCLUDED.lo, hi = EXCLUDED.hi"""
 
 
 # --------------------------------------------------------------------------------------------- mercados
@@ -457,6 +497,10 @@ async def escribe_minutos(conn: asyncpg.Connection, alm: Almacen, minutos: list[
                 if final and seg < 60:
                     huecos.append((venue, activo, minuto, seg))
     if borrar:
+        # OF-1b: reescribir un minuto deja vieja la suma de su hora; se le quita la marca en esta misma transaccion,
+        # y la suma no se cruza con ella (HORA_CERROJO): sin marca, el footprint lee esa hora de minutos.
+        await conn.execute(HORA_CERROJO)
+        await conn.execute(DESMARCA_SQL, *map(list, zip(*borrar, strict=True)))
         await conn.executemany(
             "DELETE FROM orderflow_celda WHERE symbol=$1 AND ts=$2 AND venue=$3", borrar)
     if celdas:
@@ -705,11 +749,61 @@ async def poda(pool: asyncpg.Pool, own: ServiceOwnership) -> None:
                     await conn.execute(
                         "DELETE FROM orderflow_cobertura WHERE segundos = 60 AND ts < now() - make_interval(days => $1)",
                         s.ORDERFLOW_CELL_RETENTION_DAYS)
+                    await apply_temporal_retention(conn, "orderflow_celda_hora",
+                                                   s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS * 24)
+                    await conn.execute("DELETE FROM orderflow_hora_hecha WHERE ts < now() - make_interval(days => $1)",
+                                       s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS)
         except ServiceOwnershipLost:
             raise
         except Exception:
             LOGGER.exception("orderflow_retention_failed")
+        try:
+            hechas = await suma_horas(pool, own, HORAS_POR_VUELTA)
+            if hechas:
+                LOGGER.info("orderflow_horas_sumadas n=%d max_s=%.2f", len(hechas), max(h[2] for h in hechas))
+        except ServiceOwnershipLost:
+            raise
+        except Exception:
+            LOGGER.exception("orderflow_horas_failed")
         await asyncio.sleep(3540)
+
+
+async def _particion_hora(conn: asyncpg.Connection, own: ServiceOwnership | None, dia: date) -> None:
+    """La particion diaria de orderflow_celda_hora para un dia PASADO (el relleno). ensure_temporal_partitions
+    crearia ese dia en todas las tablas gestionadas; aqui solo en esta, bajo su mismo cerrojo y con su mismo nombre."""
+    nombre = f"orderflow_celda_hora_p{dia:%Y%m%d}"
+    if await conn.fetchval("SELECT to_regclass($1)", nombre) is not None:
+        return
+    async with fenced_transaction(conn, own):
+        await conn.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(current_schema() || ':ensure_temporal_partitions', 0))")
+        await conn.execute(
+            f"CREATE TABLE IF NOT EXISTS {nombre} PARTITION OF orderflow_celda_hora "
+            f"FOR VALUES FROM ('{dia.isoformat()} 00:00:00+00') TO ('{(dia + timedelta(days=1)).isoformat()} 00:00:00+00')")
+
+
+async def suma_horas(pool: asyncpg.Pool, own: ServiceOwnership | None, tope: int,
+                     ahora: datetime | None = None) -> list[tuple[str, datetime, float]]:
+    """Suma en orderflow_celda_hora hasta `tope` horas (activo, hora) sin marca, cada una en su transaccion:
+    DELETE + INSERT...SELECT desde los minutos y la marca de los nueve venues (idempotente). Devuelve
+    (activo, hora, segundos) de cada una. `ahora` es para los tests y el relleno medido."""
+    s = get_settings()
+    dias = min(s.ORDERFLOW_CELL_RETENTION_DAYS, s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS)
+    hechas: list[tuple[str, datetime, float]] = []
+    async with pool.acquire() as conn:
+        pendientes = await conn.fetch(PENDIENTES_SQL, ahora, list(ACTIVOS), dias, HORA_MARGEN,
+                                      len(VENUES_CELDA), tope)
+        for fila in pendientes:
+            activo, hora = fila["symbol"], fila["ts"]
+            await _particion_hora(conn, own, hora.astimezone(UTC).date())
+            t = time.perf_counter()
+            async with fenced_transaction(conn, own):
+                await conn.execute(HORA_CERROJO)
+                await conn.execute("DELETE FROM orderflow_celda_hora WHERE symbol=$1 AND ts=$2", activo, hora)
+                await conn.execute(SUMA_HORA_SQL, activo, hora)
+                await conn.execute(MARCA_SQL, activo, hora, list(VENUES_CELDA))
+            hechas.append((activo, hora, time.perf_counter() - t))
+    return hechas
 
 
 async def run() -> None:
