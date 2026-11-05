@@ -7,6 +7,7 @@ Los topes no recortan en silencio: si una peticion los pasa, 422 diciendo cual.
 
 from __future__ import annotations
 
+import contextlib
 import json
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, InvalidOperation, localcontext
@@ -180,6 +181,87 @@ SELECT {vela} AS vela, min(nivel) AS lo, max(nivel) AS hi
  WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4
  GROUP BY 1
 """
+# OF-1b (campana 149): con marco de 1h o mas, cada (hora, venue) con marca en orderflow_hora_hecha se lee de
+# orderflow_celda_hora y lo demas de los minutos. La suma de sumas numeric es exacta: el resultado es el mismo,
+# celda a celda. Sin marca, minutos: la marca es la unica fuente de verdad (ni now() ni la existencia de filas).
+# Las celdas se agregan en dos tramos (horas y minutos, cada uno sobre su tabla, lo que deja al planificador
+# repartirlo entre procesos) y se suman al final. El paso auto sale del lo/hi de la marca: no relee celdas.
+HORA = timedelta(hours=1)
+TRABAJO_HORAS = "32MB"  # P2: con los 4 MB de serie el agregado de 1d ordena en disco
+HECHAS_SQL = """
+SELECT ts, venue FROM orderflow_hora_hecha
+ WHERE symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4
+"""
+FILTRO = "symbol = $1 AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4"
+CELDAS_TRAMO_SQL = """
+SELECT {vela} AS vela, floor(nivel / $5) * $5 AS n,
+       sum(compra_base) AS cb, sum(venta_base) AS vb, sum(compra_usd) AS cu, sum(venta_usd) AS vu,
+       sum(compras) AS nc, sum(ventas) AS nv
+  FROM {tabla}
+ WHERE {filtro} AND ({tramos})
+ GROUP BY 1, 2"""
+CELDAS_HORAS_SQL = """
+SELECT vela, n, sum(cb) AS cb, sum(vb) AS vb, sum(cu) AS cu, sum(vu) AS vu,
+       sum(nc)::bigint AS nc, sum(nv)::bigint AS nv
+  FROM ({horas}
+ UNION ALL {minutos}) AS x
+ GROUP BY 1, 2 ORDER BY 1, 2
+ LIMIT {tope}
+"""
+RANGOS_HORAS_SQL = """
+SELECT vela, min(lo) AS lo, max(hi) AS hi
+  FROM (SELECT {vela} AS vela, lo, hi FROM orderflow_hora_hecha WHERE {filtro} AND lo IS NOT NULL AND ({horas})
+        UNION ALL
+        SELECT {vela}, min(nivel), max(nivel) FROM orderflow_celda WHERE {filtro} AND ({minutos}) GROUP BY 1) AS x
+ GROUP BY 1
+"""
+
+
+def tramos(hechas: set[tuple[datetime, str]], vs: list[str], a: datetime, b: datetime
+           ) -> tuple[list[list[Any]], list[list[Any]]]:
+    """Las horas de [a, b) (alineados a la hora) partidas por fuente: [desde, hasta, venues] de la tabla horaria y
+    de los minutos. Horas seguidas con el mismo conjunto de venues van en un solo tramo."""
+    horaria: list[list[Any]] = []
+    minutos: list[list[Any]] = []
+    h = a
+    while h < b:
+        con = tuple(v for v in vs if (h, v) in hechas)
+        sin = tuple(v for v in vs if (h, v) not in hechas)
+        for lista, grupo in ((horaria, con), (minutos, sin)):
+            if not grupo:
+                continue
+            if lista and lista[-1][1] == h and lista[-1][2] == grupo:
+                lista[-1][1] = h + HORA
+            else:
+                lista.append([h, h + HORA, grupo])
+        h += HORA
+    return horaria, minutos
+
+
+def condicion(lista: list[list[Any]], args: list[Any]) -> str:
+    """Los tramos como condicion SQL; sus parametros se anaden a `args` (que ya trae los fijos de la consulta).
+    Una (hora, venue) cae en los tramos de las horas o en los de los minutos, nunca en los dos."""
+    conds = []
+    for x, y, grupo in lista:
+        i = len(args) + 1
+        conds.append(f"(ts >= ${i} AND ts < ${i + 1} AND venue = ANY(${i + 2}::text[]))")
+        args += [x, y, list(grupo)]
+    return " OR ".join(conds) or "false"
+
+
+def consulta_horas(que: str, vela: str, horaria: list[list[Any]], minutos: list[list[Any]], args: list[Any],
+                   tope: int = 0) -> str:
+    """RANGOS ('rangos') o CELDAS ('celdas') para marco >= 1h; anade a `args` los parametros de los tramos."""
+    if que == "rangos":
+        return RANGOS_HORAS_SQL.format(vela=vela, filtro=FILTRO, horas=condicion(horaria, args),
+                                       minutos=condicion(minutos, args))
+    horas = CELDAS_TRAMO_SQL.format(vela=vela, tabla="orderflow_celda_hora", filtro=FILTRO,
+                                    tramos=condicion(horaria, args))
+    de_minutos = CELDAS_TRAMO_SQL.format(vela=vela, tabla="orderflow_celda", filtro=FILTRO,
+                                         tramos=condicion(minutos, args))
+    return CELDAS_HORAS_SQL.format(horas=horas, minutos=de_minutos, tope=tope)
+
+
 COBERTURA_SQL = """
 SELECT {vela} AS vela, count(*) AS filas, count(*) FILTER (WHERE segundos = 60) AS completos,
        coalesce(sum(segundos), 0)::bigint AS segundos, coalesce(bool_and(definitivo), false) AS definitiva
@@ -242,6 +324,14 @@ def _cabecera(que: str, activo: str, paso: Decimal, base: Decimal, venues: list[
     return cab
 
 
+def _instantanea(conn: Any) -> Any:
+    """Las marcas y las celdas, de la misma foto: REPEATABLE READ de solo lectura. Dentro de una transaccion ya
+    abierta (un test), manda esa."""
+    if conn.is_in_transaction():
+        return contextlib.nullcontext()
+    return conn.transaction(isolation="repeatable_read", readonly=True)
+
+
 async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | None, marco: str,
                     paso: str | None, venues: str | None, unidad: str | None) -> dict[str, Any]:
     activo = activo_de(symbol)
@@ -257,17 +347,31 @@ async def footprint(conn: Any, *, symbol: str, desde: str | None, hasta: str | N
     p, vs, u = paso_de(None if paso == "auto" else paso, base), venues_de(venues), unidad_de(unidad)
     vela = f"date_bin(interval '{minutos} minutes', ts, '{ORIGEN.isoformat()}'::timestamptz)"
     auto: dict[str, Any] | None = None
-    if paso == "auto":
-        rangos = [(f["lo"], f["hi"]) for f in await conn.fetch(RANGOS_SQL.format(vela=vela), activo, vs, a, b)]
-        p, mediana = paso_automatico(rangos, base)
-        auto = {"regla": REGLA_PASO, "objetivo_niveles": OBJETIVO_NIVELES, "velas_con_celdas": len(rangos),
-                "niveles_vela_mediana": mediana}
-    filas = await conn.fetch(CELDAS_SQL.format(vela=vela, tope=TOPE_CELDAS + 1), activo, vs, a, b, p)
-    if len(filas) > TOPE_CELDAS:
-        raise Peticion(f"mas de {TOPE_CELDAS} celdas: pide un paso mayor o un rango menor")
-    cob = {f["vela"]: f for f in await conn.fetch(COBERTURA_SQL.format(vela=vela), activo, vs, a, b)}
     ref = venue_referencia(vs)
-    oc = {f["k"]: f for f in await conn.fetch(VELA_PRECIO_SQL, activo, ref, a, n_velas, timedelta(minutes=minutos))}
+    horaria: list[list[Any]] = []
+    de_minutos: list[list[Any]] = []
+    async with _instantanea(conn):
+        horas = minutos >= 60
+        if horas:
+            await conn.execute(f"SET LOCAL work_mem = '{TRABAJO_HORAS}'")
+            hechas = {(f["ts"], f["venue"]) for f in await conn.fetch(HECHAS_SQL, activo, vs, a, b)}
+            horaria, de_minutos = tramos(hechas, vs, a, b)
+        if paso == "auto":
+            args: list[Any] = [activo, vs, a, b]
+            q = consulta_horas("rangos", vela, horaria, de_minutos, args) if horas else RANGOS_SQL.format(vela=vela)
+            rangos = [(f["lo"], f["hi"]) for f in await conn.fetch(q, *args)]
+            p, mediana = paso_automatico(rangos, base)
+            auto = {"regla": REGLA_PASO, "objetivo_niveles": OBJETIVO_NIVELES, "velas_con_celdas": len(rangos),
+                    "niveles_vela_mediana": mediana}
+        args = [activo, vs, a, b, p]
+        q = (consulta_horas("celdas", vela, horaria, de_minutos, args, TOPE_CELDAS + 1) if horas
+             else CELDAS_SQL.format(vela=vela, tope=TOPE_CELDAS + 1))
+        filas = await conn.fetch(q, *args)
+        if len(filas) > TOPE_CELDAS:
+            raise Peticion(f"mas de {TOPE_CELDAS} celdas: pide un paso mayor o un rango menor")
+        cob = {f["vela"]: f for f in await conn.fetch(COBERTURA_SQL.format(vela=vela), activo, vs, a, b)}
+        oc = {f["k"]: f for f in await conn.fetch(VELA_PRECIO_SQL, activo, ref, a, n_velas,
+                                                  timedelta(minutes=minutos))}
     por_vela: dict[datetime, list[Any]] = {}
     for f in filas:
         por_vela.setdefault(f["vela"], []).append(f)
