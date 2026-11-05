@@ -36,7 +36,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `orderflow_paso` — `sql/schema.sql:2936`, 2 columnas
+- `orderflow_paso` — `sql/schema.sql:2938`, 2 columnas
   - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
     O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
     o el SQL se construye en ejecucion y el analisis estatico no lo ve.
@@ -60,10 +60,10 @@ Llamadas directas del handler:
 - `app.libro_lectura.paso_de` — `app/libro_lectura.py:59`
 - `app.libro_lectura.reagrega` — `app/libro_lectura.py:71`
 - `app.libro_lectura.venues_de` — `app/libro_lectura.py:49`
-- `app.orderflow.nivel_de` — `app/orderflow.py:270`
-- `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:72`
-- `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:97`
-- `app.orderflow_lectura.texto` — `app/orderflow_lectura.py:50`
+- `app.orderflow.nivel_de` — `app/orderflow.py:310`
+- `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:73`
+- `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:98`
+- `app.orderflow_lectura.texto` — `app/orderflow_lectura.py:51`
 
 </details>
 

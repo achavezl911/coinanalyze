@@ -79,9 +79,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:872`, `harness/checks/K108-orderflow.py:874`, `harness/checks/K109-banco.py:73`, `harness/checks/K109-banco.py:80` _(+2)_ | `harness/checks/K109-banco.py:12`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:348` |
+| **checks** | `harness/checks/K108-orderflow.py:881`, `harness/checks/K108-orderflow.py:883`, `harness/checks/K108-orderflow.py:919`, `harness/checks/K108-orderflow.py:921` _(+5)_ | `harness/checks/K109-banco.py:12`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:348` |
 
-**No la llama el panel**, pero si 6 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 9 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

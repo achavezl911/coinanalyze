@@ -139,7 +139,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
 - `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
   - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1549`
   - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:813`

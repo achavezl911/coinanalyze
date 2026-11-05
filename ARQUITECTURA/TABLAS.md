@@ -67,11 +67,11 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 58 tablas del esquema |
+| | de 60 tablas del esquema |
 |---|---|
-| de SERIE | **35** |
+| de SERIE | **37** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **28** |
+| de serie que NO declaran ninguna | **30** |
 
 | tabla | columnas de cobertura |
 |---|---|
@@ -83,7 +83,7 @@ Definiciones, escritas antes del recuento:
 | `spot_trades_agg` | `covered_seconds`, `venue_count` |
 | `spot_trades_realtime` | `venue_count` |
 
-**Las 28 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 30 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
@@ -110,9 +110,11 @@ distinguir un periodo vacio de uno no medido:
 - `open_interest_daily`
 - `orderbook_depth`
 - `orderflow_celda`
+- `orderflow_celda_hora`
 - `orderflow_cinta`
 - `orderflow_cobertura`
 - `orderflow_grande`
+- `orderflow_hora_hecha`
 - `predicted_funding_rate`
 - `scalp_signal_snapshot`
 
@@ -254,7 +256,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2298`, 10 columnas.
+`sql/schema.sql:2300`, 10 columnas.
 
 La escriben:
 
@@ -299,7 +301,7 @@ La escriben:
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.libro.declara_hueco` — **UPDATE** en `app/libro.py:792`
-- `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:411`
+- `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:451`
 
 **Si cambia el contenido o el esquema de `data_gap`, estas 24 rutas lo notan:**
 
@@ -330,7 +332,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2710`, 8 columnas.
+`sql/schema.sql:2712`, 8 columnas.
 
 La escriben:
 
@@ -343,7 +345,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2673`, 26 columnas.
+`sql/schema.sql:2675`, 26 columnas.
 
 La escriben:
 
@@ -356,7 +358,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2663`, 6 columnas.
+`sql/schema.sql:2665`, 6 columnas.
 
 La escriben:
 
@@ -369,7 +371,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2851`, 12 columnas.
+`sql/schema.sql:2853`, 12 columnas.
 
 La escriben:
 
@@ -744,7 +746,7 @@ La escriben:
 
 ### orderflow_paso
 
-`sql/schema.sql:2936`, 2 columnas.
+`sql/schema.sql:2938`, 2 columnas.
 
 **PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena
 algo fuera del paquete analizado, o el SQL se arma en ejecucion.
@@ -855,7 +857,7 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2485`, 8 columnas.
+`sql/schema.sql:2487`, 8 columnas.
 
 La escriben:
 
@@ -948,10 +950,12 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
-- `orderflow_celda` — la escriben 2: `app/orderflow.py:461`, `app/orderflow.py:464`
-- `orderflow_cinta` — la escriben 1: `app/orderflow.py:502`
-- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:470`, `app/orderflow.py:520`, `app/orderflow.py:563`, `app/orderflow.py:706`
-- `orderflow_grande` — la escriben 2: `app/orderflow.py:508`, `app/orderflow.py:703`
+- `orderflow_celda` — la escriben 2: `app/orderflow.py:505`, `app/orderflow.py:508`
+- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:802`
+- `orderflow_cinta` — la escriben 1: `app/orderflow.py:546`
+- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:514`, `app/orderflow.py:564`, `app/orderflow.py:607`, `app/orderflow.py:750`
+- `orderflow_grande` — la escriben 2: `app/orderflow.py:552`, `app/orderflow.py:747`
+- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:754`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`

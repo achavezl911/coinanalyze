@@ -59,7 +59,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:411`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -87,7 +87,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (14)</summary>
 
-- `app.config.get_settings` — `app/config.py:302`
+- `app.config.get_settings` — `app/config.py:305`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
 - `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2889`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
