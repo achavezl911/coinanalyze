@@ -59,6 +59,8 @@ huella() {  # $1 = base   $2 = directorio de lo servido   [$3 = reloj]   [$4 = m
   h=$(psql -h "$H" -d "$1" -Atq -c "SET TIME ZONE 'UTC'" -c "SELECT md5(concat_ws('|',
       (SELECT md5(string_agg(concat_ws(',',ts,venue,symbol,nivel,compra_base,venta_base,compra_usd,venta_usd,compras,ventas), ';' ORDER BY symbol,ts,venue,nivel)) FROM orderflow_celda),
       (SELECT md5(string_agg(concat_ws(',',ts,venue,symbol,segundos,operaciones,tardias,fuera,definitivo), ';' ORDER BY symbol,ts,venue)) FROM orderflow_cobertura),
+      (SELECT md5(string_agg(concat_ws(',',ts,venue,symbol,nivel,compra_base,venta_base,compra_usd,venta_usd,compras,ventas), ';' ORDER BY symbol,ts,venue,nivel)) FROM orderflow_celda_hora),
+      (SELECT md5(string_agg(concat_ws(',',ts,venue,symbol,lo,hi), ';' ORDER BY symbol,ts,venue)) FROM orderflow_hora_hecha),
       (SELECT concat_ws(',', count(*), sum(usd), sum(base), min(ts), max(ts), sum(CASE WHEN compra THEN 1 ELSE 0 END)) FROM orderflow_cinta),
       (SELECT md5(string_agg(concat_ws(',',exchange,symbol,start_ts,end_ts,status), ';' ORDER BY exchange,symbol,start_ts)) FROM data_gap),
       (SELECT concat_ws(',', sum(buy_vol_usd), sum(sell_vol_usd)) FROM spot_trades_agg),
@@ -119,6 +121,9 @@ reproduce() {  # $1 = base   [$2 = planta]
 B0=$(copia limpia vacia) || exit 2
 reproduce "$B0" || { echo "K108-control: la reproduccion fallo: $(tail -2 "$T/rep.log")"; exit 2; }
 grep -q "app de $REPO/app/orderflow.py" "$T/rep.log" || { echo "K108-control: la reproduccion no uso el colector de $REPO: $(cat "$T/rep.log")"; exit 2; }
+# OF-1b (campana 150): el colector del arbol suma la hora de la grabacion como si ya hubiera cerrado (04:00-05:00 a las 05:30)
+K108_BASE="$(dsn "$B0")" "$PY" "$AQUI/K108-orderflow.py" suma 2026-10-17T05:30:00+00:00 > "$T/suma.log" 2>&1
+grep -q "^sumadas: BTC .*ETH .*SOL .*app de $REPO/app/orderflow.py" "$T/suma.log" || { echo "K108-control: la suma de horas fallo: $(tail -2 "$T/suma.log")"; exit 2; }
 sirve "$B0" "$T/s0" || { echo "K108-control: sirve fallo: $(tail -2 "$T/sirve.log")"; exit 2; }
 H_BUENA=$(huella "$B0" "$T/s0")
 rc=$(k108 "$B0" "$T/s0")
@@ -205,6 +210,30 @@ if sirve "$B0" "$T/s-seg" orden_por_segundo; then
   planta servido_orden_mal_sumada 1 '\(d\) [A-Z]+ .*ordenes: la orden .* sus operaciones suman' "$B0" "$T/s-seg" "$H_BUENA"
 else
   comprueba servido_orden_mal_sumada 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
+fi
+# OF-1b (campana 150): el footprint de 1 h, de las horas sumadas con marca y de los minutos sin ella
+b=$(copia hvieja limpia); en "$b" "UPDATE orderflow_celda_hora SET compra_base = compra_base + 1 WHERE (symbol, ts, venue, nivel) = (SELECT symbol, ts, venue, nivel FROM orderflow_celda_hora WHERE symbol = 'BTC' ORDER BY venue, nivel LIMIT 1)"
+if sirve "$b" "$T/s-hv"; then
+  planta hora_vieja 1 '\(d\) BTC horas .*niveles servidos != recalculados' "$b" "$T/s-hv" "$H_BUENA"
+else
+  comprueba hora_vieja 1 "sirve no corrio: $(tail -1 "$T/sirve.log")"
+fi
+if sirve "$B0" "$T/s-hd" hora_doble; then
+  planta hora_doble 1 '\(d\) [A-Z]+ horas .*niveles servidos != recalculados' "$B0" "$T/s-hd" "$H_BUENA"
+else
+  comprueba hora_doble 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
+fi
+b=$(copia hpaso limpia); en "$b" "DELETE FROM orderflow_celda_hora WHERE symbol = 'BTC'; INSERT INTO orderflow_celda_hora SELECT date_bin(interval '1 hour', c.ts, timestamptz '2000-01-01 00:00:00+00'), c.venue, c.symbol, floor(c.nivel / (2 * p.paso)) * 2 * p.paso, sum(c.compra_base), sum(c.venta_base), sum(c.compra_usd), sum(c.venta_usd), sum(c.compras), sum(c.ventas) FROM orderflow_celda c JOIN orderflow_paso p USING (symbol) WHERE c.symbol = 'BTC' GROUP BY 1, 2, 3, 4"
+if sirve "$b" "$T/s-hp"; then
+  planta nivel_otro_paso 1 '\(d\) BTC horas .*niveles servidos != recalculados' "$b" "$T/s-hp" "$H_BUENA"
+else
+  comprueba nivel_otro_paso 1 "sirve no corrio: $(tail -1 "$T/sirve.log")"
+fi
+b=$(copia hausente limpia); en "$b" "DELETE FROM orderflow_hora_hecha WHERE symbol = 'BTC' AND venue = 'binance_usdm'; DELETE FROM orderflow_celda_hora WHERE symbol = 'BTC' AND venue = 'binance_usdm'"
+if sirve "$b" "$T/s-ha" hora_ausente_como_cero; then
+  planta hora_ausente_como_cero 1 '\(d\) BTC horas .*niveles servidos != recalculados' "$b" "$T/s-ha" "$H_BUENA"
+else
+  comprueba hora_ausente_como_cero 1 "sirve plantado no corrio: $(tail -1 "$T/sirve.log")"
 fi
 mkdir -p "$T/s-sin5"
 cp "$T"/s0/*.json "$T/s-sin5/"

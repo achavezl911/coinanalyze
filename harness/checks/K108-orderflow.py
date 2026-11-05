@@ -48,6 +48,7 @@ SIN_ESCRIBIR = timedelta(minutes=10)
 GRACIA = timedelta(hours=2)
 PASO_D = Decimal(10)  # (d) se pide a 10 veces el paso base: ejercita la agregacion de niveles
 MARCO_D, VENTANA_D = 5, timedelta(minutes=30)  # (d) velas de 5 min de la ultima media hora
+HORA, HORAS_H = timedelta(hours=1), 4  # (d) OF-1b: velas de 1 h de las ultimas cuatro horas, al paso BASE
 MINIMO = timedelta(minutes=int(os.environ.get("K108_MINIMO", "30")))  # vida minima del servicio para juzgar
 
 
@@ -121,6 +122,14 @@ def ventana_d(fin: datetime, primero: datetime) -> tuple[datetime, datetime]:
     desde = max(hasta - VENTANA_D, primero)
     desde = desde.replace(second=0, microsecond=0) + timedelta(minutes=(-desde.minute) % MARCO_D)
     return hasta, desde
+
+
+def ventana_h(fin: datetime, primero: datetime) -> tuple[datetime, datetime]:
+    """(d) OF-1b: las HORAS_H velas de 1 h que acaban en la ultima hora en punto antes de fin, sin salirse de la vida
+    del servicio. Con el reloj plantado la base esta quieta (nada escribe despues de fin) y entra tambien la hora en
+    curso: es la unica que tiene la grabacion del control."""
+    hasta = fin.replace(minute=0) + (HORA if RELOJ else timedelta(0))
+    return hasta, max(hasta - HORAS_H * HORA, primero.replace(minute=0, second=0, microsecond=0))
 
 
 # --------------------------------------------------------------------------------------------- recalculo propio
@@ -890,6 +899,41 @@ def juzga() -> int:
                     + (f"{con_va} de {velas_ok} servidas y recalculadas" if con_va
                        else "SIN JUZGAR, el sujeto no la sirve (anterior a OF-2)"))
 
+    def horas() -> None:
+        """OF-1b: el footprint de 1 h sale de las horas sumadas (orderflow_celda_hora) donde hay marca y de los minutos
+        donde no. Servido == recalculado desde los MINUTOS, al paso base: el de la suma, que a 10x no se ve."""
+        if una(db, "SELECT (to_regclass('orderflow_hora_hecha') IS NOT NULL)::int") != ["1"]:
+            info.append("(d) OF-1b: SIN JUZGAR las horas sumadas, el sujeto no tiene orderflow_hora_hecha (anterior "
+                        "a OF-1b)")
+            return
+        hasta_h, desde_h = ventana_h(fin, primero)
+        if hasta_h <= desde_h:
+            nomed.append("(d) OF-1b: ni una hora en punto dentro de la vida del servicio")
+            return
+        pasos = {s: Decimal(p) for s, p in sql(db, "SELECT symbol, paso::text FROM orderflow_paso")}
+        partes = []
+        for activo in ACTIVOS:
+            paso = pasos[activo]
+            q = urllib.parse.urlencode({"symbol": activo, "desde": _iso(desde_h), "hasta": _iso(hasta_h),
+                                        "marco": "1h", "paso": texto(paso), "unidad": "base"})
+            fp = api(f"/api/orderflow/footprint?{q}")
+            if not isinstance(fp.get("velas"), list):
+                raise Canal(f"/api/orderflow/footprint 1h {activo} no tiene la forma de un footprint")
+            rec = recalcula(db, activo, desde_h, hasta_h, paso, 60, "base")
+            malos = compara_footprint(fp, rec, desde_h, 60)
+            servidas = {int(datetime.fromisoformat(str(v.get("ts")).replace("Z", "+00:00")).timestamp())
+                        for v in fp["velas"]}
+            malos += [f"vela {_iso(datetime.fromtimestamp(k, UTC))}: con celdas en los minutos y sin vela servida"
+                      for k, niv in sorted(rec["velas"].items()) if niv and k not in servidas]
+            if malos:
+                rojos.append(f"(d) {activo} horas {_iso(desde_h)}-{_iso(hasta_h)} paso {texto(paso)}: {malos[0]}"
+                             + (f" (y {len(malos) - 1} mas)" if len(malos) > 1 else ""))
+            n = una(db, f"SELECT count(*) FROM orderflow_hora_hecha WHERE symbol = '{activo}' AND ts >= "
+                        f"'{_ts(desde_h)}' AND ts < '{_ts(hasta_h)}'")[0]
+            partes.append(f"{activo} {len(fp['velas'])} velas con {n} horas-venue sumadas")
+        info.append(f"(d) OF-1b: footprint 1h de {_iso(desde_h)}-{_iso(hasta_h)} al paso base, servido == recalculado "
+                    "desde los minutos: " + ", ".join(partes))
+
     def perfiles() -> None:
         """(d) de OF-3: sesiones (del dia y de una que cruza la medianoche) con su compuesto, el VWAP con sus bandas
         y el TPO, servidos sobre la ventana de (d) == recalculados aqui. Un sujeto anterior a OF-3 no los sirve."""
@@ -1006,7 +1050,7 @@ def juzga() -> int:
         info.append("(f) concordancia del tick con el agresor: " + "; ".join(
             f"{v} {', '.join(x)}" for v, x in sorted(juzgados.items())))
 
-    for letra, brazo in (("a", triangula), ("b", consistencia), ("c", cubre), ("d", servido), ("d", perfiles),
+    for letra, brazo in (("a", triangula), ("b", consistencia), ("c", cubre), ("d", servido), ("d", horas), ("d", perfiles),
                          ("d", indicadores), ("e", retiene), ("f", agresor)):
         try:
             brazo()
@@ -1088,6 +1132,16 @@ def sirve(directorio: str, planta: str = "") -> int:
             return {"estado": "ok", "desde": datetime(2000, 1, 1, tzinfo=UTC), "hasta": datetime(2100, 1, 1, tzinfo=UTC)}
 
         lec._barrido_liquidaciones = todo_certificado
+    elif planta in ("hora_doble", "hora_ausente_como_cero"):  # OF-1b: la particion de las horas por fuente, torcida
+        original_t = lec.tramos
+
+        def torcidos(hechas, vs, a, b):
+            if planta == "hora_doble":  # lo marcado sale de las horas Y de los minutos: se cuenta dos veces
+                return original_t(hechas, vs, a, b)[0], original_t(set(), vs, a, b)[1]
+            todas = {(a + k * lec.HORA, v) for k in range((b - a) // lec.HORA) for v in vs}
+            return original_t(todas, vs, a, b)[0], []  # lo no sumado se lee de las horas: un cero
+
+        lec.tramos = torcidos
     elif planta:
         raise SystemExit(f"planta desconocida: {planta}")
 
@@ -1118,6 +1172,14 @@ def sirve(directorio: str, planta: str = "") -> int:
                     ruta = f"/api/orderflow/{nombre}?{urllib.parse.urlencode(q)}"
                     (Path(directorio) / (urllib.parse.quote(ruta, safe="") + ".json")).write_text(
                         json.dumps(resp, default=str))
+            hasta_h, desde_h = ventana_h(fin, primero)  # OF-1b: el footprint de 1 h al paso base
+            for activo in ACTIVOS:
+                q = {"symbol": activo, "desde": _iso(desde_h), "hasta": _iso(hasta_h), "marco": "1h",
+                     "paso": texto(pasos[activo]), "unidad": "base"}
+                resp = await api_mod.orderflow_footprint(_Peticion(**q), **q)
+                ruta = f"/api/orderflow/footprint?{urllib.parse.urlencode(q)}"
+                (Path(directorio) / (urllib.parse.quote(ruta, safe="") + ".json")).write_text(
+                    json.dumps(resp, default=str))
             rutas = {"sesiones": api_mod.orderflow_sesiones, "vwap": api_mod.orderflow_vwap, "tpo": api_mod.orderflow_tpo}
             for _activo, nombre, q in peticiones_of3(desde_d, hasta_d, pasos, fin):
                 resp = await rutas[nombre](_Peticion(**q), **q)
@@ -1140,13 +1202,37 @@ def sirve(directorio: str, planta: str = "") -> int:
     return 0
 
 
+def suma(ahora: str) -> int:
+    """OF-1b: el colector del ARBOL suma en K108_BASE las horas cerradas a `ahora` (el control: la hora de su
+    grabacion, que a su reloj aun esta en curso)."""
+    import asyncio
+
+    import asyncpg
+
+    sys.path.insert(0, REPO)
+    from app import orderflow as col
+
+    async def corre():
+        pool = await asyncpg.create_pool(BASE, min_size=1, max_size=1, server_settings={"timezone": "UTC"})
+        try:
+            return await col.suma_horas(pool, None, 99, datetime.fromisoformat(ahora))
+        finally:
+            await pool.close()
+
+    hechas = asyncio.run(corre())
+    print("sumadas:", ", ".join(f"{a} {_iso(h)}" for a, h, _ in hechas) or "ninguna", "app de", col.__file__)
+    return 0 if hechas else 1
+
+
 if __name__ == "__main__":
     orden = sys.argv[1] if len(sys.argv) > 1 else ""
+    if orden == "suma" and len(sys.argv) == 3:
+        sys.exit(suma(sys.argv[2]))
     if orden == "juzga":
         sys.exit(juzga())
     if orden == "sirve" and len(sys.argv) == 3:
         sys.exit(sirve(sys.argv[2]))
     if orden == "sirve" and len(sys.argv) == 5 and sys.argv[3] == "--planta":
         sys.exit(sirve(sys.argv[2], sys.argv[4]))
-    print("NO MEDIDO: uso K108-orderflow.py juzga | sirve <dir> [--planta X]")
+    print("NO MEDIDO: uso K108-orderflow.py juzga | sirve <dir> [--planta X] | suma <ahora>")
     sys.exit(2)
