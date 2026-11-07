@@ -45,6 +45,7 @@
         </div>
       </div>
       <div class="cab-der">
+        <button type="button" class="boton" id="b-ayuda" aria-haspopup="dialog" title="Ayuda (?)">?</button>
         <a class="enlace" id="ir-mesa" href="/">← MESA</a>
         <a class="enlace" id="ir-flujo" href="/flujo">FOOTPRINT →</a>
       </div>
@@ -105,7 +106,25 @@
     </div>
     <div class="lectura" id="lectura" aria-live="polite"></div>
 
-    <footer class="leyenda">
+    <dialog class="ayuda" id="ayuda" aria-label="Ayuda del libro">
+      <form method="dialog"><button type="submit" class="boton cerrar">CERRAR (Esc)</button></form>
+      <h2>El ratón y el teclado</h2>
+      <p>
+        <b>Rueda</b> sobre el mapa: acerca o aleja el tiempo, dejando la columna bajo el cursor donde está ·
+        <b>Mayús + rueda</b>: desplaza el tiempo · <b>Ctrl + rueda</b>: acerca o aleja el precio (las filas), dejando el
+        precio bajo el cursor donde está; la escala pasa a <b>MANUAL</b> · <b>rueda o arrastre sobre el eje de
+        precio</b>: escala el precio con su centro quieto · <b>rueda o arrastre sobre el eje de tiempo</b>: acerca o
+        aleja el tiempo · <b>arrastrar el mapa</b>: lo mueve en los dos ejes; en vertical, la escala del precio pasa a
+        <b>MANUAL</b> (lo dice la esquina del eje) · <b>doble clic en el eje de precio</b>: recentra y vuelve al modo de
+        antes · <b>clic derecho en el eje de precio</b>: el recentrado (Último precio, por omisión; Mejor compra-venta;
+        Ninguno): en AUTO, la vista recentra cuando esa referencia entra en el 20 % de arriba o de abajo, y con Ninguno
+        no se mueve · <b>← →</b>: una columna · <b>Re Pág / Av Pág</b>: una pantalla · <b>Inicio</b>: la primera
+        columna cargada · <b>Fin</b> o <b>PRESENTE</b>: vuelve a seguir el presente (ir hacia atrás deja de seguirlo; sin
+        seguirlo, lo vivo que llega no mueve la vista y una línea tenue marca el instante actual) · <b>C</b>: centra la
+        escalera · <b>?</b>: abre y cierra esta ayuda · <b>Esc</b>: cierra los menús y la ayuda. Las flechas, Re Pág, Av
+        Pág, Inicio y Fin, con el foco en el mapa (un clic en él).
+      </p>
+      <h2>Lo que se ve</h2>
       <p>
         <b>El mapa:</b> una columna por instante (cada foto del libro, o una de cada tantas para que la historia quepa en
         una petición), una fila por nivel al paso. Cada celda, del color de su lado MAYOR: compra en azul, venta en
@@ -140,7 +159,7 @@
         por cuál va y la hora del último libro. Más de ~30 minutos atrás, el mapa es un REGISTRO de dónde estuvo la
         liquidez, no la que hay.
       </p>
-    </footer>
+    </dialog>
 
     <script src="/static/mesa/mesa-datos.js"></script>
     <script src="/static/flujo/flujo-calculo.js"></script>

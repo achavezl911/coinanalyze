@@ -699,8 +699,18 @@ function montaGestos() {
   document.addEventListener('mousedown', (ev) => {
     if (!menu.hidden && !ev.target.closest('#menu-eje')) cierraMenuEje();
   });
+  // la ayuda (la pantalla no es un manual): «?» la abre y la cierra, Esc la cierra (el dialogo modal lo hace solo)
+  const ayuda = document.getElementById('ayuda');
+  const alterna = () => (ayuda.open ? ayuda.close() : ayuda.showModal());
+  document.getElementById('b-ayuda').addEventListener('click', alterna);
   document.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') cierraMenuEje();
+    if (ev.key !== '?' || ev.ctrlKey || ev.altKey || ev.metaKey) return;
+    const t = ev.target && ev.target.tagName;
+    if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA') return;
+    ev.preventDefault();
+    cierraMenuEje();
+    alterna();
   });
   document.getElementById('b-presente').addEventListener('click', () => EL_MAPA.presente());
 }
