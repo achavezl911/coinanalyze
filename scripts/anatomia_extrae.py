@@ -28,7 +28,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import anatomia_comun as C  # noqa: E402
 
-PERP, SPOT = frozenset(C.VENUES_PERP), frozenset(C.VENUES_SPOT)
+from app import anatomia as A  # noqa: E402  (anatomia_comun pone la raiz en sys.path)
+
+PERP, SPOT = A.PERP, A.SPOT
 NCOL = len(C.COLUMNAS_BASE)
 COL = {n: i for i, n in enumerate(C.COLUMNAS_BASE)}
 
@@ -110,10 +112,9 @@ class Dia:
 
     # ---------------------------------------------------------------- cinta
     def cinta(self):
-        io, ih, il, ic, ivr = COL["o"], COL["h"], COL["l"], COL["c"], COL["vol_ref"]
-        flujo = ("vol_perp", "dp", "dp100k", "dp1m", "np", "vol_spot", "ds", "ds100k", "ds1m", "ns")
+        # la fila, con la definicion que comparte la sombra del bot (app/anatomia.cinta_fila)
         for h, p in self.horas("cinta"):
-            self.ceros(h, flujo + ("vol_ref",))
+            self.ceros(h, A.FLUJO_CINTA)
             for x in lineas(p):
                 s = x[2]
                 if s not in self.m:
@@ -121,45 +122,8 @@ class Dia:
                 m = self.minuto(x[0])
                 if m is None:
                     continue
-                f, v, usd, precio = self.m[s][m], x[1], float(x[5]), float(x[3])
-                sg = usd if x[6] == "t" else -usd
-                if v in PERP:
-                    k = "p"
-                elif v in SPOT:
-                    k = "s"
-                else:
-                    continue
-                f[COL["vol_" + ("perp" if k == "p" else "spot")]] += usd
-                f[COL["d" + k]] += sg
-                if usd >= C.GRANDE_100K:
-                    f[COL["d" + k + "100k"]] += sg
-                    if usd >= C.GRANDE_1M:
-                        f[COL["d" + k + "1m"]] += sg
-                f[COL["n" + k]] += 1
-                im = COL["m" + k]
-                if f[im] is None or usd > f[im]:
-                    f[im] = usd
-                if v == C.VENUE_REF:
-                    f[ivr] += usd
-                    f[COL["fuente"]] = C.FUENTE_CINTA
-                    oc = self.oc.get((s, m))
-                    if oc is None:
-                        self.oc[(s, m)] = [x[0], x[0]]
-                        f[io] = f[ih] = f[il] = f[ic] = precio
-                    else:
-                        if x[0] < oc[0]:
-                            oc[0], f[io] = x[0], precio
-                        if x[0] >= oc[1]:
-                            oc[1], f[ic] = x[0], precio
-                        if precio > f[ih]:
-                            f[ih] = precio
-                        if precio < f[il]:
-                            f[il] = precio
-                elif v == C.VENUE_PRIMA:
-                    oc = self.oc.get((s, m, v))
-                    if oc is None or x[0] >= oc:
-                        self.oc[(s, m, v)] = x[0]
-                        f[COL["c_cb"]] = precio
+                A.cinta_fila(self.m[s][m], self.oc.setdefault((s, m), {}), x[0], x[1], float(x[3]), float(x[5]),
+                             x[6] == "t")
         self.oc.clear()
 
     # ---------------------------------------------------------------- precio de respaldo (solo capa A)

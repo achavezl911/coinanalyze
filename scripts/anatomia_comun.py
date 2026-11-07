@@ -24,22 +24,42 @@ t + 240 < 2026-11-03 00:00Z. CONFIRMACION: decisiones con t >= la fecha de --con
 from __future__ import annotations
 
 import math
+import sys
 from datetime import UTC, datetime
+from pathlib import Path
+
+# LA DEFINICION que la sombra del bot comparte (BOT-5) vive en app/anatomia.py: aqui se reexporta con su nombre de
+# siempre (C.ESQUEMAS, C.etiqueta...). app/__init__.py no importa nada: el nodo solo necesita el arbol.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from app.anatomia import (  # noqa: E402,F401
+    CAPA_B_DESDE,
+    COLUMNAS_BASE,
+    COMISION,
+    ESQUEMAS,
+    FUENTE_CINTA,
+    FUENTE_FUTUROS,
+    FUENTE_L1,
+    GRANDE_1M,
+    GRANDE_100K,
+    HORIZONTE,
+    LADOS,
+    REJILLA,
+    VENUE_PRIMA,
+    VENUE_REF,
+    VENUES_PERP,
+    VENUES_SPOT,
+    _ts,
+    azar,
+    empate,
+    etiqueta,
+    sin_solape,
+)
 
 # ---------------------------------------------------------------- universo
 SIMBOLOS = ("BTC", "ETH", "SOL")
-VENUES_PERP = ("binance_usdm", "bybit_linear", "okx_swap", "bitget_usdt", "deribit_perp")
-VENUES_SPOT = ("binance_spot", "bybit_spot", "okx_spot", "coinbase_spot")
-VENUE_REF = "binance_usdm"          # precio de referencia, libro de referencia
-VENUE_PRIMA = "coinbase_spot"       # la prima de contado
-
 # ---------------------------------------------------------------- calendario (UTC)
-def _ts(s: str) -> int:
-    return int(datetime.fromisoformat(s).replace(tzinfo=UTC).timestamp())
-
 ARCHIVO_DESDE = "2026-08-04"
 CAPA_A_DESDE = _ts("2026-08-05")
-CAPA_B_DESDE = _ts("2026-10-18")
 CINTA_DESDE = "2026-10-18"
 LIQ_RT_DESDE = "2026-10-20"
 CONFIRMACION_DESDE = "2026-11-03"
@@ -77,80 +97,11 @@ ESPERADO_DESDE = {"cinta": CINTA_DESDE, "libro": CINTA_DESDE, "liquidaciones-rea
                   "liquidaciones-5min": ARCHIVO_DESDE, "oi-bybit": ARCHIVO_DESDE, "funding": ARCHIVO_DESDE,
                   "funding-previsto": ARCHIVO_DESDE, "largos-cortos": ARCHIVO_DESDE,
                   "spot-agregado": ARCHIVO_DESDE}
-FUENTE_CINTA, FUENTE_FUTUROS, FUENTE_L1 = 1, 2, 3     # columna `fuente` de la base; 0 = sin precio
-
 # ---------------------------------------------------------------- umbrales de la extraccion
-GRANDE_100K = 100_000.0             # flujo de ordenes grandes: impresos >= 100 mil USD
-GRANDE_1M = 1_000_000.0
 LIQ_GRANDE_USD = {"BTC": 250_000.0, "ETH": 100_000.0, "SOL": 50_000.0}   # «evento grande» de liquidacion
 CASCADA_N, CASCADA_S, CASCADA_CALMA_S = 5, 60.0, 120.0                   # M8
 LIBRO_BANDAS = (0.001, 0.005)       # desequilibrio a +-0.1 % y +-0.5 % del medio
 MURO_DIST, MURO_VECES, MURO_QUEDA = 0.003, 5.0, 0.2   # M3: <= 0.3 %, >= 5x la mediana del lado, queda < 20 %
-
-# columnas de base-<SIM>.tsv.gz, en este orden, con cabecera. Vacio = no hay dato.
-COLUMNAS_BASE = (
-    "ts", "fuente", "o", "h", "l", "c", "vol_ref",
-    "vol_perp", "dp", "dp100k", "dp1m", "np", "mp",          # perp: delta agresor USD, >=100k, >=1M, conteo, mayor
-    "vol_spot", "ds", "ds100k", "ds1m", "ns", "ms",           # contado
-    "c_cb",                                                   # cierre de coinbase_spot
-    "liq_l", "liq_s", "liq_l_n", "liq_s_n",                   # al segundo, agregados al minuto
-    "liq_l_ult", "liq_s_ult", "liq_l_casc", "liq_s_casc",     # epoch s del ultimo evento; 1 si cerro cascada
-    "liq_l_gr_ult", "liq_s_gr_ult",                           # epoch s del ultimo evento grande
-    "deseq01", "deseq05", "deseq05_todos", "alc_c", "alc_v", "mayor_med", "muro_c", "muro_v",
-    "liq5_l", "liq5_s", "oi", "oi_ag", "fr", "pfr", "ls", "sa_delta", "sa_vol",
-)
-
-# ---------------------------------------------------------------- etiquetas
-REJILLA = 5
-HORIZONTE = 240
-COMISION = 0.00055                  # 5.5 bps por lado
-ESQUEMAS = {"E1": (0.01, 0.006), "E2": (0.02, 0.006)}
-LADOS = {"largo": 1, "corto": -1}
-
-
-def empate(esquema: str) -> float:
-    """Tasa de toque que deja el neto en cero con comision: (sl + 2c) / (tp + sl). E1 44.4 %, E2 27.3 %."""
-    tp, sl = ESQUEMAS[esquema]
-    return (sl + 2 * COMISION) / (tp + sl)
-
-
-def azar(esquema: str) -> float:
-    """Tasa de toque de un paseo sin deriva: sl / (tp + sl). E1 37.5 %, E2 23.1 %."""
-    tp, sl = ESQUEMAS[esquema]
-    return sl / (tp + sl)
-
-
-def etiqueta(o, h, lo, c, t: int, lado: int, esquema: str):
-    """Operacion decidida al cierre del minuto t: (exito, neto, minuto de salida) o None si falta un minuto.
-    o h l c: secuencias por minuto (None = sin precio)."""
-    tp, sl = ESQUEMAS[esquema]
-    if t + HORIZONTE >= len(o) or o[t + 1] is None:
-        return None
-    e = o[t + 1]
-    obj = e * (1 + tp) if lado > 0 else e * (1 - tp)
-    stop = e * (1 - sl) if lado > 0 else e * (1 + sl)
-    for m in range(t + 1, t + HORIZONTE + 1):
-        if h[m] is None or lo[m] is None or c[m] is None:
-            return None
-        toca_stop = lo[m] <= stop if lado > 0 else h[m] >= stop
-        toca_obj = h[m] >= obj if lado > 0 else lo[m] <= obj
-        if toca_stop:
-            return (0, -sl - 2 * COMISION, m)
-        if toca_obj:
-            return (1, tp - 2 * COMISION, m)
-    return (0, lado * (c[t + HORIZONTE] / e - 1) - 2 * COMISION, t + HORIZONTE)
-
-
-def sin_solape(decisiones):
-    """decisiones: (t, salida) en orden de t, ya filtradas por la condicion. Una abierta a la vez: se toma la
-    primera y se salta toda decision con t < salida de la abierta. Devuelve los indices tomados."""
-    tomadas, libre = [], -1
-    for i, (t, salida) in enumerate(decisiones):
-        if t >= libre:
-            tomadas.append(i)
-            libre = salida
-    return tomadas
-
 
 # ---------------------------------------------------------------- estadistica
 Z_DIAS = 7                          # z y percentiles: contra los 7 dias anteriores, SIN el presente
