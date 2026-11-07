@@ -6,7 +6,8 @@ reinicios y una parada de 30 min) recorre los minutos. Lo que dejo en bot_sombra
 (lo que dijo el ESTUDIO sobre los mismos TSV: harness/checks/K119-genera.py). Luego el recalculo (el mismo que se
 corre contra 140) se ensaya sobre la base del banco: tiene que dar lo mismo que el bot.
 Produccion (si no K119_SIN_PRODUCCION): por bin/prodsql, las filas de bot_sombra de 24 h contra el recalculo desde la
-cinta de 140. Sin la tabla en 140: SIN DESPLEGAR, SIN JUZGAR. Sin canal: NO MEDIDO.
+cinta de 140. Sin la tabla en 140: SIN DESPLEGAR, SIN JUZGAR. Sin canal: NO MEDIDO. Y los permisos del rol del bot
+(permisos()): con bot_sombra en 140, uno que falte es ROJO; sin ella, se dicen sin juzgar.
 rc 0 VERDE · 1 ROJO · 2 NO MEDIDO.
 """
 from __future__ import annotations
@@ -225,8 +226,38 @@ async def banco(esp: dict):
         await cx.close()
 
 
+ROL = "coinalyze-ai"
+PERMISOS = [("orderflow_cinta", "SELECT")] + [(t, p) for t in ("bot_sombra", "bot_sombra_candidata")
+                                             for p in ("SELECT", "INSERT", "UPDATE")]
+
+
+def permisos(sql=prodsql):
+    """Los GRANT que da sql/schema.sql al rol del bot (BOT-5 r1). Sin bot_sombra en 140 lo dice y no condena."""
+    v = ", ".join(f"('{t}', '{p}')" for t, p in PERMISOS)
+    r = sql(f"SELECT t || ':' || p || ':' || CASE WHEN to_regclass(t) IS NULL THEN 'sintabla' WHEN NOT EXISTS"
+            f" (SELECT 1 FROM pg_roles WHERE rolname = '{ROL}') THEN 'sinrol' WHEN has_table_privilege('{ROL}', t, p)"
+            f" THEN 't' ELSE 'f' END FROM (VALUES {v}) x (t, p) ORDER BY 1")
+    r = [x.rsplit(":", 1) for x in sorted(":".join(f) for f in r)]
+    if len(r) != len(PERMISOS) or any(len(x) != 2 or x[1] not in ("t", "f", "sinrol", "sintabla") for x in r):
+        return faltas.append(f"permisos: respuesta ilegible ({r[:2]!r})")
+    if all(e == "t" for _, e in r):
+        return dichos.append(f"permisos de {ROL}: los {len(PERMISOS)} concedidos")
+    def falta(es):
+        return (f"no existe el rol (y con el: {', '.join(a for a, e in r if e == 'sinrol')})"
+                if any(e == "sinrol" for _, e in r) else "; ".join(a + (" (sin la tabla)" if e == "sintabla" else "")
+                                                                   for a, e in r if e in es))
+    if all(e != "sintabla" for a, e in r if a.startswith("bot_sombra:")):
+        return condenas.append(f"permisos: a {ROL} le falta en 140: {falta(('f', 'sintabla'))}")
+    dichos.append(f"permisos: bot_sombra aun no existe en 140 (SIN JUZGAR); hoy {ROL} no tiene: "
+                  + (falta(("f",)) or "nada que falte"))
+
+
 def produccion():
     c = sb.carga()[0]
+    try:
+        permisos()
+    except Exception as e:  # un brazo que cae no tumba al otro
+        faltas.append(f"permisos: {type(e).__name__} {str(e)[:200]}")
     r = prodsql("SELECT to_regclass('bot_sombra') IS NOT NULL")
     if not r or r[0][0] not in ("t", "f"):
         return faltas.append(f"produccion: prodsql sin respuesta legible ({r[:1]!r})")

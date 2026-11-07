@@ -12,6 +12,9 @@
 #   produccion  solo lectura por bin/prodsql: las filas de bot_sombra de las ultimas 24 h de su cursor contra el
 #               mismo recalculo desde la cinta de 140. Sin la tabla en 140: SIN DESPLEGAR, SIN JUZGAR (no condena
 #               ni falta). Sin canal: NO MEDIDO. K119_SIN_PRODUCCION=1 no lo mira (lo usa K119-control).
+#               Y los permisos del rol del bot "coinalyze-ai" (has_table_privilege; los da sql/schema.sql, BOT-5 r1):
+#               SELECT en orderflow_cinta, SELECT/INSERT/UPDATE en bot_sombra y bot_sombra_candidata. Con bot_sombra
+#               en 140 y uno que falte (o sin el rol): ROJO con cual. Sin bot_sombra: dice cuales faltan, SIN JUZGAR.
 # Algo que condenar -> ROJO; si no, lo que no se pudo mirar -> NO MEDIDO; todo mirado y bien -> VERDE.
 #
 # SUJETOS. K119_REPO (el arbol: su app/ y su sql/schema.sql), K119_HARNESS (su bin/prodsql). Ayudante: K119-sombra.py.
