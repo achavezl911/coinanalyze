@@ -3435,7 +3435,8 @@ COMMIT;
 --   bot_sombra            una fila por DISPARO tomado (sin solape): abierta -> tocada -> exito | fracaso | sin_dato.
 --                         Un estado final no cambia ni se borra; la clave (candidata, indice, minuto) hace que un
 --                         reinicio no duplique. No es una orden ni una entrada: es la cuenta de una hipotesis.
--- Permisos: el bot entra como "coinalyze-ai"; los GRANT (SELECT, INSERT, UPDATE) los da el operador.
+-- Permisos: el bot entra como "coinalyze-ai"; los GRANT (SELECT en orderflow_cinta; SELECT, INSERT, UPDATE en las
+-- dos bot_sombra*) los da este bloque al final, si el rol existe.
 -- =========================================================================================
 BEGIN;
 
@@ -3508,5 +3509,17 @@ CREATE OR REPLACE TRIGGER bot_sombra_candidata_avanza BEFORE UPDATE OR DELETE ON
     FOR EACH ROW EXECUTE FUNCTION bot_sombra_cursor_avanza();
 CREATE OR REPLACE TRIGGER bot_sombra_candidata_sin_truncate BEFORE TRUNCATE ON bot_sombra_candidata
     FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+
+-- Los permisos del bot los da el despliegue (lo aplica `coinalyze`, dueno de las tres): el operador ya no entra al
+-- nodo. SOLO si existe el rol: sin el (la CI, una base nueva) no hace nada. Ni DELETE, ni otras tablas, ni el rol.
+-- Leer por el padre particionado no pide permiso en las particiones. K119 lo comprueba en 140.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'coinalyze-ai') THEN
+        GRANT SELECT ON orderflow_cinta TO "coinalyze-ai";
+        GRANT SELECT, INSERT, UPDATE ON bot_sombra, bot_sombra_candidata TO "coinalyze-ai";
+    END IF;
+END
+$$;
 
 COMMIT;
