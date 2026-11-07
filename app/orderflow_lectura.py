@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, InvalidOperation, localcontext
 from typing import Any
 
+from app.anatomia import CASCADA_N, CASCADA_S
 from app.config import WS_SYMBOL_MAP, get_settings
 from app.orderflow import ACTIVOS, MERCADOS, carga_config
 
@@ -921,6 +922,11 @@ REGLA_LIQ = (
     "sabe: falta."
 )
 FUENTE_SUELTAS = "liquidaciones sueltas · binance y bybit perpetuos (colector propio: cada liquidacion)"
+# la cascada M8 del estudio (app/anatomia.py), servida para que la pagina no lleve otra copia (campana 150)
+REGLA_CASCADA = (
+    f"cascada: >= {CASCADA_N} liquidaciones del mismo lado (binance y bybit juntos, cualquier tamano) en "
+    f"{CASCADA_S:g} s"
+)
 
 
 def _ahora() -> datetime:
@@ -1027,6 +1033,7 @@ async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str |
                          "cantidad": texto(_decimal(f["qty"]))} for f in sueltas[:TOPE_SUELTAS]],
             "huecos": [{"exchange": f["exchange"], "desde": iso(f["start_ts"]), "hasta": iso(f["end_ts"]),
                         "evidencia": f["evidence_type"], "estado": f["status"]} for f in huecos[:TOPE_HUECOS]],
+            "cascada": {"n": CASCADA_N, "s": CASCADA_S, "regla": REGLA_CASCADA},
         },
     }
 

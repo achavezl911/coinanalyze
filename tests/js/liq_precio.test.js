@@ -56,3 +56,18 @@ test('la ficha: las de su tramo, cuantas mas si no caben, «ninguna» solo con d
   const sin = [{ desde: t + 120000, hasta: t + 240000, motivo: 'hueco de bybit (unrecoverable): sin dato' }];
   assert.deepStrictEqual(Q.fichaLiq(e, sin, t + 120000, t + 180000), ['liq SIN DATO: hueco de bybit (unrecoverable): sin dato']);
 });
+
+test('la cascada: >= n del mismo lado en s segundos, episodios unidos si comparten eventos, null sin regla', () => {
+  const R = { n: 5, s: 60 };
+  const t = (seg) => new Date(Date.parse('2026-11-07T10:00:00Z') + seg * 1000).toISOString();
+  const s = { eventos: [0, 10, 20, 30].map((k) => ev(t(k), 'long', 100, 100)) // 4: no
+    .concat([0, 15, 30, 45, 60, 100].map((k) => ev(t(200 + k), 'short', 1000, 100))) // 5 en 60 s justos, y una mas
+    .concat([0, 1, 2, 3, 4, 70, 71, 72, 73, 74].map((k) => ev(t(400 + k), 'long', 10, 100))) }; // dos rachas
+  const c = Q.cascadasLiq(Q.eventosLiq(s), R);
+  const t0 = Date.parse(t(0));
+  assert.deepStrictEqual(c.map((x) => [x.lado, (x.desde - t0) / 1000, (x.hasta - t0) / 1000, x.n, x.usd]),
+                         [['short', 200, 260, 5, 5000], ['long', 400, 404, 5, 50], ['long', 470, 474, 5, 50]]);
+  assert.strictEqual(Q.cascadasLiq(Q.eventosLiq(s), null), null);
+  assert.strictEqual(Q.cascadasLiq(Q.eventosLiq(s), { n: 4, s: 60 }).filter((x) => x.lado === 'long').length, 3);
+  assert.strictEqual(Q.textoCascada(c[0]), 'cascada de cortos (compra forzada) · 10:03:20–10:04:20Z · 5 liq · 5.0 k USD');
+});

@@ -33,6 +33,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.anatomia import (  # noqa: E402,F401
     CAPA_B_DESDE,
+    CASCADA_N,
+    CASCADA_S,
     COLUMNAS_BASE,
     COMISION,
     ESQUEMAS,
@@ -99,7 +101,7 @@ ESPERADO_DESDE = {"cinta": CINTA_DESDE, "libro": CINTA_DESDE, "liquidaciones-rea
                   "spot-agregado": ARCHIVO_DESDE}
 # ---------------------------------------------------------------- umbrales de la extraccion
 LIQ_GRANDE_USD = {"BTC": 250_000.0, "ETH": 100_000.0, "SOL": 50_000.0}   # «evento grande» de liquidacion
-CASCADA_N, CASCADA_S, CASCADA_CALMA_S = 5, 60.0, 120.0                   # M8
+CASCADA_CALMA_S = 120.0                         # M8 (CASCADA_N y CASCADA_S vienen de app.anatomia)
 LIBRO_BANDAS = (0.001, 0.005)       # desequilibrio a +-0.1 % y +-0.5 % del medio
 MURO_DIST, MURO_VECES, MURO_QUEDA = 0.003, 5.0, 0.2   # M3: <= 0.3 %, >= 5x la mediana del lado, queda < 20 %
 

@@ -33,6 +33,10 @@ CAPA_B_DESDE = _ts("2026-10-18")
 FUENTE_CINTA, FUENTE_FUTUROS, FUENTE_L1 = 1, 2, 3     # columna `fuente` de la base; 0 = sin precio
 GRANDE_100K = 100_000.0             # flujo de ordenes grandes: impresos >= 100 mil USD
 GRANDE_1M = 1_000_000.0
+# M8 · CASCADA: >= CASCADA_N liquidaciones del MISMO lado (binance y bybit juntos, sin umbral de USD) en CASCADA_S
+# segundos. La usan el estudio (anatomia_extrae, liq_{l,s}_casc) y la pagina (/flujo y /libro, por las sueltas de
+# /api/orderflow/indicadores): una sola definicion (campana 150).
+CASCADA_N, CASCADA_S = 5, 60.0
 
 # columnas de base-<SIM>.tsv.gz, en este orden, con cabecera. Vacio = no hay dato.
 COLUMNAS_BASE = (

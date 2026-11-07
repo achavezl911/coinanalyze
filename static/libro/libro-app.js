@@ -328,7 +328,7 @@ function modeloLiq(sueltas, lw) {
   const a = Date.parse(lw.desde);
   const b = Date.parse(lw.hasta);
   return { sueltas, desde: lw.desde, hasta: lw.hasta, eventos: sobreUmbralLiq(eventosLiq(sueltas)),
-           sinDato: sinDatoLiq(sueltas, a, b) };
+           sinDato: sinDatoLiq(sueltas, a, b), cascadas: cascadasLiq(eventosLiq(sueltas), sueltas && sueltas.cascada) };
 }
 
 async function lateLiq(mia, desde, hasta) {
@@ -341,6 +341,7 @@ async function lateLiq(mia, desde, hasta) {
     // sin lo viejo o sin lo nuevo: lo que falte lo dice sinDato (el tramo nuevo, «la ruta no trajo»)
     const sin = MODELO.liq.sinDato.concat(n ? [] : [{ desde, hasta, motivo: 'la ruta no trajo las liquidaciones' }]);
     MODELO.liq = Object.assign({}, MODELO.liq, { hasta: isoZ(hasta), sinDato: sin });
+    // las cascadas que la pagina ya tenia siguen; las del tramo nuevo no se saben y el tramo lo dice sinDato
     return;
   }
   const junta = Object.assign({}, v, {

@@ -147,6 +147,7 @@ function pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto) {
   if (!m.liq) {
     window.LIQ_PINTADAS = [];
     window.LIQ_SIN_DATO = [];
+    window.LIQ_CASCADAS = [];
     return;
   }
   window.LIQ_REGLA = { umbral_usd: LIQ_UMBRAL_USD, radio: LIQ_RADIO };
@@ -175,9 +176,25 @@ function pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto) {
     out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, precio: e.precio, usd: e.usd,
                x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(r * 100) / 100, dibujada });
   });
+  // LA CASCADA M8 (sueltas.cascada, la regla del estudio): una barra al pie del mapa, sobre el eje de tiempo, de la
+  // primera a la ultima liquidacion del episodio, con su cuenta y sus USD
+  const casOut = m.liq.cascadas === null ? null : m.liq.cascadas.map((c) => {
+    const x0 = xT(c.desde);
+    const x1 = Math.max(xT(c.hasta), x0 + 2);
+    const yb = alto - (c.lado === 'long' ? 5 : 10);
+    if (x1 >= 0 && x0 <= ancho) {
+      ctx.fillStyle = c.lado === 'long' ? MAPA_COLOR.venta : MAPA_COLOR.compra;
+      ctx.fillRect(x0, yb, x1 - x0, 4);
+      ctx.font = '9px monospace';
+      ctx.fillText(c.n + ' · ' + usdLiq(c.usd), Math.max(0, x0), yb - 1);
+    }
+    return { lado: c.lado, desde: new Date(c.desde).toISOString(), hasta: new Date(c.hasta).toISOString(), n: c.n,
+             usd: c.usd, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10 };
+  });
   ctx.restore();
   window.LIQ_PINTADAS = out;
   window.LIQ_SIN_DATO = m.liq.sinDato;
+  window.LIQ_CASCADAS = casOut;
 }
 
 function fichaDe(m, j, k, neg) {
@@ -229,6 +246,8 @@ function fichaDe(m, j, k, neg) {
   if (m.liq && typeof fichaLiq === 'function') {
     const t0 = Math.floor(col.ts / 60000) * 60000;
     fichaLiq(m.liq.eventos, m.liq.sinDato, t0, t0 + 60000).forEach((t) => f.lineas.push(['liq', t]));
+    if (m.liq.cascadas === null) f.lineas.push(['liq', 'liq: cascada SIN REGLA (la ruta no trajo sueltas.cascada)']);
+    else m.liq.cascadas.filter((c) => c.desde < t0 + 60000 && c.hasta >= t0).forEach((c) => f.lineas.push(['liq', textoCascada(c)]));
   }
   f.texto = f.lineas.map((x) => x[1]).join(' · ');
   return f;

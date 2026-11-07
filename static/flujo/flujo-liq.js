@@ -79,7 +79,76 @@ function fichaLiq(pintadas, sinDato, t0, t1, umbral, max) {
   return out;
 }
 
+/* LA CASCADA M8 del estudio: n y s llegan en sueltas.cascada (app/anatomia.py, la MISMA constante que lee
+ * anatomia_extrae); la pagina no lleva copia. Sin regla, null: no se pinta ninguna y se dice. Sobre TODOS los eventos
+ * (sin umbral), por lado. Una liquidacion «cierra cascada» si hay >= n del mismo lado en [t - s, t] (las de su mismo
+ * ts cuentan: el estudio las ordena y la ultima del minuto es la que manda). */
+function marcasCascada(eventos, regla) {
+  if (!regla || !Number.isFinite(Number(regla.n)) || !Number.isFinite(Number(regla.s))) return null;
+  const n = Number(regla.n);
+  const sMs = Number(regla.s) * 1000;
+  const out = {};
+  ['long', 'short'].forEach((lado) => {
+    const a = eventos.filter((e) => e.lado === lado).sort((p, q) => p.t - q.t || p.usd - q.usd);
+    let j0 = 0;
+    out[lado] = a.map((e, k) => {
+      while (a[j0].t < e.t - sMs) j0 += 1;
+      let hi = k;
+      while (hi + 1 < a.length && a[hi + 1].t === e.t) hi += 1;
+      return { e, k, j0, hi, cierra: hi - j0 + 1 >= n };
+    });
+  });
+  return out;
+}
+
+/* Los episodios: la union de las ventanas de las que cierran cascada, juntas si comparten eventos.
+ * [{lado, desde, hasta (ms), n, usd}] por orden de desde; null sin regla. */
+function cascadasLiq(eventos, regla) {
+  const m = marcasCascada(eventos, regla);
+  if (!m) return null;
+  const out = [];
+  ['long', 'short'].forEach((lado) => {
+    const v = m[lado];
+    let cur = null;
+    v.filter((x) => x.cierra).forEach((x) => {
+      if (cur && x.j0 <= cur.hi) { cur.hi = Math.max(cur.hi, x.hi); return; }
+      if (cur) out.push(cur);
+      cur = { j0: x.j0, hi: x.hi };
+    });
+    if (cur) out.push(cur);
+    out.filter((c) => c.lado === undefined).forEach((c) => {
+      const tramo = v.slice(c.j0, c.hi + 1).map((x) => x.e);
+      c.lado = lado;
+      c.desde = tramo[0].t;
+      c.hasta = tramo[tramo.length - 1].t;
+      c.n = tramo.length;
+      c.usd = tramo.reduce((s, e) => s + e.usd, 0);
+    });
+  });
+  return out.map((c) => ({ lado: c.lado, desde: c.desde, hasta: c.hasta, n: c.n, usd: c.usd }))
+    .sort((p, q) => p.desde - q.desde || (p.lado < q.lado ? -1 : 1));
+}
+
+/* La columna liq_{l,s}_casc del estudio por minuto (epoch s del minuto -> {l, s}): la marca de la ULTIMA liquidacion
+ * del minuto de ese lado. Solo para comprobar la regla contra anatomia_extrae (tests/test_liq_cascada.py). */
+function cascadaMinutos(eventos, regla) {
+  const m = marcasCascada(eventos, regla);
+  const out = {};
+  ['long', 'short'].forEach((lado) => m[lado].forEach((x) => {
+    const min = Math.floor(x.e.t / 60000) * 60;
+    out[min] = out[min] || {};
+    out[min][lado[0]] = x.cierra ? 1 : 0;
+  }));
+  return out;
+}
+
+function textoCascada(c) {
+  return 'cascada ' + (c.lado === 'long' ? 'de largos (venta forzada)' : 'de cortos (compra forzada)') + ' · '
+    + new Date(c.desde).toISOString().slice(11, 19) + '–' + new Date(c.hasta).toISOString().slice(11, 19) + 'Z · '
+    + c.n + ' liq · ' + usdLiq(c.usd) + ' USD';
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { LIQ_UMBRAL_USD, LIQ_RADIO, LIQ_FICHA_MAX, radioLiq, eventosLiq, sobreUmbralLiq, sinDatoLiq, ladoLiq,
-                     usdLiq, fichaLiq };
+                     usdLiq, fichaLiq, cascadasLiq, cascadaMinutos, textoCascada };
 }

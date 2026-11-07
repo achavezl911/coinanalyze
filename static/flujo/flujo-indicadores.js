@@ -517,6 +517,7 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
   if (!on || !d || !m.velas.length) {
     window.LIQ_PINTADAS = on ? null : [];
     window.LIQ_SIN_DATO = on ? [{ motivo: d ? 'sin velas' : 'la ruta de los indicadores no contestó' }] : [];
+    window.LIQ_CASCADAS = on ? null : [];
     return null;
   }
   const mMs = FLUJO_MARCOS[m.marco] * 60000;
@@ -547,11 +548,31 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
                vela: i >= 0 && i < m.velas.length ? m.velas[i].ts : null,
                x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 100) / 100, dibujada });
   });
+  // LA CASCADA M8 (sueltas.cascada, la regla del estudio): una barra sobre el eje de tiempo, de la primera a la ultima
+  // liquidacion del episodio, con su cuenta y sus USD. Sobre TODAS las sueltas, no solo las de encima del umbral.
+  const xDe = (t) => { const i = Math.floor((t - t0) / mMs); return g.x(i) - g.bs / 2 + ((t - t0 - i * mMs) / mMs) * g.bs; };
+  const cas = cascadasLiq(eventosLiq(d.sueltas), d.sueltas && d.sueltas.cascada);
+  const casOut = cas === null ? null : cas.map((c) => {
+    const x0 = xDe(c.desde);
+    const x1 = Math.max(xDe(c.hasta), x0 + 2);
+    const col = c.lado === 'long' ? COLOR.venta : COLOR.compra;
+    const yb = g.abajo - (c.lado === 'long' ? 5 : 10);
+    if (x1 >= 0 && x0 <= g.ancho) {
+      ctx.fillStyle = rgba(col, 0.9);
+      ctx.fillRect(x0, yb, x1 - x0, 4);
+      ctx.font = '9px monospace';
+      ctx.fillText(c.n + ' · ' + usdLiq(c.usd), Math.max(0, x0), yb - 1);
+    }
+    return { lado: c.lado, desde: new Date(c.desde).toISOString(), hasta: new Date(c.hasta).toISOString(), n: c.n,
+             usd: c.usd, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10 };
+  });
   ctx.restore();
-  IND.liq = { pintadas: out, sinDato, mMs };
+  IND.liq = { pintadas: out, sinDato, mMs, cascadas: cas };
   window.LIQ_PINTADAS = out;
   window.LIQ_SIN_DATO = sinDato;
-  return { n: out.length, dibujadas: out.filter((x) => x.dibujada).length, sin_dato: sinDato.length };
+  window.LIQ_CASCADAS = casOut;
+  return { n: out.length, dibujadas: out.filter((x) => x.dibujada).length, sin_dato: sinDato.length,
+           cascadas: casOut === null ? null : casOut.length };
 }
 
 // las lineas de la ficha para la vela que empieza en `ts`: lo PINTADO en ella (no se pide nada)
@@ -559,7 +580,10 @@ function fichaLiqVela(ts) {
   if (!(VISTA.ind || []).includes('liqp')) return [];
   if (!IND.liq) return ['liq: SIN DATO (la ruta de los indicadores no contestó)'];
   const t = Date.parse(ts);
-  return fichaLiq(IND.liq.pintadas, IND.liq.sinDato, t, t + IND.liq.mMs);
+  const t1 = t + IND.liq.mMs;
+  const cas = IND.liq.cascadas === null ? ['liq: cascada SIN REGLA (la ruta no trajo sueltas.cascada)']
+    : IND.liq.cascadas.filter((c) => c.desde < t1 && c.hasta >= t).map(textoCascada);
+  return fichaLiq(IND.liq.pintadas, IND.liq.sinDato, t, t1).concat(cas);
 }
 
 /* E-05 (OF-6a, campana 148): la CRUZ sobre un panel. La vertical la pinta flujo-dibujo.js (la de la vela); aqui, la
