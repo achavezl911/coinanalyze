@@ -588,32 +588,36 @@ function pintaSelectores() {
   document.getElementById('ir-mesa').setAttribute('href', '/#scalp/' + VISTA.activo);
 }
 
-function lectura(col, k) {
+/* (149 rC, H-09) lo que hay bajo el raton: la ficha junto al cursor y #lectura en una linea, con las MISMAS palabras
+ * (fichaDe de libro-mapa.js); la escalera resalta la fila de ese precio si la tiene a la vista (H-01). */
+function lectura(f, pos) {
   const caja = document.getElementById('lectura');
-  if (!col) {
+  const ficha = document.getElementById('ficha');
+  const esc = LA_ESCALERA ? LA_ESCALERA.resalta(f ? f.nivel : null) : null;
+  if (window.LIBRO_CRUZ) window.LIBRO_CRUZ.escalera = esc;
+  if (!f) {
     caja.textContent = '';
+    ficha.hidden = true;
     return;
   }
-  const t = new Date(col.ts).toISOString().slice(5, 19).replace('T', ' ') + 'Z';
-  const est = { hueco: 'HUECO: ningún venue de la familia tenía libro válido', pendiente: 'sin escribir aún' };
-  if (col.estado !== 'foto') {
-    caja.textContent = t + ' · ' + est[col.estado];
-    return;
-  }
-  const s = col.suma;
-  const x = k === null || k < s.lo || k > s.hi ? null : k - s.lo;
-  const nivel = k === null ? '' : ' · nivel ' + nivelTexto(k, MODELO.paso);
-  if (x === null || !s.n[x]) {
-    caja.textContent = t + nivel + ' · DESCONOCIDO: ningún venue de la familia conoce este nivel en este instante';
-    return;
-  }
-  const u = (q) => cifra(enUnidad(q, k, MODELO.paso, VISTA.unidad));
-  caja.textContent = t + nivel + ' · compra ' + u(s.c[x]) + ' · venta ' + u(s.v[x]) + ' · lo conocen ' + s.n[x] + ' de '
-    + s.N + ' venues' + (s.n[x] < s.N ? ' (la suma es de esos)' : '') + ' · mejor compra ' + s.mejorCompra
-    + ' · mejor venta ' + s.mejorVenta + (col.origen === 'vivo' ? ' · columna del vivo' : '')
-    + (s.c[x] > 0 && s.v[x] > 0 ? ' · compra y venta a la vez (venues cruzados): pinta el lado mayor' : '')
-    + (s.h && s.h[x] ? ' · capa honda, foto de hace ' + s.honda.map((y) => y.venue + ' ' + Math.round(y.edad_s) + ' s')
-      .join(', ') : '');
+  caja.textContent = f.texto;
+  while (ficha.firstChild) ficha.removeChild(ficha.firstChild);
+  f.lineas.forEach(([campo, t]) => {
+    const d = document.createElement('div');
+    d.dataset.campo = campo;
+    d.textContent = t;
+    if (campo === 'cab') d.className = 'ficha-cab';
+    else if (campo === f.lado) d.className = 'domina';
+    ficha.appendChild(d);
+  });
+  ficha.hidden = false;
+  const g = ficha.parentElement.getBoundingClientRect();
+  const w = ficha.offsetWidth;
+  const h = ficha.offsetHeight;
+  let x = pos.x + 16;
+  if (x + w > g.width) x = Math.max(0, pos.x - 16 - w);
+  ficha.style.left = x + 'px';
+  ficha.style.top = Math.max(0, Math.min(g.height - h, pos.y + 16)) + 'px';
 }
 
 /* ------------------------------------------------------------------ el mando de intensidad y la leyenda

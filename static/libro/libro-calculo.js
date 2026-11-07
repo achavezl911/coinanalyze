@@ -335,8 +335,10 @@ function sumaConHonda(s, extras) {
     n[k - lo] += 1;
     h[k - lo] += 1;
   }));
+  // (149 rC) `hondaK`: los niveles de cada venue hondo, para que la ficha diga QUIEN conoce un nivel (no va al contrato)
   return Object.assign({}, s, { lo, hi, c, v, n, h,
-                                honda: extras.map((e) => ({ venue: e.venue, edad_s: e.edad_s })) });
+                                honda: extras.map((e) => ({ venue: e.venue, edad_s: e.edad_s })),
+                                hondaK: extras.map((e) => [e.venue, e.edad_s, e.niveles]) });
 }
 
 /* Junta la capa honda a las columnas con foto (en su sitio). -> {pinta, motivo, columnas: cuantas la llevan}.

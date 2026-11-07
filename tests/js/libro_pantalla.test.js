@@ -316,3 +316,33 @@ test('maximo y minimo de la sesion: los del perfil, ampliados por la cinta del m
   assert.deepStrictEqual(C.extremosSesion(null, r, '10'), { lo: 13, hi: 13, dia: '2026-11-03', de_perfil: false });
   assert.strictEqual(C.extremosSesion(null, C.recienteVacio(), '10'), null);
 });
+
+test('(149 rC, H-09) la ficha: la celda bajo el raton, quien la conoce y de donde; lo que no se sabe nunca es un cero', () => {
+  const Mp = require('../../static/libro/libro-mapa.js');
+  const a = C.libroDe('a', '81005', '81012', { desde: '81000', cantidades: ['1', '2', '3'] },
+                      { desde: '81010', cantidades: ['4'] }, '10');
+  const b = C.libroDe('b', '81001', '81015', { desde: '81000', cantidades: ['10'] },
+                      { desde: '81010', cantidades: ['20', '30', '40'] }, '10');
+  const t = Date.parse('2026-11-04T12:00:10Z');
+  const m = { paso: '10', unidad: 'base', N: 4, columnas: [
+    { ts: t, estado: 'foto', origen: 'vivo', libros: [a, b], suma: C.sumaFamilia([a, b], 4) },
+    { ts: t + 10000, estado: 'hueco', suma: null }, { ts: t + 20000, estado: 'pendiente', suma: null }] };
+  const neg = { velas: [[t - 10000]], niveles: new Map([[8100, [0.5, 0.25]]]) };
+  const f = Mp.fichaDe(m, 0, 8100, neg);
+  assert.deepStrictEqual([f.compra, f.venta, f.lado, f.n, f.venues, f.fuente], [11, 0, 'compra', 2, ['a', 'b'], 'vivo']);
+  assert.match(f.texto, /^11-04 12:00:10Z · nivel 81000 · columna del vivo · compra 11\.0 · venta 0 · lo conocen 2 de 4 /);
+  assert.match(f.texto, /mejor compra 81005 · mejor venta 81012 · footprint 1m 12:00Z: compra 0[.,]5/);
+  assert.deepStrictEqual(Mp.fichaDe(m, 0, 8098, null).venues, ['a']);
+  assert.deepStrictEqual(Mp.fichaDe(m, 0, 8103, null).venues, ['b']);
+  // nadie conoce el 8097: DESCONOCIDO, sin cantidades (ni un «0»); sin vela del minuto: «sin footprint»
+  const d = Mp.fichaDe(m, 0, 8097, null);
+  assert.deepStrictEqual([d.estado, d.compra, d.venta, d.n], ['desconocido', null, null, null]);
+  assert.ok(d.texto.includes(Mp.FICHA_ESTADO.desconocido) && !/compra 0|venta 0/.test(d.texto), d.texto);
+  assert.match(d.texto, /sin footprint$/);
+  assert.match(Mp.fichaDe(m, 1, 8100, null).texto, /HUECO: ningún venue de la familia tenía libro válido · sin footprint$/);
+  assert.match(Mp.fichaDe(m, 2, 8100, null).texto, / · sin escribir aún · sin footprint$/);
+  // un nivel que solo trae la capa honda: su venue y la edad de su foto
+  m.columnas[0].suma = C.sumaConHonda(m.columnas[0].suma, [{ venue: 'h', edad_s: 12.4, niveles: new Map([[8090, [3, 0]]]) }]);
+  const h = Mp.fichaDe(m, 0, 8090, null);
+  assert.deepStrictEqual([h.venues, h.fuente, h.compra], [['h'], 'capa honda, foto de hace h 12 s', 3]);
+});

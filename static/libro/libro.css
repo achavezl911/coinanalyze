@@ -415,3 +415,17 @@
   overflow-y: auto;
   contain: size layout paint;
 }
+
+/* (149 rC, H-09 y H-01) la cruz del mapa: la ficha junto al cursor (la de /flujo) con su lado mayor en su color, y la
+ * fila de ese precio en la escalera */
+.ficha [data-campo='compra'].domina {
+  color: var(--comprador);
+  font-weight: 600;
+}
+.ficha [data-campo='venta'].domina {
+  color: var(--vendedor);
+  font-weight: 600;
+}
+#esc-filas tr.cruz-fila td {
+  box-shadow: inset 0 1px 0 rgba(230, 233, 238, 0.55), inset 0 -1px 0 rgba(230, 233, 238, 0.55);
+}

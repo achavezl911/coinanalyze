@@ -39,6 +39,8 @@ const MAPA_COLOR = {
   fondo: [10, 13, 18], desconocido: [26, 26, 26], hueco: [34, 29, 22], hueco_raya: [52, 42, 26], pendiente: [30, 36, 46],
   compra: '#60a5fa', venta: '#e05a5a', eje: '#8891a0', // E-02 (OF-6a): los colores propios de cada lado
   referencia: '#f2cc60', // el acento de la casa (--acento de flujo.css): el ultimo precio
+  // (149 rC, E-05) la cruz y sus dos etiquetas: los de la cruz de /flujo (flujo-dibujo.js COLOR.cruz)
+  cruz: 'rgba(230,233,238,0.55)', cruzFondo: '#2a313c', cruzTexto: '#e6e9ee',
 };
 function hexRgb(h) {
   return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -89,6 +91,64 @@ function bandaDe(lo, hi, cy, kb) {
   return [a, a + cy - 1];
 }
 
+/* (149 rC, H-09) LA FICHA de una celda: lo que dice el raton de la columna j y el nivel k, en la ficha y en #lectura
+ * con las mismas palabras (las de la leyenda). Nunca un cero por lo que no se sabe: DESCONOCIDO, HUECO o «sin escribir
+ * aún». `neg` = lo negociado del minuto de la columna (negociado() del mapa) o null. -> {..., lineas, texto} */
+const FICHA_ESTADO = {
+  hueco: 'HUECO: ningún venue de la familia tenía libro válido',
+  pendiente: 'sin escribir aún',
+  desconocido: 'DESCONOCIDO: ningún venue de la familia conoce este nivel en este instante',
+};
+
+function fichaDe(m, j, k, neg) {
+  const col = m.columnas[j];
+  const s = col.suma;
+  const ts = isoZ(col.ts);
+  const u = (q) => cifra(enUnidad(q, k, m.paso, m.unidad));
+  const f = { ts, columna: j, nivel: k, precio: nivelTexto(k, m.paso), estado: col.estado, origen: col.origen,
+              unidad: m.unidad, compra: null, venta: null, lado: null, n: null, N: m.N, venues: [], vivo: [], honda: [],
+              fuente: null, mejor_compra: s ? s.mejorCompra : null, mejor_venta: s ? s.mejorVenta : null, huella: null,
+              lineas: [] };
+  f.lineas.push(['cab', ts.slice(5, 19).replace('T', ' ') + 'Z · nivel ' + f.precio
+    + (col.origen === 'vivo' ? ' · columna del vivo' : '')]);
+  const i = s && k >= s.lo && k <= s.hi ? k - s.lo : null;
+  if (col.estado !== 'foto') f.lineas.push(['estado', FICHA_ESTADO[col.estado]]);
+  else if (i === null || !s.n[i]) {
+    f.estado = 'desconocido';
+    f.lineas.push(['estado', FICHA_ESTADO.desconocido]);
+  } else {
+    f.compra = enUnidad(s.c[i], k, m.paso, m.unidad);
+    f.venta = enUnidad(s.v[i], k, m.paso, m.unidad);
+    f.lado = ladoDe(s.c[i], s.v[i]) ? 'venta' : 'compra';
+    f.n = s.n[i];
+    // quien lo conoce: del libro vivo de cada venue (col.libros en el vivo, col.fotos en la historia) y de la capa honda
+    const libros = col.libros || (col.fotos || []).map((x) => libroDe(x.venue, x.compra, x.venta, x.compras, x.ventas, m.paso));
+    libros.forEach((L) => {
+      if (enNivel(L, k)) f.vivo.push(L.venue);
+    });
+    (s.hondaK || []).forEach(([venue, edad, nv]) => {
+      if (nv.has(k)) f.honda.push({ venue, edad_s: edad });
+    });
+    f.venues = f.vivo.concat(f.honda.map((x) => x.venue));
+    const hace = 'capa honda, foto de hace ' + f.honda.map((x) => x.venue + ' ' + Math.round(x.edad_s) + ' s').join(', ');
+    f.fuente = !f.honda.length ? 'vivo' : !f.vivo.length ? hace : 'vivo (' + f.vivo.join(', ') + ') y ' + hace;
+    f.lineas.push(['compra', 'compra ' + u(s.c[i])], ['venta', 'venta ' + u(s.v[i])],
+                  ['venues', 'lo conocen ' + f.n + ' de ' + f.N + ' venues: ' + f.venues.join(', ')
+                    + (f.n < f.N ? ' (la suma es de esos)' : '')],
+                  ['fuente', f.fuente]);
+    if (s.c[i] > 0 && s.v[i] > 0) f.lineas.push(['cruzado', 'compra y venta a la vez (venues cruzados): pinta el lado mayor']);
+  }
+  if (s) f.lineas.push(['mejor', 'mejor compra ' + s.mejorCompra + ' · mejor venta ' + s.mejorVenta]);
+  const min = isoZ(Math.floor(col.ts / 60000) * 60000).slice(11, 16);
+  if (neg && neg.velas.length) {
+    const z = neg.niveles.get(k) || [0, 0];
+    f.huella = { minuto: min, compra: enUnidad(z[0], k, m.paso, m.unidad), venta: enUnidad(z[1], k, m.paso, m.unidad) };
+    f.lineas.push(['huella', 'footprint 1m ' + min + 'Z: compra ' + u(z[0]) + ' · venta ' + u(z[1])]);
+  } else f.lineas.push(['huella', 'sin footprint']);
+  f.texto = f.lineas.map((x) => x[1]).join(' · ');
+  return f;
+}
+
 /* La columna «ahora»: la ultima de la ventana, si esta a la vista, tiene foto y no es vieja (en vivo: mas de dos
  * `cada` y 5 s). -> [indice, null] o [null, motivo]. */
 function columnaAhora(m, j1, ahoraMs) {
@@ -110,7 +170,12 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
               fin: 0, ver: 0, pedido: 0, sigue: true, pendiente: false, cuadros: 0, arrastre: null, bmp: null,
               esc: null, escClave: null, escT: -Infinity, escN: 0, escTimer: null, gestoT: -Infinity, clave: null, aviso,
               alEscala,
-              pc: MAPA_PERCENTILES.slice() };
+              pc: MAPA_PERCENTILES.slice(), raton: null };
+  // (149 rC, E-05) la cruz va en SU capa, encima del mapa y sin raton: moverla no repinta el mapa de bits
+  L.capa = document.createElement('canvas');
+  L.capa.className = 'cruz';
+  L.capa.setAttribute('aria-hidden', 'true');
+  canvas.parentElement.appendChild(L.capa);
 
   function mide() {
     const r = L.cv.parentElement.getBoundingClientRect();
@@ -120,6 +185,10 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     L.cv.height = L.H * L.pr;
     L.cv.style.width = L.W + 'px';
     L.cv.style.height = L.H + 'px';
+    L.capa.width = L.W * L.pr;
+    L.capa.height = L.H * L.pr;
+    L.capa.style.width = L.W + 'px';
+    L.capa.style.height = L.H + 'px';
   }
 
   function pide() {
@@ -214,8 +283,76 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     return { niveles, velas };
   }
 
+  /* ------------------------------------------------------------ la cruz (E-05) y la ficha (H-09)
+   * 1 px sobre el mapa por el centro de la celda bajo el raton; la horizontal sigue por «ahora» y los dos perfiles; el
+   * precio de la fila (al paso) en su eje, la hora de la columna (HH:MM:SS) en el suyo. La geometria es la del ULTIMO
+   * cuadro (su contrato): lo que dice la cruz es lo que se ve. Fuera de las celdas no hay cruz ni ficha. */
+  function cruz() {
+    const c = L.capa.getContext('2d');
+    c.setTransform(L.pr, 0, 0, L.pr, 0, 0);
+    c.clearRect(0, 0, L.W, L.H);
+    const reg = window.LIBRO_PINTADO.mapa;
+    const m = L.modelo;
+    const e = reg && reg.eje;
+    let j = null;
+    let k = null;
+    if (L.raton && m && e) {
+      const { x, y } = L.raton;
+      if (x >= 0 && x < e.ancho && y >= 0 && y < e.alto) {
+        j = Math.floor(e.fin + 1 - (e.ancho - x) / e.columna);
+        k = Math.floor(e.hi + 1 - y / e.fila);
+        if (j < 0 || j >= m.columnas.length) j = null;
+      }
+    }
+    if (j === null) {
+      window.LIBRO_CRUZ = null;
+      alLeer(null);
+      return;
+    }
+    const xc = Math.round(e.ancho - (e.fin - j + 0.5) * e.columna) + 0.5;
+    const yc = Math.round((e.hi - k + 0.5) * e.fila) + 0.5;
+    const xP = L.W - MAPA.EJE_P;
+    c.lineWidth = 1;
+    c.strokeStyle = MAPA_COLOR.cruz;
+    c.setLineDash([3, 3]);
+    c.beginPath();
+    c.moveTo(0, yc);
+    c.lineTo(xP, yc);
+    c.moveTo(xc, 0);
+    c.lineTo(xc, e.alto + MAPA.BAJO);
+    c.stroke();
+    c.setLineDash([]);
+    const precio = nivelTexto(k, m.paso);
+    const hora = isoZ(m.columnas[j].ts).slice(11, 19);
+    c.font = '10px ui-monospace, monospace';
+    c.textBaseline = 'middle';
+    c.fillStyle = MAPA_COLOR.cruzFondo;
+    c.fillRect(xP, yc - 7.5, MAPA.EJE_P, 15);
+    c.fillStyle = MAPA_COLOR.cruzTexto;
+    c.textAlign = 'left';
+    c.fillText(precio, xP + 6, yc);
+    const wT = Math.ceil(c.measureText(hora).width) + 10;
+    const xT = Math.max(0, Math.min(e.ancho - wT, xc - wT / 2));
+    c.fillStyle = MAPA_COLOR.cruzFondo;
+    c.fillRect(xT, L.H - MAPA.EJE_T, wT, MAPA.EJE_T);
+    c.fillStyle = MAPA_COLOR.cruzTexto;
+    c.textAlign = 'center';
+    c.fillText(hora, xT + wT / 2, L.H - MAPA.EJE_T / 2);
+    // la ficha: la celda, y lo negociado en su nivel en el minuto de la columna (footprint 1m)
+    const t0 = Math.floor(m.columnas[j].ts / 60000) * 60000;
+    const f = fichaDe(m, j, k, negociado(m, t0, t0 + 60000));
+    window.LIBRO_CRUZ = { x: L.raton.x, y: L.raton.y, precio, nivel: k, columna: j, ts: f.ts, cuadro: reg.cuadro,
+                          ejes: { precio, hora, x: xc, y: yc, x_precio: xP, y_hora: L.H - MAPA.EJE_T / 2 }, ficha: f };
+    alLeer(f, L.raton);
+  }
+
   /* ------------------------------------------------------------ pintar */
   function pinta(forzar) {
+    pintaMapa(forzar);
+    if (L.raton) cruz();
+  }
+
+  function pintaMapa(forzar) {
     const ctx = L.ctx;
     ctx.setTransform(L.pr, 0, 0, L.pr, 0, 0);
     ctx.imageSmoothingEnabled = false;
@@ -518,17 +655,10 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     L.sigue = L.fin >= n - 1;
   }
 
-  function lee(ev) {
-    const m = L.modelo;
-    const reg = window.LIBRO_PINTADO.mapa;
-    if (!m || !reg || !reg.eje || !alLeer) return;
+  function ponRaton(ev) {
     const r = L.cv.getBoundingClientRect();
-    const x = ev.clientX - r.left;
-    const y = ev.clientY - r.top;
-    const j = Math.floor(L.fin + 1 - (reg.eje.ancho - x) / reg.eje.columna);
-    const col = m.columnas[j];
-    if (!col || x > reg.eje.ancho || y > reg.eje.alto) return alLeer(null);
-    alLeer(col, Math.floor(reg.eje.hi + 1 - y / reg.eje.fila));
+    L.raton = { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    cruz();
   }
 
   L.cv.addEventListener('wheel', (ev) => {
@@ -551,7 +681,11 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
       acota();
       pide();
     }
-    lee(ev);
+    ponRaton(ev);
+  });
+  L.cv.addEventListener('mouseleave', () => {
+    L.raton = null;
+    cruz();
   });
   new ResizeObserver(() => {
     mide();
@@ -600,5 +734,5 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { MAPA, MAPA_COLOR, MAPA_LUT_COMPRA, MAPA_LUT_VENTA, lutLado, luminancia, colorHueco, ladoDe,
-                     columnaAhora, cabenEn, verEfectivo, bandaDe };
+                     columnaAhora, cabenEn, verEfectivo, bandaDe, fichaDe, FICHA_ESTADO };
 }
