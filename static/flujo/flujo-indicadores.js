@@ -534,8 +534,8 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
     const yy = y(e.precio);
     const r = radioLiq(e.usd);
     const dibujada = i >= i0 && i <= i1 && yy >= g.arriba && yy <= g.abajo;
+    const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;
     if (dibujada) {
-      const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;
       ctx.beginPath();
       ctx.arc(x, yy, r, 0, 2 * Math.PI);
       ctx.fillStyle = rgba(c, 0.45);
@@ -546,7 +546,8 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
     }
     out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, precio: e.precio, usd: e.usd,
                vela: i >= 0 && i < m.velas.length ? m.velas[i].ts : null,
-               x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 100) / 100, dibujada });
+               x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 100) / 100, dibujada,
+               color: c });
   });
   // LA CASCADA M8 (sueltas.cascada, la regla del estudio): una barra sobre el eje de tiempo, de la primera a la ultima
   // liquidacion del episodio, con su cuenta y sus USD. Sobre TODAS las sueltas, no solo las de encima del umbral.

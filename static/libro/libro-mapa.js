@@ -161,8 +161,8 @@ function pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto) {
     const y = yPrecio(e.precio);
     const r = radioLiq(e.usd);
     const dibujada = x >= 0 && x <= ancho && y >= 0 && y <= alto;
+    const c = e.lado === 'long' ? MAPA_COLOR.venta : MAPA_COLOR.compra;
     if (dibujada) {
-      const c = e.lado === 'long' ? MAPA_COLOR.venta : MAPA_COLOR.compra;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, 2 * Math.PI);
       ctx.globalAlpha = 0.45;
@@ -174,7 +174,8 @@ function pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto) {
       ctx.stroke();
     }
     out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, precio: e.precio, usd: e.usd,
-               x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(r * 100) / 100, dibujada });
+               x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(r * 100) / 100, dibujada,
+               color: c });
   });
   // LA CASCADA M8 (sueltas.cascada, la regla del estudio): una barra al pie del mapa, sobre el eje de tiempo, de la
   // primera a la ultima liquidacion del episodio, con su cuenta y sus USD
