@@ -129,6 +129,7 @@ function creaEscalera(raiz, opciones) {
   const botonAcum = raiz.querySelector('#esc-acum');
   const porK = new Map();
   let cuadros = 0;
+  let resaltado = null;  // (149 rC, H-01) el nivel bajo la cruz del mapa
   let alto = leeFila();
   let encima = false;
   let centrar = true;
@@ -540,13 +541,35 @@ function creaEscalera(raiz, opciones) {
                   reciente, cinta, cinta_motivo: x.motivo || null,
                   falta_cinta: rec && rec.falta && cinta !== 'fija' ? rec.falta.motivo : null,
                   totales: tot, extremos: ext };
+    reg.resaltado = marcaResalte();
     marca('registro');
     reg.piezas = piezas;
     reg.ms = performance.now() - t0;
     return reg;
   }
 
-  return { pinta };
+  /* (149 rC, H-01) la fila del precio de la cruz del mapa, resaltada si esta a la vista (bajo la cabecera de la
+   * tabla y dentro de su caja); se vuelve a marcar en cada pinta, que rehace filas. -> {k, en_vista} */
+  function marcaResalte() {
+    cuerpo.querySelectorAll('tr.cruz-fila').forEach((tr) => {
+      if (tr._k !== resaltado) tr.classList.remove('cruz-fila');
+    });
+    const tr = resaltado === null ? null : porK.get(resaltado);
+    if (!tr) return { k: resaltado, en_vista: false };
+    const a = caja.getBoundingClientRect();
+    const r = tr.getBoundingClientRect();
+    const medio = (r.top + r.bottom) / 2;
+    const en = medio > a.top + cabezaT.getBoundingClientRect().height && medio < a.bottom;
+    tr.classList.toggle('cruz-fila', en);
+    return { k: resaltado, en_vista: en };
+  }
+
+  function resalta(k) {
+    resaltado = k;
+    return marcaResalte();
+  }
+
+  return { pinta, resalta };
 }
 
 if (typeof module !== 'undefined' && module.exports) {

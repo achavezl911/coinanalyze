@@ -38529,7 +38529,9 @@
       ],
       "consumidores": {
         "checks": {
-          "llamadas": [],
+          "llamadas": [
+            "harness/checks/K114-control.bash:101"
+          ],
           "menciones": [
             "harness/checks/K110-el-libro.sh:18",
             "harness/checks/K111-banco.py:14",
@@ -38549,7 +38551,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
+        "n_llamadas": 2,
         "n_menciones": 7,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48162,6 +48164,8 @@
             "harness/checks/K113-el-raton-y-el-aspecto.sh:2",
             "harness/checks/K113-el-raton-y-el-aspecto.sh:4",
             "harness/checks/K113-raton.py:1",
+            "harness/checks/K114-el-raton-del-libro.sh:16",
+            "harness/checks/K114-raton-libro.py:19",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:331",
@@ -48184,7 +48188,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 38,
-        "n_menciones": 19,
+        "n_menciones": 21,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48242,6 +48246,9 @@
             "harness/checks/K111-libro.py:1676",
             "harness/checks/K111-libro.py:1681",
             "harness/checks/K111-libro.py:1684",
+            "harness/checks/K114-raton-libro.py:154",
+            "harness/checks/K114-raton-libro.py:768",
+            "harness/checks/K114-raton-libro.py:773",
             "harness/checks/K44-control.bash:1186",
             "harness/checks/K44-control.bash:1187",
             "harness/checks/K44-control.bash:1197",
@@ -48257,6 +48264,10 @@
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:4",
             "harness/checks/K113-el-raton-y-el-aspecto.sh:19",
             "harness/checks/K113-raton.py:37",
+            "harness/checks/K114-el-raton-del-libro.sh:2",
+            "harness/checks/K114-el-raton-del-libro.sh:4",
+            "harness/checks/K114-raton-libro.py:1",
+            "harness/checks/K114-raton-libro.py:100",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:342"
@@ -48271,8 +48282,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 11,
-        "n_menciones": 10,
+        "n_llamadas": 14,
+        "n_menciones": 14,
         "sin_ninguno": false,
         "solo_mencion": false
       },

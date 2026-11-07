@@ -588,32 +588,38 @@ function pintaSelectores() {
   document.getElementById('ir-mesa').setAttribute('href', '/#scalp/' + VISTA.activo);
 }
 
-function lectura(col, k) {
+/* (149 rC, H-09) lo que hay bajo el raton: la ficha junto al cursor y #lectura en una linea, con las MISMAS palabras
+ * (fichaDe de libro-mapa.js); la escalera resalta la fila de ese precio si la tiene a la vista (H-01). */
+function lectura(f, pos) {
   const caja = document.getElementById('lectura');
-  if (!col) {
+  const ficha = document.getElementById('ficha');
+  const esc = LA_ESCALERA ? LA_ESCALERA.resalta(f ? f.nivel : null) : null;
+  if (window.LIBRO_CRUZ) window.LIBRO_CRUZ.escalera = esc;
+  if (!f) {
     caja.textContent = '';
+    caja.title = '';
+    ficha.hidden = true;
     return;
   }
-  const t = new Date(col.ts).toISOString().slice(5, 19).replace('T', ' ') + 'Z';
-  const est = { hueco: 'HUECO: ningún venue de la familia tenía libro válido', pendiente: 'sin escribir aún' };
-  if (col.estado !== 'foto') {
-    caja.textContent = t + ' · ' + est[col.estado];
-    return;
-  }
-  const s = col.suma;
-  const x = k === null || k < s.lo || k > s.hi ? null : k - s.lo;
-  const nivel = k === null ? '' : ' · nivel ' + nivelTexto(k, MODELO.paso);
-  if (x === null || !s.n[x]) {
-    caja.textContent = t + nivel + ' · DESCONOCIDO: ningún venue de la familia conoce este nivel en este instante';
-    return;
-  }
-  const u = (q) => cifra(enUnidad(q, k, MODELO.paso, VISTA.unidad));
-  caja.textContent = t + nivel + ' · compra ' + u(s.c[x]) + ' · venta ' + u(s.v[x]) + ' · lo conocen ' + s.n[x] + ' de '
-    + s.N + ' venues' + (s.n[x] < s.N ? ' (la suma es de esos)' : '') + ' · mejor compra ' + s.mejorCompra
-    + ' · mejor venta ' + s.mejorVenta + (col.origen === 'vivo' ? ' · columna del vivo' : '')
-    + (s.c[x] > 0 && s.v[x] > 0 ? ' · compra y venta a la vez (venues cruzados): pinta el lado mayor' : '')
-    + (s.h && s.h[x] ? ' · capa honda, foto de hace ' + s.honda.map((y) => y.venue + ' ' + Math.round(y.edad_s) + ' s')
-      .join(', ') : '');
+  caja.textContent = f.texto; // (149 rC r1) una linea con recorte (libro.css): la frase entera, en el title
+  caja.title = f.texto;
+  while (ficha.firstChild) ficha.removeChild(ficha.firstChild);
+  f.lineas.forEach(([campo, t]) => {
+    const d = document.createElement('div');
+    d.dataset.campo = campo;
+    d.textContent = t;
+    if (campo === 'cab') d.className = 'ficha-cab';
+    else if (campo === f.lado) d.className = 'domina';
+    ficha.appendChild(d);
+  });
+  ficha.hidden = false;
+  const g = ficha.parentElement.getBoundingClientRect();
+  const w = ficha.offsetWidth;
+  const h = ficha.offsetHeight;
+  let x = pos.x + 16;
+  if (x + w > g.width) x = Math.max(0, pos.x - 16 - w);
+  ficha.style.left = x + 'px';
+  ficha.style.top = Math.max(0, Math.min(g.height - h, pos.y + 16)) + 'px';
 }
 
 /* ------------------------------------------------------------------ el mando de intensidad y la leyenda
@@ -651,6 +657,71 @@ function montaIntensidad() {
   if (Number(a.value) !== MAPA_PERCENTILES[0] || Number(b.value) !== MAPA_PERCENTILES[1]) mueve();
 }
 
+/* ------------------------------------------------------------------ (149 rC) los gestos que tienen DOM
+ * H-08/I-07: el menu del eje de precio (clic derecho) con el modo de recentrado, recordado como la intensidad; Esc o un
+ * clic fuera lo cierran. I-05: «PRESENTE» enciende seguir el presente (encendido: apagado el boton; parado: en acento). */
+const RECENTRA_CLAVE = 'libro.recentrado';
+
+function cierraMenuEje() {
+  document.getElementById('menu-eje').hidden = true;
+}
+
+function montaGestos() {
+  const menu = document.getElementById('menu-eje');
+  const cv = document.getElementById('mapa');
+  let modo = 'ultimo';
+  try {
+    const x = window.localStorage.getItem(RECENTRA_CLAVE);
+    if (RECENTRA[x]) modo = x;
+  } catch (e) {
+    // sin localStorage: el de omision
+  }
+  EL_MAPA.recentra(modo, false);
+  const marca = (m) => menu.querySelectorAll('input[name=recentra]').forEach((r) => { r.checked = r.value === m; });
+  marca(modo);
+  menu.querySelectorAll('input[name=recentra]').forEach((r) => r.addEventListener('change', () => {
+    try {
+      window.localStorage.setItem(RECENTRA_CLAVE, r.value);
+    } catch (e) {
+      // no se recuerda: no pasa nada
+    }
+    EL_MAPA.recentra(r.value, true);
+    marca(r.value);
+    cierraMenuEje();
+  }));
+  cv.addEventListener('contextmenu', (ev) => {
+    const b = cv.getBoundingClientRect();
+    if (EL_MAPA.zonaDe(ev.clientX - b.left, ev.clientY - b.top) !== 'precio') return;
+    ev.preventDefault();
+    marca(EL_MAPA.estado().vertical.recentra);
+    menu.hidden = false;
+    menu.style.left = Math.max(0, Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+    menu.style.top = Math.max(0, Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - 8)) + 'px';
+  });
+  document.addEventListener('mousedown', (ev) => {
+    if (!menu.hidden && !ev.target.closest('#menu-eje')) cierraMenuEje();
+  });
+  // la ayuda (la pantalla no es un manual): «?» la abre y la cierra, Esc la cierra (el dialogo modal lo hace solo)
+  const ayuda = document.getElementById('ayuda');
+  const alterna = () => (ayuda.open ? ayuda.close() : ayuda.showModal());
+  document.getElementById('b-ayuda').addEventListener('click', alterna);
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') cierraMenuEje();
+    if (ev.key !== '?' || ev.ctrlKey || ev.altKey || ev.metaKey) return;
+    const t = ev.target && ev.target.tagName;
+    if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA') return;
+    ev.preventDefault();
+    cierraMenuEje();
+    alterna();
+  });
+  document.getElementById('b-presente').addEventListener('click', () => EL_MAPA.presente());
+}
+
+function pintaVista(v) {
+  const b = document.getElementById('b-presente');
+  if (b) b.classList.toggle('parado', !v.sigue);
+}
+
 /* La leyenda: los dos degradados con sus cortes en la unidad de la vista, el desconocido y el «sin datos». */
 function pintaLeyenda(esc, m) {
   const cv = document.getElementById('mapa-leyenda');
@@ -679,6 +750,7 @@ function pintaLeyenda(esc, m) {
       + u + ' (de ' + esc.n + ' celdas a la vista) · gris: desconocido · rayado: sin datos · un nivel que conocen menos'
       + ' venues que la familia no se atenúa (lo dice «n de N» al leerlo): en perp solo okx_swap y bitget guardan la'
       + ' capa honda, así que n de N mide lo que guardamos, no la liquidez del mercado';
+  tx.title = tx.textContent; // (149 rC r1) recortada a 4 lineas (libro.css): la frase entera
 }
 
 function cambia(cambios) {
@@ -694,8 +766,10 @@ function aplicaHash() {
 }
 
 function arranca() {
-  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'), pintaLeyenda);
+  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'), pintaLeyenda,
+                     pintaVista);
   montaIntensidad();
+  montaGestos();
   LA_ESCALERA = creaEscalera(document.getElementById('escalera'), { pide: pideEscalera, limpia: limpiaCinta });
   [['sel-activo', 'activo'], ['sel-familia', 'familia'], ['sel-ventana', 'ventana'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {
