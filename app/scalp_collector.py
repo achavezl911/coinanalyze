@@ -1558,7 +1558,7 @@ async def cleanup_expired_rows(conn: asyncpg.Connection) -> None:
     await apply_temporal_retention(
         conn,
         "liquidations_realtime",
-        SETTINGS.SCALP_TRADE_RETENTION_HOURS,
+        SETTINGS.LIQ_REALTIME_RETENTION_DAYS * 24,
     )
     await apply_temporal_retention(
         conn,

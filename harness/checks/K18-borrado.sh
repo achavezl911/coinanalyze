@@ -6,7 +6,7 @@
 #   apply_temporal_retention (funcion SQL, tira PARTICIONES enteras)
 #       futures_trades_realtime 12 h   scalp_collector.py:1542  config.py:181
 #       orderbook_snapshot       6 h   scalp_collector.py:1555  config.py:187
-#       liquidations_realtime   12 h   scalp_collector.py:1560  config.py:181
+#       liquidations_realtime   30 d   scalp_collector.py (LIQ_REALTIME_RETENTION_DAYS, campana 150; antes 12 h)
 #       scalp_signal_snapshot   72 h   scalp_collector.py:1565  config.py:189
 #       spot_trades_realtime     2 h   daily_agg.py:695         config.py:204
 #   DELETE directo
@@ -105,8 +105,8 @@ B=${K18_HARNESS:-/srv/coinanalyze/harness}; . "$B/env"
 # (linea del `case` mas abajo). Una tabla sin `min(ts)` SI sigue condenando.
 #
 # tabla:variable_de_entorno:gracia
-VENTANAS="futures_trades_realtime:SCALP_TRADE_RETENTION_HOURS:27 orderbook_snapshot:SCALP_ORDERBOOK_RETENTION_HOURS:27 liquidations_realtime:SCALP_TRADE_RETENTION_HOURS:27 scalp_signal_snapshot:SCALP_SIGNAL_RETENTION_HOURS:27 spot_trades_realtime:REALTIME_RETENTION_HOURS:27 futures_trades_agg:SCALP_MINUTE_RETENTION_HOURS:6"
-VARS_RETENCION='^(SCALP_(TRADE|MINUTE|ORDERBOOK|SIGNAL)_RETENTION_HOURS|REALTIME_RETENTION_HOURS)='
+VENTANAS="futures_trades_realtime:SCALP_TRADE_RETENTION_HOURS:27 orderbook_snapshot:SCALP_ORDERBOOK_RETENTION_HOURS:27 liquidations_realtime:LIQ_REALTIME_RETENTION_DAYS:27 scalp_signal_snapshot:SCALP_SIGNAL_RETENTION_HOURS:27 spot_trades_realtime:REALTIME_RETENTION_HOURS:27 futures_trades_agg:SCALP_MINUTE_RETENTION_HOURS:6"
+VARS_RETENCION='^(SCALP_(TRADE|MINUTE|ORDERBOOK|SIGNAL)_RETENTION_HOURS|REALTIME_RETENTION_HOURS|LIQ_REALTIME_RETENTION_DAYS)='
 
 # Tablas sin retencion automatica y su suelo de filas esperado.
 SUELOS="pipeline_heartbeat:12"
@@ -129,7 +129,7 @@ leer_entorno() {
 ENV_SCALP=$(leer_entorno coinalyze-scalp)
 ENV_DAILY=$(leer_entorno coinalyze-daily)
 # Los `Field(default=...)` del RELEASE DESPLEGADO, para las variables que no esten puestas.
-DEFECTOS=$("$B/bin/prod" "grep -oE '(SCALP_(TRADE|MINUTE|ORDERBOOK|SIGNAL)_RETENTION_HOURS|REALTIME_RETENTION_HOURS): int = Field\(default=[0-9]+' /opt/coinalyze/current/app/config.py | sed 's/: int = Field(default=/=/'" 2>/dev/null \
+DEFECTOS=$("$B/bin/prod" "grep -oE '(SCALP_(TRADE|MINUTE|ORDERBOOK|SIGNAL)_RETENTION_HOURS|REALTIME_RETENTION_HOURS|LIQ_REALTIME_RETENTION_DAYS): int = Field\(default=[0-9]+' /opt/coinalyze/current/app/config.py | sed 's/: int = Field(default=/=/'" 2>/dev/null \
   | grep -E "$VARS_RETENCION" | sort)
 
 [ -n "$ENV_SCALP$ENV_DAILY$DEFECTOS" ] || {
@@ -154,6 +154,9 @@ observaciones=""
 for item in $VENTANAS; do
   t=${item%%:*}; resto=${item#*:}; var=${resto%%:*}; gracia=${resto#*:}
   w=$(ventana_de "$var")
+  # La ventana en DIAS (liquidations_realtime, campana 150) se juzga en horas; un release que aun no la trae
+  # poda con la vieja, SCALP_TRADE_RETENTION_HOURS.
+  case "$var" in *_DAYS) case "$w" in ''|*[!0-9]*) w=$(ventana_de SCALP_TRADE_RETENTION_HOURS) ;; *) w=$((w * 24)) ;; esac ;; esac
   # SIN VENTANA NO SE JUZGA. Suponer un valor aqui es volver a la copia a mano por la
   # puerta de atras, y ademas con un numero que nadie ha decidido.
   case "$w" in ''|*[!0-9]*) fallos="$fallos $t(sin_ventana_aplicada:$var)"; continue ;; esac

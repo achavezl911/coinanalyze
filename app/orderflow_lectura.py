@@ -1001,7 +1001,7 @@ async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str |
         por_ts = {f["ts"]: f for f in filas}
         series[clave] = {"fuente": fuente, "tabla": tabla, "unidad": unidad, "como": COMO_CUBO[como],
                          "cubos": [_cubo(t, cubo, por_ts, columnas, como, barrido, ahora) for t in inicios]}
-    retencion = timedelta(hours=get_settings().SCALP_TRADE_RETENTION_HOURS)
+    retencion = timedelta(days=get_settings().LIQ_REALTIME_RETENTION_DAYS)
     borde = max(a, ahora - retencion)
     sueltas = await conn.fetch(
         """SELECT ts, exchange, side, notional_usd, price, qty FROM liquidations_realtime
