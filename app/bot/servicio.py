@@ -36,6 +36,7 @@ import httpx
 from app.bot import bybit as bb
 from app.bot import calc, calidad, historial, llm, vidas
 from app.bot import centinela as cen
+from app.bot import sombra as sb
 
 log = logging.getLogger("app.bot")
 SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_BOT_TOKEN", "API_INTERNAL_TOKEN")
@@ -358,6 +359,7 @@ class Bot:
         # BOT-4a: el historial de la cuenta, a un fichero y fuera de los bucles (nunca dentro de tic_bybit: R7)
         self.historial_ruta = e.get("BOT_HISTORIAL") or historial.RUTA
         self.historial_tarea, self.historial_proximo = None, 0.0
+        self.sombra = None  # BOT-5: la candidata en sombra (app/bot/sombra.py), se carga en el primer tic
         self.estado = {
             "arranque": ahora_iso(), "version": os.path.basename(os.path.realpath(os.path.join(os.path.dirname(__file__), "..", ".."))),
             "telegram": "ok" if self.tg else "sin Telegram (faltan TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID)",
@@ -1151,7 +1153,7 @@ class Bot:
         if not self.cargado or n.hour < PARTE_HORA_UTC or self.parte_hoy == n.date():
             return
         s = await self.salud()
-        texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}")
+        texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}") + "\n" + await self.texto_sombra(corto=True)
         enviada = await self.manda(texto)
         if not enviada and self.tg:
             return  # se reintenta al minuto siguiente; el interruptor avisa si a las 13:30Z no ha salido
@@ -1159,6 +1161,35 @@ class Bot:
         # sin parte) y ANTES de registrarlo (si la base no lo apunta, no se repite cada minuto: remate 3, bug 4)
         self.parte_hoy = n.date()
         await self.evento("parte", None, None, enviada, detalle={"texto": texto, "salud": s})
+
+    # ---------- BOT-5: la candidata en sombra ----------
+    async def tic_sombra(self):
+        """Cuenta la candidata congelada sobre la cinta (app/bot/sombra.py). Solo con BOT_SOMBRA_AVISA encendido, cada
+        disparo nuevo sale por Telegram con su /calc a 1 USD de riesgo: NO es una ventaja medida."""
+        if self.sombra is None:
+            self.sombra = sb.Sombra(self.db, self.e)
+        for f in await self.sombra.tic():
+            if sb.activa(self.e) and f["estado"] != "sin_dato":
+                await self.manda(await self.aviso_sombra(f))
+
+    async def aviso_sombra(self, f: dict) -> str:
+        c = next(x for x in self.sombra.candidatas if x.indice == f["indice"])
+        orden = sb.orden_calc(c, f)
+        try:
+            calculo = await self.calcula(orden)
+        except Exception as e:
+            calculo = f"(el {orden} no salio: {type(e).__name__} {str(e)[:120]})"
+        return (f"SOMBRA · disparo de {c.nombre()} al cierre de {sb._hm(f['minuto'])}"
+                f" (valor {f['valor']:.0f}).\n{sb.NO_MEDIDA}\n{orden}\n{calculo}")
+
+    async def texto_sombra(self, corto: bool = False) -> str:
+        """La cuenta en sombra de cada candidata (para /entrada y el parte); un fallo no tumba ni la orden ni el parte."""
+        try:
+            if self.sombra is None:
+                self.sombra = sb.Sombra(self.db, self.e)
+            return "\n".join([sb.texto_cuenta(c, await sb.cuenta(self.db, c), corto) for c in self.sombra.candidatas])
+        except Exception as e:
+            return f"SOMBRA: sin cuenta ({type(e).__name__} {str(e)[:160]})"
 
     async def tic_informe(self):
         """El informe semanal que redacta Claude Max en 143 (tools/bot/semanal.py) y deja en BOT_INFORMES/<semana>.txt."""
@@ -1187,7 +1218,7 @@ class Bot:
                     await self.evalua(p, "a peticion")
                 return "" if ps else "no hay posicion abierta que evaluar"
             if orden in ("/entrada", "/entradas", "entrada"):
-                return ENTRADAS
+                return ENTRADAS + "\n" + await self.texto_sombra()
             if orden == "/estado":
                 return self.texto_salud(await self.salud(), "ESTADO")
             if orden == "/gasto":
@@ -1235,7 +1266,7 @@ class Bot:
         # latido, y bot_estado se quedo vacio con el centinela vivo. El latido se escribe siempre.
         await self.recarga()  # (remate 9) captura lo suyo
         for nombre, paso in (("centinela", self.tic_centinela), ("parte", self.tic_parte), ("informe", self.tic_informe),
-                            ("historial", self.tic_historial)):
+                            ("historial", self.tic_historial), ("sombra", self.tic_sombra)):
             try:
                 await paso()
             except Exception as e:

@@ -3425,3 +3425,88 @@ CREATE OR REPLACE TRIGGER bot_crudo_sin_truncate BEFORE TRUNCATE ON bot_crudo
     FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
 
 COMMIT;
+
+
+-- =========================================================================================
+-- CAMPANA BOT-5 · LA CANDIDATA EN SOMBRA (app/bot/sombra.py). Bloque ADITIVO (IF NOT EXISTS / OR REPLACE): dos tablas
+-- NUEVAS, ninguna existente se toca. Ningun nombre lleva digitos (K01a).
+--   bot_sombra_candidata  una fila por candidata congelada (sha256 del fichero + indice en el): su definicion, desde
+--                         cuando se cuenta y el cursor `hasta` (el ultimo minuto de decision ya mirado). Solo avanza.
+--   bot_sombra            una fila por DISPARO tomado (sin solape): abierta -> tocada -> exito | fracaso | sin_dato.
+--                         Un estado final no cambia ni se borra; la clave (candidata, indice, minuto) hace que un
+--                         reinicio no duplique. No es una orden ni una entrada: es la cuenta de una hipotesis.
+-- Permisos: el bot entra como "coinalyze-ai"; los GRANT (SELECT, INSERT, UPDATE) los da el operador.
+-- =========================================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS bot_sombra_candidata (
+    candidata text NOT NULL,
+    indice integer NOT NULL,
+    definicion jsonb NOT NULL,
+    desde timestamptz NOT NULL,
+    hasta timestamptz NOT NULL,
+    ts timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (candidata, indice)
+);
+
+CREATE TABLE IF NOT EXISTS bot_sombra (
+    candidata text NOT NULL,
+    indice integer NOT NULL,
+    minuto timestamptz NOT NULL,
+    simbolo text NOT NULL,
+    lado text NOT NULL,
+    valor double precision NOT NULL,
+    umbral double precision NOT NULL,
+    entrada double precision,
+    estado text NOT NULL CHECK (estado IN ('abierta', 'tocada', 'exito', 'fracaso', 'sin_dato')),
+    exito smallint,
+    neto double precision,
+    salida timestamptz,
+    motivo text,
+    ts_alta timestamptz NOT NULL DEFAULT now(),
+    ts_cambio timestamptz,
+    PRIMARY KEY (candidata, indice, minuto),
+    FOREIGN KEY (candidata, indice) REFERENCES bot_sombra_candidata (candidata, indice)
+);
+
+CREATE OR REPLACE FUNCTION bot_sombra_solo_resuelve()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' AND OLD.estado IN ('abierta', 'tocada')
+       AND (NEW.candidata, NEW.indice, NEW.minuto, NEW.valor, NEW.umbral) IS NOT DISTINCT FROM
+           (OLD.candidata, OLD.indice, OLD.minuto, OLD.valor, OLD.umbral)
+       AND NEW.entrada IS NOT DISTINCT FROM OLD.entrada THEN
+        RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'bot_sombra: una fila solo se resuelve (abierta/tocada -> final); % no se permite', TG_OP
+        USING ERRCODE = '55000';
+END
+$$;
+
+CREATE OR REPLACE FUNCTION bot_sombra_cursor_avanza()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' AND NEW.hasta >= OLD.hasta
+       AND (NEW.candidata, NEW.indice, NEW.definicion, NEW.desde) IS NOT DISTINCT FROM
+           (OLD.candidata, OLD.indice, OLD.definicion, OLD.desde) THEN
+        RETURN NEW;
+    END IF;
+    RAISE EXCEPTION 'bot_sombra_candidata: solo avanza su cursor; % no se permite', TG_OP
+        USING ERRCODE = '55000';
+END
+$$;
+
+CREATE OR REPLACE TRIGGER bot_sombra_solo_resuelve BEFORE UPDATE OR DELETE ON bot_sombra
+    FOR EACH ROW EXECUTE FUNCTION bot_sombra_solo_resuelve();
+CREATE OR REPLACE TRIGGER bot_sombra_sin_truncate BEFORE TRUNCATE ON bot_sombra
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+CREATE OR REPLACE TRIGGER bot_sombra_candidata_avanza BEFORE UPDATE OR DELETE ON bot_sombra_candidata
+    FOR EACH ROW EXECUTE FUNCTION bot_sombra_cursor_avanza();
+CREATE OR REPLACE TRIGGER bot_sombra_candidata_sin_truncate BEFORE TRUNCATE ON bot_sombra_candidata
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+
+COMMIT;

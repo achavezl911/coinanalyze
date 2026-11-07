@@ -1,0 +1,27 @@
+{
+ "congeladas": [
+  {
+   "tipo": "variable",
+   "nombre": "ds100k_60",
+   "cola": "bajo",
+   "umbral": -479834.70166359004,
+   "estricto": false,
+   "capa": "B",
+   "lado": "corto",
+   "simbolo": "SOL",
+   "stop": 0.006,
+   "objetivo": 0.01,
+   "comision_entrada": 0.00055,
+   "comision_salida": 0.00055,
+   "empate": 0.44375,
+   "azar": 0.37499999999999994,
+   "descubrimiento": {
+    "n": 78,
+    "exitos": 37,
+    "tasa": 0.47435897435897434,
+    "p": 0.001321969332112213,
+    "q": 0.03234135683572841
+   }
+  }
+ ]
+}
