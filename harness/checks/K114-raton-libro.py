@@ -507,12 +507,12 @@ async def menu(v: Vista, J, pref: str, hechos: set, xp: float, ym: float) -> Non
     hechos.add("esc")
     await elige("bbo")
     await elige("ninguno")
+    await elige("ultimo")  # la banda, centrada en la referencia del presente ANTES de estrecharla
     for _ in range(25):  # la banda estrecha: la referencia sale de su 20 % en cuanto se mueve
         await v.en(xp, ym, v.rueda, -120)
     resultado = {}
-    for modo in ("ninguno", "ultimo"):
-        if modo == "ultimo":
-            await elige("ultimo")
+    for modo in ("ninguno", "ultimo"):  # los dos tramos parten de la misma banda: la del presente, centrada
+        await elige(modo)
         await v.en(10, ym, v.clic)
         a0 = await v.lee()
         bandas = {(a0["e"]["lo"], a0["e"]["hi"], fil(a0["e"]))}
