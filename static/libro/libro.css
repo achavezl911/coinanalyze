@@ -30,6 +30,11 @@
   margin: 0;
 }
 
+/* (149 rC) el mapa toma el foco del teclado (flechas, RePag/AvPag, Inicio/Fin) sin el marco del navegador */
+.cuerpo .grafico canvas {
+  outline: none;
+}
+
 /* lo que se ve del mapa (cuantas columnas y niveles, y por que no mas): dos lineas fijas, para que el texto no mueva
  * el lienzo */
 .encaje-fila {

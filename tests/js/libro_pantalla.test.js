@@ -346,3 +346,25 @@ test('(149 rC, H-09) la ficha: la celda bajo el raton, quien la conoce y de dond
   const h = Mp.fichaDe(m, 0, 8090, null);
   assert.deepStrictEqual([h.venues, h.fuente, h.compra], [['h'], 'capa honda, foto de hace h 12 s', 3]);
 });
+
+test('(149 rC, I-02..I-04, H-08) el encuadre: el de antes quieto; recentra al ENTRAR en el 20 %; «ninguno» nunca', () => {
+  const Mp = require('../../static/libro/libro-mapa.js');
+  const V = { modo: 'auto', recentra: 'ultimo', filas: null, ancla: null, c: null, visto: null, ya: false };
+  const en = (kRef) => Mp.encuadreDe(V, [0, 999], [0, 999], 100, 500, kRef);
+  // la primera vista es la de siempre: bandaDe alrededor de la mejor compra (K111 R1 la exige)
+  assert.deepStrictEqual(en(500), Mp.bandaDe(0, 999, 100, 500));
+  assert.deepStrictEqual(en(510), [450, 549]); // dentro del 80 % del medio: no se mueve
+  assert.deepStrictEqual(en(535), [485, 584]); // entra en el 20 % de arriba: recentra en la referencia
+  assert.deepStrictEqual(en(535), [485, 584]);
+  V.recentra = 'ninguno';
+  assert.deepStrictEqual(en(900), [485, 584]);
+  // doble clic (ya): salta a la referencia
+  V.ya = true;
+  assert.deepStrictEqual(en(700), [650, 749]);
+  // MANUAL: las filas pedidas alrededor del centro, sin mirar la referencia
+  Object.assign(V, { modo: 'manual', c: 300, filas: 50 });
+  assert.deepStrictEqual(en(900), [276, 325]);
+  // nunca fuera del mapa de bits (r con dos de margen)
+  V.c = 5;
+  assert.deepStrictEqual(en(900), [-2, 47]);
+});

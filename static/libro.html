@@ -55,9 +55,16 @@
     <div class="cuerpo">
       <main class="grafico" id="grafico">
         <canvas id="mapa" role="img" aria-label="Mapa de liquidez: la cantidad de cada nivel de precio en el tiempo, con
-          la mejor compra y la mejor venta encima (la lectura de debajo dice cada celda)"></canvas>
+          la mejor compra y la mejor venta encima (la lectura de debajo dice cada celda)" tabindex="0"></canvas>
         <div class="ficha" id="ficha" hidden></div>
+        <button type="button" class="presente" id="b-presente" title="Seguir el presente (Fin)">PRESENTE ▸|</button>
       </main>
+      <div class="menu-eje" id="menu-eje" role="menu" hidden>
+        <p class="menu-titulo">recentrado del precio</p>
+        <label><input type="radio" name="recentra" value="ultimo" checked> Último precio</label>
+        <label><input type="radio" name="recentra" value="bbo"> Mejor compra-venta</label>
+        <label><input type="radio" name="recentra" value="ninguno"> Ninguno</label>
+      </div>
       <aside class="escalera" id="escalera" aria-label="La escalera: el libro vivo por nivel">
         <div class="esc-cabeza" id="esc-cabeza"></div>
         <div class="esc-mandos" id="esc-mandos">

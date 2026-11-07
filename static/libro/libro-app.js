@@ -655,6 +655,61 @@ function montaIntensidad() {
   if (Number(a.value) !== MAPA_PERCENTILES[0] || Number(b.value) !== MAPA_PERCENTILES[1]) mueve();
 }
 
+/* ------------------------------------------------------------------ (149 rC) los gestos que tienen DOM
+ * H-08/I-07: el menu del eje de precio (clic derecho) con el modo de recentrado, recordado como la intensidad; Esc o un
+ * clic fuera lo cierran. I-05: «PRESENTE» enciende seguir el presente (encendido: apagado el boton; parado: en acento). */
+const RECENTRA_CLAVE = 'libro.recentrado';
+
+function cierraMenuEje() {
+  document.getElementById('menu-eje').hidden = true;
+}
+
+function montaGestos() {
+  const menu = document.getElementById('menu-eje');
+  const cv = document.getElementById('mapa');
+  let modo = 'ultimo';
+  try {
+    const x = window.localStorage.getItem(RECENTRA_CLAVE);
+    if (RECENTRA[x]) modo = x;
+  } catch (e) {
+    // sin localStorage: el de omision
+  }
+  EL_MAPA.recentra(modo, false);
+  const marca = (m) => menu.querySelectorAll('input[name=recentra]').forEach((r) => { r.checked = r.value === m; });
+  marca(modo);
+  menu.querySelectorAll('input[name=recentra]').forEach((r) => r.addEventListener('change', () => {
+    try {
+      window.localStorage.setItem(RECENTRA_CLAVE, r.value);
+    } catch (e) {
+      // no se recuerda: no pasa nada
+    }
+    EL_MAPA.recentra(r.value, true);
+    marca(r.value);
+    cierraMenuEje();
+  }));
+  cv.addEventListener('contextmenu', (ev) => {
+    const b = cv.getBoundingClientRect();
+    if (EL_MAPA.zonaDe(ev.clientX - b.left, ev.clientY - b.top) !== 'precio') return;
+    ev.preventDefault();
+    marca(EL_MAPA.estado().vertical.recentra);
+    menu.hidden = false;
+    menu.style.left = Math.max(0, Math.min(ev.clientX, window.innerWidth - menu.offsetWidth - 8)) + 'px';
+    menu.style.top = Math.max(0, Math.min(ev.clientY, window.innerHeight - menu.offsetHeight - 8)) + 'px';
+  });
+  document.addEventListener('mousedown', (ev) => {
+    if (!menu.hidden && !ev.target.closest('#menu-eje')) cierraMenuEje();
+  });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') cierraMenuEje();
+  });
+  document.getElementById('b-presente').addEventListener('click', () => EL_MAPA.presente());
+}
+
+function pintaVista(v) {
+  const b = document.getElementById('b-presente');
+  if (b) b.classList.toggle('parado', !v.sigue);
+}
+
 /* La leyenda: los dos degradados con sus cortes en la unidad de la vista, el desconocido y el «sin datos». */
 function pintaLeyenda(esc, m) {
   const cv = document.getElementById('mapa-leyenda');
@@ -698,8 +753,10 @@ function aplicaHash() {
 }
 
 function arranca() {
-  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'), pintaLeyenda);
+  EL_MAPA = creaMapa(document.getElementById('mapa'), lectura, document.getElementById('encaje'), pintaLeyenda,
+                     pintaVista);
   montaIntensidad();
+  montaGestos();
   LA_ESCALERA = creaEscalera(document.getElementById('escalera'), { pide: pideEscalera, limpia: limpiaCinta });
   [['sel-activo', 'activo'], ['sel-familia', 'familia'], ['sel-ventana', 'ventana'], ['sel-unidad', 'unidad']]
     .forEach(([id, k]) => {

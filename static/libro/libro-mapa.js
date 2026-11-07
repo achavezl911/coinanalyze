@@ -40,7 +40,7 @@ const MAPA_COLOR = {
   compra: '#60a5fa', venta: '#e05a5a', eje: '#8891a0', // E-02 (OF-6a): los colores propios de cada lado
   referencia: '#f2cc60', // el acento de la casa (--acento de flujo.css): el ultimo precio
   // (149 rC, E-05) la cruz y sus dos etiquetas: los de la cruz de /flujo (flujo-dibujo.js COLOR.cruz)
-  cruz: 'rgba(230,233,238,0.55)', cruzFondo: '#2a313c', cruzTexto: '#e6e9ee',
+  cruz: 'rgba(230,233,238,0.55)', cruzFondo: '#2a313c', cruzTexto: '#e6e9ee', presente: 'rgba(230,233,238,0.3)',
 };
 function hexRgb(h) {
   return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -90,6 +90,49 @@ function bandaDe(lo, hi, cy, kb) {
   const a = Math.min(hi - cy + 1, Math.max(lo, kb - Math.floor(cy / 2)));
   return [a, a + cy - 1];
 }
+
+/* (149 rC, I-02..I-04, H-08/I-07) EL ENCUADRE VERTICAL. V = {modo 'auto'|'manual', recentra 'ultimo'|'bbo'|'ninguno',
+ * filas (null = las que caben), ancla (AUTO: el nivel alrededor del que se encuadra), c (MANUAL: el centro), visto (la
+ * referencia del cuadro anterior), ya (recentrar ahora en la referencia)}. AUTO sin filas pedidas: todo si cabe; si no,
+ * bandaDe alrededor del ancla, que la primera vez es `kb` (la mejor compra de la columna mas nueva a la vista: lo de
+ * antes). El ancla salta a la referencia `kRef` (ultimo precio, o el medio de la mejor compra y venta) cuando esta
+ * ENTRA en el 20 % de arriba o de abajo; con «ninguno», nunca. MANUAL: `filas` alrededor de `c`. Nunca fuera de lo que
+ * guarda el mapa de bits (r con dos de margen). -> [lo, hi] */
+function encuadreDe(V, datos, r, cy, kb, kRef) {
+  const tope = Math.max(1, Math.min(cy, r[1] - r[0] + 5));
+  const span = datos[1] - datos[0] + 1;
+  const filas = V.filas ? Math.max(Math.min(8, tope), Math.min(tope, Math.round(V.filas))) : Math.min(cy, span);
+  let hi;
+  if (V.modo === 'manual') hi = Math.round(V.c + (filas - 1) / 2);
+  else if (!V.filas && span <= cy) {
+    V.visto = kRef;
+    return datos.slice();
+  } else if (span <= filas) {
+    hi = Math.round((datos[0] + datos[1]) / 2 + (filas - 1) / 2);
+    V.visto = kRef;
+  } else {
+    if (V.ancla === null || V.ancla === undefined) {
+      V.ancla = kb;
+      V.visto = kRef;
+    }
+    if (V.ya && kRef !== null) V.ancla = kRef;
+    V.ya = false;
+    let b = bandaDe(datos[0], datos[1], filas, V.ancla);
+    const zona = Math.max(1, Math.floor(filas / 5));
+    if (V.recentra !== 'ninguno' && kRef !== null && kRef !== V.visto && (kRef < b[0] + zona || kRef > b[1] - zona)) {
+      V.ancla = kRef;
+      b = bandaDe(datos[0], datos[1], filas, kRef);
+    }
+    V.visto = kRef;
+    hi = b[1];
+  }
+  hi = Math.max(r[0] - 2 + filas - 1, Math.min(r[1] + 2, hi));
+  return [hi - filas + 1, hi];
+}
+
+/* (149 rC, H-08/I-07) los modos de recentrado del menu del eje de precio */
+const RECENTRA = { ultimo: 'Último precio', bbo: 'Mejor compra-venta', ninguno: 'Ninguno' };
+const RECENTRA_CORTO = { ultimo: 'ÚLTIMO', bbo: 'MEJORES', ninguno: 'NINGUNO' };
 
 /* (149 rC, H-09) LA FICHA de una celda: lo que dice el raton de la columna j y el nivel k, en la ficha y en #lectura
  * con las mismas palabras (las de la leyenda). Nunca un cero por lo que no se sabe: DESCONOCIDO, HUECO o «sin escribir
@@ -165,12 +208,14 @@ function columnaAhora(m, j1, ahoraMs) {
   return [n - 1, null];
 }
 
-function creaMapa(canvas, alLeer, aviso, alEscala) {
+function creaMapa(canvas, alLeer, aviso, alEscala, alVista) {
   const L = { cv: canvas, ctx: canvas.getContext('2d'), pr: window.devicePixelRatio || 1, W: 0, H: 0, modelo: null,
               fin: 0, ver: 0, pedido: 0, sigue: true, pendiente: false, cuadros: 0, arrastre: null, bmp: null,
               esc: null, escClave: null, escT: -Infinity, escN: 0, escTimer: null, gestoT: -Infinity, clave: null, aviso,
               alEscala,
-              pc: MAPA_PERCENTILES.slice(), raton: null };
+              pc: MAPA_PERCENTILES.slice(), raton: null, finTs: null, finFr: 0,
+              V: { modo: 'auto', previo: 'auto', recentra: 'ultimo', filas: null, ancla: null, c: null, visto: null,
+                   ya: false } };
   // (149 rC, E-05) la cruz va en SU capa, encima del mapa y sin raton: moverla no repinta el mapa de bits
   L.capa = document.createElement('canvas');
   L.capa.className = 'cruz';
@@ -283,6 +328,27 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     return { niveles, velas };
   }
 
+  /* (149 rC, I-07) el precio al que se recentra: el cierre de la ultima vela del footprint que empieza antes del final de
+   * la columna mas nueva a la vista (sin footprint, la mejor compra), o el medio de la mejor compra y la mejor venta */
+  function referencia(m, j0, j1, kb) {
+    const P = Number(m.paso);
+    if (L.V.recentra === 'bbo') {
+      for (let j = j1; j >= j0; j--) {
+        const s = m.columnas[j].suma;
+        if (s && s.mejorCompra !== null && s.mejorVenta !== null) {
+          return Math.floor((Number(s.mejorCompra) + Number(s.mejorVenta)) / 2 / P + 1e-9);
+        }
+      }
+      return kb;
+    }
+    const v = m.huella && m.huella.velas;
+    const tB = m.columnas[j1].ts + m.cada * 1000;
+    for (let i = (v ? v.length : 0) - 1; i >= 0; i--) {
+      if (Date.parse(v[i].ts) < tB) return Math.floor(Number(v[i].cierre) / P + 1e-9);
+    }
+    return kb;
+  }
+
   /* ------------------------------------------------------------ la cruz (E-05) y la ficha (H-09)
    * 1 px sobre el mapa por el centro de la celda bajo el raton; la horizontal sigue por «ahora» y los dos perfiles; el
    * precio de la fila (al paso) en su eje, la hora de la columna (HH:MM:SS) en el suyo. La geometria es la del ULTIMO
@@ -350,6 +416,8 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
   function pinta(forzar) {
     pintaMapa(forzar);
     if (L.raton) cruz();
+    // (149 rC) la pagina pinta lo suyo de la vista: «PRESENTE» encendido o parado
+    if (alVista) alVista({ sigue: L.sigue, modo: L.V.modo, recentra: L.V.recentra });
   }
 
   function pintaMapa(forzar) {
@@ -391,7 +459,10 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     }
     if (lo === Infinity) [lo, hi] = r;
     const datos = [lo - 2, hi + 2];
-    [lo, hi] = bandaDe(datos[0], datos[1], cy, kb === null ? Math.floor((datos[0] + datos[1]) / 2) : kb);
+    if (kb === null) kb = Math.floor((datos[0] + datos[1]) / 2);
+    // (149 rC) el encuadre: el de siempre hasta que el raton o el recentrado lo mueven (encuadreDe)
+    const kRef = referencia(m, j0, j1, kb);
+    [lo, hi] = encuadreDe(L.V, datos, r, cy, kb, kRef);
     const filas = hi - lo + 1;
     // los cortes de color, de lo VISIBLE: como mucho una vez por segundo, salvo `forzar` (K111). (149 B r1, P4) Durante
     // un gesto (rueda o arrastre hace menos de GESTO_MS) no se rehacen: rehacerlos tira el mapa de bits de toda la
@@ -479,6 +550,20 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
       ctx.stroke();
     }
     ctx.restore();
+    // (149 rC, H-10) sin seguir el presente, una vertical tenue en el instante actual: el borde derecho de la columna
+    // mas nueva (si cae en el mapa o en la banda «ahora»; mas a la derecha no se ve)
+    let presente = null;
+    if (!L.sigue) {
+      const x = Math.round(xDe(n - 1) + bs) + 0.5;
+      presente = { ts: isoZ(m.columnas[n - 1].ts + cadaMs), x, visible: x <= ancho + MAPA.AHORA };
+      if (presente.visible) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, alto + MAPA.BAJO);
+        ctx.strokeStyle = MAPA_COLOR.presente;
+        ctx.stroke();
+      }
+    }
     // a la derecha: el perfil de lo negociado en lo visible (dos barras por nivel: compra arriba, venta abajo) y el del
     // libro de ahora (una barra por nivel, del color de su lado mayor), con la escala vertical del mapa
     const xVol = ancho + MAPA.AHORA;
@@ -561,6 +646,13 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     for (let k = Math.ceil(lo / cada) * cada; k <= hi; k += cada) {
       ctx.fillText(nivelTexto(k, m.paso), xEje, yDe(k) + fh / 2);
     }
+    // (149 rC, I-03) bajo el eje de precio, como esta su escala: AUTO y a que recentra, o MANUAL
+    const modoTexto = L.V.modo === 'manual' ? 'MANUAL' : 'AUTO·' + RECENTRA_CORTO[L.V.recentra];
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.fillStyle = L.V.modo === 'manual' ? MAPA_COLOR.referencia : MAPA_COLOR.eje;
+    ctx.fillText(modoTexto, xEje, alto + 10);
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.fillStyle = MAPA_COLOR.eje;
     const yT = L.H - MAPA.EJE_T / 2;
     ctx.textAlign = 'center';
     const huecos = [];
@@ -589,7 +681,10 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     Object.assign(reg, { escala: { tipo: 'cortes de lo visible', percentiles: esc.percentiles, corte: esc.corte,
                                    celdas: esc.n, columnas: esc.columnas, niveles: esc.niveles },
                          eje: { lo, hi, fila: fh, columna: bs, fin: L.fin, ver: L.ver, ancho, alto, pr: L.pr,
-                                caben: [cx, cy], pedido: L.pedido, n, datos },
+                                caben: [cx, cy], pedido: L.pedido, n, datos, sigue: L.sigue,
+                                vertical: { modo: L.V.modo, recentra: L.V.recentra, texto: modoTexto, filas: L.V.filas,
+                                            ancla: L.V.ancla, centro: L.V.c, ref: kRef } },
+                         presente,
                          honda: m.honda || null,
                          ahora: { j: ja, ts: ja === null ? null : isoZ(m.columnas[ja].ts), x0: ancho, x1: ancho + MAPA.AHORA,
                                   motivo: porQueNo },
@@ -652,34 +747,145 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     const n = L.modelo ? L.modelo.columnas.length : 0;
     L.ver = verEfectivo(n, L.pedido, cabenEn(L.W, L.H, L.pr)[0]);
     L.fin = Math.min(n - 1, Math.max(Math.min(n - 1, L.ver - 1), L.fin));
-    L.sigue = L.fin >= n - 1;
+    if (L.sigue) L.fin = n - 1;
+    recuerda();
+  }
+
+  /* (149 rC, I-05) sin seguir, la vista se sujeta a la columna de su borde derecho POR SU INSTANTE: el vivo anade por la
+   * derecha y quita por la izquierda, y lo que se mira no se mueve */
+  function recuerda() {
+    const m = L.modelo;
+    if (!m || !m.columnas.length) return;
+    const i = Math.max(0, Math.floor(L.fin));
+    L.finTs = m.columnas[i].ts;
+    L.finFr = L.fin - i;
+  }
+
+  /* tras un gesto horizontal: si se fue atras, deja de seguir (solo Fin y «PRESENTE» lo vuelven a encender) */
+  function horizontal(fin) {
+    const n = L.modelo ? L.modelo.columnas.length : 0;
+    if (!n) return;
+    L.fin = Math.min(n - 1, Math.max(Math.min(n - 1, L.ver - 1), fin));
+    if (L.fin < n - 1 - 1e-6) L.sigue = false;
+    gesto();
+  }
+
+  function gesto() {
+    L.gestoT = performance.now();
+    acota();
+    pide();
+  }
+
+  /* I-01: el zoom horizontal, con la columna bajo `x` quieta (en el borde de lo cargado, el tope manda) */
+  function zoomX(f, x) {
+    const n = L.modelo ? L.modelo.columnas.length : 0;
+    if (!n) return;
+    const ancho = L.W - MAPA.DERECHA;
+    const xa = Math.max(0, Math.min(ancho, x));
+    const ja = L.fin + 1 - ((ancho - xa) * L.ver) / ancho;
+    L.pedido = L.ver * f;
+    L.ver = verEfectivo(n, L.pedido, cabenEn(L.W, L.H, L.pr)[0]);
+    horizontal(ja - 1 + ((ancho - xa) * L.ver) / ancho);
+  }
+
+  function eje() {
+    const reg = window.LIBRO_PINTADO.mapa;
+    return reg && reg.eje ? reg.eje : null;
+  }
+
+  function aManual(c, filas) {
+    if (L.V.modo !== 'manual') L.V.previo = L.V.modo;
+    Object.assign(L.V, { modo: 'manual', c, filas });
+  }
+
+  /* I-01 (Ctrl + rueda): el zoom vertical con el precio bajo el cursor quieto; la escala pasa a MANUAL */
+  function zoomY(f, y) {
+    const e = eje();
+    if (!e) return;
+    const filas = e.hi - e.lo + 1;
+    let nf = Math.max(8, Math.round(filas * f));
+    if (nf === filas && filas > 8) nf += f > 1 ? 1 : -1;
+    const kc = e.hi + 1 - y / e.fila;
+    aManual(kc - 1 + (y * nf) / e.alto - (nf - 1) / 2, nf);
+    gesto();
+  }
+
+  /* I-02: la escala vertical desde su eje, con el centro quieto y el modo como estaba */
+  function escalaY(filas0, c, nf) {
+    nf = Math.max(8, Math.round(nf));
+    if (nf === filas0) return;
+    if (L.V.modo === 'manual') L.V.c = c;
+    else L.V.ancla = Math.round(c);
+    L.V.filas = nf;
+    gesto();
+  }
+
+  /* I-04: doble clic en el eje de precio: recentra y vuelve al modo de antes */
+  function recentraYa() {
+    Object.assign(L.V, { modo: L.V.previo === 'manual' ? 'auto' : L.V.previo, filas: null, ancla: null, c: null,
+                         ya: L.V.recentra !== 'ninguno' });
+    gesto();
+  }
+
+  /* donde cae un punto del lienzo: el eje de precio, el de tiempo o el mapa (con sus perfiles) */
+  function zonaDe(x, y) {
+    if (x >= L.W - MAPA.EJE_P && y < L.H - MAPA.ABAJO) return 'precio';
+    if (y >= L.H - MAPA.EJE_T && x < L.W - MAPA.DERECHA) return 'tiempo';
+    return 'mapa';
+  }
+
+  function posDe(ev) {
+    const r = L.cv.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
   }
 
   function ponRaton(ev) {
-    const r = L.cv.getBoundingClientRect();
-    L.raton = { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    L.raton = posDe(ev);
     cruz();
   }
 
   L.cv.addEventListener('wheel', (ev) => {
     ev.preventDefault();
-    L.gestoT = performance.now();
-    L.pedido = L.ver * (ev.deltaY > 0 ? 1.12 : 1 / 1.12);
-    acota();
-    pide();
+    const d = ev.deltaY || ev.deltaX;
+    if (!L.modelo || !d) return;
+    const { x, y } = posDe(ev);
+    const z = zonaDe(x, y);
+    const f = d > 0 ? 1.12 : 1 / 1.12;
+    const e = eje();
+    if (z === 'precio' && e) escalaY(e.hi - e.lo + 1, (e.lo + e.hi) / 2, (e.hi - e.lo + 1) * f);
+    else if (ev.ctrlKey && z === 'mapa') zoomY(f, y);
+    else if (ev.shiftKey && z === 'mapa') horizontal(L.fin + Math.sign(d) * Math.max(1, Math.round(L.ver / 10)));
+    else zoomX(f, x);
+    ponRaton(ev);
   }, { passive: false });
   L.cv.addEventListener('mousedown', (ev) => {
-    L.arrastre = { x: ev.clientX, fin: L.fin };
+    if (ev.button !== 0 || !L.modelo) return;
+    const p = posDe(ev);
+    const e = eje();
+    L.arrastre = { x: ev.clientX, y: ev.clientY, fin: L.fin, ver: L.ver, zona: zonaDe(p.x, p.y), h: false, v: false,
+                   filas: e ? e.hi - e.lo + 1 : null, c: e ? (e.lo + e.hi) / 2 : null, fila: e ? e.fila : 1 };
   });
   window.addEventListener('mouseup', () => {
     L.arrastre = null;
   });
   L.cv.addEventListener('mousemove', (ev) => {
-    if (L.arrastre && L.modelo) {
-      L.gestoT = performance.now();
-      L.fin = L.arrastre.fin - (ev.clientX - L.arrastre.x) / ((L.W - MAPA.DERECHA) / L.ver);
-      acota();
-      pide();
+    const a = L.arrastre;
+    if (a && L.modelo) {
+      const dx = ev.clientX - a.x;
+      const dy = ev.clientY - a.y;
+      if (a.zona === 'precio' && a.filas) escalaY(L.V.filas || a.filas, a.c, a.filas * Math.exp(dy / 150));
+      else if (a.zona === 'tiempo') {
+        L.pedido = a.ver * Math.exp(-dx / 150);
+        L.ver = verEfectivo(L.modelo.columnas.length, L.pedido, cabenEn(L.W, L.H, L.pr)[0]);
+        horizontal(a.fin);
+      } else {
+        // I-03: el mapa se arrastra en los dos ejes; en vertical, la escala pasa a MANUAL
+        a.h = a.h || Math.abs(dx) > 3;
+        a.v = a.v || (Math.abs(dy) > 3 && a.filas !== null);
+        if (a.v) aManual(a.c + dy / a.fila, a.filas);
+        if (a.h) horizontal(a.fin - (dx * L.ver) / (L.W - MAPA.DERECHA));
+        else if (a.v) gesto();
+      }
     }
     ponRaton(ev);
   });
@@ -687,6 +893,27 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
     L.raton = null;
     cruz();
   });
+  L.cv.addEventListener('dblclick', (ev) => {
+    const p = posDe(ev);
+    if (zonaDe(p.x, p.y) === 'precio') recentraYa();
+  });
+  // I-06: con el foco en el mapa, las flechas una columna, Re Pag / Av Pag una pantalla, Inicio lo primero cargado, Fin
+  // el presente (y seguirlo). La C es de la escalera; Esc, de quien tenga un menu abierto.
+  L.cv.addEventListener('keydown', (ev) => {
+    if (ev.ctrlKey || ev.altKey || ev.metaKey || !L.modelo) return;
+    const accion = { ArrowLeft: () => horizontal(L.fin - 1), ArrowRight: () => horizontal(L.fin + 1),
+                     PageUp: () => horizontal(L.fin - L.ver), PageDown: () => horizontal(L.fin + L.ver),
+                     Home: () => horizontal(L.ver - 1), End: () => presente() }[ev.key];
+    if (!accion) return;
+    ev.preventDefault();
+    accion();
+  });
+
+  /* I-05: ir al presente y seguirlo */
+  function presente() {
+    L.sigue = true;
+    gesto();
+  }
   new ResizeObserver(() => {
     mide();
     acota();
@@ -706,17 +933,40 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
       const n = modelo ? modelo.columnas.length : 0;
       L.pedido = ver || n;
       L.fin = n - 1;
+      L.sigue = true;
+      Object.assign(L.V, { modo: 'auto', previo: 'auto', filas: null, ancla: null, c: null, visto: null, ya: false });
       acota();
       pide();
     },
-    /* columnas nuevas (el vivo), o el footprint que llega: si se miraba el final, se sigue mirando */
+    /* columnas nuevas (el vivo), o el footprint que llega: siguiendo, el presente; si no, la vista no se mueve */
     actualiza() {
       if (!L.modelo) return;
       L.modelo.version = (L.modelo.version || 0) + 1;
-      if (L.sigue) L.fin = L.modelo.columnas.length - 1;
+      const cs = L.modelo.columnas;
+      if (L.sigue) L.fin = cs.length - 1;
+      else if (L.finTs !== null) {
+        let i = cs.length - 1;
+        while (i >= 0 && cs[i].ts > L.finTs) i--;
+        L.fin = i + L.finFr;
+      }
       acota();
       pide();
     },
+    /* (149 rC) lo que pide la pagina: ir al presente (I-05), el modo de recentrado del menu (H-08/I-07, recentra ya),
+     * donde cae un punto del lienzo y como esta la vista */
+    presente,
+    recentra(modo, ahora) {
+      if (!RECENTRA[modo]) return;
+      const e = eje();
+      if (ahora && e) {
+        Object.assign(L.V, { modo: 'auto', previo: 'auto', filas: L.V.filas ? e.hi - e.lo + 1 : null, c: null,
+                             ancla: Math.round((e.lo + e.hi) / 2), ya: modo !== 'ninguno' });
+      }
+      L.V.recentra = modo;
+      if (ahora) gesto();
+    },
+    zonaDe,
+    estado: () => ({ sigue: L.sigue, fin: L.fin, ver: L.ver, vertical: Object.assign({}, L.V) }),
     /* el mando de intensidad: los dos percentiles de los cortes */
     percentiles(pc) {
       L.pc = pc.slice();
@@ -734,5 +984,5 @@ function creaMapa(canvas, alLeer, aviso, alEscala) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { MAPA, MAPA_COLOR, MAPA_LUT_COMPRA, MAPA_LUT_VENTA, lutLado, luminancia, colorHueco, ladoDe,
-                     columnaAhora, cabenEn, verEfectivo, bandaDe, fichaDe, FICHA_ESTADO };
+                     columnaAhora, cabenEn, verEfectivo, bandaDe, encuadreDe, fichaDe, FICHA_ESTADO, RECENTRA };
 }
