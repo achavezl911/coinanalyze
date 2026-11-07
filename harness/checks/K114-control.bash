@@ -6,7 +6,7 @@
 # Sobre el, K114 tiene que salir VERDE. Cada plantado cambia UNA cosa de LA PAGINA, en un fichero del --sobre del banco
 # (el arbol no se toca; cada `sed` tiene que morder exactamente una linea o el plantado no cuenta), y K114 tiene que
 # salir ROJO por el brazo que lo mira, con la ultima linea de su condena a la vista. Al final, el bueno otra vez VERDE
-# y el arbol intacto. Corre solo (flock), en su puerto 8141; tarda ~105 s por corrida, 15 corridas.
+# y el arbol intacto. Corre solo (flock), en su puerto 8141; tarda ~150 s por corrida, 17 corridas.
 set -u
 AQUI=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P) || { echo "control: no resuelvo mi directorio"; exit 2; }
 REPO=$(cd -- "$AQUI/../.." && pwd -P)
@@ -86,7 +86,7 @@ juzga() {  # nombre brazo fichero patron-sed -> ROJO de K114 por ese brazo, con 
   restaura
 }
 M=libro/libro-mapa.js; A=libro/libro-app.js
-echo "== trece plantados en la pagina"
+echo "== quince plantados en la pagina"
 juzga zoom_sin_ancla R $M 's|horizontal(ja - 1 + ((ancho - xa) \* L.ver) / ancho);|horizontal(L.fin);|'
 juzga cruz_de_otra_fila C $M 's|k = Math.floor(e.hi + 1 - y / e.fila);|k = Math.floor(e.hi + 2 - y / e.fila);|'
 juzga ficha_de_otra_columna C $M 's|const f = fichaDe(m, j, k,|const f = fichaDe(m, Math.max(0, j - 1), k,|'
@@ -100,6 +100,10 @@ juzga ayuda_miente A libro.html 's|<b>Inicio</b>: la primera|<b>Alt + rueda</b>:
 juzga escalera_desincronizada C $A 's|LA_ESCALERA.resalta(f ? f.nivel : null)|LA_ESCALERA.resalta(f ? f.nivel + 1 : null)|'
 juzga gesto_que_pide P $M "s|  L.cv.addEventListener('wheel', (ev) => {|  L.cv.addEventListener('wheel', (ev) => { fetch('/api/libro/fotos?k114=1').catch(() => {});|"
 juzga comprador_distinto E $M "s|compra: '#60a5fa'|compra: '#4f8fe8'|"
+# (149 rC r1) la regla de antes: #lectura sin su alto fijo crece con su texto y el mapa se mueve con el raton
+juzga lectura_mueve_el_mapa R libro/libro.css 's|^#lectura {|#lectura-de-antes {|'
+# (149 rC r1) la fila de encaje con min-height en vez de alto fijo: la leyenda de cortes la encoge y el lienzo crece 39 px
+juzga encaje_mueve_el_mapa R libro/libro.css 's|^  height: 85px;|  min-height: 30px;|'
 
 echo "== restaurado"
 rc=$(k114); guarda escenario_restaurado

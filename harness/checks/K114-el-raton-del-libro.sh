@@ -10,7 +10,9 @@
 #   (P) la pagina    sin excepciones; ningun gesto dentro de lo cargado pide fotos ni honda
 #   (C) la cruz      la celda bajo el cursor (recalculada con la junta de K111) = LIBRO_CRUZ = la ficha = #lectura;
 #                    las etiquetas de los ejes al paso; la escalera resalta ese precio
+#                    y, tras cada movimiento, la celda bajo el puntero con la geometria de DESPUES (r1)
 #   (R) el raton     cada gesto mueve lo que debe y nada mas (I-01..I-06, H-10, el menu, con columnas vivas llegando)
+#                    y mover el raton sin gesto no mueve el lienzo ni su eje (r1: #lectura no empuja el mapa)
 #   (E) el aspecto   E-01, E-02 (el comprador de /flujo y la mesa, dE2000 >= 20), E-03, E-04
 #   (A) la ayuda     se abre y se cierra; nombra lo que (R) ejerce y nada mas; los parrafos del pie no estan
 # Salida: 0 VERDE · 1 ROJO · 2 NO MEDIDO (sin la pagina: «FALTA DESPLEGAR»; sin Chromium; sin canal).

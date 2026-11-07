@@ -11,9 +11,11 @@ USD del pasado (K114_ETH, por omision `spot`; el banco de K111 no trae spot de E
 Brazos (cualquiera = ROJO; sin canal = NO MEDIDO):
   (P) sin excepciones; 0 peticiones a fotos u honda por gestos dentro de lo cargado (la vista del pasado)
   (C) la celda bajo el cursor, recalculada de las respuestas crudas, = LIBRO_CRUZ, la ficha del DOM y #lectura; las
-      etiquetas de los ejes al paso; la escalera resalta ese precio y solo ese
+      etiquetas de los ejes al paso; la escalera resalta ese precio y solo ese; tras cada movimiento, LIBRO_CRUZ = la
+      celda bajo el puntero con la geometria del cuadro que se ve DESPUES (149 rC r1)
   (R) cada gesto mueve lo que debe y nada mas: I-01 (ancla en tiempo y en precio), I-02, I-03 (MANUAL), I-04, cada
-      opcion del menu del eje (y con Ninguno no recentra), I-05 y H-10 con columnas vivas llegando, I-06
+      opcion del menu del eje (y con Ninguno no recentra), I-05 y H-10 con columnas vivas llegando, I-06; y mover el
+      raton sin gesto no cambia el lienzo ni su eje (50 movimientos en vivo y pasado, 1920x1080 y 1366x768; 149 rC r1)
   (E) E-01, E-02 (el comprador de /flujo y la mesa, dE2000 >= 20 entre lados, tambien con las tres simulaciones), E-03,
       E-04
   (A) la ayuda se abre y se cierra; cada gesto que nombra lo ejerce (R), y cada gesto de (R) lo nombra; los parrafos
@@ -29,8 +31,10 @@ import contextlib
 import importlib.util
 import io
 import json
+import math
 import os
 import pathlib
+import random
 import re
 import sys
 import time
@@ -329,10 +333,93 @@ def ja(e: dict, x: float) -> float:
     return e["fin"] + 1 - (e["ancho"] - x) / e["columna"]
 
 
+# (149 rC r1) EL MAPA NO SE MUEVE CON EL RATON: lo que el raton escribe (#lectura, la ficha, la escalera) no cambia el
+# lienzo ni el eje. La geometria, el lienzo en la pagina y su eje, en UNA lectura con la cruz (atomica respecto al cuadro)
+GEOM = r"""(() => { const m = (window.LIBRO_PINTADO || {}).mapa || null; const e = m ? m.eje : null;
+  const cv = document.getElementById('mapa'); const r = cv.getBoundingClientRect(); const c = window.LIBRO_CRUZ || null;
+  return {r: [r.left, r.top, r.width, r.height], cv: [cv.width, cv.height],
+          e: e ? {alto: e.alto, ancho: e.ancho, fila: e.fila, columna: e.columna, lo: e.lo, hi: e.hi, fin: e.fin, ver: e.ver,
+                  n: e.n} : null, c: c ? [c.columna, c.nivel] : null,
+          lectura: document.getElementById('lectura').getBoundingClientRect().height}; })()"""
+FORMA = ("r", "cv")
+EJE = ("alto", "ancho", "fila", "columna", "lo", "hi", "fin", "ver")
+MOVIMIENTOS = 50
+# lo que reparte el alto de la pagina con el mapa: si el lienzo cambia de alto, quien lo empujo
+ALTOS = r"""(() => Object.fromEntries([['cabecera', 'header.cabecera'], ['estado', '#estado'], ['encaje', '.encaje-fila'], ['encaje-texto', '#encaje'], ['intensidad', '.intensidad'],
+  ['lectura', '#lectura'], ['cuerpo', '.cuerpo'], ['pagina', 'body']].map(([n, q]) => { const x = document.querySelector(q);
+  return [n, x ? Math.round(x.getBoundingClientRect().height) : null]; })))()"""
+
+
+def bajo(g: dict, px: float, py: float):
+    """la celda [j, k] bajo el punto (px, py) de la PAGINA con la geometria g (la junta de cruz() de libro-mapa.js)"""
+    e = g["e"]
+    x, y = px - g["r"][0], py - g["r"][1]
+    if not (0 <= x < e["ancho"] and 0 <= y < e["alto"]):
+        return None
+    j = math.floor(e["fin"] + 1 - (e["ancho"] - x) / e["columna"])
+    return [j, math.floor(e["hi"] + 1 - y / e["fila"])] if 0 <= j < e["n"] else None
+
+
+def cambios(g0: dict, g1: dict) -> list[str]:
+    out = [f"{q} {g0[q]} -> {g1[q]}" for q in FORMA if g0[q] != g1[q]]
+    return out + [f"{q} {g0['e'][q]} -> {g1['e'][q]}" for q in EJE if g0["e"][q] != g1["e"][q]]
+
+
+async def quieto(v: Vista, J, pref: str, vivo: bool) -> None:
+    """MOVIMIENTOS movimientos del raton que no son gestos, al centro de una celda con el eje VIGENTE (uno de cada
+    siete fuera de las celdas, sobre el eje de precio: la cruz se va y #lectura se vacia). (R) la geometria del lienzo y
+    del eje es la misma antes y despues de cada uno; (C) LIBRO_CRUZ = la celda apuntada = la celda bajo el puntero con la
+    geometria del cuadro que se ve DESPUES. En vivo llegan columnas y el eje recentra: un cambio SOLO de lo, hi, fin,
+    ver o fila (lo que mueven los datos) se repite hasta 3 veces rehaciendo la transicion (del punto de antes al mismo
+    destino) y se condena si se repite; uno del tamano del lienzo o de su eje (r, cv, alto, ancho, columna) no lo
+    mueven los datos y se condena a la primera."""
+    rnd = random.Random(149)
+    altos, malR, malC, primeros = set(), 0, 0, [0, 0]
+    antes = None
+    for i in range(MOVIMIENTOS):
+        u, w = rnd.random(), rnd.random()
+        for intento in range(3 if vivo else 1):
+            if intento and antes:
+                await v.mueve(*antes)
+            g0 = await v.evalua(GEOM)
+            e = g0["e"]
+            if i % 7 == 6:
+                x, y = e["ancho"] + 12, e["alto"] * (0.1 + 0.8 * u)
+            else:
+                j = e["fin"] - int(u * min(e["ver"], e["n"]))
+                k = e["hi"] - int(w * (e["hi"] - e["lo"] + 1))
+                x, y = e["ancho"] - (e["fin"] - j + 0.5) * e["columna"], (e["hi"] - k + 0.5) * e["fila"]
+            px, py = g0["r"][0] + x, g0["r"][1] + y
+            await v.mueve(px, py)
+            g1 = await v.evalua(GEOM)
+            dif, apunta, debe = cambios(g0, g1), bajo(g0, px, py), bajo(g1, px, py)
+            if intento == 0:
+                primeros[0] += bool(dif)
+                primeros[1] += g1["c"] != apunta or g1["c"] != debe
+                if g0["r"][3] != g1["r"][3]:
+                    altos.add(round(g1["r"][3] - g0["r"][3]))
+            forma = [d for d in dif if d.split()[0] in FORMA + ("alto", "ancho", "columna")]
+            if forma or (not dif and g1["c"] == apunta == debe):
+                break
+        antes = (px, py)
+        if dif:
+            malR += 1
+            J.mal("R", pref, f"mover el raton movio el mapa (movimiento {i + 1} a ({x:.0f}, {y:.0f}) del lienzo): "
+                             f"{'; '.join(dif)}; #lectura {g0['lectura']:.0f} -> {g1['lectura']:.0f} px")
+        if g1["c"] != apunta or g1["c"] != debe:
+            malC += 1
+            J.mal("C", pref, f"movimiento {i + 1} al centro de la celda [columna, nivel] {apunta} con el eje vigente: la "
+                             f"cruz dice {g1['c']} y bajo el puntero, con la geometria del cuadro de despues, esta {debe}")
+    J.info.append(f"{pref} (R/C) {MOVIMIENTOS} movimientos sin gesto: la geometria cambio en {primeros[0]} (alto del "
+                  f"lienzo {sorted(altos) or 'quieto'}), la cruz en otra celda en {primeros[1]}; tras repetir: {malR} y "
+                  f"{malC}")
+
+
 async def gestos(v: Vista, J, pref: str, hechos: set, vivo: bool) -> None:  # noqa: C901 - un juicio por gesto
     a = await v.lee()
     e = a["e"]
     W, H = a["r"][2], a["r"][3]
+    altos0 = await v.evalua(ALTOS)
     xm, ym, xp, yt = e["ancho"] / 2, e["alto"] / 2, W - 38, H - 10
 
     def mal(g: str, t: str):
@@ -384,9 +471,11 @@ async def gestos(v: Vista, J, pref: str, hechos: set, vivo: bool) -> None:  # no
     if fil(b) == fil(e) or (b["fin"], b["ver"]) != (e["fin"], e["ver"]):
         mal("I-02 arrastre en el eje", f"filas {fil(e)} -> {fil(b)}, fin {e['fin']} -> {b['fin']}")
     e = b
-    H2 = (await v.lee())["r"][3]  # en vivo el lienzo cambia de alto cuando #lectura cambia de lineas
+    H2 = (await v.lee())["r"][3]  # (149 rC r1) era info: el lienzo cambiaba de alto cuando #lectura cambiaba de lineas
     if abs(H2 - H) > 1:
-        J.info.append(f"{pref} el lienzo paso de {H:.0f} a {H2:.0f} px de alto durante los gestos")
+        altos1 = await v.evalua(ALTOS)
+        mal("el alto del lienzo", f"paso de {H:.0f} a {H2:.0f} px durante gestos de escala y desplazamiento; "
+                                  f"{', '.join(f'{q} {altos0[q]} -> {altos1[q]}' for q in altos0 if altos0[q] != altos1[q])}")
     H, yt = H2, H2 - 10
     await v.en(xm, yt, v.rueda, -120)
     b = (await v.lee())["e"]
@@ -607,6 +696,7 @@ async def todo(K, J, vistas: dict) -> dict:
     async def viva(v, out):
         pref = "[vivo 1920x1080]"
         await celdas(v, J, pref, vistas["viva"])
+        await quieto(v, J, pref, True)
         await gestos(v, J, pref, hechos, True)
         await tecla_c(v, J, pref, hechos)
         out["dE"] = await aspecto(v, J, pref)
@@ -616,6 +706,7 @@ async def todo(K, J, vistas: dict) -> dict:
     async def chica(v, out):
         pref = "[vivo 1366x768]"
         await celdas(v, J, pref, vistas["viva"])
+        await quieto(v, J, pref, True)
         a = await v.lee()
         e = a["e"]
         x0 = e["ancho"] * 0.3
@@ -629,6 +720,7 @@ async def todo(K, J, vistas: dict) -> dict:
         await celdas(v, J, pref, vistas["pasado"])
         await v.recoge_red()
         antes = set(v.red)
+        await quieto(v, J, pref, False)
         await gestos(v, J, pref, hechos, False)
         await v.s.drena(2.0)
         await v.recoge_red()
@@ -637,12 +729,16 @@ async def todo(K, J, vistas: dict) -> dict:
         if pedidas:
             J.mal("P", pref, f"los gestos dentro de lo cargado pidieron {len(pedidas)} veces: {pedidas[0][:160]}")
 
+    async def pasado_chica(v, out):
+        await quieto(v, J, "[BTC perp 1 h, pasado 1366x768]", False)
+
     async def eth(v, out):
         await celdas(v, J, "[ETH en USD, pasado]", vistas["eth"])
 
     for nombre, (vista, w, h, vivo, rec) in {"viva": (vistas["viva"], 1920, 1080, True, viva),
                                               "chica": (vistas["viva"], 1366, 768, True, chica),
                                               "pasado": (vistas["pasado"], 1920, 1080, False, pasado),
+                                              "pasado_chica": (vistas["pasado"], 1366, 768, False, pasado_chica),
                                               "eth": (vistas["eth"], 1920, 1080, False, eth)}.items():
         out = await abre(K, vista, w, h, cab, vivo, rec)
         res[nombre] = out
