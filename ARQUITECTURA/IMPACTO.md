@@ -222,7 +222,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.zones._ols_slope`](impacto/app-zones.md) | `app/zones.py:471` | 4 | **0** | 0 | **4** |
 | [`app.zones._rotations`](impacto/app-zones.md) | `app/zones.py:483` | 4 | **0** | 0 | **4** |
 | [`app.zones.range_validate_read`](impacto/app-zones.md) | `app/zones.py:535` | 4 | **0** | 0 | **4** |
-| [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:305` | 3 | **0** | 58 ↑ | **3** |
+| [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:308` | 3 | **0** | 58 ↑ | **3** |
 | [`app.daily_agg.materialize_daily_verdict_outcomes`](impacto/app-daily_agg.md) | `app/daily_agg.py:521` | 0 | **3** | 56 ↑ | **3** |
 | [`app.daily_agg.persist_verdicts`](impacto/app-daily_agg.md) | `app/daily_agg.py:353` | 0 | **3** | 56 ↑ | **3** |
 | [`app.external_macro.refresh_external_macro`](impacto/app-external_macro.md) | `app/external_macro.py:478` | 0 | **3** | 13 ↑ | **3** |
@@ -570,9 +570,9 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.libro_lectura.ultimo`](impacto/app-libro_lectura.md) | `app/libro_lectura.py:436` | 1 | **0** | 0 | **1** |
 | [`app.libro_lectura.venues_de`](impacto/app-libro_lectura.md) | `app/libro_lectura.py:49` | 1 | **0** | 0 | **1** |
 | [`app.orderflow.nivel_de`](impacto/app-orderflow.md) | `app/orderflow.py:310` | 1 | **0** | 0 | **1** |
-| [`app.orderflow_lectura.activo_de`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:73` | 1 | **0** | 0 | **1** |
-| [`app.orderflow_lectura.pasos`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:98` | 1 | **0** | 0 | **1** |
-| [`app.orderflow_lectura.texto`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:51` | 1 | **0** | 0 | **1** |
+| [`app.orderflow_lectura.activo_de`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:74` | 1 | **0** | 0 | **1** |
+| [`app.orderflow_lectura.pasos`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:99` | 1 | **0** | 0 | **1** |
+| [`app.orderflow_lectura.texto`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:52` | 1 | **0** | 0 | **1** |
 | [`app.rango._prueba`](impacto/app-rango.md) | `app/rango.py:107` | 1 | **0** | 0 | **1** |
 | [`app.rango._pruebas`](impacto/app-rango.md) | `app/rango.py:111` | 1 | **0** | 0 | **1** |
 | [`app.rango._ventana`](impacto/app-rango.md) | `app/rango.py:51` | 1 | **0** | 0 | **1** |

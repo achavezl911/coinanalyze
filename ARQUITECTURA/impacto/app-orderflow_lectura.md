@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`activo_de`](#activo-de) | 73 | 1 | **0** | 0 | **1** |
-| [`pasos`](#pasos) | 98 | 1 | **0** | 0 | **1** |
-| [`texto`](#texto) | 51 | 1 | **0** | 0 | **1** |
+| [`activo_de`](#activo-de) | 74 | 1 | **0** | 0 | **1** |
+| [`pasos`](#pasos) | 99 | 1 | **0** | 0 | **1** |
+| [`texto`](#texto) | 52 | 1 | **0** | 0 | **1** |
 
 ## activo_de
 
-`app/orderflow_lectura.py:73` · clave completa `app.orderflow_lectura.activo_de`
+`app/orderflow_lectura.py:74` · clave completa `app.orderflow_lectura.activo_de`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -37,7 +37,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## pasos
 
-`app/orderflow_lectura.py:98` · clave completa `app.orderflow_lectura.pasos`
+`app/orderflow_lectura.py:99` · clave completa `app.orderflow_lectura.pasos`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -60,7 +60,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## texto
 
-`app/orderflow_lectura.py:51` · clave completa `app.orderflow_lectura.texto`
+`app/orderflow_lectura.py:52` · clave completa `app.orderflow_lectura.texto`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 

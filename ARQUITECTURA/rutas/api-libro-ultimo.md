@@ -61,9 +61,9 @@ Llamadas directas del handler:
 - `app.libro_lectura.reagrega` — `app/libro_lectura.py:71`
 - `app.libro_lectura.venues_de` — `app/libro_lectura.py:49`
 - `app.orderflow.nivel_de` — `app/orderflow.py:310`
-- `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:73`
-- `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:98`
-- `app.orderflow_lectura.texto` — `app/orderflow_lectura.py:51`
+- `app.orderflow_lectura.activo_de` — `app/orderflow_lectura.py:74`
+- `app.orderflow_lectura.pasos` — `app/orderflow_lectura.py:99`
+- `app.orderflow_lectura.texto` — `app/orderflow_lectura.py:52`
 
 </details>
 
