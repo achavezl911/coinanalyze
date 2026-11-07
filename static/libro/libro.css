@@ -10,6 +10,17 @@
   flex: 0 0 auto;
 }
 
+/* (149 rC r1) #lectura escribe lo que hay bajo el raton: UNA linea de alto fijo, con recorte, para que el texto no
+ * cambie el alto del lienzo ni su eje (con `flex: 0 0 auto` y el texto entero llegaba a 4 lineas en el vivo y el mapa
+ * saltaba 42 px al pasar el raton). La frase entera esta en la ficha junto al cursor, en el title y para el lector */
+#lectura {
+  height: 21px;
+  line-height: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cuerpo {
   display: flex;
   flex: 1 1 auto;
@@ -35,18 +46,34 @@
   outline: none;
 }
 
-/* lo que se ve del mapa (cuantas columnas y niveles, y por que no mas): dos lineas fijas, para que el texto no mueva
- * el lienzo */
+/* lo que se ve del mapa (cuantas columnas y niveles, y por que no mas) y el mando de intensidad con sus cortes: (149 rC
+ * r1) una fila de ALTO FIJO, el de reposo con la leyenda de cortes entera (4 lineas). Con `min-height` el texto la
+ * movia: en el vivo paso de 85 a 46 px durante los gestos (la leyenda de cortes, de 4 lineas a 1) y el lienzo crecio
+ * 39 px bajo el cursor. Lo que no cabe se recorta con puntos suspensivos; la frase entera, en el title */
 .encaje-fila {
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  height: 85px;
+  line-height: 13px;
+  overflow: hidden;
 }
 
 .encaje {
+  display: -webkit-box;
   flex: 1 1 auto;
-  min-height: 30px;
+  max-height: 77px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
   color: var(--tx-mudo);
+}
+
+#mapa-cortes {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
 }
 
 /* (149 B) el mando de intensidad y la leyenda del mapa */
@@ -57,6 +84,8 @@
   align-items: center;
   gap: 4px;
   max-width: 520px;
+  max-height: 77px;
+  overflow: hidden;
   color: var(--tx-mudo);
 }
 

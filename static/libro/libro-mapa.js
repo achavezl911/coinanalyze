@@ -435,7 +435,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala, alVista) {
     const r = m && rango(m);
     if (!m || !m.columnas.length || !r) {
       window.LIBRO_PINTADO.mapa = reg;
-      if (L.aviso) L.aviso.textContent = '';
+      if (L.aviso) L.aviso.textContent = L.aviso.title = '';
       return;
     }
     const ancho = L.W - MAPA.DERECHA;
@@ -739,6 +739,7 @@ function creaMapa(canvas, alLeer, aviso, alEscala, alVista) {
         + (m.honda ? ' · capa honda: ' + (m.honda.pinta ? m.honda.columnas + ' de ' + n + ' columnas' : m.honda.motivo) : '')
         + (m.huella ? ' · volumen: footprint 1m de ' + hh(m.huella.desde) + ' a ' + hh(m.huella.hasta) + 'Z, a la vista '
           + hh(volumen.desde) + '–' + hh(volumen.hasta) + 'Z' : m.huellaFallo ? ' · volumen: ' + m.huellaFallo : '');
+      L.aviso.title = L.aviso.textContent; // (149 rC r1) la fila es de alto fijo (libro.css): la frase entera
     }
   }
 

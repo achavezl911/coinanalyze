@@ -597,10 +597,12 @@ function lectura(f, pos) {
   if (window.LIBRO_CRUZ) window.LIBRO_CRUZ.escalera = esc;
   if (!f) {
     caja.textContent = '';
+    caja.title = '';
     ficha.hidden = true;
     return;
   }
-  caja.textContent = f.texto;
+  caja.textContent = f.texto; // (149 rC r1) una linea con recorte (libro.css): la frase entera, en el title
+  caja.title = f.texto;
   while (ficha.firstChild) ficha.removeChild(ficha.firstChild);
   f.lineas.forEach(([campo, t]) => {
     const d = document.createElement('div');
@@ -748,6 +750,7 @@ function pintaLeyenda(esc, m) {
       + u + ' (de ' + esc.n + ' celdas a la vista) · gris: desconocido · rayado: sin datos · un nivel que conocen menos'
       + ' venues que la familia no se atenúa (lo dice «n de N» al leerlo): en perp solo okx_swap y bitget guardan la'
       + ' capa honda, así que n de N mide lo que guardamos, no la liquidez del mercado';
+  tx.title = tx.textContent; // (149 rC r1) recortada a 4 lineas (libro.css): la frase entera
 }
 
 function cambia(cambios) {
