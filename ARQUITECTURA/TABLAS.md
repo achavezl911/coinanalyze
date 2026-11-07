@@ -67,11 +67,11 @@ Definiciones, escritas antes del recuento:
 - **cuantitativa**: esa columna es un numero, no un booleano. Solo asi se separa
   *"periodo medido a medias"* de *"periodo no medido"*.
 
-| | de 60 tablas del esquema |
+| | de 62 tablas del esquema |
 |---|---|
-| de SERIE | **37** |
+| de SERIE | **38** |
 | de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **30** |
+| de serie que NO declaran ninguna | **31** |
 
 | tabla | columnas de cobertura |
 |---|---|
@@ -83,7 +83,7 @@ Definiciones, escritas antes del recuento:
 | `spot_trades_agg` | `covered_seconds`, `venue_count` |
 | `spot_trades_realtime` | `venue_count` |
 
-**Las 30 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 31 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
@@ -93,6 +93,7 @@ distinguir un periodo vacio de uno no medido:
 - `bot_evento`
 - `bot_llamada`
 - `bot_operacion`
+- `bot_sombra_candidata`
 - `daily_verdict`
 - `daily_verdict_snapshot`
 - `external_api_rate_event`
@@ -936,12 +937,14 @@ necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma
 del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
-- `bot_crudo` — la escriben 2: `app/bot/servicio.py:849`, `app/bot/servicio.py:857`
-- `bot_estado` — la escriben 2: `app/bot/servicio.py:524`, `app/bot/vigia.py:300`
-- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1012`, `app/bot/servicio.py:942`, `app/bot/servicio.py:977`
-- `bot_evento` — la escriben 2: `app/bot/servicio.py:409`, `app/bot/vigia.py:293`
-- `bot_llamada` — la escriben 1: `app/bot/servicio.py:579`
-- `bot_operacion` — la escriben 1: `app/bot/servicio.py:884`
+- `bot_crudo` — la escriben 2: `app/bot/servicio.py:851`, `app/bot/servicio.py:859`
+- `bot_estado` — la escriben 2: `app/bot/servicio.py:526`, `app/bot/vigia.py:300`
+- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1014`, `app/bot/servicio.py:944`, `app/bot/servicio.py:979`
+- `bot_evento` — la escriben 2: `app/bot/servicio.py:411`, `app/bot/vigia.py:293`
+- `bot_llamada` — la escriben 1: `app/bot/servicio.py:581`
+- `bot_operacion` — la escriben 1: `app/bot/servicio.py:886`
+- `bot_sombra` — la escriben 3: `app/bot/sombra.py:283`, `app/bot/sombra.py:289`, `app/bot/sombra.py:289`
+- `bot_sombra_candidata` — la escriben 2: `app/bot/sombra.py:240`, `app/bot/sombra.py:292`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `libro_cobertura` — la escriben 2: `app/libro.py:1031`, `app/libro.py:810`
