@@ -412,6 +412,10 @@ def juzga() -> int:
         return 2
     malos = [(b, m) for b in "PXFCRTD" for m in J.malos.get(b, [])]
     cab = f"K120 las liquidaciones en el precio · sujeto: {sujeto} · " + " · ".join(notas)
+    # no condenar no es dar VERDE: sin ninguna pagina mirada ni la retencion de 140 contada, no se midio nada
+    if not malos and not vistas and not any(n.startswith("140: ") for n in notas):
+        print("NO MEDIDO  " + cab)
+        return 2
     print(("ROJO  " if malos else "VERDE  ") + cab)
     for b, m in malos[:40]:
         print(f"  ROJO ({b}) {m[:400]}")

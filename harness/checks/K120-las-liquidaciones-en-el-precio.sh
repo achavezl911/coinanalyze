@@ -10,7 +10,8 @@
 #   (R) el raton no mueve la geometria ni pide a /api   (T) la ruta retiene >= 720 h; con base, sirve toda la ventana
 #   (D) 140 (solo lectura): desplegada la retencion hace >= 13 h, hay liquidaciones de mas de 12 h; sin desplegar, lo DICE
 #
-# Sujeto: PRODUCCION por defecto (sin desplegar las paginas: SIN DESPLEGAR, no condena). K120_FLUJO / K120_LIBRO: los bancos
+# Sujeto: PRODUCCION por defecto (sin desplegar las paginas: SIN DESPLEGAR, no condena; si ademas 140 no tiene retencion
+# que contar, NO MEDIDO rc 2: no condenar no es dar VERDE). K120_FLUJO / K120_LIBRO: los bancos
 # del arbol (K112-banco sirve y K120-banco libro) que monta K120-control.bash, con K120_*_HASTA y K120_*_DB.
 # rc 0 VERDE · 1 ROJO · 2 NO MEDIDO.
 set -u
