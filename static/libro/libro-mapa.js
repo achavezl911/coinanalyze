@@ -143,6 +143,43 @@ const FICHA_ESTADO = {
   desconocido: 'DESCONOCIDO: ningún venue de la familia conoce este nivel en este instante',
 };
 
+function pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto) {
+  if (!m.liq) {
+    window.LIQ_PINTADAS = [];
+    window.LIQ_SIN_DATO = [];
+    return;
+  }
+  window.LIQ_REGLA = { umbral_usd: LIQ_UMBRAL_USD, radio: LIQ_RADIO };
+  const out = [];
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, ancho, alto);
+  ctx.clip();
+  m.liq.eventos.forEach((e) => {
+    const x = xT(e.t);
+    const y = yPrecio(e.precio);
+    const r = radioLiq(e.usd);
+    const dibujada = x >= 0 && x <= ancho && y >= 0 && y <= alto;
+    if (dibujada) {
+      const c = e.lado === 'long' ? MAPA_COLOR.venta : MAPA_COLOR.compra;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = c;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, precio: e.precio, usd: e.usd,
+               x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(r * 100) / 100, dibujada });
+  });
+  ctx.restore();
+  window.LIQ_PINTADAS = out;
+  window.LIQ_SIN_DATO = m.liq.sinDato;
+}
+
 function fichaDe(m, j, k, neg) {
   const col = m.columnas[j];
   const s = col.suma;
@@ -188,6 +225,11 @@ function fichaDe(m, j, k, neg) {
     f.huella = { minuto: min, compra: enUnidad(z[0], k, m.paso, m.unidad), venta: enUnidad(z[1], k, m.paso, m.unidad) };
     f.lineas.push(['huella', 'footprint 1m ' + min + 'Z: compra ' + u(z[0]) + ' · venta ' + u(z[1])]);
   } else f.lineas.push(['huella', 'sin footprint']);
+  // campana 150: las liquidaciones PINTADAS del minuto de la columna (el mismo minuto del footprint), y lo sin dato
+  if (m.liq && typeof fichaLiq === 'function') {
+    const t0 = Math.floor(col.ts / 60000) * 60000;
+    fichaLiq(m.liq.eventos, m.liq.sinDato, t0, t0 + 60000).forEach((t) => f.lineas.push(['liq', t]));
+  }
   f.texto = f.lineas.map((x) => x[1]).join(' · ');
   return f;
 }
@@ -550,6 +592,9 @@ function creaMapa(canvas, alLeer, aviso, alEscala, alVista) {
       ctx.stroke();
     }
     ctx.restore();
+    // campana 150: las liquidaciones de la ventana por encima del umbral, en (su ts, su precio), el AREA proporcional a sus
+    // USD (flujo-liq.js); window.LIQ_PINTADAS lleva TODAS (las de fuera de la vista con dibujada=false)
+    pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto);
     // (149 rC, H-10) sin seguir el presente, una vertical tenue en el instante actual: el borde derecho de la columna
     // mas nueva (si cae en el mapa o en la banda «ahora»; mas a la derecha no se ve)
     let presente = null;

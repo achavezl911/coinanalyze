@@ -92,12 +92,15 @@ async function carga() {
   const q = { symbol: VISTA.activo, venues: venues.join(','), hasta: w.hasta };
   const hDesde = isoZ(Math.floor(Date.parse(w.desde) / 60000) * 60000);
   const hHasta = isoZ(Math.ceil(Date.parse(w.hasta) / 60000) * 60000);
-  const [sobre, honda, huella] = await Promise.all([
+  // campana 150: las liquidaciones (las sueltas de /api/orderflow/indicadores), con la ventana y solo si estan encendidas
+  const lw = VISTA.liq ? ventanaLiq(w) : null;
+  const [sobre, honda, huella, liq] = await Promise.all([
     pedir(RUTA_FOTOS, Object.assign({ desde: w.desde, paso: VISTA.paso, cada: w.cada }, q)),
     pedir(RUTA_HONDA, Object.assign({ desde: isoZ(Date.parse(w.desde) - HONDA_RANCIA_S * 1000) }, q)),
     pedir(RUTA_HUELLA, Object.assign({}, q, { desde: hDesde, hasta: hHasta, marco: '1m', paso: VISTA.paso, unidad: 'base' })),
+    lw ? pedir(RUTA_LIQ, { symbol: VISTA.activo, desde: lw.desde, hasta: lw.hasta, marco: lw.marco }) : null,
   ]);
-  [sobre, honda, huella].forEach(apuntar);
+  [sobre, honda, huella].concat(liq ? [liq] : []).forEach(apuntar);
   if (mia !== CARGA) return;
   if (!sobre.ok) {
     FALLO = sobre;
@@ -112,6 +115,7 @@ async function carga() {
                huella: huella.ok ? { desde: hDesde, hasta: hHasta, velas: huella.datos.velas || [] } : null,
                huellaUltimo: Date.parse(hHasta) - 60000,
                huellaFallo: huella.ok ? null : 'el footprint respondió ' + (huella.http || 'nada') };
+    if (lw) MODELO.liq = modeloLiq(liq.ok ? liq.datos.sueltas : null, lw);
     // la capa honda, junta a las columnas de la historia y, en vivo, a las nuevas (anadeHonda): al paso guardado
     MODELO.hondaFotos = new Map();
     MODELO.hondaUltima = null;
@@ -288,6 +292,7 @@ async function lateHuella(mia, t) {
   const sobre = await pedir(RUTA_HUELLA, { symbol: MODELO.activo, venues: MODELO.venues.join(','), desde: isoZ(desde),
                                           hasta: isoZ(hasta), marco: '1m', paso: MODELO.paso, unidad: 'base' });
   apuntar(sobre);
+  if (MODELO && MODELO.liq) await lateLiq(mia, desde, hasta);
   if (mia !== CARGA || !MODELO || window.LIBRO_HITOS.congelado) return;
   window.LIBRO_HITOS.recibidos.huella += 1;
   if (!sobre.ok) {
@@ -304,6 +309,46 @@ async function lateHuella(mia, t) {
   MODELO.huellaUltimo = t;
   MODELO.huellaFallo = null;
   EL_MAPA.actualiza();
+}
+
+/* LAS LIQUIDACIONES (campana 150). La ventana de la ruta, en borde de su marco (1m si cabe en TOPE_VELAS, si no 5m:
+ * el marco solo cambia las series, no las sueltas); en vivo, cada minuto, el tramo nuevo con el footprint (no hay gesto
+ * que pida). Lo que la ruta no cubre va en sinDato (flujo-liq.js) y lo dice la ficha. */
+const RUTA_LIQ = '/api/orderflow/indicadores';
+
+function ventanaLiq(w) {
+  const a = Date.parse(w.desde);
+  const b = Date.parse(w.hasta);
+  const marco = (b - a) / 60000 <= 1440 ? '1m' : '5m';
+  const c = (marco === '1m' ? 1 : 5) * 60000;
+  return { desde: isoZ(Math.floor(a / c) * c), hasta: isoZ(Math.ceil(b / c) * c), marco };
+}
+
+function modeloLiq(sueltas, lw) {
+  const a = Date.parse(lw.desde);
+  const b = Date.parse(lw.hasta);
+  return { sueltas, desde: lw.desde, hasta: lw.hasta, eventos: sobreUmbralLiq(eventosLiq(sueltas)),
+           sinDato: sinDatoLiq(sueltas, a, b) };
+}
+
+async function lateLiq(mia, desde, hasta) {
+  const sobre = await pedir(RUTA_LIQ, { symbol: MODELO.activo, desde: isoZ(desde), hasta: isoZ(hasta), marco: '1m' });
+  apuntar(sobre);
+  if (mia !== CARGA || !MODELO || !MODELO.liq || window.LIBRO_HITOS.congelado) return;
+  const v = MODELO.liq.sueltas;
+  const n = sobre.ok ? sobre.datos.sueltas : null;
+  if (!v || !n) {
+    // sin lo viejo o sin lo nuevo: lo que falte lo dice sinDato (el tramo nuevo, «la ruta no trajo»)
+    const sin = MODELO.liq.sinDato.concat(n ? [] : [{ desde, hasta, motivo: 'la ruta no trajo las liquidaciones' }]);
+    MODELO.liq = Object.assign({}, MODELO.liq, { hasta: isoZ(hasta), sinDato: sin });
+    return;
+  }
+  const junta = Object.assign({}, v, {
+    eventos: v.eventos.filter((e) => Date.parse(e.ts) < desde).concat(n.eventos),
+    truncada: v.truncada || n.truncada,
+    huecos: v.huecos.concat(n.huecos.filter((h) => !v.huecos.some((x) => JSON.stringify(x) === JSON.stringify(h)))),
+  });
+  MODELO.liq = modeloLiq(junta, { desde: MODELO.liq.desde, hasta: isoZ(hasta) });
 }
 
 /* LA CAPA HONDA EN VIVO (149 B r1). Las fotos recibidas se guardan por venue|ts (la ultima respuesta manda); al llegar
@@ -586,6 +631,7 @@ function pintaSelectores() {
     sp.appendChild(op);
   });
   document.getElementById('ir-mesa').setAttribute('href', '/#scalp/' + VISTA.activo);
+  document.getElementById('sel-liq').checked = !!VISTA.liq;
 }
 
 /* (149 rC, H-09) lo que hay bajo el raton: la ficha junto al cursor y #lectura en una linea, con las MISMAS palabras
@@ -785,6 +831,7 @@ function arranca() {
     if (ev.target.value) cambia({ familia: ev.target.value });
   });
   document.getElementById('sel-paso').addEventListener('change', (ev) => cambia({ paso: ev.target.value }));
+  document.getElementById('sel-liq').addEventListener('change', (ev) => cambia({ liq: ev.target.checked }));
   window.addEventListener('hashchange', aplicaHash);
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && VIVO.sondeo !== null) sondea();

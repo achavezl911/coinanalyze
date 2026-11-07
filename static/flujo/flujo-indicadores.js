@@ -103,7 +103,7 @@ function indicadoresQuePide(e) {
 async function cargaIndicadores(e, w, alAcabar) {
   const mia = ++IND.pide;
   const pide = [];
-  if (indicadoresQuePide(e).length) {
+  if (indicadoresQuePide(e).length || (e.ind || []).includes('liqp')) {
     pide.push(['indicadores', RUTA_IND, { symbol: e.activo, desde: w.desde, hasta: w.hasta, marco: e.marco }]);
   }
   if ((e.ind || []).includes('grandes')) {
@@ -504,6 +504,62 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
   });
   ctx.restore();
   return { umbral_usd: d.umbral_usd_vigente, truncada: d.truncada, marcas: out };
+}
+
+/* LAS LIQUIDACIONES SOBRE EL PRECIO (campana 150, flujo-liq.js): las sueltas de la ventana por encima de LIQ_UMBRAL_USD,
+ * un circulo en (su ts, su precio) con el AREA proporcional a sus USD, encima del footprint. window.LIQ_PINTADAS lleva
+ * TODAS las de la ventana por encima del umbral (las de fuera de la vista con dibujada=false) y window.LIQ_REGLA la regla. */
+function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
+  const d = IND.datos;
+  const on = (VISTA.ind || []).includes('liqp') && VISTA.modo !== 'tpo';
+  IND.liq = null;
+  window.LIQ_REGLA = { umbral_usd: LIQ_UMBRAL_USD, radio: LIQ_RADIO };
+  if (!on || !d || !m.velas.length) {
+    window.LIQ_PINTADAS = on ? null : [];
+    window.LIQ_SIN_DATO = on ? [{ motivo: d ? 'sin velas' : 'la ruta de los indicadores no contestó' }] : [];
+    return null;
+  }
+  const mMs = FLUJO_MARCOS[m.marco] * 60000;
+  const t0 = Date.parse(m.velas[0].ts);
+  const sinDato = sinDatoLiq(d.sueltas, Date.parse(d.desde), Date.parse(d.hasta));
+  const out = [];
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, g.arriba, g.ancho, g.abajo - g.arriba);
+  ctx.clip();
+  sobreUmbralLiq(eventosLiq(d.sueltas)).forEach((e) => {
+    const i = Math.floor((e.t - t0) / mMs);
+    const x = g.x(i) - g.bs / 2 + ((e.t - t0 - i * mMs) / mMs) * g.bs;
+    const yy = y(e.precio);
+    const r = radioLiq(e.usd);
+    const dibujada = i >= i0 && i <= i1 && yy >= g.arriba && yy <= g.abajo;
+    if (dibujada) {
+      const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;
+      ctx.beginPath();
+      ctx.arc(x, yy, r, 0, 2 * Math.PI);
+      ctx.fillStyle = rgba(c, 0.45);
+      ctx.fill();
+      ctx.strokeStyle = rgba(c, 0.95);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, precio: e.precio, usd: e.usd,
+               vela: i >= 0 && i < m.velas.length ? m.velas[i].ts : null,
+               x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 100) / 100, dibujada });
+  });
+  ctx.restore();
+  IND.liq = { pintadas: out, sinDato, mMs };
+  window.LIQ_PINTADAS = out;
+  window.LIQ_SIN_DATO = sinDato;
+  return { n: out.length, dibujadas: out.filter((x) => x.dibujada).length, sin_dato: sinDato.length };
+}
+
+// las lineas de la ficha para la vela que empieza en `ts`: lo PINTADO en ella (no se pide nada)
+function fichaLiqVela(ts) {
+  if (!(VISTA.ind || []).includes('liqp')) return [];
+  if (!IND.liq) return ['liq: SIN DATO (la ruta de los indicadores no contestó)'];
+  const t = Date.parse(ts);
+  return fichaLiq(IND.liq.pintadas, IND.liq.sinDato, t, t + IND.liq.mMs);
 }
 
 /* E-05 (OF-6a, campana 148): la CRUZ sobre un panel. La vertical la pinta flujo-dibujo.js (la de la vela); aqui, la
