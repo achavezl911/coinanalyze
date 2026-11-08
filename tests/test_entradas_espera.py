@@ -27,11 +27,13 @@ Lo que se promete, cada cosa con su control y su plantado:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import copy
 import json
 import os
 import random
 import time
+import uuid
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
@@ -39,6 +41,7 @@ import asyncpg
 import entradas_banco as B
 import pytest
 from test_entradas_registro_postgres import (  # noqa: F401 - `conn` es la base desechable
+    SCHEMA_SQL,
     SIMBOLOS,
     _ahora_T,
     _dsn,
@@ -62,6 +65,8 @@ RETRASO_S = {"min": 126.9, "mediana": 129.8, "max": 132.6}
 ESCALA = float(os.environ.get("ENTRADAS_ESCALA_ESPERA", "10"))
 RAPIDA = ESCALA * 4  # los brazos en que no se juzga un margen de tiempo, solo el orden
 DOS = ("v1", "v2")
+# Cuantas veces se monta el escenario del borde si la carga rompe su premisa (ver a/c/d).
+VECES_PREMISA = 3
 BTC, ETH, SOL = (s for s, _ in SIMBOLOS)
 VELA_S = 900
 
@@ -86,10 +91,12 @@ async def _escenario(conn, *, escala: float, mercados: dict) -> tuple[datetime, 
     return T, doc, desfase, {v: _espera(doc, v) for v in DOS}
 
 
-async def _colector(esquema: str, T: datetime, desfase: float, escala: float, entregas: list) -> None:
+async def _colector(esquema: str, T: datetime, desfase: float, escala: float, entregas: list) -> dict:
     """EL ACTOR. Cada entrega: (segundos tras el cierre de la vela, simbolo, insumos, minuto,
-    patas). Escribe por su propia conexion, como el colector de verdad."""
+    patas). Escribe por su propia conexion, como el colector de verdad. Devuelve CUANDO escribio
+    de verdad cada (simbolo, minuto, patas): el reloj de la base al acabar de escribirlo."""
     bases = dict(SIMBOLOS)
+    escritos = {}
     c = await asyncpg.connect(_dsn())
     try:
         await c.execute(f'SET search_path TO "{esquema}", public')
@@ -99,8 +106,32 @@ async def _colector(esquema: str, T: datetime, desfase: float, escala: float, en
             if falta > 0:
                 await asyncio.sleep(falta)
             await B.sembrar_flujos(c, T, ins, symbol, bases[symbol], minutos=[minuto], patas=patas)
+            escritos[(symbol, minuto, patas)] = await c.fetchval("SELECT clock_timestamp()")
     finally:
         await c.close()
+    return escritos
+
+
+@contextlib.asynccontextmanager
+async def _base_nueva(conn):  # noqa: F811
+    """Otra base desechable EN LA MISMA conexion, hecha como la del fixture `conn` (esquema propio
+    con sql/schema.sql y los simbolos) y borrada al salir: para montar un escenario desde cero."""
+    previo = await conn.fetchval("SELECT current_schema()")
+    esquema = f"entradas_{uuid.uuid4().hex}"
+    await conn.execute(f'CREATE SCHEMA "{esquema}"')
+    try:
+        await conn.execute(f'SET search_path TO "{esquema}", public')
+        await conn.execute(SCHEMA_SQL)
+        for symbol, base in SIMBOLOS:
+            await conn.execute(
+                "INSERT INTO market_assets(base_asset) VALUES($1) ON CONFLICT DO NOTHING", base)
+            await conn.execute(
+                "INSERT INTO symbols(symbol, base_asset) VALUES($1, $2) ON CONFLICT DO NOTHING",
+                symbol, base)
+        yield
+    finally:
+        await conn.execute(f'SET search_path TO "{previo}", public')
+        await conn.execute(f'DROP SCHEMA IF EXISTS "{esquema}" CASCADE')
 
 
 def _entregas(T: datetime, symbol: str, ins, llegada: float | None,
@@ -204,6 +235,27 @@ def test_los_relojes_de_v2_salen_del_retraso_medido():
 
 
 async def test_a_c_d_la_vela_de_v2_se_decide_con_el_spot_completo_y_v1_no_cambia_de_reloj(conn):  # noqa: F811
+    """EL BORDE va a decimas de segundo reales (medio reintento de v2 entre ESCALA): con la CPU llena
+    el colector puede escribir el ultimo minuto de SOL DESPUES del ultimo intento de v2, y entonces
+    SOL sale «hueco» por la carga, no por el producto (la CI de main cayo asi el 11-05 y el 11-08).
+    La premisa se MIDE en cada corrida; si no se cumplio, el escenario se monta otra vez en una base
+    nueva, hasta VECES_PREMISA. Si se cumplio, se juzga entero y como siempre."""
+    rotas = []
+    for vez in range(VECES_PREMISA):
+        if vez == 0:
+            rota = await _a_c_d(conn)
+        else:
+            async with _base_nueva(conn):
+                rota = await _a_c_d(conn)
+        if rota is None:
+            return
+        rotas.append(rota)
+        print(f"a/c/d, corrida {vez + 1} de {VECES_PREMISA}: {rota}")
+    pytest.fail(f"PREMISA ROTA las {VECES_PREMISA} veces, no se juzgo el producto: " + " | ".join(rotas))
+
+
+async def _a_c_d(conn) -> str | None:  # noqa: F811
+    """Una corrida del escenario: None si se juzgo (y todo cumplio), o por que la premisa no se cumplio."""
     mercados = {BTC: B.insumos, ETH: lambda T: B.insumos(T, spot_vela=-1e6), SOL: B.insumos}
     T, doc, desfase, reloj = await _escenario(conn, escala=ESCALA, mercados=mercados)
     esquema = await conn.fetchval("SELECT current_schema()")
@@ -218,11 +270,21 @@ async def test_a_c_d_la_vela_de_v2_se_decide_con_el_spot_completo_y_v1_no_cambia
         + _entregas(T, ETH, mercados[ETH], RETRASO_S["max"])
         + _entregas(T, SOL, mercados[SOL], borde)
     )
+    assert desfase + borde / ESCALA < reloj["v2"]["ultimo_intento"]  # en el reloj del banco, antes
     actor = asyncio.create_task(_colector(esquema, T, desfase, ESCALA, entregas))
     salida = await S.evaluar_vela(conn, T=T, doc=doc, huella_codigo="c" * 64, esperar=True)
-    await actor
+    escritos = await actor
     filas = await _filas(conn)
     print(f"a/c (escala {ESCALA:g}): {_cuenta(filas, desfase, ESCALA)}")
+    # LA PREMISA, MEDIDA: el ultimo intento de v2 empieza en reloj["v2"]["ultimo_intento"] o despues
+    # (servicio.evaluar_vela), asi que un minuto escrito antes de ese instante lo ve. Escrito
+    # despues, SOL decide sin el por la carga: no se puntua, se dice. Antes, se juzga como siempre.
+    escrito = (escritos[(SOL, 59, ("spot", "futuros"))] - T).total_seconds()
+    ultimo_v2 = reloj["v2"]["ultimo_intento"]
+    if escrito >= ultimo_v2:
+        return (f"PREMISA ROTA: el colector escribio el ultimo minuto de SOL a {escrito:.3f} s reales "
+                f"del cierre y el ultimo intento de v2 era a {ultimo_v2:.3f} s ({escrito - ultimo_v2:+.3f} s; "
+                f"el borde lo ponia {0.5 * del_arbol['reintento'] / ESCALA:.3f} s antes)")
 
     # a · v2 decide con el spot COMPLETO: las tres salidas, cada una con su nombre
     assert _fallos_a(filas, {BTC: "DISPARADO", ETH: "SOMBRA filtro", SOL: "DISPARADO"}) == []

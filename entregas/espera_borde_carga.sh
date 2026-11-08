@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 DB="eb_borde_$$"
 : > "$OUT"
 createdb --host=/var/run/postgresql "$DB" || exit 1
-psql --host=/var/run/postgresql -d "$DB" -q -v ON_ERROR_STOP=1 -f sql/schema.sql > /dev/null || exit 1
+psql --host=/var/run/postgresql -d "$DB" -q -v ON_ERROR_STOP=1 -f sql/schema.sql > /dev/null 2>&1 || exit 1
 export TEST_DATABASE_URL="postgresql:///${DB}?host=/var/run/postgresql"
 PIDS=()
 for _ in $(seq "$CARGA"); do
