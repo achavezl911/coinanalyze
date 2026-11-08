@@ -50,10 +50,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K111-libro.py:488`, `harness/checks/K111-libro.py:1676`, `harness/checks/K111-libro.py:1681`, `harness/checks/K111-libro.py:1684` _(+12)_ | `harness/checks/K111-banco.py:11`, `harness/checks/K111-banco.py:31`, `harness/checks/K111-banco.py:33`, `harness/checks/K111-banco.py:197` _(+15)_ |
-| **tests** | `tests/test_libro.py:587` | — |
+| **checks** | `harness/checks/K111-libro.py:488`, `harness/checks/K111-libro.py:1676`, `harness/checks/K111-libro.py:1681`, `harness/checks/K111-libro.py:1684` _(+12)_ | `harness/checks/K111-banco.py:11`, `harness/checks/K111-banco.py:31`, `harness/checks/K111-banco.py:33`, `harness/checks/K111-banco.py:197` _(+18)_ |
+| **tests** | `tests/js/liq_precio.test.js:99`, `tests/test_libro.py:587` | — |
 
-**No la llama el panel**, pero si 17 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 18 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

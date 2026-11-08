@@ -42,14 +42,14 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `signal_observation` — `sql/schema.sql:415`, 34 columnas
+- `signal_observation` — `sql/schema.sql:422`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
-- `signal_outcome` — `sql/schema.sql:565`, 27 columnas
+- `signal_outcome` — `sql/schema.sql:572`, 27 columnas
   - la llena `app.signal_outcomes.schedule_signal_outcomes` (INSERT) — `app/signal_outcomes.py:169`
   - la llena `app.signal_outcomes._finalize_not_evaluable` (UPDATE) — `app/signal_outcomes.py:199`
   - la llena `app.signal_outcomes._defer_missing_path` (UPDATE) — `app/signal_outcomes.py:226`
   - la llena `app.signal_outcomes._finalize_evaluated` (UPDATE) — `app/signal_outcomes.py:252`
-- `signal_outcome_final_visibility` — `sql/schema.sql:2487`, 8 columnas
+- `signal_outcome_final_visibility` — `sql/schema.sql:2494`, 8 columnas
   - la llena `app.signal_visibility._certify_final_outcomes_once` (INSERT) — `app/signal_visibility.py:308`
 
 ## Funciones que la componen

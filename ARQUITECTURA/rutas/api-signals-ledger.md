@@ -42,7 +42,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `signal_observation` — `sql/schema.sql:415`, 34 columnas
+- `signal_observation` — `sql/schema.sql:422`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
 
 ## Funciones que la componen

@@ -176,9 +176,9 @@ Y que bucle duerme con cual:
 
 | funcion | constante | valor | sitio |
 |---|---|---|---|
-| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:837` |
-| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:642` |
-| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1363` |
+| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:847` |
+| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:652` |
+| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1385` |
 
 ## EL BUCKET CORTO DEL LADO DE LA PARADA · el mismo patron en DOS tablas
 
@@ -223,7 +223,7 @@ del **arranque**. El minuto del arranque se cubre bien; el de la parada no.
 
 ### daily_session_agg
 
-`sql/schema.sql:1032`, 37 columnas.
+`sql/schema.sql:1039`, 37 columnas.
 
 La escriben:
 
@@ -257,7 +257,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2300`, 10 columnas.
+`sql/schema.sql:2307`, 10 columnas.
 
 La escriben:
 
@@ -271,7 +271,7 @@ La escriben:
 
 ### daily_verdict_snapshot
 
-`sql/schema.sql:1099`, 26 columnas.
+`sql/schema.sql:1106`, 26 columnas.
 
 La escriben:
 
@@ -285,7 +285,7 @@ La escriben:
 
 ### data_gap
 
-`sql/schema.sql:1412`, 22 columnas.
+`sql/schema.sql:1419`, 22 columnas.
 
 La escriben:
 
@@ -333,7 +333,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2712`, 8 columnas.
+`sql/schema.sql:2719`, 8 columnas.
 
 La escriben:
 
@@ -346,7 +346,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2675`, 26 columnas.
+`sql/schema.sql:2682`, 26 columnas.
 
 La escriben:
 
@@ -359,7 +359,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2665`, 6 columnas.
+`sql/schema.sql:2672`, 6 columnas.
 
 La escriben:
 
@@ -372,7 +372,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2853`, 12 columnas.
+`sql/schema.sql:2860`, 12 columnas.
 
 La escriben:
 
@@ -387,7 +387,7 @@ Rutas que ESCRIBEN en `entrada_resultado`: `/api/entradas`, `/api/mesa/entradas`
 
 ### external_macro_observation
 
-`sql/schema.sql:1234`, 5 columnas.
+`sql/schema.sql:1241`, 5 columnas.
 
 La escriben:
 
@@ -423,8 +423,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1549`
-- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:813`
+- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1571`
+- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:823`
 
 **Si cambia el contenido o el esquema de `futures_trades_agg`, estas 7 rutas lo notan:**
 
@@ -442,7 +442,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:784`
+- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:794`
 
 **Si cambia el contenido o el esquema de `futures_trades_realtime`, estas 17 rutas lo notan:**
 
@@ -483,7 +483,7 @@ La escriben:
 
 ### liquidations_realtime
 
-`sql/schema.sql:339`, 8 columnas.
+`sql/schema.sql:339`, 9 columnas.
 
 La escriben:
 
@@ -524,7 +524,7 @@ La escriben:
 
 ### macro_event
 
-`sql/schema.sql:1245`, 6 columnas.
+`sql/schema.sql:1252`, 6 columnas.
 
 La escriben:
 
@@ -539,7 +539,7 @@ La escriben:
 
 ### market_feed_health
 
-`sql/schema.sql:1318`, 7 columnas.
+`sql/schema.sql:1325`, 7 columnas.
 
 La escriben:
 
@@ -562,7 +562,7 @@ La escriben:
 
 ### metric_baseline
 
-`sql/schema.sql:1265`, 14 columnas.
+`sql/schema.sql:1272`, 14 columnas.
 
 La escriben:
 
@@ -588,7 +588,7 @@ La escriben:
 
 ### metrics_snapshot
 
-`sql/schema.sql:945`, 35 columnas.
+`sql/schema.sql:952`, 35 columnas.
 
 La escriben:
 
@@ -712,7 +712,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:888`
+- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:898`
 
 **Si cambia el contenido o el esquema de `orderbook_depth`, estas 1 rutas lo notan:**
 
@@ -724,8 +724,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:856`
-- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:912`
+- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:866`
+- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:922`
 
 **Si cambia el contenido o el esquema de `orderbook_snapshot`, estas 15 rutas lo notan:**
 
@@ -747,7 +747,7 @@ La escriben:
 
 ### orderflow_paso
 
-`sql/schema.sql:2938`, 2 columnas.
+`sql/schema.sql:2945`, 2 columnas.
 
 **PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena
 algo fuera del paquete analizado, o el SQL se arma en ejecucion.
@@ -758,7 +758,7 @@ algo fuera del paquete analizado, o el SQL se arma en ejecucion.
 
 ### pipeline_heartbeat
 
-`sql/schema.sql:1284`, 4 columnas.
+`sql/schema.sql:1291`, 4 columnas.
 
 La escriben:
 
@@ -795,11 +795,11 @@ La escriben:
 
 ### scalp_signal_snapshot
 
-`sql/schema.sql:381`, 16 columnas.
+`sql/schema.sql:388`, 16 columnas.
 
 La escriben:
 
-- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1417`
+- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1439`
 
 **Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 5 rutas lo notan:**
 
@@ -811,7 +811,7 @@ La escriben:
 
 ### signal_execution_snapshot
 
-`sql/schema.sql:793`, 21 columnas.
+`sql/schema.sql:800`, 21 columnas.
 
 La escriben:
 
@@ -823,7 +823,7 @@ La escriben:
 
 ### signal_observation
 
-`sql/schema.sql:415`, 34 columnas.
+`sql/schema.sql:422`, 34 columnas.
 
 La escriben:
 
@@ -841,7 +841,7 @@ La escriben:
 
 ### signal_outcome
 
-`sql/schema.sql:565`, 27 columnas.
+`sql/schema.sql:572`, 27 columnas.
 
 La escriben:
 
@@ -858,7 +858,7 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2487`, 8 columnas.
+`sql/schema.sql:2494`, 8 columnas.
 
 La escriben:
 
@@ -870,7 +870,7 @@ La escriben:
 
 ### signal_replay_frame
 
-`sql/schema.sql:751`, 7 columnas.
+`sql/schema.sql:758`, 7 columnas.
 
 La escriben:
 

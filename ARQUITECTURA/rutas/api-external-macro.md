@@ -31,10 +31,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1032`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `data_gap` — `sql/schema.sql:1412`, 22 columnas
+- `data_gap` — `sql/schema.sql:1419`, 22 columnas
   - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
   - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
   - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
@@ -49,10 +49,10 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
-- `external_macro_observation` — `sql/schema.sql:1234`, 5 columnas
+- `external_macro_observation` — `sql/schema.sql:1241`, 5 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
-- `macro_event` — `sql/schema.sql:1245`, 6 columnas
+- `macro_event` — `sql/schema.sql:1252`, 6 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:564`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:576`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas

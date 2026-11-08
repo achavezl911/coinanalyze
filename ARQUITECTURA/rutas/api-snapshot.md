@@ -69,7 +69,7 @@ Tipo declarado en la firma: `Any`.
 
 LEE:
 
-- `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
+- `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 

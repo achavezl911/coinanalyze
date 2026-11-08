@@ -67,9 +67,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:984`, `harness/checks/K112-banco.py:133`, `harness/checks/K112-control.bash:176`, `harness/checks/K112-control.bash:249` _(+4)_ | `harness/checks/K120-banco.py:11`, `harness/checks/K120-las-liquidaciones-en-el-precio.sh:7`, `harness/checks/K120-liq.py:4` |
+| **checks** | `harness/checks/K108-orderflow.py:984`, `harness/checks/K112-banco.py:135`, `harness/checks/K112-control.bash:176`, `harness/checks/K112-control.bash:249` _(+5)_ | `harness/checks/K120-banco.py:15`, `harness/checks/K120-las-liquidaciones-en-el-precio.sh:7`, `harness/checks/K120-liq.py:4` |
 
-**No la llama el panel**, pero si 8 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 9 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

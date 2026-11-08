@@ -36,7 +36,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `orderflow_paso` — `sql/schema.sql:2938`, 2 columnas
+- `orderflow_paso` — `sql/schema.sql:2945`, 2 columnas
   - **PENDIENTE · ninguna funcion del arbol la escribe con SQL literal.**
     O la llena algo fuera de `app/` (migracion, colector externo, carga manual),
     o el SQL se construye en ejecucion y el analisis estatico no lo ve.
