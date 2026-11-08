@@ -423,7 +423,9 @@ def juzga_ejecucion(J, pref: str, esp: list[dict], base_db: str) -> None:
 
 def ejecucion_140(J) -> str:
     """(E) contra 140, solo lectura: la ruta de BTC/ETH/SOL en las ultimas 24 h. Sin ejecucion_fuente, SIN DESPLEGAR."""
-    b = datetime.now(UTC).replace(second=0, microsecond=0)
+    # la ruta exige desde/hasta en borde de vela del marco: al minuto daba 422 cuatro de cada cinco (auditoria del remate 1)
+    n = datetime.now(UTC)
+    b = n.replace(minute=n.minute - n.minute % 5, second=0, microsecond=0)
     q = lambda a: urllib.parse.urlencode({"symbol": a, "desde": (b - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ"),  # noqa: E731
                                           "hasta": b.strftime("%Y-%m-%dT%H:%M:%SZ"), "marco": "5m"})
     cab, partes = K113.cabecera(), []
