@@ -922,6 +922,52 @@ REGLA_LIQ = (
     "sabe: falta."
 )
 FUENTE_SUELTAS = "liquidaciones sueltas · binance y bybit perpetuos (colector propio: cada liquidacion)"
+# DONDE SE EJECUTO cada liquidacion (campana 150, remate 1). `price` es la `p` de la orden forzada (limite en binance,
+# quiebra en bybit), ~0.4 % mas alla del mercado: el operador midio 32-39 bps contra la cinta (2026-11-08). Por orden:
+# la `ap` de binance (avg_price); si no, la impresion de la cinta del MISMO venue y del lado de la orden forzada (largo
+# liquidado = VENTA), a <= 1 s, la mas cercana en tiempo entre las de usd >= la mitad de la liquidacion (si no hay,
+# la mas cercana de ese venue y lado; empate en tiempo: la de usd mas parecido); si tampoco (la cinta guarda 48 h),
+# sin_dato y ejecucion null. Una consulta por ventana (LATERAL sobre el indice (symbol, ts) de la cinta).
+VENUE_CINTA_LIQ = {"binance": "binance_usdm", "bybit": "bybit_linear"}
+VENTANA_EJECUCION = timedelta(seconds=1)
+REGLA_EJECUCION = (
+    "ejecucion: la ap (precio medio ejecutado) de binance; si no la hay, la impresion de la cinta del mismo venue "
+    "(binance_usdm, bybit_linear) y del lado de la orden forzada (largo liquidado = venta) a <= 1 s: la mas cercana "
+    "en tiempo de las de usd >= la mitad de la liquidacion, y si no hay, la mas cercana (empate: usd mas parecido); "
+    "si tampoco, sin_dato. precio es la p de la orden (limite / quiebra), no donde se negocio."
+)
+SUELTAS_SQL = """
+SELECT l.ts, l.exchange, l.side, l.notional_usd, l.price, l.qty, l.avg_price,
+       c.ts AS c_ts, c.venue AS c_venue, c.compra AS c_compra, c.precio AS c_precio, c.usd AS c_usd
+  FROM (SELECT ts, exchange, side, notional_usd, price, qty, avg_price, event_id FROM liquidations_realtime
+         WHERE symbol = $1 AND ts >= $2 AND ts < $3 ORDER BY ts, exchange, event_id LIMIT $4) l
+  LEFT JOIN LATERAL (
+        SELECT k.ts, k.venue, k.compra, k.precio, k.usd FROM orderflow_cinta k
+         WHERE l.avg_price IS NULL AND k.symbol = $5
+           AND k.venue = (CASE l.exchange WHEN 'binance' THEN $6 ELSE $7 END)
+           AND k.compra = (l.side = 'short')
+           AND k.ts >= l.ts - $8::interval AND k.ts <= l.ts + $8::interval
+         ORDER BY (k.usd >= l.notional_usd::numeric / 2) DESC, abs(extract(epoch FROM k.ts - l.ts)),
+                  abs(k.usd - l.notional_usd::numeric), k.id
+         LIMIT 1) c ON true
+ ORDER BY l.ts, l.exchange, l.event_id
+"""
+
+
+def _evento(f: Any) -> dict[str, Any]:
+    e = {"ts": iso(f["ts"]), "exchange": f["exchange"], "lado": f["side"], "usd": texto(_decimal(f["notional_usd"])),
+         "precio": texto(_decimal(f["price"])), "cantidad": texto(_decimal(f["qty"]))}
+    if f["avg_price"] is not None:
+        e.update(ejecucion=texto(_decimal(f["avg_price"])), ejecucion_fuente="ap")
+    elif f["c_precio"] is not None:
+        e.update(ejecucion=texto(f["c_precio"]), ejecucion_fuente="cinta",
+                 ejecucion_impresion={"ts": iso(f["c_ts"]), "venue": f["c_venue"], "compra": f["c_compra"],
+                                      "usd": texto(f["c_usd"])})
+    else:
+        e.update(ejecucion=None, ejecucion_fuente="sin_dato")
+    return e
+
+
 # la cascada M8 del estudio (app/anatomia.py), servida para que la pagina no lleve otra copia (campana 150)
 REGLA_CASCADA = (
     f"cascada: >= {CASCADA_N} liquidaciones del mismo lado (binance y bybit juntos, cualquier tamano) en "
@@ -1010,9 +1056,8 @@ async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str |
     retencion = timedelta(days=get_settings().LIQ_REALTIME_RETENTION_DAYS)
     borde = max(a, ahora - retencion)
     sueltas = await conn.fetch(
-        """SELECT ts, exchange, side, notional_usd, price, qty FROM liquidations_realtime
-            WHERE symbol = $1 AND ts >= $2 AND ts < $3 ORDER BY ts, exchange, event_id LIMIT $4""",
-        simbolo, borde, b, TOPE_SUELTAS + 1) if borde < b else []
+        SUELTAS_SQL, simbolo, borde, b, TOPE_SUELTAS + 1, activo, VENUE_CINTA_LIQ["binance"],
+        VENUE_CINTA_LIQ["bybit"], VENTANA_EJECUCION) if borde < b else []
     huecos = await conn.fetch(
         """SELECT exchange, start_ts, end_ts, evidence_type, status FROM data_gap
             WHERE feed = 'liquidations' AND symbol = $1 AND start_ts < $3 AND end_ts > $2
@@ -1028,9 +1073,8 @@ async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str |
         "sueltas": {
             "fuente": FUENTE_SUELTAS, "retencion_h": retencion // timedelta(hours=1),
             "desde_dato": iso(min(borde, b)), "truncada": len(sueltas) > TOPE_SUELTAS,
-            "eventos": [{"ts": iso(f["ts"]), "exchange": f["exchange"], "lado": f["side"],
-                         "usd": texto(_decimal(f["notional_usd"])), "precio": texto(_decimal(f["price"])),
-                         "cantidad": texto(_decimal(f["qty"]))} for f in sueltas[:TOPE_SUELTAS]],
+            "regla_ejecucion": REGLA_EJECUCION,
+            "eventos": [_evento(f) for f in sueltas[:TOPE_SUELTAS]],
             "huecos": [{"exchange": f["exchange"], "desde": iso(f["start_ts"]), "hasta": iso(f["end_ts"]),
                         "evidencia": f["evidence_type"], "estado": f["status"]} for f in huecos[:TOPE_HUECOS]],
             "cascada": {"n": CASCADA_N, "s": CASCADA_S, "regla": REGLA_CASCADA},

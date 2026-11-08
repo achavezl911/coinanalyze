@@ -71,8 +71,8 @@ WS_RECONNECT_INITIAL_SECONDS = 5.0
 WS_RECONNECT_MAX_SECONDS = 60.0
 
 LIQUIDATION_INSERT_SQL = """
-INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id,avg_price)
+VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
 ON CONFLICT(exchange,event_id,ts) DO NOTHING
 """
 
@@ -87,6 +87,16 @@ def now_ms() -> int:
 
 def floor_ts_seconds(event_ms: int, bucket_seconds: int) -> int:
     return (event_ms // (bucket_seconds * 1000)) * bucket_seconds
+
+
+def precio_ejecutado(valor: object) -> float | None:
+    """La `ap` del forceOrder de binance como precio de ejecucion: None si falta, no es un numero finito o no es > 0
+    (una orden sin llenar trae "0")."""
+    try:
+        precio = float(valor)  # type: ignore[arg-type]
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return precio if math.isfinite(precio) and 0 < precio <= 10_000_000 else None
 
 
 def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[float, float, int] | None:
@@ -447,7 +457,7 @@ class BookStore:
 
 TRADE_STORE = TradeStore()
 BOOK_STORE = BookStore()
-LIQ_QUEUE: asyncio.Queue[tuple[datetime, str, str, str, float, float, float, str]] = asyncio.Queue(maxsize=5000)
+LIQ_QUEUE: asyncio.Queue[tuple[datetime, str, str, str, float, float, float, str, float | None]] = asyncio.Queue(maxsize=5000)
 LAST_TRADE_EVENT = {
     (symbol, exchange): 0.0
     for symbol in ACTIVE_SYMBOLS
@@ -966,7 +976,7 @@ async def flush_liquidations(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None = None,
 ) -> None:
-    buffer: list[tuple[datetime, str, str, str, float, float, float, str]] = []
+    buffer: list[tuple[datetime, str, str, str, float, float, float, str, float | None]] = []
     while True:
         try:
             item = await asyncio.wait_for(LIQ_QUEUE.get(), timeout=2.0)
@@ -1103,7 +1113,14 @@ async def handle_binance(message: dict[str, Any]) -> None:
         order_side = str(order.get("S", "")).upper()
         side = "long" if order_side == "SELL" else "short"
         event_id = f"{symbol}:{event_ms}:{order_side}:{price}:{qty}"
-        await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "binance", side, price * qty, price, qty, event_id))
+        # `p` es el precio de la orden forzada (limite, ~0.4 % mas alla del mercado); `ap` el precio MEDIO al que se
+        # ejecuto. Mensaje de la documentacion de binance (Liquidation Order Streams):
+        #   {"e":"forceOrder","E":1568014460893,"o":{"s":"BTCUSDT","S":"SELL","o":"LIMIT","f":"IOC","q":"0.014",
+        #    "p":"9910","ap":"9910","X":"FILLED","l":"0.014","z":"0.014","T":1568014460893}}
+        # price/notional_usd/event_id siguen saliendo de `p` (la historia no cambia de significado); `ap` va aparte.
+        avg_price = precio_ejecutado(order.get("ap"))
+        await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "binance", side, price * qty, price, qty, event_id,
+                            avg_price))
 
 
 async def binance_market_loop(
@@ -1334,10 +1351,15 @@ async def handle_bybit(message: dict[str, Any]) -> None:
                 continue
             raw_side = str(liq.get("S", "")).upper()
             event_id = str(liq.get("id") or f"{symbol}:{event_ms}:{raw_side}:{price}:{qty}")
-            await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "bybit", side, price * qty, price, qty, event_id))
+            # Bybit no da precio de ejecucion: `p` es el de quiebra. Mensaje de la documentacion de bybit (All
+            # Liquidation): {"topic":"allLiquidation.ROSEUSDT","type":"snapshot","ts":1739502303204,
+            #   "data":[{"T":1739502302929,"s":"ROSEUSDT","S":"Sell","v":"20000","p":"0.04499"}]}
+            # avg_price NULL: la pagina busca la ejecucion en la cinta de bybit_linear.
+            await safe_liq_put((datetime.fromtimestamp(event_ms / 1000, UTC), symbol, "bybit", side, price * qty, price, qty, event_id,
+                                None))
 
 
-async def safe_liq_put(item: tuple[datetime, str, str, str, float, float, float, str]) -> None:
+async def safe_liq_put(item: tuple[datetime, str, str, str, float, float, float, str, float | None]) -> None:
     global LIQ_DROPPED
     try:
         LIQ_QUEUE.put_nowait(item)

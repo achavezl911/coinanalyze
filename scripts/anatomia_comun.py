@@ -75,8 +75,10 @@ TABLAS = {
     "cinta": ("orderflow_cinta", ("ts", "venue", "symbol", "precio", "base", "usd", "compra", "id")),
     "libro": ("libro_foto", ("ts", "venue", "symbol", "ts_libro", "compra", "venta", "paso", "compra_nivel",
                              "compras", "venta_nivel", "ventas", "alcance_compra", "alcance_venta")),
+    # avg_price (remate 1 de la campana 150): los ficheros de antes del despliegue traen 8 campos y los de despues 9;
+    # liq_rt lee por posicion (ts, symbol, side, notional_usd) y los dos le valen (tests/test_liq_cascada.py)
     "liquidaciones-realtime": ("liquidations_realtime", ("ts", "symbol", "exchange", "side", "notional_usd",
-                                                         "price", "qty", "event_id")),
+                                                         "price", "qty", "event_id", "avg_price")),
     "liquidaciones-5min": ("liquidations", ("ts", "symbol", "interval", "long_liq", "short_liq")),
     "oi-bybit": ("oi_bybit", ("ts", "symbol", "interval", "oi_open", "oi_high", "oi_low", "oi_close")),
     "oi": ("open_interest", ("ts", "symbol", "interval", "oi_open", "oi_high", "oi_low", "oi_close")),

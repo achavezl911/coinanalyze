@@ -97,3 +97,27 @@ def test_la_regla_js_es_la_del_estudio(tmp_path):
     assert js_dia == py
     borde = f"BTC|{d.t0 + 4 * 3600 + int(A.CASCADA_S) // 60 * 60}|l"
     assert py[borde] == 1, "la racha del borde exacto tiene que cerrar cascada"
+
+
+def test_el_archivo_de_9_campos_se_lee_como_el_de_8(tmp_path):
+    """Remate 1: desde el despliegue de avg_price, archiva.sh (COPY SELECT *) escribe 9 campos por liquidacion; los
+    ficheros viejos tienen 8. liq_rt lee por posicion (0, 1, 3, 4): el mismo dia sale igual con los dos."""
+    filas = _filas()
+    ocho, nueve = tmp_path / "ocho", tmp_path / "nueve"
+    _archivo(ocho, filas)
+    for f in filas:
+        dia, hora = f[0].strftime("%Y-%m-%d"), f[0].hour
+        p = X.fichero(nueve, "liquidaciones-realtime", dia, hora)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        ts = f[0].strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] + "+00"
+        ap = "\\N" if f[2] == "bybit" else "100.5"
+        with gzip.open(p, "at", encoding="utf-8", newline="\n") as g:
+            g.write("\t".join((ts, f[1], f[2], f[3], str(f[4]), "100", "1", "x", ap)) + "\n")
+    assert C.TABLAS["liquidaciones-realtime"][1][-1] == "avg_price" and len(C.TABLAS["liquidaciones-realtime"][1]) == 9
+    with gzip.open(X.fichero(nueve, "liquidaciones-realtime", DIA, 0), "rt") as g:
+        assert len(g.readline().rstrip("\n").split("\t")) == 9
+    a, b = X.Dia(ocho, DIA), X.Dia(nueve, DIA)
+    a.liq_rt()
+    b.liq_rt()
+    assert sum(1 for s in a.m for fila in a.m[s] if fila[X.COL["liq_l_n"]]) >= 10, "el sujeto no tiene liquidaciones"
+    assert a.m == b.m

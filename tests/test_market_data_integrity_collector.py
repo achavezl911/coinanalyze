@@ -50,9 +50,9 @@ async def test_handle_bybit_persists_liquidated_position_side(
     )
 
     rows = [queue.get_nowait(), queue.get_nowait()]
-    assert [(row[2], row[3], row[7]) for row in rows] == [
-        ("bybit", "long", "buy"),
-        ("bybit", "short", "sell"),
+    assert [(row[2], row[3], row[7], row[8]) for row in rows] == [
+        ("bybit", "long", "buy", None),
+        ("bybit", "short", "sell", None),
     ]
 
 
@@ -71,15 +71,17 @@ async def test_binance_force_order_semantics_remain_order_side_based(
                 "data": {
                     "e": "forceOrder",
                     "E": EVENT_MS,
-                    "o": {"s": "BTCUSDT", "S": order_side, "p": "100", "q": "1"},
+                    "o": {"s": "BTCUSDT", "S": order_side, "p": "100", "q": "1",
+                          "ap": "100.4" if order_side == "SELL" else "0"},
                 },
             }
         )
 
     rows = [queue.get_nowait(), queue.get_nowait()]
-    assert [(row[2], row[3]) for row in rows] == [
-        ("binance", "long"),
-        ("binance", "short"),
+    # price y notional_usd siguen siendo la p; la ap va aparte (y una "0" no es precio de ejecucion)
+    assert [(row[2], row[3], row[5], row[4], row[8]) for row in rows] == [
+        ("binance", "long", 100.0, 100.0, 100.4),
+        ("binance", "short", 100.0, 100.0, None),
     ]
 
 

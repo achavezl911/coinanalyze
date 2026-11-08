@@ -18,6 +18,8 @@ MIGRATION_SQL = (
 ROLLBACK_SQL = (
     ROOT / "sql/migrations/20260809_partition_compatibility_bridge.down.sql"
 ).read_text(encoding="utf-8")
+# el escritor de hoy escribe avg_price (campana 150, remate 1): la columna que sql/schema.sql anade con este ALTER
+AVG_PRICE_SQL = "ALTER TABLE liquidations_realtime ADD COLUMN IF NOT EXISTS avg_price double precision"
 
 LEGACY_SCHEMA_SQL = """
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
@@ -100,8 +102,8 @@ def _row(
     *,
     exchange: str = "bybit",
     side: str = "long",
-) -> tuple[datetime, str, str, str, float, float, float, str]:
-    return (ts, "BTCUSDT_PERP.A", exchange, side, 200.0, 100.0, 2.0, event_id)
+) -> tuple[datetime, str, str, str, float, float, float, str, float | None]:
+    return (ts, "BTCUSDT_PERP.A", exchange, side, 200.0, 100.0, 2.0, event_id, None)
 
 
 async def _primary_key_columns(conn: asyncpg.Connection) -> list[str]:
@@ -147,6 +149,7 @@ async def test_legacy_schema_migration_writer_duplicates_and_rollback() -> None:
 
         await conn.execute(MIGRATION_SQL)
         await conn.execute(MIGRATION_SQL)
+        await conn.execute(AVG_PRICE_SQL)
 
         assert await conn.fetchval(
             "SELECT relkind = 'r' FROM pg_class WHERE oid = 'liquidations_realtime'::regclass"
@@ -211,6 +214,7 @@ async def test_future_partitioned_schema_writer_is_globally_idempotent_and_down_
     try:
         await first.execute(PARTITIONED_SCHEMA_SQL)
         await first.execute(MIGRATION_SQL)
+        await first.execute(AVG_PRICE_SQL)
         assert await first.fetchval(
             "SELECT NOT EXISTS ("
             "  SELECT 1 FROM pg_index"
