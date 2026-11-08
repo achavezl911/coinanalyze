@@ -35,7 +35,7 @@ spot_trades_realtime_unpartitioned_backup	ts	sin_poda	resto de la migracion a pa
 scalp_signal_snapshot	ts	horas:SCALP_SIGNAL_RETENTION_HOURS	app/scalp_collector.py:1563
 futures_trades_agg	ts	horas:SCALP_MINUTE_RETENTION_HOURS	app/scalp_collector.py:1549
 futures_trades_realtime	ts	horas:SCALP_TRADE_RETENTION_HOURS	app/scalp_collector.py:1540
-liquidations_realtime	ts	horas:SCALP_TRADE_RETENTION_HOURS	app/scalp_collector.py:1558
+liquidations_realtime	ts	dias:LIQ_REALTIME_RETENTION_DAYS	app/scalp_collector.py:1583
 orderbook_snapshot	ts	horas:SCALP_ORDERBOOK_RETENTION_HOURS	app/scalp_collector.py:1553
 spot_trades_realtime	ts	horas:REALTIME_RETENTION_HOURS	app/daily_agg.py:695
 ohlcv	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:655 · el MAS RESTRICTIVO de sus tres intervalos (1min hard, 5min y 4hour htf, daily sin poda): asi no condena lo que la poda del 1min se llevo

@@ -373,6 +373,35 @@ SQL
 fi
 
 echo
+echo "L · liq_dia_encoge · liquidations_realtime con SU retencion (dias:LIQ_REALTIME_RETENTION_DAYS, 30)"
+# Al final y en tablas nuevas de la MISMA base: los plantados de antes no la ven. Con la linea
+# vieja (horas:SCALP_TRADE_RETENTION_HOURS, 12 h) ningun dia cerrado cabia y la tabla no se juzgaba
+# (auditoria del operador, remate 1 de la 150); el dia plantado, hace 20, esta dentro de 30 y fuera de 7.
+m "CREATE TABLE liquidations_realtime (id bigint PRIMARY KEY, ts timestamptz NOT NULL);
+   INSERT INTO liquidations_realtime SELECT k*100+i, (current_date - k)::timestamptz + interval '10 hours'
+     FROM generate_series(0,25) k, generate_series(1,20) i;"
+printf 'SNAPSHOT_RETENTION_DAYS=7\nLIQ_REALTIME_RETENTION_DAYS=30\n' > "$DIR/ret.tsv"
+corre "$DIR/cl.tsv"
+comprueba "L0 siembra (rc=2, rc=$RC) y resuelve la variable nueva" \
+  "$([ "$RC" = 2 ] && ! dice 'no se pudo leer la retencion' && echo si || echo no)"
+corre "$DIR/cl.tsv"
+comprueba "L1 gemelo sin tocar: rc=0 (rc=$RC)" "$([ "$RC" = 0 ] && echo si || echo no)"
+DIA20=$(D 20)
+m "DELETE FROM liquidations_realtime WHERE ts::date='$DIA20' AND id % 4 = 0;"
+corre "$DIR/cl.tsv"
+comprueba "L2 condena, rc=1 (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
+comprueba "L3 nombra liquidations_realtime y el $DIA20, antes 20 ahora 15" \
+  "$(diceE "liquidations_realtime +$DIA20 +antes 20 +ahora 15" && echo si || echo no)"
+comprueba "L4 y solo ese dia (1 dia)" "$(diceE 'PERDIDA SILENCIOSA en .*: 1 dia' && echo si || echo no)"
+# El plantado muerde la declaracion vieja: con 12 h la misma perdida no se juzga.
+sed 's#^liquidations_realtime\tts\t[^\t]*#liquidations_realtime\tts\thoras:SCALP_TRADE_RETENTION_HOURS#' "$DECL" > "$DIR/decl-vieja.tsv"
+printf 'SCALP_TRADE_RETENTION_HOURS=12\n' >> "$DIR/ret.tsv"
+OUT=$(env K104_SUJETO=local K104_BASE="$BD" K104_TABLAS="$DIR/decl-vieja.tsv" K104_RETENCIONES="$DIR/ret.tsv" \
+          K104_CENSO="$DIR/cl.tsv" timeout -k 5 300 bash "$CHK" 2>&1); RC=$?
+comprueba "L5 con la linea vieja (12 h) NO la condena: rc=$RC, sin dia cerrado" \
+  "$([ "$RC" != 1 ] && dice 'liquidations_realtime(ventana SCALP_TRADE_RETENTION_HOURS' && echo si || echo no)"
+
+echo
 total=$((pasan+fallos))
 echo "$pasan de $total pasan · $fallos fallan${sinmat:+ · SIN MATERIAL:$sinmat}"
 [ "$fallos" -eq 0 ] || exit 1
