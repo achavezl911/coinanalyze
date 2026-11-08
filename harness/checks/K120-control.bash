@@ -109,7 +109,7 @@ I=flujo/flujo-indicadores.js; L=flujo/flujo-liq.js
 echo "== once plantados"
 juzga lado_cambiado X $I "s|const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;|const c = e.lado === 'long' ? COLOR.compra : COLOR.venta;|"
 juzga precio_de_la_vela X $I 's|const yy = y(e.ejecucion);|const yy = y(Number(m.velas[Math.min(m.velas.length - 1, Math.max(0, i))].cierre \|\| e.ejecucion * 1.002));|'
-juzga precio_de_quiebra X $I 's|const yy = y(e.ejecucion);|const yy = y(e.p);|'
+juzga precio_de_quiebra X $I 's|const yy = y(e.ejecucion);|const yy = y(e.precio);|'
 juzga radio_lineal X $L 's|LIQ_RADIO.r0 \* Math.sqrt(Math.max(0, Number(usd)) / LIQ_RADIO.u0);|LIQ_RADIO.r0 * Math.max(0, Number(usd)) / LIQ_RADIO.u0;|'
 juzga umbral_ignorado P $L 's|return eventos.filter((e) => e.usd >= u);|return eventos;|'
 echo retencion_de_12h > "$T/plantado"; condena retencion_de_12h T

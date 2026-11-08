@@ -298,6 +298,9 @@ async def mira(J, pagina: str, vista: str, base_db: str) -> dict:
             malas = []
             for e in pint:
                 t, p, u_ = ms(e["ts"]), float(e["ejecucion"]), float(e["usd"])
+                if e["x"] is None or e["y"] is None:
+                    malas.append(f"{e['ts']} {e['lado']} {p:g}: x {e['x']} y {e['y']} sin posicion")
+                    continue
                 dx, dy = abs(e["x"] - fx(t)), abs(e["y"] - fy(p))
                 if dx > tol or dy > tol:
                     malas.append(f"{e['ts']} {e['lado']} {p:g}: x {e['x']} (regla {fx(t):.1f}) y {e['y']} (regla {fy(p):.1f})")
