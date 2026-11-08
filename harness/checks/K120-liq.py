@@ -3,11 +3,16 @@
 
 Por pagina (/flujo 1m y /libro, del pasado, con las liquidaciones encendidas), contra la ruta /api/orderflow/indicadores
 que la pagina pidio (se vuelve a pedir, igual) y la regla escrita AQUI, no la de la pagina:
-  (P) LIQ_PINTADAS = las sueltas de la ruta con usd >= 10 000: mismo ts, exchange, lado, precio y USD, y LIQ_REGLA dice 10 000
-  (X) cada pintada en su x/y del eje vigente (FLUJO_PINTADO / LIBRO_PINTADO, +-1.5 px), su radio min(18, max(3, 3 sqrt(usd/1e4)))
+  (P) LIQ_PINTADAS = las sueltas de la ruta con usd >= 10 000 y ejecucion: mismo ts, exchange, lado, p, ejecucion, fuente y
+      USD; LIQ_SIN_PRECIO = las de >= 10 000 sin ejecucion; y LIQ_REGLA dice 10 000
+  (X) cada pintada en su x/y del eje vigente, y en su EJECUCION (no en la p de la orden forzada: remate 1) (FLUJO_PINTADO / LIBRO_PINTADO, +-1.5 px), su radio min(18, max(3, 3 sqrt(usd/1e4)))
       y el color de su lado (largo liquidado = venta forzada, corto = compra forzada)
-  (F) la ficha de hasta 4 celdas (la del racimo, una en un hueco irrecuperable, una con una, una vacia con dato): sus
-      lineas `liq` son las de la regla (y N mas, SIN DATO, ninguna, cascada)
+  (F) la ficha de hasta 5 celdas (la del racimo, una en un hueco irrecuperable, una con una, una vacia con dato, y en
+      /libro la columna con mas liquidaciones de su minuto FUERA de ella): sus lineas `liq` son las de la regla (y N mas,
+      SIN DATO, ninguna, cascada). La celda de /libro es la COLUMNA [ts_j, ts_j + cada), no su minuto
+  (E) cada liquidacion >= 10 000 con fuente 'cinta': su impresion es de su venue (binance -> binance_usdm, bybit ->
+      bybit_linear), del lado de la orden forzada (largo liquidado = venta) y a <= 1 s; con base, existe en orderflow_cinta
+      con ese precio. 'ap' solo en binance. Y contra 140 (solo lectura): BTC/ETH/SOL 24 h; sin desplegar, lo dice
   (C) LIQ_CASCADAS = la cascada M8 recalculada aqui con n y s de la ruta, y n, s = CASCADA_N, CASCADA_S de app/anatomia.py
   (R) el raton (12 movimientos) no cambia LIQ_PINTADAS ni LIQ_CASCADAS ni pide nada a /api
   (T) la ruta retiene >= 720 h y, con base (K120_*_DB), sirve todas las filas de la tabla en su ventana
@@ -72,9 +77,31 @@ def radio(usd: float) -> float:
     return min(18.0, max(3.0, 3 * math.sqrt(max(0.0, usd) / 1e4)))
 
 
+VENUE = {"binance": "binance_usdm", "bybit": "bybit_linear"}
+
+
 def eventos(s: dict) -> list[dict]:
-    return [{"ts": e["ts"], "t": ms(e["ts"]), "exchange": e["exchange"], "lado": e["lado"], "precio": float(e["precio"]),
-             "usd": float(e["usd"])} for e in (s or {}).get("eventos", [])]
+    out = []
+    for e in (s or {}).get("eventos", []):
+        try:
+            ej = float(e.get("ejecucion")) if e.get("ejecucion") is not None else None
+        except (TypeError, ValueError):
+            ej = None
+        ej = ej if ej is not None and math.isfinite(ej) and ej > 0 else None
+        imp = e.get("ejecucion_impresion") or {}
+        out.append({"ts": e["ts"], "t": ms(e["ts"]), "exchange": e["exchange"], "lado": e["lado"], "p": float(e["precio"]),
+                    "usd": float(e["usd"]), "ejecucion": ej, "ej_txt": e.get("ejecucion"),
+                    "fuente": e.get("ejecucion_fuente") if ej is not None else "sin_dato",
+                    "venue": imp.get("venue") if ej is not None else None, "imp": imp,
+                    "trae_fuente": "ejecucion_fuente" in e})
+    return out
+
+
+def ejec_txt(e: dict) -> str:
+    if e["ejecucion"] is None:
+        return f"ejecución: sin dato · orden a {jsnum(e['p'])}"
+    f = f"ap de {e['exchange']}" if e["fuente"] == "ap" else "cinta" + (f" de {e['venue']}" if e["venue"] else "")
+    return f"ejecución {jsnum(e['ejecucion'])} ({f}) · orden a {jsnum(e['p'])}"
 
 
 def sin_dato(s: dict, a: int, b: int) -> list[dict]:
@@ -125,10 +152,12 @@ def texto_cascada(c: dict) -> str:
 
 
 def ficha(pint: list[dict], sin: list[dict], cas: list[dict], t0: int, t1: int) -> list[str]:
-    en = [e for e in pint if t0 <= e["t"] < t1]
+    # las pintadas y despues las sin precio del tramo, por ts (orden estable: a igual ts, la pintada primero)
+    en = sorted([e for e in pint if t0 <= e["t"] < t1 and e["ejecucion"] is not None]
+                + [e for e in pint if t0 <= e["t"] < t1 and e["ejecucion"] is None], key=lambda e: e["t"])
     s = [x for x in sin if x["desde"] < t1 and x["hasta"] > t0]
     lado = {"long": "largo liquidado (venta forzada)", "short": "corto liquidado (compra forzada)"}
-    out = [f"liq {e['ts'][11:19]}Z · {e['exchange']} · {lado.get(e['lado'], lado['short'])} · {jsnum(e['precio'])} · "
+    out = [f"liq {e['ts'][11:19]}Z · {e['exchange']} · {lado.get(e['lado'], lado['short'])} · {ejec_txt(e)} · "
            f"{usd_txt(e['usd'])} USD" for e in en[:4]]
     if len(en) > 4:
         out.append(f"liq: y {len(en) - 4} más")
@@ -146,6 +175,7 @@ LEE = r"""(() => { const flujo = !!window.FLUJO_PINTADO; const cv = document.get
   return {flujo, r: [r.left, r.top], pal, regla: window.LIQ_REGLA || null,
           pint: (window.LIQ_PINTADAS || null) && LIQ_PINTADAS.map((e) => Object.assign({}, e, {color: col(e.color)})),
           cas: window.LIQ_CASCADAS === undefined ? 'indefinido' : window.LIQ_CASCADAS,
+          sinp: window.LIQ_SIN_PRECIO === undefined ? 'indefinido' : window.LIQ_SIN_PRECIO,
           escala: flujo ? g.escala : null, W: g.ancho, fin: g.fin, ver: g.ver, ejep: flujo ? LZ.EJE_P : null, velas: flujo ? (g.velas || []).map((v) => [v.ts, v.x0, v.ancho]) : null,
           eje: flujo ? null : g.eje, paso: flujo ? null : g.paso, cada: flujo ? null : g.cada,
           columnas: flujo ? null : (g.columnas || []).map((c) => [c.ts, c.x0, c.x1])}; })()"""
@@ -202,12 +232,8 @@ def a_px(J, b: str, pref: str, g: dict) -> tuple:
 
     def y(p):
         return (eje["hi"] + 1 - p / paso) * fh
-    vistos, celdas = set(), []
-    for c in cs:
-        t0 = ms(c[0]) // 60000 * 60000
-        if t0 not in vistos:
-            vistos.add(t0)
-            celdas.append((t0, t0 + 60000, (c[1] + c[2]) / 2, eje["alto"] / 2))
+    # remate 1: la celda de /libro es la COLUMNA [ts_j, ts_j + cada), no su minuto
+    celdas = [(ms(c[0]), ms(c[0]) + cada, (c[1] + c[2]) / 2, eje["alto"] / 2) for c in cs]
     return x, y, celdas, 1.5
 
 
@@ -248,19 +274,30 @@ async def mira(J, pagina: str, vista: str, base_db: str) -> dict:
         # (P)
         if (g["regla"] or {}).get("umbral_usd") != UMBRAL:
             J.mal("P", pref, f"LIQ_REGLA.umbral_usd = {(g['regla'] or {}).get('umbral_usd')}, no {UMBRAL:g}")
-        clave = lambda e: (e["ts"], e["exchange"], e["lado"], round(float(e["precio"]), 8), round(float(e["usd"]), 6))  # noqa: E731
-        a, b = [clave(e) for e in pint], [clave(e) for e in esp]
+        clave = lambda e: (e["ts"], e["exchange"], e["lado"], round(float(e["p"]), 8),  # noqa: E731
+                           None if e["ejecucion"] is None else round(float(e["ejecucion"]), 8), e["fuente"],
+                           round(float(e["usd"]), 6))
+        con, sinp = [e for e in esp if e["ejecucion"] is not None], [e for e in esp if e["ejecucion"] is None]
+        a, b = [clave(e) for e in pint], [clave(e) for e in con]
         if a != b:
             sa, sb = set(a), set(b)
-            J.mal("P", pref, f"pintadas {len(a)} contra {len(b)} de la ruta >= {UMBRAL:g}: de mas {sorted(sa - sb)[:2]} · "
-                             f"faltan {sorted(sb - sa)[:2]}")
+            J.mal("P", pref, f"pintadas {len(a)} contra {len(b)} de la ruta >= {UMBRAL:g} con ejecucion: de mas "
+                             f"{sorted(sa - sb, key=str)[:2]} · faltan {sorted(sb - sa, key=str)[:2]}")
+        gs = g.get("sinp")
+        if not isinstance(gs, list):
+            J.mal("P", pref, f"LIQ_SIN_PRECIO = {str(gs)[:60]}")
+        elif [clave(e) for e in gs] != [clave(e) for e in sinp]:
+            J.mal("P", pref, f"LIQ_SIN_PRECIO {len(gs)} contra {len(sinp)} de la ruta >= {UMBRAL:g} sin ejecucion")
+        res["fuentes"] = {k: sum(1 for e in esp if e["fuente"] == k) for k in ("ap", "cinta", "sin_dato")}
+        # (E)
+        juzga_ejecucion(J, pref, esp, base_db)
         # (X)
         px = a_px(J, "X", pref, g)
         if px:
             fx, fy, celdas, tol = px
             malas = []
             for e in pint:
-                t, p, u_ = ms(e["ts"]), float(e["precio"]), float(e["usd"])
+                t, p, u_ = ms(e["ts"]), float(e["ejecucion"]), float(e["usd"])
                 dx, dy = abs(e["x"] - fx(t)), abs(e["y"] - fy(p))
                 if dx > tol or dy > tol:
                     malas.append(f"{e['ts']} {e['lado']} {p:g}: x {e['x']} (regla {fx(t):.1f}) y {e['y']} (regla {fy(p):.1f})")
@@ -294,12 +331,15 @@ async def mira(J, pagina: str, vista: str, base_db: str) -> dict:
             sin = sin_dato(s, ms(d["desde"]), ms(d["hasta"]))
             cuenta = lambda c_: sum(1 for e in esp if c_[0] <= e["t"] < c_[1])  # noqa: E731
             vis = [c_ for c_ in celdas if 4 < c_[2] < (g["eje"] or {}).get("ancho", 1e9) - 4]
+            fuera = lambda c_: cuenta((c_[0] // 60000 * 60000, c_[0] // 60000 * 60000 + 60000)) - cuenta(c_)  # noqa: E731
+            otra = max(vis, key=fuera, default=None)
             elegir = [max(vis, key=cuenta, default=None),
                       next((c_ for c_ in vis if any(x["desde"] < c_[1] and x["hasta"] > c_[0] and "hueco" in x["motivo"]
                                                     for x in sin)), None),
                       next((c_ for c_ in vis if cuenta(c_) == 1), None),
                       next((c_ for c_ in vis if cuenta(c_) == 0 and not any(x["desde"] < c_[1] and x["hasta"] > c_[0]
-                                                                             for x in sin)), None)]
+                                                                             for x in sin)), None),
+                      otra if otra and fuera(otra) > 0 else None]
             vistas_f = []
             for c_ in dict.fromkeys(x for x in elegir if x):
                 await v.mueve(g["r"][0] + c_[2], g["r"][1] + c_[3])
@@ -313,8 +353,8 @@ async def mira(J, pagina: str, vista: str, base_db: str) -> dict:
                     lin = [x for x in f["lineas"] if x.startswith("liq") or x.startswith("cascada")]
                     t1 = t0 + (c_[1] - c_[0]) if t0 is not None else None
                 else:
-                    t0 = ms(f["ts"]) // 60000 * 60000
-                    lin, t1 = f["lineas"], t0 + 60000
+                    t0 = ms(f["ts"])
+                    lin, t1 = f["lineas"], t0 + g["cada"] * 1000
                 if t0 != c_[0]:
                     J.mal("F", pref, f"apunte a la celda de {hhmmss(c_[0])}Z y la ficha es de {hhmmss(t0) if t0 else None}Z")
                     continue
@@ -346,6 +386,54 @@ async def mira(J, pagina: str, vista: str, base_db: str) -> dict:
     for x in out.get("excepciones", [])[:1]:
         J.mal("P", pref, f"excepcion en la pagina: {x[:200]}")
     return res
+
+
+def juzga_ejecucion(J, pref: str, esp: list[dict], base_db: str) -> None:
+    if esp and not any(e["trae_fuente"] for e in esp):
+        J.mal("E", pref, f"la ruta no trae ejecucion_fuente en ninguna de sus {len(esp)} liquidaciones >= {UMBRAL:g}")
+        return
+    malas = []
+    for e in esp:
+        im = e["imp"]
+        if e["fuente"] == "ap" and e["exchange"] != "binance":
+            malas.append(f"{e['ts']} {e['exchange']}: fuente ap fuera de binance")
+        if e["fuente"] != "cinta":
+            continue
+        dt = abs(ms(im["ts"]) - e["t"]) if im.get("ts") else None
+        if im.get("venue") != VENUE.get(e["exchange"]) or im.get("compra") is not (e["lado"] == "short") or dt is None \
+                or dt > 1000:
+            malas.append(f"{e['ts']} {e['exchange']} {e['lado']}: impresion {im.get('venue')} compra={im.get('compra')} "
+                         f"a {dt} ms (la regla: {VENUE.get(e['exchange'])} compra={e['lado'] == 'short'} a <= 1000 ms)")
+    cin = [e for e in esp if e["fuente"] == "cinta" and e["imp"].get("ts")]
+    if base_db and cin:
+        vals = ",".join(f"('{e['imp']['ts']}'::timestamptz, '{e['imp'].get('venue')}', "
+                        f"{str(bool(e['imp'].get('compra'))).lower()}, '{e['ej_txt']}'::numeric)" for e in cin)
+        r = subprocess.run(["psql", base_db, "-XAtc", f"SELECT count(*) FROM (VALUES {vals}) v(ts, venue, compra, precio) "
+                            "WHERE NOT EXISTS (SELECT 1 FROM orderflow_cinta k WHERE k.ts = v.ts AND k.venue = v.venue "
+                            "AND k.compra = v.compra AND k.precio = v.precio)"], capture_output=True, text=True, timeout=60)
+        if r.stdout.strip() != "0":
+            malas.append(f"{r.stdout.strip() or r.stderr.strip()[:80]} de {len(cin)} impresiones no estan en orderflow_cinta "
+                         "con su venue, lado y precio")
+    if malas:
+        J.mal("E", pref, f"{len(malas)} de {len(esp)} liquidaciones >= {UMBRAL:g} con la ejecucion fuera de la regla · {malas[0]}")
+
+
+def ejecucion_140(J) -> str:
+    """(E) contra 140, solo lectura: la ruta de BTC/ETH/SOL en las ultimas 24 h. Sin ejecucion_fuente, SIN DESPLEGAR."""
+    b = datetime.now(UTC).replace(second=0, microsecond=0)
+    q = lambda a: urllib.parse.urlencode({"symbol": a, "desde": (b - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ"),  # noqa: E731
+                                          "hasta": b.strftime("%Y-%m-%dT%H:%M:%SZ"), "marco": "5m"})
+    cab, partes = K113.cabecera(), []
+    for a in ("BTC", "ETH", "SOL"):
+        st, cuerpo = K113.trae(f"/api/orderflow/indicadores?{q(a)}", cab)
+        if st != 200:
+            return f"140 (E) NO MEDIDO (HTTP {st} en {a})"
+        esp = [e for e in eventos(json.loads(cuerpo).get("sueltas")) if e["usd"] >= UMBRAL]
+        if esp and not any(e["trae_fuente"] for e in esp):
+            return "140 (E) SIN DESPLEGAR (la ruta no trae ejecucion_fuente): no se juzga"
+        juzga_ejecucion(J, f"140 {a}", esp, "")
+        partes.append(f"{a} " + "/".join(str(sum(1 for e in esp if e["fuente"] == k)) for k in ("ap", "cinta", "sin_dato")))
+    return "140 (E) ap/cinta/sin_dato >= 10 k en 24 h: " + " · ".join(partes)
 
 
 def produccion(J) -> str:
@@ -393,7 +481,7 @@ def juzga() -> int:
               ("/libro", f"#BTC/perp/hasta={hl}/liq=1", os.environ.get("K120_LIBRO_DB", ""))]
     sujeto = f"el ARBOL en {FLUJO} y {LIBRO}" if FLUJO and LIBRO else "PRODUCCION"
     J = K113.Juez()
-    J.malos.update({"X": [], "D": []})
+    J.malos.update({"X": [], "D": [], "E": []})
     notas = []
     try:
         if not (FLUJO and LIBRO):
@@ -401,16 +489,20 @@ def juzga() -> int:
             if st != 200:
                 notas.append(f"paginas SIN DESPLEGAR (/static/flujo/flujo-liq.js HTTP {st}): no se juzgan")
                 vistas = []
+            elif b"parteLiq" not in _:
+                notas.append("paginas SIN DESPLEGAR el remate 1 (flujo-liq.js sin parteLiq): no se juzgan")
+                vistas = []
         for pagina, vista, db in vistas:
             r = asyncio.run(mira(J, pagina, vista, db))
             notas.append(f"{pagina}: {len((r.get('g') or {}).get('pint') or [])} pintadas ({r.get('dibujadas')} a la vista), "
-                         f"{r.get('cascadas')} cascadas, fichas {r.get('fichas')}")
+                         f"{r.get('cascadas')} cascadas, fichas {r.get('fichas')}, fuentes {r.get('fuentes')}")
         if os.environ.get("K120_SIN_PROD") != "1":
             notas.append(produccion(J))
+            notas.append(ejecucion_140(J))
     except (K113.Canal, K111.Canal, K102.SystemExit2, OSError, subprocess.TimeoutExpired) as exc:
         print(f"NO MEDIDO (CANAL): {str(exc)[:200]} · sujeto: {sujeto}")
         return 2
-    malos = [(b, m) for b in "PXFCRTD" for m in J.malos.get(b, [])]
+    malos = [(b, m) for b in "PXFCRTED" for m in J.malos.get(b, [])]
     cab = f"K120 las liquidaciones en el precio · sujeto: {sujeto} · " + " · ".join(notas)
     # no condenar no es dar VERDE: sin ninguna pagina mirada ni la retencion de 140 contada, no se midio nada
     if not malos and not vistas and not any(n.startswith("140: ") for n in notas):

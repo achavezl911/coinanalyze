@@ -73,6 +73,8 @@ CREATE TABLE pipeline_heartbeat (service text PRIMARY KEY, updated_at timestampt
 CREATE TABLE data_gap (feed text, exchange text, symbol text, start_ts timestamptz, end_ts timestamptz,
     evidence_type text, status text);
 """
+# liq-precio r1 (campana 150): la novena columna (la `ap` de binance) DESPUES de los fixtures, que traen 8 campos
+DDL_DESPUES = "ALTER TABLE liquidations_realtime ADD COLUMN IF NOT EXISTS avg_price float8;\n"
 # por tabla: las columnas que son instantes (en epoch ms en el sujeto)
 INSTANTES = {"orderflow_celda": (0,), "orderflow_cobertura": (0,), "orderflow_cinta": (0,), "orderflow_grande": (0,),
              "open_interest": (0,), "oi_bybit": (0,), "funding_rate": (0,), "predicted_funding_rate": (0,),
@@ -118,7 +120,7 @@ def carga(dsn: str, ahora: datetime, sujeto: Path = SUJETO, mas: Path | None = N
                 x = x[:3] + [json.dumps(det, separators=(",", ":"), sort_keys=True)]
             bloque.append("\t".join(x))
         lineas.append(f"COPY {destino} FROM STDIN;\n" + "\n".join(bloque) + "\n\\.\n")
-    r = subprocess.run(["psql", dsn, "-X", "-q", "-v", "ON_ERROR_STOP=1"], input=DDL + "".join(lineas), text=True,
+    r = subprocess.run(["psql", dsn, "-X", "-q", "-v", "ON_ERROR_STOP=1"], input=DDL + "".join(lineas) + DDL_DESPUES, text=True,
                        capture_output=True, timeout=600)
     if r.returncode:
         print(f"carga rc={r.returncode}: {r.stderr[:400]}", file=sys.stderr)

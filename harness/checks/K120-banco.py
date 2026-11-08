@@ -7,10 +7,16 @@
                                             un racimo de 6 grandes en un minuto (la ficha «y 2 mas»), una cascada de 5
                                             cortos en 48 s, un grupo de 4 largos (no es cascada), un hueco irrecuperable
                                             de bybit (10 min) y uno recuperado (5 min). Determinista (semilla 120).
+                                            La ejecucion (remate 1, semilla 1201): la p de la orden va 0.4 % mas alla;
+                                            la mitad de las de binance traen avg_price; de las demas, 2/3 tienen su
+                                            impresion en orderflow_cinta (su venue, su lado, a <= 0.8 s) con un senuelo
+                                            del OTRO lado mas cerca en tiempo; el resto, sin dato.
     libro --puerto P --db DSN [--sobre D] [--plantado F] [--avisos A]
                                             K111-banco tal cual, y ademas /api/orderflow/indicadores calculada con
                                             app/orderflow_lectura.py sobre la MISMA base (K112-banco._sirve_ruta).
                                             Plantado `retencion_de_12h`: la ruta sirve como si retuviera 12 h.
+                                            Plantado `cinta_del_otro_lado`: la consulta de la ruta casa la liquidacion
+                                            con la impresion del lado CONTRARIO (compra = largo liquidado).
 """
 
 import importlib.util
@@ -25,7 +31,7 @@ from pathlib import Path
 AQUI = Path(__file__).resolve().parent
 SIMBOLO = "BTCUSDT_PERP.A"
 TABLAS = ("liquidations_realtime", "data_gap", "pipeline_heartbeat", "open_interest", "oi_bybit", "funding_rate",
-          "predicted_funding_rate", "long_short_ratio", "liquidations")
+          "predicted_funding_rate", "long_short_ratio", "liquidations", "orderflow_cinta")
 MID = {"flujo": "SELECT floor(extract(epoch FROM ts) / 60)::bigint * 60, avg(nivel)::float8 FROM orderflow_celda "
                 "WHERE symbol = 'BTC' AND ts >= '{a}' AND ts < '{b}' GROUP BY 1 ORDER BY 1",
        "libro": "SELECT floor(extract(epoch FROM ts) / 60)::bigint * 60, avg((compra + venta) / 2)::float8 FROM libro_foto "
@@ -56,7 +62,7 @@ def siembra(dsn: str, hasta: str, fuente: str) -> int:
     ddl = [x.strip() for x in K112.DDL.split(";")]
     ddl = [x.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ", 1) + ";\n" for x in ddl
            if any(x.startswith(f"CREATE TABLE {t} ") for t in TABLAS)]
-    _psql(dsn, "".join(ddl))
+    _psql(dsn, "".join(ddl) + K112.DDL_DESPUES)
     b = datetime.fromisoformat(hasta.replace("Z", "+00:00"))
     a = b - timedelta(hours=3)
     filas = _psql(dsn, MID[fuente].format(a=a.isoformat(), b=b.isoformat()), "-At", "-F", "|")
@@ -92,12 +98,28 @@ def siembra(dsn: str, hasta: str, fuente: str) -> int:
     h0 = pos["hueco"][0]
     ev = [e for e in ev if not (e[1] == "bybit" and h0 <= e[0] < h0 + 600)]
     ev.sort()
-    liq = "\n".join(f"{_iso(t)}\t{SIMBOLO}\t{x}\t{lado}\t{usd}\t{p}\t{round(usd / p, 6)}\tk120:{i}"
-                    for i, (t, x, lado, usd, p) in enumerate(ev))
+    R2, filas, cinta = random.Random(1201), [], []
+    venue = {"binance": "binance_usdm", "bybit": "bybit_linear"}
+    for i, (t, x, lado, usd, pj) in enumerate(ev):
+        p = round(pj * (0.996 if lado == "long" else 1.004), 1)  # la p de la orden forzada: mas alla del mercado
+        ap = "\\N"
+        if x == "binance" and R2.random() < 0.5:
+            ap = repr(pj)
+        elif R2.random() < 2 / 3:
+            dt = R2.uniform(-0.8, 0.8)
+            compra = lado == "short"
+            cinta.append((t + dt, venue[x], pj, round(usd * R2.uniform(0.6, 1.5), 2), compra, f"k120c:{i}"))
+            cinta.append((t + dt / 4, venue[x], round(pj * 1.001, 1), usd, not compra, f"k120s:{i}"))
+        filas.append(f"{_iso(t)}\t{SIMBOLO}\t{x}\t{lado}\t{usd}\t{p}\t{round(usd / p, 6)}\tk120:{i}\t{ap}")
+    liq = "\n".join(filas)
+    cin = "\n".join(f"{_iso(t)}\t{v}\tBTC\t{pr}\t{round(u / pr, 8)}\t{u}\t{'t' if c else 'f'}\t{i}"
+                     for t, v, pr, u, c, i in cinta)
     r0 = pos["recuperado"][0]
     gap = (f"liquidations\tbybit\t{SIMBOLO}\t{_iso(h0)}\t{_iso(h0 + 600)}\tk120\tunrecoverable\n"
            f"liquidations\tbinance\t{SIMBOLO}\t{_iso(r0)}\t{_iso(r0 + 300)}\tk120\trecovered")
-    _psql(dsn, f"COPY liquidations_realtime FROM STDIN;\n{liq}\n\\.\nCOPY data_gap FROM STDIN;\n{gap}\n\\.\n")
+    _psql(dsn, "COPY liquidations_realtime (ts, symbol, exchange, side, notional_usd, price, qty, event_id, avg_price) "
+               f"FROM STDIN;\n{liq}\n\\.\nCOPY data_gap FROM STDIN;\n{gap}\n\\.\n"
+               f"COPY orderflow_cinta (ts, venue, symbol, precio, base, usd, compra, id) FROM STDIN;\n{cin}\n\\.\n")
     print(f"siembra {fuente}: {len(ev)} liquidaciones en {len(mids)} minutos ({sum(e[3] >= 10000 for e in ev)} >= 10 k) · "
           + " · ".join(f"{k} {_iso(v[0])}" for k, v in pos.items()))
     return 0
@@ -133,11 +155,23 @@ def libro(argv: list[str]) -> int:
     corre = uvicorn.run
 
     async def indicadores(request):
-        st, d = await run_in_threadpool(K112._sirve_ruta, a.db, "/api/orderflow/indicadores", dict(request.query_params))
         try:
             p = Path(a.plantado).read_text().strip() if a.plantado else ""
         except OSError:
             p = ""
+        lec = sql0 = None
+        if p == "cinta_del_otro_lado":
+            if str(K112.REPO) not in sys.path:
+                sys.path.insert(0, str(K112.REPO))
+            from app import orderflow_lectura as lec
+            sql0 = lec.SUELTAS_SQL
+            lec.SUELTAS_SQL = sql0.replace("k.compra = (l.side = 'short')", "k.compra = (l.side = 'long')")
+            assert sql0 != lec.SUELTAS_SQL, "el plantado cinta_del_otro_lado no mordio SUELTAS_SQL"
+        try:
+            st, d = await run_in_threadpool(K112._sirve_ruta, a.db, "/api/orderflow/indicadores", dict(request.query_params))
+        finally:
+            if sql0 is not None:
+                lec.SUELTAS_SQL = sql0
         if st == 200 and p == "retencion_de_12h":
             d = recorta_12h(d)
         return JSONResponse(d, status_code=st)

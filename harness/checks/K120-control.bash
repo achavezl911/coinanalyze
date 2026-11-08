@@ -106,14 +106,17 @@ juzga() {  # nombre brazo fichero patron-sed
   condena "$1" "$2"
 }
 I=flujo/flujo-indicadores.js; L=flujo/flujo-liq.js
-echo "== ocho plantados"
+echo "== once plantados"
 juzga lado_cambiado X $I "s|const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;|const c = e.lado === 'long' ? COLOR.compra : COLOR.venta;|"
-juzga precio_de_la_vela X $I 's|const yy = y(e.precio);|const yy = y(Number(m.velas[Math.min(m.velas.length - 1, Math.max(0, i))].cierre \|\| e.precio * 1.002));|'
+juzga precio_de_la_vela X $I 's|const yy = y(e.ejecucion);|const yy = y(Number(m.velas[Math.min(m.velas.length - 1, Math.max(0, i))].cierre \|\| e.ejecucion * 1.002));|'
+juzga precio_de_quiebra X $I 's|const yy = y(e.ejecucion);|const yy = y(e.p);|'
 juzga radio_lineal X $L 's|LIQ_RADIO.r0 \* Math.sqrt(Math.max(0, Number(usd)) / LIQ_RADIO.u0);|LIQ_RADIO.r0 * Math.max(0, Number(usd)) / LIQ_RADIO.u0;|'
 juzga umbral_ignorado P $L 's|return eventos.filter((e) => e.usd >= u);|return eventos;|'
 echo retencion_de_12h > "$T/plantado"; condena retencion_de_12h T
 juzga cascada_de_4 C $L 's|cierra: hi - j0 + 1 >= n }|cierra: hi - j0 + 1 >= n - 1 }|'
 juzga ficha_de_otra_celda F $I 's|  const t = Date.parse(ts);|  const t = Date.parse(ts) + IND.liq.mMs;|'
+juzga ficha_del_minuto F libro/libro-mapa.js 's|fichaLiq(m.liq.eventos, m.liq.sinDato, t0, t1,|fichaLiq(m.liq.eventos, m.liq.sinDato, Math.floor(t0 / 6e4) * 6e4, Math.floor(t0 / 6e4) * 6e4 + 6e4,|'
+echo cinta_del_otro_lado > "$T/plantado"; condena cinta_del_otro_lado E
 juzga hueco_como_cero F $L "s|(sueltas.huecos \|\| \[\]).filter((h) => h.estado !== 'recovered')|(sueltas.huecos \|\| []).filter(() => false)|"
 
 echo "== restaurado"
