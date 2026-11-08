@@ -95,14 +95,14 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:784`
-- `liquidations_realtime` — `sql/schema.sql:339`, 8 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:794`
+- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
-- `market_feed_health` — `sql/schema.sql:1318`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `metric_baseline` — `sql/schema.sql:1265`, 14 columnas
+- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
@@ -112,8 +112,8 @@ LEE:
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:856`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:912`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:866`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:922`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`

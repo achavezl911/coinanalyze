@@ -103,7 +103,7 @@ function indicadoresQuePide(e) {
 async function cargaIndicadores(e, w, alAcabar) {
   const mia = ++IND.pide;
   const pide = [];
-  if (indicadoresQuePide(e).length) {
+  if (indicadoresQuePide(e).length || (e.ind || []).includes('liqp')) {
     pide.push(['indicadores', RUTA_IND, { symbol: e.activo, desde: w.desde, hasta: w.hasta, marco: e.marco }]);
   }
   if ((e.ind || []).includes('grandes')) {
@@ -504,6 +504,97 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
   });
   ctx.restore();
   return { umbral_usd: d.umbral_usd_vigente, truncada: d.truncada, marcas: out };
+}
+
+/* LAS LIQUIDACIONES SOBRE EL PRECIO (campana 150, flujo-liq.js): las sueltas de la ventana por encima de LIQ_UMBRAL_USD,
+ * un circulo en (su ts, su EJECUCION) con el AREA proporcional a sus USD, encima del footprint (remate 1: no en la p de
+ * la orden forzada). window.LIQ_PINTADAS lleva TODAS las de la ventana por encima del umbral con ejecucion (las de fuera
+ * de la vista con dibujada=false), window.LIQ_SIN_PRECIO las que no la tienen (no se pintan) y LIQ_REGLA la regla. */
+function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
+  const d = IND.datos;
+  const on = (VISTA.ind || []).includes('liqp') && VISTA.modo !== 'tpo';
+  IND.liq = null;
+  window.LIQ_REGLA = { umbral_usd: LIQ_UMBRAL_USD, radio: LIQ_RADIO };
+  if (!on || !d || !m.velas.length) {
+    window.LIQ_PINTADAS = on ? null : [];
+    window.LIQ_SIN_DATO = on ? [{ motivo: d ? 'sin velas' : 'la ruta de los indicadores no contestó' }] : [];
+    window.LIQ_CASCADAS = on ? null : [];
+    window.LIQ_SIN_PRECIO = on ? null : [];
+    return null;
+  }
+  const mMs = FLUJO_MARCOS[m.marco] * 60000;
+  const t0 = Date.parse(m.velas[0].ts);
+  const sinDato = sinDatoLiq(d.sueltas, Date.parse(d.desde), Date.parse(d.hasta));
+  const out = [];
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, g.arriba, g.ancho, g.abajo - g.arriba);
+  ctx.clip();
+  const [conPrecio, sinPrecio] = parteLiq(sobreUmbralLiq(eventosLiq(d.sueltas)));
+  conPrecio.forEach((e) => {
+    const i = Math.floor((e.t - t0) / mMs);
+    const x = g.x(i) - g.bs / 2 + ((e.t - t0 - i * mMs) / mMs) * g.bs;
+    const yy = y(e.ejecucion);
+    const r = radioLiq(e.usd);
+    const dibujada = i >= i0 && i <= i1 && yy >= g.arriba && yy <= g.abajo;
+    const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;
+    if (dibujada) {
+      ctx.beginPath();
+      ctx.arc(x, yy, r, 0, 2 * Math.PI);
+      ctx.fillStyle = rgba(c, 0.45);
+      ctx.fill();
+      ctx.strokeStyle = rgba(c, 0.95);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, ejecucion: e.ejecucion, fuente: e.fuente,
+               venue: e.venue, p: e.precio, usd: e.usd,
+               vela: i >= 0 && i < m.velas.length ? m.velas[i].ts : null,
+               x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 100) / 100, dibujada,
+               color: c });
+  });
+  // LA CASCADA M8 (sueltas.cascada, la regla del estudio): una barra sobre el eje de tiempo, de la primera a la ultima
+  // liquidacion del episodio, con su cuenta y sus USD. Sobre TODAS las sueltas, no solo las de encima del umbral.
+  const xDe = (t) => { const i = Math.floor((t - t0) / mMs); return g.x(i) - g.bs / 2 + ((t - t0 - i * mMs) / mMs) * g.bs; };
+  const cas = cascadasLiq(eventosLiq(d.sueltas), d.sueltas && d.sueltas.cascada);
+  const casOut = cas === null ? null : cas.map((c) => {
+    const x0 = xDe(c.desde);
+    const x1 = Math.max(xDe(c.hasta), x0 + 2);
+    const col = c.lado === 'long' ? COLOR.venta : COLOR.compra;
+    const yb = g.abajo - (c.lado === 'long' ? 5 : 10);
+    if (x1 >= 0 && x0 <= g.ancho) {
+      ctx.fillStyle = rgba(col, 0.9);
+      ctx.fillRect(x0, yb, x1 - x0, 4);
+      ctx.font = '9px monospace';
+      ctx.fillText(c.n + ' · ' + usdLiq(c.usd), Math.max(0, x0), yb - 1);
+    }
+    return { lado: c.lado, desde: new Date(c.desde).toISOString(), hasta: new Date(c.hasta).toISOString(), n: c.n,
+             usd: c.usd, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10 };
+  });
+  ctx.restore();
+  const sinOut = sinPrecio.map((e) => ({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, ejecucion: null,
+                                         fuente: e.fuente, p: e.precio, usd: e.usd }));
+  IND.liq = { pintadas: out, sinDato, mMs, cascadas: cas, sinPrecio: sinOut };
+  window.LIQ_PINTADAS = out;
+  window.LIQ_SIN_PRECIO = sinOut;
+  window.LIQ_SIN_DATO = sinDato;
+  window.LIQ_CASCADAS = casOut;
+  return { n: out.length, dibujadas: out.filter((x) => x.dibujada).length, sin_dato: sinDato.length,
+           sin_precio: sinOut.length,
+           cascadas: casOut === null ? null : casOut.length };
+}
+
+// las lineas de la ficha para la vela que empieza en `ts`: lo PINTADO en ella y lo sin precio (no se pide nada)
+const conP = (e) => Object.assign({}, e, { precio: e.p });
+function fichaLiqVela(ts) {
+  if (!(VISTA.ind || []).includes('liqp')) return [];
+  if (!IND.liq) return ['liq: SIN DATO (la ruta de los indicadores no contestó)'];
+  const t = Date.parse(ts);
+  const t1 = t + IND.liq.mMs;
+  const cas = IND.liq.cascadas === null ? ['liq: cascada SIN REGLA (la ruta no trajo sueltas.cascada)']
+    : IND.liq.cascadas.filter((c) => c.desde < t1 && c.hasta >= t).map(textoCascada);
+  return fichaLiq(IND.liq.pintadas.map(conP), IND.liq.sinDato, t, t1, undefined, undefined,
+                  IND.liq.sinPrecio.map(conP)).concat(cas);
 }
 
 /* E-05 (OF-6a, campana 148): la CRUZ sobre un panel. La vertical la pinta flujo-dibujo.js (la de la vela); aqui, la

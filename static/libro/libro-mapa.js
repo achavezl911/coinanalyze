@@ -143,6 +143,65 @@ const FICHA_ESTADO = {
   desconocido: 'DESCONOCIDO: ningún venue de la familia conoce este nivel en este instante',
 };
 
+// remate 1: el circulo en (ts, ejecucion); las de sin ejecucion no se pintan y van a window.LIQ_SIN_PRECIO
+function pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto) {
+  if (!m.liq) {
+    window.LIQ_PINTADAS = [];
+    window.LIQ_SIN_DATO = [];
+    window.LIQ_CASCADAS = [];
+    window.LIQ_SIN_PRECIO = [];
+    return;
+  }
+  window.LIQ_REGLA = { umbral_usd: LIQ_UMBRAL_USD, radio: LIQ_RADIO };
+  const out = [];
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, ancho, alto);
+  ctx.clip();
+  m.liq.eventos.forEach((e) => {
+    const x = xT(e.t);
+    const y = yPrecio(e.ejecucion);
+    const r = radioLiq(e.usd);
+    const dibujada = x >= 0 && x <= ancho && y >= 0 && y <= alto;
+    const c = e.lado === 'long' ? MAPA_COLOR.venta : MAPA_COLOR.compra;
+    if (dibujada) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = c;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, ejecucion: e.ejecucion, fuente: e.fuente,
+               venue: e.venue, p: e.precio, usd: e.usd, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(r * 100) / 100, dibujada,
+               color: c });
+  });
+  // LA CASCADA M8 (sueltas.cascada, la regla del estudio): una barra al pie del mapa, sobre el eje de tiempo, de la
+  // primera a la ultima liquidacion del episodio, con su cuenta y sus USD
+  const casOut = m.liq.cascadas === null ? null : m.liq.cascadas.map((c) => {
+    const x0 = xT(c.desde);
+    const x1 = Math.max(xT(c.hasta), x0 + 2);
+    const yb = alto - (c.lado === 'long' ? 5 : 10);
+    if (x1 >= 0 && x0 <= ancho) {
+      ctx.fillStyle = c.lado === 'long' ? MAPA_COLOR.venta : MAPA_COLOR.compra;
+      ctx.fillRect(x0, yb, x1 - x0, 4);
+      ctx.font = '9px monospace';
+      ctx.fillText(c.n + ' · ' + usdLiq(c.usd), Math.max(0, x0), yb - 1);
+    }
+    return { lado: c.lado, desde: new Date(c.desde).toISOString(), hasta: new Date(c.hasta).toISOString(), n: c.n,
+             usd: c.usd, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10 };
+  });
+  ctx.restore();
+  window.LIQ_PINTADAS = out;
+  window.LIQ_SIN_DATO = m.liq.sinDato;
+  window.LIQ_CASCADAS = casOut;
+  window.LIQ_SIN_PRECIO = m.liq.sinPrecio.map((e) => ({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado,
+                                                         ejecucion: null, fuente: e.fuente, p: e.precio, usd: e.usd }));
+}
+
 function fichaDe(m, j, k, neg) {
   const col = m.columnas[j];
   const s = col.suma;
@@ -188,6 +247,17 @@ function fichaDe(m, j, k, neg) {
     f.huella = { minuto: min, compra: enUnidad(z[0], k, m.paso, m.unidad), venta: enUnidad(z[1], k, m.paso, m.unidad) };
     f.lineas.push(['huella', 'footprint 1m ' + min + 'Z: compra ' + u(z[0]) + ' · venta ' + u(z[1])]);
   } else f.lineas.push(['huella', 'sin footprint']);
+  // campana 150, remate 1: las liquidaciones PINTADAS (y las sin precio) de la COLUMNA bajo el raton, [ts_j, ts_j + cada),
+  // y las cascadas que la tocan; lo sin dato. No el minuto del footprint: con columnas de 30 s listaba la otra media.
+  if (m.liq && typeof fichaLiq === 'function') {
+    const t0 = col.ts;
+    const t1 = col.ts + m.cada * 1000;
+    f.liq = { desde: isoZ(t0), hasta: isoZ(t1) };
+    fichaLiq(m.liq.eventos, m.liq.sinDato, t0, t1, undefined, undefined, m.liq.sinPrecio)
+      .forEach((t) => f.lineas.push(['liq', t]));
+    if (m.liq.cascadas === null) f.lineas.push(['liq', 'liq: cascada SIN REGLA (la ruta no trajo sueltas.cascada)']);
+    else m.liq.cascadas.filter((c) => c.desde < t1 && c.hasta >= t0).forEach((c) => f.lineas.push(['liq', textoCascada(c)]));
+  }
   f.texto = f.lineas.map((x) => x[1]).join(' · ');
   return f;
 }
@@ -550,6 +620,9 @@ function creaMapa(canvas, alLeer, aviso, alEscala, alVista) {
       ctx.stroke();
     }
     ctx.restore();
+    // campana 150: las liquidaciones de la ventana por encima del umbral, en (su ts, su ejecucion), el AREA proporcional a
+    // sus USD (flujo-liq.js); window.LIQ_PINTADAS lleva TODAS (las de fuera de la vista con dibujada=false)
+    pintaLiqMapa(ctx, m, xT, yPrecio, ancho, alto);
     // (149 rC, H-10) sin seguir el presente, una vertical tenue en el instante actual: el borde derecho de la columna
     // mas nueva (si cae en el mapa o en la banda «ahora»; mas a la derecha no se ve)
     let presente = null;

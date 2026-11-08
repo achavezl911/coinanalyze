@@ -345,10 +345,17 @@ CREATE TABLE IF NOT EXISTS liquidations_realtime (
     price double precision NOT NULL CHECK (finite_float8(price) AND price > 0),
     qty double precision NOT NULL CHECK (finite_float8(qty) AND qty >= 0),
     event_id text NOT NULL,
+    avg_price double precision CHECK (avg_price IS NULL OR (finite_float8(avg_price) AND avg_price > 0)),
     -- PostgreSQL requires every partitioned unique key to include ts. Cross-partition
     -- event identity remains unique through liquidations_realtime_event_unique_trigger.
     PRIMARY KEY (exchange, event_id, ts)
 ) PARTITION BY RANGE (ts);
+-- avg_price (2026-11-08, campana 150 r1): DONDE SE EJECUTO la orden forzada, la `ap` (precio medio ejecutado) del
+-- forceOrder de binance. `price` sigue siendo la `p` de la orden (limite de binance, quiebra de bybit: ~0.4 % mas alla
+-- del mercado) y notional_usd = price * qty: la historia no cambia de significado. Bybit (allLiquidation) no da
+-- precio de ejecucion: NULL. Aditiva y AL FINAL: en una base viva la anade el ALTER (las particiones la heredan).
+ALTER TABLE liquidations_realtime ADD COLUMN IF NOT EXISTS avg_price double precision
+    CHECK (avg_price IS NULL OR (finite_float8(avg_price) AND avg_price > 0));
 CREATE INDEX IF NOT EXISTS liquidations_realtime_symbol_ts_idx ON liquidations_realtime(symbol, ts DESC);
 
 CREATE OR REPLACE FUNCTION enforce_liquidation_event_unique()

@@ -4,21 +4,21 @@
       "app.scalp_collector.flush_books": [
         {
           "constante": "SCALP_ORDERBOOK_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:837",
+          "sitio": "app/scalp_collector.py:847",
           "valor": "2"
         }
       ],
       "app.scalp_collector.flush_trades": [
         {
           "constante": "SCALP_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:642",
+          "sitio": "app/scalp_collector.py:652",
           "valor": "2"
         }
       ],
       "app.scalp_collector.persist_scalp_signals": [
         {
           "constante": "SCALP_SIGNAL_INTERVAL_SECONDS",
-          "sitio": "app/scalp_collector.py:1363",
+          "sitio": "app/scalp_collector.py:1385",
           "valor": "10"
         }
       ]
@@ -36,65 +36,65 @@
     }
   },
   "catalogo_lineas": {
-    "bot_crudo": "`sql/schema.sql:3414`, 4 columnas",
-    "bot_estado": "`sql/schema.sql:3366`, 3 columnas",
-    "bot_evaluacion": "`sql/schema.sql:3322`, 9 columnas",
-    "bot_evento": "`sql/schema.sql:3307`, 8 columnas",
-    "bot_llamada": "`sql/schema.sql:3335`, 11 columnas",
-    "bot_operacion": "`sql/schema.sql:3350`, 12 columnas",
-    "bot_sombra": "`sql/schema.sql:3453`, 15 columnas",
-    "bot_sombra_candidata": "`sql/schema.sql:3443`, 6 columnas",
-    "daily_session_agg": "`sql/schema.sql:1032`, 37 columnas",
-    "daily_verdict": "`sql/schema.sql:1073`, 17 columnas",
-    "daily_verdict_outcome": "`sql/schema.sql:2300`, 10 columnas",
-    "daily_verdict_snapshot": "`sql/schema.sql:1099`, 26 columnas",
-    "data_gap": "`sql/schema.sql:1412`, 22 columnas",
-    "entrada_latido": "`sql/schema.sql:2712`, 8 columnas",
-    "entrada_registro": "`sql/schema.sql:2675`, 26 columnas",
-    "entrada_reglamento": "`sql/schema.sql:2665`, 6 columnas",
-    "entrada_resultado": "`sql/schema.sql:2853`, 12 columnas",
-    "external_api_rate_event": "`sql/schema.sql:1309`, 3 columnas",
-    "external_macro_observation": "`sql/schema.sql:1234`, 5 columnas",
+    "bot_crudo": "`sql/schema.sql:3421`, 4 columnas",
+    "bot_estado": "`sql/schema.sql:3373`, 3 columnas",
+    "bot_evaluacion": "`sql/schema.sql:3329`, 9 columnas",
+    "bot_evento": "`sql/schema.sql:3314`, 8 columnas",
+    "bot_llamada": "`sql/schema.sql:3342`, 11 columnas",
+    "bot_operacion": "`sql/schema.sql:3357`, 12 columnas",
+    "bot_sombra": "`sql/schema.sql:3460`, 15 columnas",
+    "bot_sombra_candidata": "`sql/schema.sql:3450`, 6 columnas",
+    "daily_session_agg": "`sql/schema.sql:1039`, 37 columnas",
+    "daily_verdict": "`sql/schema.sql:1080`, 17 columnas",
+    "daily_verdict_outcome": "`sql/schema.sql:2307`, 10 columnas",
+    "daily_verdict_snapshot": "`sql/schema.sql:1106`, 26 columnas",
+    "data_gap": "`sql/schema.sql:1419`, 22 columnas",
+    "entrada_latido": "`sql/schema.sql:2719`, 8 columnas",
+    "entrada_registro": "`sql/schema.sql:2682`, 26 columnas",
+    "entrada_reglamento": "`sql/schema.sql:2672`, 6 columnas",
+    "entrada_resultado": "`sql/schema.sql:2860`, 12 columnas",
+    "external_api_rate_event": "`sql/schema.sql:1316`, 3 columnas",
+    "external_macro_observation": "`sql/schema.sql:1241`, 5 columnas",
     "funding_rate": "`sql/schema.sql:146`, 7 columnas",
     "futures_trades_agg": "`sql/schema.sql:273`, 11 columnas",
     "futures_trades_realtime": "`sql/schema.sql:256`, 11 columnas",
-    "libro_cobertura": "`sql/schema.sql:3218`, 9 columnas",
-    "libro_foto": "`sql/schema.sql:3199`, 13 columnas",
-    "libro_honda": "`sql/schema.sql:3248`, 17 columnas",
+    "libro_cobertura": "`sql/schema.sql:3225`, 9 columnas",
+    "libro_foto": "`sql/schema.sql:3206`, 13 columnas",
+    "libro_honda": "`sql/schema.sql:3255`, 17 columnas",
     "liquidations": "`sql/schema.sql:174`, 5 columnas",
-    "liquidations_realtime": "`sql/schema.sql:339`, 8 columnas",
+    "liquidations_realtime": "`sql/schema.sql:339`, 9 columnas",
     "long_short_ratio": "`sql/schema.sql:187`, 6 columnas",
-    "macro_event": "`sql/schema.sql:1245`, 6 columnas",
+    "macro_event": "`sql/schema.sql:1252`, 6 columnas",
     "market_assets": "`sql/schema.sql:12`, 2 columnas",
-    "market_feed_health": "`sql/schema.sql:1318`, 7 columnas",
-    "market_feed_health_shard": "`sql/schema.sql:1332`, 9 columnas",
-    "metric_baseline": "`sql/schema.sql:1265`, 14 columnas",
-    "metrics_snapshot": "`sql/schema.sql:945`, 35 columnas",
+    "market_feed_health": "`sql/schema.sql:1325`, 7 columnas",
+    "market_feed_health_shard": "`sql/schema.sql:1339`, 9 columnas",
+    "metric_baseline": "`sql/schema.sql:1272`, 14 columnas",
+    "metrics_snapshot": "`sql/schema.sql:952`, 35 columnas",
     "ohlcv": "`sql/schema.sql:54`, 13 columnas",
     "oi_bybit": "`sql/schema.sql:97`, 7 columnas",
     "open_interest": "`sql/schema.sql:83`, 7 columnas",
     "open_interest_daily": "`sql/schema.sql:128`, 10 columnas",
     "orderbook_depth": "`sql/schema.sql:329`, 6 columnas",
     "orderbook_snapshot": "`sql/schema.sql:287`, 19 columnas",
-    "orderflow_celda": "`sql/schema.sql:2945`, 10 columnas",
-    "orderflow_celda_hora": "`sql/schema.sql:3011`, 10 columnas",
-    "orderflow_cinta": "`sql/schema.sql:2961`, 8 columnas",
-    "orderflow_cobertura": "`sql/schema.sql:2991`, 10 columnas",
-    "orderflow_grande": "`sql/schema.sql:2974`, 9 columnas",
-    "orderflow_hora_hecha": "`sql/schema.sql:3027`, 6 columnas",
-    "orderflow_paso": "`sql/schema.sql:2938`, 2 columnas",
-    "pipeline_heartbeat": "`sql/schema.sql:1284`, 4 columnas",
+    "orderflow_celda": "`sql/schema.sql:2952`, 10 columnas",
+    "orderflow_celda_hora": "`sql/schema.sql:3018`, 10 columnas",
+    "orderflow_cinta": "`sql/schema.sql:2968`, 8 columnas",
+    "orderflow_cobertura": "`sql/schema.sql:2998`, 10 columnas",
+    "orderflow_grande": "`sql/schema.sql:2981`, 9 columnas",
+    "orderflow_hora_hecha": "`sql/schema.sql:3034`, 6 columnas",
+    "orderflow_paso": "`sql/schema.sql:2945`, 2 columnas",
+    "pipeline_heartbeat": "`sql/schema.sql:1291`, 4 columnas",
     "predicted_funding_rate": "`sql/schema.sql:160`, 7 columnas",
-    "scalp_signal_snapshot": "`sql/schema.sql:381`, 16 columnas",
-    "schema_migration": "`sql/schema.sql:1645`, 2 columnas",
-    "service_ownership": "`sql/schema.sql:1291`, 5 columnas",
-    "signal_execution_snapshot": "`sql/schema.sql:793`, 21 columnas",
-    "signal_observation": "`sql/schema.sql:415`, 34 columnas",
-    "signal_outcome": "`sql/schema.sql:565`, 27 columnas",
-    "signal_outcome_final_visibility": "`sql/schema.sql:2487`, 8 columnas",
-    "signal_replay_frame": "`sql/schema.sql:751`, 7 columnas",
-    "signal_research_bundle_visibility": "`sql/schema.sql:2416`, 9 columnas",
-    "signal_walk_forward_manifest": "`sql/schema.sql:895`, 12 columnas",
+    "scalp_signal_snapshot": "`sql/schema.sql:388`, 16 columnas",
+    "schema_migration": "`sql/schema.sql:1652`, 2 columnas",
+    "service_ownership": "`sql/schema.sql:1298`, 5 columnas",
+    "signal_execution_snapshot": "`sql/schema.sql:800`, 21 columnas",
+    "signal_observation": "`sql/schema.sql:422`, 34 columnas",
+    "signal_outcome": "`sql/schema.sql:572`, 27 columnas",
+    "signal_outcome_final_visibility": "`sql/schema.sql:2494`, 8 columnas",
+    "signal_replay_frame": "`sql/schema.sql:758`, 7 columnas",
+    "signal_research_bundle_visibility": "`sql/schema.sql:2423`, 9 columnas",
+    "signal_walk_forward_manifest": "`sql/schema.sql:902`, 12 columnas",
     "spot_trades_agg": "`sql/schema.sql:198`, 15 columnas",
     "spot_trades_realtime": "`sql/schema.sql:228`, 11 columnas",
     "symbols": "`sql/schema.sql:20`, 5 columnas"
@@ -1531,8 +1531,8 @@
     },
     "app.config.get_settings": {
       "fichero": "app/config.py",
-      "linea": 305,
-      "sitio": "`app/config.py:305`"
+      "linea": 308,
+      "sitio": "`app/config.py:308`"
     },
     "app.data_gaps._aware_utc": {
       "fichero": "app/data_gaps.py",
@@ -2156,18 +2156,18 @@
     },
     "app.orderflow_lectura.activo_de": {
       "fichero": "app/orderflow_lectura.py",
-      "linea": 73,
-      "sitio": "`app/orderflow_lectura.py:73`"
+      "linea": 74,
+      "sitio": "`app/orderflow_lectura.py:74`"
     },
     "app.orderflow_lectura.pasos": {
       "fichero": "app/orderflow_lectura.py",
-      "linea": 98,
-      "sitio": "`app/orderflow_lectura.py:98`"
+      "linea": 99,
+      "sitio": "`app/orderflow_lectura.py:99`"
     },
     "app.orderflow_lectura.texto": {
       "fichero": "app/orderflow_lectura.py",
-      "linea": 51,
-      "sitio": "`app/orderflow_lectura.py:51`"
+      "linea": 52,
+      "sitio": "`app/orderflow_lectura.py:52`"
     },
     "app.rango._prueba": {
       "fichero": "app/rango.py",
@@ -6323,7 +6323,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/config.py:305",
+        "sitio": "app/config.py:308",
         "solo_por_tabla": [
           "/api/carry/matriz",
           "/api/cross-asset",
@@ -22761,7 +22761,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/orderflow_lectura.py:73",
+        "sitio": "app/orderflow_lectura.py:74",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -22789,7 +22789,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/orderflow_lectura.py:98",
+        "sitio": "app/orderflow_lectura.py:99",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -22814,6 +22814,7 @@
           "app.libro_lectura.vivo",
           "app.orderflow_lectura._cabecera",
           "app.orderflow_lectura._cubo",
+          "app.orderflow_lectura._evento",
           "app.orderflow_lectura._nivel_json",
           "app.orderflow_lectura._operacion",
           "app.orderflow_lectura._perfil",
@@ -22835,7 +22836,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/orderflow_lectura.py:51",
+        "sitio": "app/orderflow_lectura.py:52",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -23302,7 +23303,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:907",
+        "sitio": "app/scalp_collector.py:917",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23390,7 +23391,7 @@
           "/api/mesa/decide",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:806",
+        "sitio": "app/scalp_collector.py:816",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23491,7 +23492,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:777",
+        "sitio": "app/scalp_collector.py:787",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23574,7 +23575,7 @@
         "por_tabla_k0": [
           "/api/scalp/execution-cost"
         ],
-        "sitio": "app/scalp_collector.py:875",
+        "sitio": "app/scalp_collector.py:885",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23654,7 +23655,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:720",
+        "sitio": "app/scalp_collector.py:730",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23734,7 +23735,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:629",
+        "sitio": "app/scalp_collector.py:639",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23808,7 +23809,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:999",
+        "sitio": "app/scalp_collector.py:1009",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23878,7 +23879,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1109",
+        "sitio": "app/scalp_collector.py:1126",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23948,7 +23949,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1161",
+        "sitio": "app/scalp_collector.py:1178",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24018,7 +24019,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1570",
+        "sitio": "app/scalp_collector.py:1592",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24100,7 +24101,7 @@
           "/api/mesa/decide",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:1539",
+        "sitio": "app/scalp_collector.py:1561",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24175,7 +24176,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:691",
+        "sitio": "app/scalp_collector.py:701",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24264,7 +24265,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:832",
+        "sitio": "app/scalp_collector.py:842",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24356,7 +24357,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:965",
+        "sitio": "app/scalp_collector.py:975",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24430,7 +24431,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:637",
+        "sitio": "app/scalp_collector.py:647",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24510,7 +24511,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1055",
+        "sitio": "app/scalp_collector.py:1065",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24581,7 +24582,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1247",
+        "sitio": "app/scalp_collector.py:1264",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24649,7 +24650,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1586",
+        "sitio": "app/scalp_collector.py:1608",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24721,7 +24722,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:624",
+        "sitio": "app/scalp_collector.py:634",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24792,7 +24793,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1463",
+        "sitio": "app/scalp_collector.py:1485",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24874,7 +24875,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1535",
+        "sitio": "app/scalp_collector.py:1557",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24945,7 +24946,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:580",
+        "sitio": "app/scalp_collector.py:590",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24996,7 +24997,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:463",
+        "sitio": "app/scalp_collector.py:473",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25068,7 +25069,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:525",
+        "sitio": "app/scalp_collector.py:535",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25153,7 +25154,7 @@
           "/api/scalp/signals",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:1358",
+        "sitio": "app/scalp_collector.py:1380",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25233,7 +25234,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:604",
+        "sitio": "app/scalp_collector.py:614",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25303,7 +25304,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:673",
+        "sitio": "app/scalp_collector.py:683",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -40800,7 +40801,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K112-banco.py:141",
+            "harness/checks/K112-banco.py:143",
             "harness/checks/K113-raton.py:407",
             "harness/checks/K113-raton.py:892"
           ],
@@ -41067,7 +41068,7 @@
             "harness/checks/K109-banco.py:73",
             "harness/checks/K109-banco.py:80",
             "harness/checks/K109-banco.py:177",
-            "harness/checks/K112-banco.py:131"
+            "harness/checks/K112-banco.py:133"
           ],
           "menciones": [
             "harness/checks/K109-banco.py:12",
@@ -41217,7 +41218,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K112-banco.py:132"
+            "harness/checks/K112-banco.py:134"
           ],
           "menciones": []
         }
@@ -41350,17 +41351,26 @@
         "checks": {
           "llamadas": [
             "harness/checks/K108-orderflow.py:984",
-            "harness/checks/K112-banco.py:133",
+            "harness/checks/K112-banco.py:135",
             "harness/checks/K112-control.bash:176",
-            "harness/checks/K112-control.bash:249"
+            "harness/checks/K112-control.bash:249",
+            "harness/checks/K120-banco.py:171",
+            "harness/checks/K120-banco.py:180",
+            "harness/checks/K120-liq.py:248",
+            "harness/checks/K120-liq.py:250",
+            "harness/checks/K120-liq.py:431"
           ],
-          "menciones": []
+          "menciones": [
+            "harness/checks/K120-banco.py:15",
+            "harness/checks/K120-las-liquidaciones-en-el-precio.sh:7",
+            "harness/checks/K120-liq.py:4"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 4,
-        "n_menciones": 0,
+        "n_llamadas": 9,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -41476,7 +41486,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K108-orderflow.py:990",
-            "harness/checks/K112-banco.py:134"
+            "harness/checks/K112-banco.py:136"
           ],
           "menciones": []
         }
@@ -41618,7 +41628,7 @@
             "harness/checks/K108-orderflow.py:888",
             "harness/checks/K108-orderflow.py:890",
             "harness/checks/K109-banco.py:74",
-            "harness/checks/K112-banco.py:137"
+            "harness/checks/K112-banco.py:139"
           ],
           "menciones": [
             "harness/checks/K111-banco.py:271"
@@ -41846,7 +41856,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K109-banco.py:75",
-            "harness/checks/K112-banco.py:136"
+            "harness/checks/K112-banco.py:138"
           ],
           "menciones": []
         }
@@ -41991,7 +42001,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K109-banco.py:77",
-            "harness/checks/K112-banco.py:139"
+            "harness/checks/K112-banco.py:141"
           ],
           "menciones": []
         }
@@ -42129,7 +42139,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K109-banco.py:76",
-            "harness/checks/K112-banco.py:138"
+            "harness/checks/K112-banco.py:140"
           ],
           "menciones": []
         }
@@ -48134,9 +48144,9 @@
             "harness/checks/K109-footprint.py:821",
             "harness/checks/K109-footprint.py:826",
             "harness/checks/K109-footprint.py:829",
-            "harness/checks/K112-banco.py:236",
-            "harness/checks/K112-banco.py:237",
             "harness/checks/K112-banco.py:238",
+            "harness/checks/K112-banco.py:239",
+            "harness/checks/K112-banco.py:240",
             "harness/checks/K112-control.bash:246",
             "harness/checks/K112-indicadores.py:402",
             "harness/checks/K112-indicadores.py:1307",
@@ -48151,6 +48161,11 @@
             "harness/checks/K113-raton.py:1479",
             "harness/checks/K113-raton.py:1526",
             "harness/checks/K113-raton.py:1531",
+            "harness/checks/K120-control.bash:66",
+            "harness/checks/K120-liq.py:207",
+            "harness/checks/K120-liq.py:243",
+            "harness/checks/K120-liq.py:383",
+            "harness/checks/K120-liq.py:483",
             "harness/checks/K44-control.bash:1125",
             "harness/checks/K44-control.bash:1126",
             "harness/checks/K44-control.bash:1154",
@@ -48172,7 +48187,7 @@
             "harness/checks/K112-banco.py:2",
             "harness/checks/K112-banco.py:16",
             "harness/checks/K112-banco.py:21",
-            "harness/checks/K112-banco.py:140",
+            "harness/checks/K112-banco.py:142",
             "harness/checks/K112-indicadores.py:1",
             "harness/checks/K112-indicadores.py:87",
             "harness/checks/K112-indicadores.py:192",
@@ -48182,6 +48197,11 @@
             "harness/checks/K113-raton.py:1",
             "harness/checks/K114-el-raton-del-libro.sh:16",
             "harness/checks/K114-raton-libro.py:19",
+            "harness/checks/K120-banco.py:73",
+            "harness/checks/K120-control.bash:5",
+            "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
+            "harness/checks/K120-liq.py:4",
+            "harness/checks/K120-liq.py:41",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:331",
@@ -48203,8 +48223,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 38,
-        "n_menciones": 21,
+        "n_llamadas": 43,
+        "n_menciones": 26,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48265,6 +48285,9 @@
             "harness/checks/K114-raton-libro.py:154",
             "harness/checks/K114-raton-libro.py:768",
             "harness/checks/K114-raton-libro.py:773",
+            "harness/checks/K120-control.bash:66",
+            "harness/checks/K120-liq.py:226",
+            "harness/checks/K120-liq.py:484",
             "harness/checks/K44-control.bash:1186",
             "harness/checks/K44-control.bash:1187",
             "harness/checks/K44-control.bash:1197",
@@ -48284,6 +48307,14 @@
             "harness/checks/K114-el-raton-del-libro.sh:4",
             "harness/checks/K114-raton-libro.py:1",
             "harness/checks/K114-raton-libro.py:100",
+            "harness/checks/K120-banco.py:2",
+            "harness/checks/K120-banco.py:73",
+            "harness/checks/K120-control.bash:6",
+            "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
+            "harness/checks/K120-liq.py:4",
+            "harness/checks/K120-liq.py:11",
+            "harness/checks/K120-liq.py:12",
+            "harness/checks/K120-liq.py:235",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:342"
@@ -48291,6 +48322,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/liq_precio.test.js:99",
             "tests/test_libro.py:587"
           ],
           "menciones": []
@@ -48298,8 +48330,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 14,
-        "n_menciones": 14,
+        "n_llamadas": 18,
+        "n_menciones": 22,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -49021,12 +49053,12 @@
         {
           "funcion": "app.orderflow_lectura.indicadores",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:1011"
+          "sitio": "app/orderflow_lectura.py:1068"
         },
         {
           "funcion": "app.orderflow_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:498"
+          "sitio": "app/orderflow_lectura.py:499"
         }
       ],
       "leida_por": [
@@ -49333,13 +49365,13 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1549",
+          "sitio": "app/scalp_collector.py:1571",
           "verbo": "DELETE"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:813",
+          "sitio": "app/scalp_collector.py:823",
           "verbo": "INSERT"
         }
       ],
@@ -49352,12 +49384,12 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1549"
+          "sitio": "app/scalp_collector.py:1571"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:813"
+          "sitio": "app/scalp_collector.py:823"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -49381,7 +49413,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:784",
+          "sitio": "app/scalp_collector.py:794",
           "verbo": "INSERT"
         }
       ],
@@ -49414,7 +49446,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:784"
+          "sitio": "app/scalp_collector.py:794"
         },
         {
           "funcion": "app.scalp_logic._cvd_fut_window",
@@ -49541,8 +49573,8 @@
         },
         {
           "funcion": "app.orderflow_lectura.indicadores",
-          "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:1007"
+          "origen": "constante SUELTAS_SQL",
+          "sitio": "app/orderflow_lectura.py:940"
         },
         {
           "funcion": "app.scalp_logic.market_structure",
@@ -50310,7 +50342,7 @@
         {
           "funcion": "app.scalp_collector._write_ladders",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:888",
+          "sitio": "app/scalp_collector.py:898",
           "verbo": "INSERT"
         }
       ],
@@ -50336,13 +50368,13 @@
         {
           "funcion": "app.scalp_collector.flush_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:856",
+          "sitio": "app/scalp_collector.py:866",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:912",
+          "sitio": "app/scalp_collector.py:922",
           "verbo": "INSERT"
         }
       ],
@@ -50390,7 +50422,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:912"
+          "sitio": "app/scalp_collector.py:922"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -50438,7 +50470,7 @@
         {
           "funcion": "app.orderflow_lectura.pasos",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:100"
+          "sitio": "app/orderflow_lectura.py:101"
         }
       ],
       "leida_por": [
@@ -50503,7 +50535,7 @@
         {
           "funcion": "app.orderflow_lectura._barrido_liquidaciones",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:937"
+          "sitio": "app/orderflow_lectura.py:989"
         },
         {
           "funcion": "app.scalp_logic.feed_quality",
@@ -50566,7 +50598,7 @@
         {
           "funcion": "app.scalp_collector.persist_scalp_signals",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1417",
+          "sitio": "app/scalp_collector.py:1439",
           "verbo": "INSERT"
         }
       ],
@@ -51882,17 +51914,22 @@
         {
           "funcion": "app.orderflow_lectura.ordenes",
           "origen": "constante ORDENES_SQL",
-          "sitio": "app/orderflow_lectura.py:1049"
+          "sitio": "app/orderflow_lectura.py:1106"
         },
         {
           "funcion": "app.orderflow_lectura.footprint",
           "origen": "constante VELA_PRECIO_SQL",
-          "sitio": "app/orderflow_lectura.py:279"
+          "sitio": "app/orderflow_lectura.py:280"
         },
         {
           "funcion": "app.orderflow_lectura.cinta",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:454"
+          "sitio": "app/orderflow_lectura.py:455"
+        },
+        {
+          "funcion": "app.orderflow_lectura.indicadores",
+          "origen": "constante SUELTAS_SQL",
+          "sitio": "app/orderflow_lectura.py:940"
         }
       ]
     },
@@ -51937,7 +51974,7 @@
         {
           "funcion": "app.orderflow_lectura.cobertura",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:489"
+          "sitio": "app/orderflow_lectura.py:490"
         }
       ]
     },
@@ -51965,7 +52002,7 @@
         {
           "funcion": "app.orderflow_lectura.grandes",
           "origen": "literal",
-          "sitio": "app/orderflow_lectura.py:471"
+          "sitio": "app/orderflow_lectura.py:472"
         }
       ]
     },
@@ -51993,7 +52030,7 @@
         {
           "funcion": "app.orderflow_lectura.footprint",
           "origen": "constante HECHAS_SQL",
-          "sitio": "app/orderflow_lectura.py:192"
+          "sitio": "app/orderflow_lectura.py:193"
         }
       ]
     },

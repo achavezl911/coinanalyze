@@ -40,7 +40,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1412`, 22 columnas
+- `data_gap` — `sql/schema.sql:1419`, 22 columnas
   - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
   - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
   - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
@@ -55,13 +55,13 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
-- `entrada_latido` — `sql/schema.sql:2712`, 8 columnas
+- `entrada_latido` — `sql/schema.sql:2719`, 8 columnas
   - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
-- `entrada_registro` — `sql/schema.sql:2675`, 26 columnas
+- `entrada_registro` — `sql/schema.sql:2682`, 26 columnas
   - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
-- `entrada_reglamento` — `sql/schema.sql:2665`, 6 columnas
+- `entrada_reglamento` — `sql/schema.sql:2672`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
-- `entrada_resultado` — `sql/schema.sql:2853`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2860`, 12 columnas
   - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
@@ -73,7 +73,7 @@ LEE:
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
-- `entrada_resultado` — `sql/schema.sql:2853`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2860`, 12 columnas
 
 ## Funciones que la componen
 

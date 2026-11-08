@@ -38,17 +38,17 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `metrics_snapshot` — `sql/schema.sql:945`, 35 columnas
+- `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
-- `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
+- `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
-- `pipeline_heartbeat` — `sql/schema.sql:1284`, 4 columnas
+- `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

@@ -929,3 +929,51 @@ async def test_reescribir_un_minuto_le_quita_la_marca_a_su_hora(conn):
     otra = await of.suma_horas(pool, None, 1, ahora=H3 + timedelta(minutes=30))
     assert [(s, h) for s, h, _ in otra] == [("BTC", H0 + HORA_1)]
     assert await _vistas(conn) == despues
+
+
+async def test_la_liquidacion_se_pinta_donde_se_ejecuto(conn, monkeypatch):
+    """Campana 150, remate 1: `ejecucion` es la ap de binance; si no, la impresion de la cinta del mismo venue y del lado
+    de la orden forzada a <= 1 s (la grande mas cercana gana a la pequena mas cercana); si no, sin_dato. `precio` sigue
+    siendo la p de la orden."""
+    monkeypatch.setattr(lec, "_ahora", lambda: _m(30))
+    s = "BTCUSDT_PERP.A"
+    t_ap, t_gr, t_ld, t_by = _m(2), _m(4), _m(6), _m(8)
+    await conn.executemany(
+        """INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id,avg_price)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)""",
+        [(t_ap, s, "binance", "long", 81000.0, 81000.0, 1.0, "ap", 81300.5),
+         (t_gr, s, "binance", "long", 100000.0, 80000.0, 1.25, "grande", None),
+         (t_ld, s, "binance", "short", 50000.0, 81500.0, 0.6134969, "lado", None),
+         (t_by, s, "bybit", "long", 40000.0, 80000.0, 0.5, "bybit", None)])
+    ms = lambda t, n: t + timedelta(milliseconds=n)  # noqa: E731
+    cinta = [  # (ts, venue, precio, usd, compra, id)
+        (ms(t_ap, 5), "binance_usdm", "81000", "90000", False, "c0"),        # con ap la cinta no se mira
+        (ms(t_gr, 400), "binance_usdm", "80350", "60000", False, "c1"),      # la grande (>= 50 k) a 400 ms: GANA
+        (ms(t_gr, 50), "binance_usdm", "80340", "1000", False, "c2"),        # la pequena a 50 ms
+        (ms(t_gr, 10), "binance_usdm", "80360", "90000", True, "c3"),        # otro lado
+        (ms(t_gr, 1), "bybit_linear", "80330", "90000", False, "c4"),        # otro venue
+        (ms(t_gr, 1500), "binance_usdm", "80300", "99000", False, "c5"),     # fuera de 1 s
+        (ms(t_ld, 20), "binance_usdm", "81200", "70000", False, "c6"),       # el corto liquidado COMPRA: solo ventas
+        (ms(t_ld, -1500), "binance_usdm", "81210", "70000", True, "c7"),     # compra, pero a 1.5 s
+        (ms(t_by, 200), "bybit_linear", "80250", "30000", False, "c8"),      # la de bybit en bybit_linear
+        (ms(t_by, 100), "binance_usdm", "80240", "30000", False, "c9"),      # venue equivocado
+    ]
+    await conn.executemany("""INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id)
+                              VALUES ($1,$2,'BTC',$3::numeric,1,$4::numeric,$5,$6)""", cinta)
+    d = await lec.indicadores(conn, symbol="BTC", desde=lec.iso(_m(0)), hasta=lec.iso(_m(15)), marco="1m")
+    json.dumps(d)
+    ev = d["sueltas"]["eventos"]
+    assert [(e["precio"], e["ejecucion"], e["ejecucion_fuente"]) for e in ev] == [
+        ("81000", "81300.5", "ap"), ("80000", "80350", "cinta"), ("81500", None, "sin_dato"),
+        ("80000", "80250", "cinta")]
+    assert ev[1]["ejecucion_impresion"] == {"ts": lec.iso(ms(t_gr, 400)), "venue": "binance_usdm", "compra": False,
+                                            "usd": "60000"}
+    assert ev[3]["ejecucion_impresion"]["venue"] == "bybit_linear" and ev[3]["ejecucion_impresion"]["compra"] is False
+    assert "ejecucion_impresion" not in ev[0] and "ejecucion_impresion" not in ev[2]
+    # sin la grande, la mas cercana de ese venue y lado (la pequena); empate en tiempo: la de usd mas parecido
+    await conn.execute("DELETE FROM orderflow_cinta WHERE id = 'c1'")
+    await conn.executemany("""INSERT INTO orderflow_cinta(ts,venue,symbol,precio,base,usd,compra,id)
+                              VALUES ($1,'binance_usdm','BTC',$2::numeric,1,$3::numeric,false,$4)""",
+                           [(ms(t_gr, -50), "80345", "40000", "c10"), (ms(t_gr, 50), "80344", "45000", "c11")])
+    d = await lec.indicadores(conn, symbol="BTC", desde=lec.iso(_m(0)), hasta=lec.iso(_m(15)), marco="1m")
+    assert d["sueltas"]["eventos"][1]["ejecucion"] == "80344"

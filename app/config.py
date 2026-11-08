@@ -185,6 +185,9 @@ class Settings(BaseSettings):
     # de 1 min son ~300x mas baratos de retener que los de 5 s.
     SCALP_MINUTE_RETENTION_HOURS: int = Field(default=168, ge=26, le=168)
     SCALP_ORDERBOOK_RETENTION_HOURS: int = Field(default=6, ge=1, le=72)
+    # liquidations_realtime con SU retencion (campana 150): ~360 kB por dia en 140 (particion p20261107), 30 dias
+    # ~11 MB. Antes colgaba de SCALP_TRADE_RETENTION_HOURS (12 h en 140) y no habia ni un dia sobre el precio.
+    LIQ_REALTIME_RETENTION_DAYS: int = Field(default=30, ge=1, le=90)
     SCALP_SIGNAL_INTERVAL_SECONDS: int = Field(default=10, ge=2, le=60)
     # DECIDE: 30 dias en la base (8.7 MB por dia en 140, campana 147); lo anterior vive en el archivo del nodo
     # (tools/archivo/archiva.sh). 720 es el tope de este Field.

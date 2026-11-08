@@ -33,6 +33,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.anatomia import (  # noqa: E402,F401
     CAPA_B_DESDE,
+    CASCADA_N,
+    CASCADA_S,
     COLUMNAS_BASE,
     COMISION,
     ESQUEMAS,
@@ -73,8 +75,10 @@ TABLAS = {
     "cinta": ("orderflow_cinta", ("ts", "venue", "symbol", "precio", "base", "usd", "compra", "id")),
     "libro": ("libro_foto", ("ts", "venue", "symbol", "ts_libro", "compra", "venta", "paso", "compra_nivel",
                              "compras", "venta_nivel", "ventas", "alcance_compra", "alcance_venta")),
+    # avg_price (remate 1 de la campana 150): los ficheros de antes del despliegue traen 8 campos y los de despues 9;
+    # liq_rt lee por posicion (ts, symbol, side, notional_usd) y los dos le valen (tests/test_liq_cascada.py)
     "liquidaciones-realtime": ("liquidations_realtime", ("ts", "symbol", "exchange", "side", "notional_usd",
-                                                         "price", "qty", "event_id")),
+                                                         "price", "qty", "event_id", "avg_price")),
     "liquidaciones-5min": ("liquidations", ("ts", "symbol", "interval", "long_liq", "short_liq")),
     "oi-bybit": ("oi_bybit", ("ts", "symbol", "interval", "oi_open", "oi_high", "oi_low", "oi_close")),
     "oi": ("open_interest", ("ts", "symbol", "interval", "oi_open", "oi_high", "oi_low", "oi_close")),
@@ -99,7 +103,7 @@ ESPERADO_DESDE = {"cinta": CINTA_DESDE, "libro": CINTA_DESDE, "liquidaciones-rea
                   "spot-agregado": ARCHIVO_DESDE}
 # ---------------------------------------------------------------- umbrales de la extraccion
 LIQ_GRANDE_USD = {"BTC": 250_000.0, "ETH": 100_000.0, "SOL": 50_000.0}   # «evento grande» de liquidacion
-CASCADA_N, CASCADA_S, CASCADA_CALMA_S = 5, 60.0, 120.0                   # M8
+CASCADA_CALMA_S = 120.0                         # M8 (CASCADA_N y CASCADA_S vienen de app.anatomia)
 LIBRO_BANDAS = (0.001, 0.005)       # desequilibrio a +-0.1 % y +-0.5 % del medio
 MURO_DIST, MURO_VECES, MURO_QUEDA = 0.003, 5.0, 0.2   # M3: <= 0.3 %, >= 5x la mediana del lado, queda < 20 %
 

@@ -330,6 +330,8 @@ function creaLienzo(canvas, op) {
     reg.capas = m.capas && typeof pintaCapas === 'function' && i1 >= i0 ? pintaCapas(ctx, g, y, m, paso, i0, i1) : null;
     // OF-5a (campana 146): las grandes en su vela y a su precio, y los paneles bajo el footprint, con ESTA geometria
     reg.grandes = typeof pintaGrandes === 'function' ? pintaGrandes(ctx, g, y, m, i0, i1) : null;
+    // campana 150: las liquidaciones de la ventana, en (su ts, su precio), con ESTA geometria (flujo-indicadores.js)
+    reg.liq = typeof pintaLiqPrecio === 'function' ? pintaLiqPrecio(ctx, g, y, m, i0, i1) : null;
     if (L.vista.franja !== false && i1 >= i0) reg.franja = pintaFranja(ctx, g, y, m, i0, i1, paso);
     pintaResumen(ctx, g, m, i0, i1, reg.velas, cvd);
     ejeTiempo(ctx, g, i0, i1, m);
@@ -831,6 +833,7 @@ function creaLienzo(canvas, op) {
       } else if (b.nivel !== null) {
         lineas.push('precio ' + b.nivel + ': sin operaciones en esta vela');
       }
+      if (typeof fichaLiqVela === 'function') fichaLiqVela(v.ts).forEach((t) => lineas.push(t));
       if (v.niveles.length) {
         lineas.push('vela: volumen ' + v.total + ' · Δ ' + v.delta + ' · ' + v.operaciones + ' operaciones · POC '
           + v.poc + (v.value_area ? ' · value area ' + v.value_area.val + '–' + v.value_area.vah : ''));

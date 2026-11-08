@@ -355,7 +355,8 @@ function marcaCapa(st) {
 /* ================================================================= OF-5a · LOS INDICADORES (campana 146)
  * En el hash, `ind=` dice que se enciende, en su orden (los paneles bajo el footprint, las marcas de las grandes y la
  * cinta); sin la clave, lo de por omision; `ind=ninguno`, nada. Lo que no se entiende cae al defecto. */
-const INDICADORES = ['delta', 'cvd', 'oi', 'oib', 'funding', 'ls', 'liq', 'grandes', 'cinta'];
+// campana 150: `liqp`, las liquidaciones sobre el precio (flujo-liq.js); apagadas por omision
+const INDICADORES = ['delta', 'cvd', 'oi', 'oib', 'funding', 'ls', 'liq', 'grandes', 'liqp', 'cinta'];
 const INDICADORES_DEFECTO = ['delta', 'cvd', 'grandes', 'cinta'];
 
 function leeIndicadores(v) {

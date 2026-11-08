@@ -42,9 +42,9 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `signal_execution_snapshot` — `sql/schema.sql:793`, 21 columnas
+- `signal_execution_snapshot` — `sql/schema.sql:800`, 21 columnas
   - la llena `app.signal_execution.persist_signal_execution_snapshots` (INSERT) — `app/signal_execution.py:452`
-- `signal_observation` — `sql/schema.sql:415`, 34 columnas
+- `signal_observation` — `sql/schema.sql:422`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
 
 ## Funciones que la componen
