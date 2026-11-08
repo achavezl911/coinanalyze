@@ -41358,7 +41358,7 @@
             "harness/checks/K120-banco.py:180",
             "harness/checks/K120-liq.py:248",
             "harness/checks/K120-liq.py:250",
-            "harness/checks/K120-liq.py:428"
+            "harness/checks/K120-liq.py:431"
           ],
           "menciones": [
             "harness/checks/K120-banco.py:15",
@@ -48164,8 +48164,8 @@
             "harness/checks/K120-control.bash:66",
             "harness/checks/K120-liq.py:207",
             "harness/checks/K120-liq.py:243",
-            "harness/checks/K120-liq.py:380",
-            "harness/checks/K120-liq.py:480",
+            "harness/checks/K120-liq.py:383",
+            "harness/checks/K120-liq.py:483",
             "harness/checks/K44-control.bash:1125",
             "harness/checks/K44-control.bash:1126",
             "harness/checks/K44-control.bash:1154",
@@ -48287,7 +48287,7 @@
             "harness/checks/K114-raton-libro.py:773",
             "harness/checks/K120-control.bash:66",
             "harness/checks/K120-liq.py:226",
-            "harness/checks/K120-liq.py:481",
+            "harness/checks/K120-liq.py:484",
             "harness/checks/K44-control.bash:1186",
             "harness/checks/K44-control.bash:1187",
             "harness/checks/K44-control.bash:1197",
