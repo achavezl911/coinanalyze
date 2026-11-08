@@ -1055,9 +1055,15 @@ async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str |
                          "cubos": [_cubo(t, cubo, por_ts, columnas, como, barrido, ahora) for t in inicios]}
     retencion = timedelta(days=get_settings().LIQ_REALTIME_RETENTION_DAYS)
     borde = max(a, ahora - retencion)
-    sueltas = await conn.fetch(
-        SUELTAS_SQL, simbolo, borde, b, TOPE_SUELTAS + 1, activo, VENUE_CINTA_LIQ["binance"],
-        VENUE_CINTA_LIQ["bybit"], VENTANA_EJECUCION) if borde < b else []
+    sueltas = []
+    if borde < b:
+        async with conn.transaction():
+            # el planificador estima ~10 k impresiones por ventana de 2 s (son ~600) y 140 compila la consulta con JIT:
+            # ~1 s en vez de 77-125 ms (EXPLAIN ANALYZE en 140, BTC 4 h y 3 d, remate 1). Sin JIT en su transaccion.
+            await conn.execute("SET LOCAL jit = off")
+            sueltas = await conn.fetch(
+                SUELTAS_SQL, simbolo, borde, b, TOPE_SUELTAS + 1, activo, VENUE_CINTA_LIQ["binance"],
+                VENUE_CINTA_LIQ["bybit"], VENTANA_EJECUCION)
     huecos = await conn.fetch(
         """SELECT exchange, start_ts, end_ts, evidence_type, status FROM data_gap
             WHERE feed = 'liquidations' AND symbol = $1 AND start_ts < $3 AND end_ts > $2
