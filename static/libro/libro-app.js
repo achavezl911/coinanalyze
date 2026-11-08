@@ -327,7 +327,8 @@ function ventanaLiq(w) {
 function modeloLiq(sueltas, lw) {
   const a = Date.parse(lw.desde);
   const b = Date.parse(lw.hasta);
-  return { sueltas, desde: lw.desde, hasta: lw.hasta, eventos: sobreUmbralLiq(eventosLiq(sueltas)),
+  const [eventos, sinPrecio] = parteLiq(sobreUmbralLiq(eventosLiq(sueltas)));
+  return { sueltas, desde: lw.desde, hasta: lw.hasta, eventos, sinPrecio,
            sinDato: sinDatoLiq(sueltas, a, b), cascadas: cascadasLiq(eventosLiq(sueltas), sueltas && sueltas.cascada) };
 }
 

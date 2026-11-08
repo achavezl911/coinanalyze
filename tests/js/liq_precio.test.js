@@ -48,10 +48,10 @@ test('la ficha: las de su tramo, cuantas mas si no caben, «ninguna» solo con d
   const t = Date.parse('2026-11-07T10:00:00Z');
   const l = Q.fichaLiq(e, [], t, t + 60000);
   assert.strictEqual(l.length, 5);
-  assert.strictEqual(l[0], 'liq 10:00:00Z · binance · largo liquidado (venta forzada) · 100 · 10.0 k USD');
-  assert.strictEqual(l[1], 'liq 10:00:01Z · binance · corto liquidado (compra forzada) · 101 · 10.0 k USD');
+  assert.strictEqual(l[0], 'liq 10:00:00Z · binance · largo liquidado (venta forzada) · ejecución: sin dato · orden a 100 · 10.0 k USD');
+  assert.strictEqual(l[1], 'liq 10:00:01Z · binance · corto liquidado (compra forzada) · ejecución: sin dato · orden a 101 · 10.0 k USD');
   assert.strictEqual(l[4], 'liq: y 2 más');
-  assert.deepStrictEqual(Q.fichaLiq(e, [], t + 60000, t + 120000), ['liq 10:01:00Z · bybit · largo liquidado (venta forzada) · 90 · 50.0 k USD']);
+  assert.deepStrictEqual(Q.fichaLiq(e, [], t + 60000, t + 120000), ['liq 10:01:00Z · bybit · largo liquidado (venta forzada) · ejecución: sin dato · orden a 90 · 50.0 k USD']);
   assert.deepStrictEqual(Q.fichaLiq(e, [], t + 120000, t + 180000), ['liq ≥ 10.0 k USD: ninguna']);
   const sin = [{ desde: t + 120000, hasta: t + 240000, motivo: 'hueco de bybit (unrecoverable): sin dato' }];
   assert.deepStrictEqual(Q.fichaLiq(e, sin, t + 120000, t + 180000), ['liq SIN DATO: hueco de bybit (unrecoverable): sin dato']);
@@ -70,4 +70,52 @@ test('la cascada: >= n del mismo lado en s segundos, episodios unidos si compart
   assert.strictEqual(Q.cascadasLiq(Q.eventosLiq(s), null), null);
   assert.strictEqual(Q.cascadasLiq(Q.eventosLiq(s), { n: 4, s: 60 }).filter((x) => x.lado === 'long').length, 3);
   assert.strictEqual(Q.textoCascada(c[0]), 'cascada de cortos (compra forzada) · 10:03:20–10:04:20Z · 5 liq · 5.0 k USD');
+});
+
+// remate 1 (campana 150): `precio` es la p de la orden forzada; el circulo va en `ejecucion` y sin ella no se pinta
+const ex = (ts, lado, usd, p, ej, fuente, venue, exchange) => Object.assign(ev(ts, lado, usd, p, exchange),
+  { ejecucion: ej, ejecucion_fuente: fuente }, venue ? { ejecucion_impresion: { ts, venue, compra: lado === 'short', usd: '1' } } : {});
+
+test('la ejecucion: ap o cinta con su fuente, sin dato aparte, y la ficha da las dos con la p de la orden', () => {
+  const s = { eventos: [ex('2026-11-07T20:47:18.056Z', 'long', 298600, '75368.4', '75661.5', 'ap'),
+                        ex('2026-11-07T20:48:48.931Z', 'long', 49600, '75385.1', '75629.1', 'cinta', 'bybit_linear', 'bybit'),
+                        ex('2026-11-07T20:49:00.000Z', 'short', 20000, '75800', null, 'sin_dato'),
+                        ex('2026-11-07T20:49:01.000Z', 'short', 20000, '75800', 'NaN', 'cinta', 'binance_usdm')] };
+  const e = Q.eventosLiq(s);
+  assert.deepStrictEqual(e.map((x) => [x.precio, x.ejecucion, x.fuente, x.venue]),
+    [[75368.4, 75661.5, 'ap', null], [75385.1, 75629.1, 'cinta', 'bybit_linear'], [75800, null, 'sin_dato', null],
+     [75800, null, 'sin_dato', null]]);
+  const [con, sin] = Q.parteLiq(e);
+  assert.deepStrictEqual([con.length, sin.length], [2, 2]);
+  const t = Date.parse('2026-11-07T20:47:00Z');
+  assert.deepStrictEqual(Q.fichaLiq(con, [], t, t + 180000, undefined, undefined, sin), [
+    'liq 20:47:18Z · binance · largo liquidado (venta forzada) · ejecución 75661.5 (ap de binance) · orden a 75368.4 · 298.6 k USD',
+    'liq 20:48:48Z · bybit · largo liquidado (venta forzada) · ejecución 75629.1 (cinta de bybit_linear) · orden a 75385.1 · 49.6 k USD',
+    'liq 20:49:00Z · binance · corto liquidado (compra forzada) · ejecución: sin dato · orden a 75800 · 20.0 k USD',
+    'liq 20:49:01Z · binance · corto liquidado (compra forzada) · ejecución: sin dato · orden a 75800 · 20.0 k USD']);
+  assert.strictEqual(Q.fichaLiq(con, [], t, t + 180000, undefined, 3, sin)[3], 'liq: y 1 más');
+});
+
+test('la ficha de /libro: las liquidaciones y cascadas de la COLUMNA [ts_j, ts_j + cada), no las de su minuto', () => {
+  Object.assign(global, require('../../static/flujo/flujo-calculo.js'), require('../../static/libro/libro-calculo.js'), Q);
+  const Mp = require('../../static/libro/libro-mapa.js');
+  const t = Date.parse('2026-11-07T20:47:00Z');
+  const s = { eventos: [ex('2026-11-07T20:47:10.000Z', 'long', 20000, '100', '101', 'ap'),
+                        ex('2026-11-07T20:47:40.000Z', 'short', 30000, '102', null, 'sin_dato')], huecos: [] };
+  const [eventos, sinPrecio] = Q.parteLiq(Q.sobreUmbralLiq(Q.eventosLiq(s)));
+  const cas = (d, h) => ({ lado: 'long', desde: Date.parse(d), hasta: Date.parse(h), n: 5, usd: 1 });
+  const m = { paso: '10', unidad: 'base', N: 2, cada: 30, columnas: [{ ts: t, estado: 'hueco', suma: null },
+    { ts: t + 30000, estado: 'hueco', suma: null }],
+              liq: { eventos, sinPrecio, sinDato: [], cascadas: [cas('2026-11-07T20:46:00Z', '2026-11-07T20:47:05Z'),
+                                                               cas('2026-11-07T20:47:31Z', '2026-11-07T20:47:50Z')] } };
+  const liq = (j) => Mp.fichaDe(m, j, 10, null).lineas.filter((x) => x[0] === 'liq').map((x) => x[1]);
+  const a = liq(0);
+  const b = liq(1);
+  assert.strictEqual(a.length, 2, a.join('\n'));
+  assert.match(a[0], /^liq 20:47:10Z .* ejecución 101 \(ap de binance\) · orden a 100 /);
+  assert.match(a[1], /^cascada de largos .* 20:46:00–20:47:05Z/);
+  assert.strictEqual(b.length, 2, b.join('\n'));
+  assert.match(b[0], /^liq 20:47:40Z .* ejecución: sin dato · orden a 102 /);
+  assert.match(b[1], /20:47:31–20:47:50Z/);
+  assert.deepStrictEqual(Mp.fichaDe(m, 1, 10, null).liq, { desde: '2026-11-07T20:47:30Z', hasta: '2026-11-07T20:48:00Z' });
 });

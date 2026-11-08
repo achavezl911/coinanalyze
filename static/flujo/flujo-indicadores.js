@@ -507,8 +507,9 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
 }
 
 /* LAS LIQUIDACIONES SOBRE EL PRECIO (campana 150, flujo-liq.js): las sueltas de la ventana por encima de LIQ_UMBRAL_USD,
- * un circulo en (su ts, su precio) con el AREA proporcional a sus USD, encima del footprint. window.LIQ_PINTADAS lleva
- * TODAS las de la ventana por encima del umbral (las de fuera de la vista con dibujada=false) y window.LIQ_REGLA la regla. */
+ * un circulo en (su ts, su EJECUCION) con el AREA proporcional a sus USD, encima del footprint (remate 1: no en la p de
+ * la orden forzada). window.LIQ_PINTADAS lleva TODAS las de la ventana por encima del umbral con ejecucion (las de fuera
+ * de la vista con dibujada=false), window.LIQ_SIN_PRECIO las que no la tienen (no se pintan) y LIQ_REGLA la regla. */
 function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
   const d = IND.datos;
   const on = (VISTA.ind || []).includes('liqp') && VISTA.modo !== 'tpo';
@@ -518,6 +519,7 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
     window.LIQ_PINTADAS = on ? null : [];
     window.LIQ_SIN_DATO = on ? [{ motivo: d ? 'sin velas' : 'la ruta de los indicadores no contestó' }] : [];
     window.LIQ_CASCADAS = on ? null : [];
+    window.LIQ_SIN_PRECIO = on ? null : [];
     return null;
   }
   const mMs = FLUJO_MARCOS[m.marco] * 60000;
@@ -528,10 +530,11 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
   ctx.beginPath();
   ctx.rect(0, g.arriba, g.ancho, g.abajo - g.arriba);
   ctx.clip();
-  sobreUmbralLiq(eventosLiq(d.sueltas)).forEach((e) => {
+  const [conPrecio, sinPrecio] = parteLiq(sobreUmbralLiq(eventosLiq(d.sueltas)));
+  conPrecio.forEach((e) => {
     const i = Math.floor((e.t - t0) / mMs);
     const x = g.x(i) - g.bs / 2 + ((e.t - t0 - i * mMs) / mMs) * g.bs;
-    const yy = y(e.precio);
+    const yy = y(e.ejecucion);
     const r = radioLiq(e.usd);
     const dibujada = i >= i0 && i <= i1 && yy >= g.arriba && yy <= g.abajo;
     const c = e.lado === 'long' ? COLOR.venta : COLOR.compra;
@@ -544,7 +547,8 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
     }
-    out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, precio: e.precio, usd: e.usd,
+    out.push({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, ejecucion: e.ejecucion, fuente: e.fuente,
+               venue: e.venue, p: e.precio, usd: e.usd,
                vela: i >= 0 && i < m.velas.length ? m.velas[i].ts : null,
                x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 100) / 100, dibujada,
                color: c });
@@ -568,15 +572,20 @@ function pintaLiqPrecio(ctx, g, y, m, i0, i1) {
              usd: c.usd, x0: Math.round(x0 * 10) / 10, x1: Math.round(x1 * 10) / 10 };
   });
   ctx.restore();
-  IND.liq = { pintadas: out, sinDato, mMs, cascadas: cas };
+  const sinOut = sinPrecio.map((e) => ({ ts: e.ts, t: e.t, exchange: e.exchange, lado: e.lado, ejecucion: null,
+                                         fuente: e.fuente, p: e.precio, usd: e.usd }));
+  IND.liq = { pintadas: out, sinDato, mMs, cascadas: cas, sinPrecio: sinOut };
   window.LIQ_PINTADAS = out;
+  window.LIQ_SIN_PRECIO = sinOut;
   window.LIQ_SIN_DATO = sinDato;
   window.LIQ_CASCADAS = casOut;
   return { n: out.length, dibujadas: out.filter((x) => x.dibujada).length, sin_dato: sinDato.length,
+           sin_precio: sinOut.length,
            cascadas: casOut === null ? null : casOut.length };
 }
 
-// las lineas de la ficha para la vela que empieza en `ts`: lo PINTADO en ella (no se pide nada)
+// las lineas de la ficha para la vela que empieza en `ts`: lo PINTADO en ella y lo sin precio (no se pide nada)
+const conP = (e) => Object.assign({}, e, { precio: e.p });
 function fichaLiqVela(ts) {
   if (!(VISTA.ind || []).includes('liqp')) return [];
   if (!IND.liq) return ['liq: SIN DATO (la ruta de los indicadores no contestó)'];
@@ -584,7 +593,8 @@ function fichaLiqVela(ts) {
   const t1 = t + IND.liq.mMs;
   const cas = IND.liq.cascadas === null ? ['liq: cascada SIN REGLA (la ruta no trajo sueltas.cascada)']
     : IND.liq.cascadas.filter((c) => c.desde < t1 && c.hasta >= t).map(textoCascada);
-  return fichaLiq(IND.liq.pintadas, IND.liq.sinDato, t, t1).concat(cas);
+  return fichaLiq(IND.liq.pintadas.map(conP), IND.liq.sinDato, t, t1, undefined, undefined,
+                  IND.liq.sinPrecio.map(conP)).concat(cas);
 }
 
 /* E-05 (OF-6a, campana 148): la CRUZ sobre un panel. La vertical la pinta flujo-dibujo.js (la de la vela); aqui, la

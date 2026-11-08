@@ -19,12 +19,29 @@ function radioLiq(usd) {
   return Math.min(LIQ_RADIO.max, Math.max(LIQ_RADIO.min, r));
 }
 
-// los eventos de la ruta, en numeros y por orden de ts (la ruta ya los da asi)
+/* los eventos de la ruta, en numeros y por orden de ts (la ruta ya los da asi). `precio` es la p de la orden forzada
+ * (limite en binance, quiebra en bybit: ~0.4 % mas alla del mercado, remate 1); el circulo va en `ejecucion` (la ap de
+ * binance, o la impresion de la cinta que la ruta eligio), y sin ella es null: no se pinta en el precio. */
 function eventosLiq(sueltas) {
   if (!sueltas || !Array.isArray(sueltas.eventos)) return [];
-  return sueltas.eventos.map((e) => ({ ts: e.ts, t: Date.parse(e.ts), exchange: e.exchange, lado: e.lado,
-                                       precio: Number(e.precio), usd: Number(e.usd) }))
-    .filter((e) => Number.isFinite(e.t) && Number.isFinite(e.precio) && Number.isFinite(e.usd));
+  return sueltas.eventos.map((e) => {
+    const x = e.ejecucion === null || e.ejecucion === undefined ? NaN : Number(e.ejecucion);
+    const ok = Number.isFinite(x) && x > 0;
+    return { ts: e.ts, t: Date.parse(e.ts), exchange: e.exchange, lado: e.lado, precio: Number(e.precio),
+             usd: Number(e.usd), ejecucion: ok ? x : null, fuente: ok ? e.ejecucion_fuente : 'sin_dato',
+             venue: ok && e.ejecucion_impresion ? e.ejecucion_impresion.venue : null };
+  }).filter((e) => Number.isFinite(e.t) && Number.isFinite(e.precio) && Number.isFinite(e.usd));
+}
+
+// [con ejecucion, sin ejecucion]: las primeras se pintan en (ts, ejecucion); las segundas van a window.LIQ_SIN_PRECIO
+function parteLiq(eventos) {
+  return [eventos.filter((e) => e.ejecucion !== null), eventos.filter((e) => e.ejecucion === null)];
+}
+
+function ejecucionLiq(e) {
+  if (e.ejecucion === null) return 'ejecución: sin dato · orden a ' + e.precio;
+  const f = e.fuente === 'ap' ? 'ap de ' + e.exchange : 'cinta' + (e.venue ? ' de ' + e.venue : '');
+  return 'ejecución ' + e.ejecucion + ' (' + f + ') · orden a ' + e.precio;
 }
 
 function sobreUmbralLiq(eventos, umbral) {
@@ -64,15 +81,16 @@ function usdLiq(usd) {
   return v.toFixed(0);
 }
 
-/* Las lineas de la ficha para [t0, t1): las pintadas que caen ahi (hora, exchange, lado, precio, USD), cuantas mas si
- * no caben, y lo que no tiene dato. Sin pintadas y con dato: «ninguna». */
-function fichaLiq(pintadas, sinDato, t0, t1, umbral, max) {
+/* Las lineas de la ficha para [t0, t1): las pintadas y las sin precio (window.LIQ_SIN_PRECIO) que caen ahi (hora,
+ * exchange, lado, ejecucion con su fuente, la p de la orden, USD), cuantas mas si no caben, y lo que no tiene dato. Sin
+ * ninguna y con dato: «ninguna». */
+function fichaLiq(pintadas, sinDato, t0, t1, umbral, max, sinPrecio) {
   const u = umbral === undefined ? LIQ_UMBRAL_USD : umbral;
   const n = max || LIQ_FICHA_MAX;
-  const en = pintadas.filter((e) => e.t >= t0 && e.t < t1);
+  const en = pintadas.concat(sinPrecio || []).filter((e) => e.t >= t0 && e.t < t1).sort((a, b) => a.t - b.t);
   const sin = sinDato.filter((x) => x.desde < t1 && x.hasta > t0);
   const out = en.slice(0, n).map((e) => 'liq ' + e.ts.slice(11, 19) + 'Z · ' + e.exchange + ' · ' + ladoLiq(e.lado)
-    + ' · ' + e.precio + ' · ' + usdLiq(e.usd) + ' USD');
+    + ' · ' + ejecucionLiq(e) + ' · ' + usdLiq(e.usd) + ' USD');
   if (en.length > n) out.push('liq: y ' + (en.length - n) + ' más');
   if (!en.length && !sin.length) out.push('liq ≥ ' + usdLiq(u) + ' USD: ninguna');
   sin.forEach((x) => out.push('liq SIN DATO: ' + x.motivo));
@@ -149,6 +167,6 @@ function textoCascada(c) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { LIQ_UMBRAL_USD, LIQ_RADIO, LIQ_FICHA_MAX, radioLiq, eventosLiq, sobreUmbralLiq, sinDatoLiq, ladoLiq,
+  module.exports = { LIQ_UMBRAL_USD, LIQ_RADIO, LIQ_FICHA_MAX, radioLiq, eventosLiq, parteLiq, ejecucionLiq, sobreUmbralLiq, sinDatoLiq, ladoLiq,
                      usdLiq, fichaLiq, cascadasLiq, cascadaMinutos, textoCascada };
 }
