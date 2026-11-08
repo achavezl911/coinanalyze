@@ -126,6 +126,13 @@
         <button type="button" data-valor="footprint">FOOTPRINT</button>
         <button type="button" data-valor="tpo">TPO</button>
       </div>
+      <div class="seg" id="sel-trazo" role="group" aria-label="Dibujo">
+        <button type="button" data-trazo="nivel" aria-pressed="false" title="Nivel: un clic (Esc la suelta)">─</button>
+        <button type="button" data-trazo="linea" aria-pressed="false" title="Línea: dos clics">╱</button>
+        <button type="button" data-trazo="fib" aria-pressed="false" title="Fibonacci: dos clics">F</button>
+        <button type="button" data-trazo="canal" aria-pressed="false" title="Canal de regresión: dos clics, el tramo">≋</button>
+        <button type="button" id="b-borra-trazos" title="Borrar todos los trazos de este activo">✕</button>
+      </div>
       <button type="button" class="boton" id="b-ayuda" aria-haspopup="dialog">AYUDA</button>
       <span class="cab-der">
         <a class="enlace" id="ir-mesa" href="/">← MESA</a>
@@ -197,6 +204,13 @@
         rango · <b>← →</b>: una vela · <b>Re Pág / Av Pág</b>: una pantalla · <b>Inicio</b>: el principio de lo
         cargado · <b>Fin</b> o <b>AL PRESENTE</b>: vuelve a seguir la última vela (desplazarse hacia atrás deja de
         seguirla) · <b>Esc</b>: cierra los menús, la ayuda y la regla.
+      </p>
+      <p>
+        <b>Dibujo</b> (solo en el footprint): <b>─</b> nivel (un clic) · <b>╱</b> línea, <b>F</b> Fibonacci y
+        <b>≋</b> canal de regresión de los cierres a ±2σ (dos clics; el canal, el tramo de velas) · <b>Esc</b> suelta
+        la herramienta · <b>clic</b> sobre un trazo lo elige; arrastrar un punto lo cambia y arrastrar el cuerpo lo
+        mueve · <b>Supr</b> borra el elegido · <b>✕</b> borra todos (lo pregunta). Se guardan en este navegador, por
+        activo: un nivel de BTC puesto en 5m sale en 1h, y no en ETH.
       </p>
       <h2>La celda</h2>
       <p>
@@ -282,6 +296,7 @@
     <script src="/static/mesa/mesa-datos.js"></script>
     <script src="/static/flujo/flujo-calculo.js"></script>
     <script src="/static/flujo/flujo-dibujo.js"></script>
+    <script src="/static/flujo/flujo-trazos.js"></script>
     <script src="/static/flujo/flujo-capas.js"></script>
     <script src="/static/flujo/flujo-tpo.js"></script>
     <script src="/static/flujo/flujo-liq.js"></script>
