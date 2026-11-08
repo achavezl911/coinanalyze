@@ -48166,6 +48166,11 @@
             "harness/checks/K120-liq.py:243",
             "harness/checks/K120-liq.py:383",
             "harness/checks/K120-liq.py:485",
+            "harness/checks/K121-control.bash:134",
+            "harness/checks/K121-trazos.py:340",
+            "harness/checks/K121-trazos.py:471",
+            "harness/checks/K121-trazos.py:477",
+            "harness/checks/K121-trazos.py:481",
             "harness/checks/K44-control.bash:1125",
             "harness/checks/K44-control.bash:1126",
             "harness/checks/K44-control.bash:1154",
@@ -48202,6 +48207,9 @@
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
             "harness/checks/K120-liq.py:4",
             "harness/checks/K120-liq.py:41",
+            "harness/checks/K121-los-trazos-donde-se-pusieron.sh:2",
+            "harness/checks/K121-los-trazos-donde-se-pusieron.sh:4",
+            "harness/checks/K121-trazos.py:1",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:331",
@@ -48215,7 +48223,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/flujo_trazos.test.js:2"
+          ],
           "menciones": [
             "tests/js/libro_pantalla.test.js:8"
           ]
@@ -48223,8 +48233,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 43,
-        "n_menciones": 26,
+        "n_llamadas": 49,
+        "n_menciones": 29,
         "sin_ninguno": false,
         "solo_mencion": false
       },

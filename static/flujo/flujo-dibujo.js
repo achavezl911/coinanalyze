@@ -336,6 +336,8 @@ function creaLienzo(canvas, op) {
     pintaResumen(ctx, g, m, i0, i1, reg.velas, cvd);
     ejeTiempo(ctx, g, i0, i1, m);
     ejeModo(ctx, g);
+    // 146-D: los trazos del activo (nivel, linea, Fibonacci, canal) en (instante, precio), con ESTA geometria
+    reg.trazos = typeof pintaTrazos === 'function' ? pintaTrazos(ctx, g, y, m, lo, hi) : null;
     reg.vivo = pintaVivo(ctx, g, y, lo, hi, m);
     window.FLUJO_PINTADO = reg;
     if (typeof pintaIndicadores === 'function') pintaIndicadores(g, m, i0, i1);
@@ -997,6 +999,11 @@ function creaLienzo(canvas, op) {
     if (ev.button !== 0 || !L.modelo) return;
     const p = pos(ev);
     const z = zona(p.x, p.y);
+    // 146-D: con herramienta elegida, o sobre un trazo, el gesto es del dibujo (sin eso, false y lo de siempre)
+    if (typeof trazosRaton === 'function' && trazosRaton('baja', p, ev)) {
+      ev.preventDefault();
+      return;
+    }
     if (ev.ctrlKey && z !== 'precio' && z !== 'tiempo') {
       L.regla = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, midiendo: true };
       dibujaCruz();
@@ -1007,12 +1014,14 @@ function creaLienzo(canvas, op) {
     ev.preventDefault();
   });
   window.addEventListener('mouseup', () => {
+    if (typeof trazosRaton === 'function') trazosRaton('suelta', null, null);
     if (L.regla && L.regla.midiendo) L.regla.midiendo = false;
     L.arrastre = null;
   });
   L.cv.addEventListener('mousemove', (ev) => {
     const p = pos(ev);
     const a = L.arrastre;
+    if (typeof trazosRaton === 'function' && !a && !(L.regla && L.regla.midiendo)) trazosRaton('mueve', p, ev);
     if (L.regla && L.regla.midiendo) {
       L.regla.x1 = p.x;
       L.regla.y1 = p.y;
@@ -1064,6 +1073,7 @@ function creaLienzo(canvas, op) {
     pide();
   }).observe(L.cv.parentElement);
   mide();
+  if (typeof conectaTrazos === 'function') conectaTrazos({ pide });
 
   /* REMATE 3: en 4h y 1d con paso auto, la fila que pone la ultima vela en el 70 % del alto (flujo-app.js) */
   function filaAuto() {
