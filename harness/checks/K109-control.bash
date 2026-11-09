@@ -124,7 +124,8 @@ echo nivel > "$T/plantado"
 juzga_plantado nivel_servido S "lo servido != las celdas: vela .*niveles servidos != celdas" 0 "una celda +0.5 y su vela con ella"
 echo va > "$T/plantado"
 juzga_plantado va_servida S "value area servida .* != celdas" 0 "VAH = VAL en la ultima vela"
-planta_pagina flujo-dibujo.js 's/y(Number(v\.poc)/y(Number(v.poc) + paso/' 2; m=$?
+# bancos R1: desde #231 el marco del POC lo pinta pintaPoc(n) (flujo-dibujo.js:627-628) y `y(Number(v.poc)` ya no existe
+planta_pagina flujo-dibujo.js 's/Math\.round(y(Number(n) + paso));$/Math.round(y(Number(n) + 2 * paso));/; s/Math\.round(y(Number(n)));$/Math.round(y(Number(n) + paso));/' 2; m=$?
 juzga_plantado poc_en_otro_nivel F "el marco del POC no esta en la fila" $m "el marco un nivel arriba"
 planta_pagina flujo-dibujo.js 's/const tv = cifraE04(l\.venta, dec);/const tv = cifraE04(l.compra, dec);/' 1; m=$?
 juzga_plantado numeros_cruzados F "escribe venta" $m "la compra donde va la venta"
