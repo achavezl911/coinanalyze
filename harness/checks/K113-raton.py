@@ -25,7 +25,9 @@ LOS BRAZOS (cualquiera pone ROJO; uno sin canal es NO MEDIDO y un ROJO de otro m
                  resumen (F-10), con el CVD de sesion recalculado exacto desde su arranque servido
   (C) la cruz    y la ficha: la vela y el nivel bajo el cursor (E-05: precio redondeado al paso y hora en los ejes, la
                  vertical tambien por los paneles; F-16: la ficha dice esa celda, y #lectura lo mismo)
-  (T) el texto   F-09: cada cifra sale si la fila mide >= 10 px y cabe con 4 px de holgura, y no sale si no; la fuente
+  (T) el texto   F-09: cada cifra sale si la fila mide >= 10 px y cabe con 4 px de holgura, y no sale si no (remate 4:
+                 cada lado es su media vela, y el carril de las grandes solo le quita sitio a la venta de la fila que
+                 una grande SERVIDA de esa vela puede tapar, con la regla con la que K112 la juzga); la fuente
                  es UNA por vista, la mayor (9 px a fuenteDe) con la que cabe toda cifra que cabe a 9, y es la que mide
                  fillText; tras un gesto que solo acerca el precio o solo ensancha las velas (y 1-4 muescas de Ctrl+rueda en
                  la vista por omision y en BTC 15m y 1h) ninguna celda a la vista antes y despues pierde su cifra (remate 1)
@@ -548,6 +550,23 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
     relleno = pin.get("fondo") == "relleno"
     car = 0 if relleno else (pin.get("carril") or 0)
     paso = D(pin["paso"])
+    # remate 4 (#231): donde cae cada grande (su vela, su precio, su radio) sale de LO SERVIDO, con la regla con la que
+    # K112 la juzga (juzga_grandes: radio 2-6 por la raiz del USD sobre la mayor); no se lee el hueco de la pagina
+    grandes: dict = {}
+    dg = K112.aplicadas(c, K112.RUTA_GR) if car and "grandes" in (e.get("ind") or ()) else []
+    if dg:
+        ops = dg[-1]["cuerpo"].get("operaciones") or []
+        usd_max = max([float(o["usd"]) for o in ops] or [0]) or 1.0
+        t0g, mm = ms(velas[0]["ts"]), MARCOS[e["marco"]] * 60000
+        for o in ops:
+            grandes.setdefault((ms(o["ts"]) - t0g) // mm, []).append(
+                (g["y"](o["precio"]), 2 + 4 * math.sqrt(min(1.0, max(0.0, float(o["usd"]) / usd_max)))))
+
+    def car_venta(i: int, n, fz: int) -> int:
+        """El carril que le toca a la venta de la fila n de la vela i: entero si una grande de esa vela cruza la franja
+        de la fuente fz alrededor del centro de la fila (y0, y1 redondeados como Math.round), 0 si no."""
+        ym = (math.floor(g["y"](n + paso) + 0.5) + math.floor(g["y"](n) + 0.5)) / 2
+        return car if any(abs(yy - ym) < r + fz / 2 for yy, r in grandes.get(i, ())) else 0
     pf = float(paso)
     dec = 0 if pin.get("unidad") == "usd" else DECIMALES.get(pin.get("activo"), 2)
     fila = esc["fila"]
@@ -628,35 +647,44 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
             for t, negrita, _lado in exp:
                 for fz in range(9, tope + 1):
                     piezas.add((t, f"{'bold ' if negrita else ''}{fz}px ui-monospace, monospace"))
-            plan.append((r, w, n, f, s_, exp, cand, d))
+            plan.append((r, w, n, f, s_, exp, cand, d, i))
     medidas = await anchos(v, piezas)
 
-    def cabe_a(exp: list, w: float, fz: int) -> bool:
-        hueco = (w / 2 if exp and exp[0][2] != "uno" else w) - car
-        return all(medidas[(t, f"{'bold ' if ng else ''}{fz}px ui-monospace, monospace")] + 4 <= hueco for t, ng, _ in exp)
-    # remate 1: UNA fuente por vista, la mayor entre 9 y fuenteDe(fila) con la que cabe toda cifra que cabe a 9 px
-    salen = [(x[5], x[1]) for x in plan if x[6] and cabe_a(x[5], x[1], 9)]
-    fuente = next((fz for fz in range(tope, 9, -1) if all(cabe_a(x, w, fz) for x, w in salen)), 9)
+    def huecos(exp: tuple, w: float, i: int, n, fz: int) -> list:
+        """remate 4: cada lado es su celda; la venta pierde el carril de SU fila (con la franja de fz), la compra nunca;
+        la cifra unica (delta, trades, total) pierde el carril entero en toda fila, como hoy (flujo-dibujo.js:244 y 574)."""
+        if exp and exp[0][2] != "uno":
+            return [w / 2 - car_venta(i, n, fz) if lado == "venta" else w / 2 for _t, _ng, lado in exp]
+        return [w - car for _ in exp]
+
+    def cabe(t: str, ng, fz: int, hueco: float) -> bool:
+        return medidas[(t, f"{'bold ' if ng else ''}{fz}px ui-monospace, monospace")] + 4 <= hueco
+    # remate 1: UNA fuente por vista, la mayor entre 9 y fuenteDe(fila) con la que cabe toda cifra que cabe a 9 px; las
+    # celdas de cada lado con su hueco, el carril con la franja del tope (fuenteDeLaVista, flujo-dibujo.js:239-240)
+    celdas = [(t, ng, h) for x in plan if x[6] for (t, ng, _), h in zip(x[5], huecos(x[5], x[1], x[8], x[2], tope), strict=True)]
+    salen = [x for x in celdas if cabe(x[0], x[1], 9, x[2])]
+    fuente = next((fz for fz in range(tope, 9, -1) if all(cabe(t, ng, fz, h) for t, ng, h in salen)), 9)
     if esc.get("fuente") != fuente:
         J.mal("T", pref, f"la fuente de las celdas es de {esc.get('fuente')} px con filas de {fila:.1f} y la mayor con la que "
                          f"cabe toda cifra que cabe a 9 px es {fuente}: con otra, acercar el precio esconde cifras (remate 1)")
-    n_textos = 0
-    for r, w, n, f, _s, exp, cand, d in plan:
+    n_textos, mide = 0, [0, 0]
+    for r, w, n, f, _s, exp, cand, d, i in plan:
         quien = f"vela {r['ts'][11:16]} nivel {n}"
         xc = r["x0"] + w / 2
+        hs = huecos(exp, w, i, n, fuente)
         if exp and exp[0][2] != "uno":
-            cabe = cand and all(medidas[(t, f"{'bold ' if ng else ''}{fuente}px ui-monospace, monospace")] + 4 <= w / 2 - car
-                                for t, ng, _ in exp)
             pintados = (f.get("texto_venta"), f.get("texto_compra"))
-            quiero = (exp[0][0], exp[1][0]) if cabe else (None, None)
+            quiero = tuple(t if cand and cabe(t, ng, fuente, h) else None for (t, ng, _), h in zip(exp, hs, strict=True))
+            if cand and hs[0] < w / 2:  # la medida del carril (K113_MIDE_CARRIL): filas que lo pierden, y las que cambian
+                mide[0] += 1
+                mide[1] += cabe(exp[0][0], exp[0][1], fuente, w / 2) and not cabe(exp[0][0], exp[0][1], fuente, hs[0])
         else:
-            cabe = cand and all(medidas[(t, f"{'bold ' if ng else ''}{fuente}px ui-monospace, monospace")] + 4 <= w - car
-                                for t, ng, _ in exp)
             pintados = (f.get("texto"),)
-            quiero = (exp[0][0],) if cabe and exp else (None,)
+            quiero = (exp[0][0],) if cand and exp and cabe(exp[0][0], exp[0][1], fuente, hs[0]) else (None,)
         if pintados != quiero:
-            J.mal("T", pref, f"{quien}: escribe {pintados} y con fila de {fila:.1f} px y celda de {w} px tiene que escribir "
-                             f"{quiero} (F-09: la cifra sale si cabe y no sale si no)")
+            J.mal("T", pref, f"{quien}: escribe {pintados} y con fila de {fila:.1f} px y celda de {w} px (huecos "
+                             f"{'/'.join(f'{h:g}' for h in hs)} px) tiene que escribir {quiero} (F-09: la cifra sale si "
+                             f"cabe y no sale si no; remate 4: la venta sin el carril solo donde una grande la tapa)")
             continue
         for (t, negrita, lado), p in zip(exp, pintados, strict=False):
             if p is None:
@@ -689,6 +717,9 @@ async def juzga_footprint(v: Vista, c: dict, e: dict, K109, K112, J: Juez, pref:
                 not f.get("borde" if relleno else "barra_fuerte"):
             J.mal("F", pref, f"{quien}: desequilibrio sin cifra y sin su "
                              f"{'borde de 1 px' if relleno else 'barra en el color fuerte'} (F-05)")
+    if os.environ.get("K113_MIDE_CARRIL"):
+        with open(os.environ["K113_MIDE_CARRIL"], "a", encoding="utf-8") as fh:
+            fh.write(f"{pref}\tgrandes {sum(map(len, grandes.values()))}\tfilas con carril {mide[0]}\tcambian {mide[1]}\n")
     return {"velas": velas, "n_textos": n_textos, "g": g}
 
 
