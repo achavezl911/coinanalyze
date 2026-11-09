@@ -40801,7 +40801,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K112-banco.py:143",
+            "harness/checks/K112-banco.py:160",
             "harness/checks/K113-raton.py:407",
             "harness/checks/K113-raton.py:892"
           ],
@@ -41065,10 +41065,10 @@
             "harness/checks/K108-orderflow.py:919",
             "harness/checks/K108-orderflow.py:921",
             "harness/checks/K108-orderflow.py:1180",
-            "harness/checks/K109-banco.py:73",
-            "harness/checks/K109-banco.py:80",
-            "harness/checks/K109-banco.py:177",
-            "harness/checks/K112-banco.py:133"
+            "harness/checks/K109-banco.py:83",
+            "harness/checks/K109-banco.py:90",
+            "harness/checks/K109-banco.py:187",
+            "harness/checks/K112-banco.py:150"
           ],
           "menciones": [
             "harness/checks/K109-banco.py:12",
@@ -41218,7 +41218,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K112-banco.py:134"
+            "harness/checks/K112-banco.py:151"
           ],
           "menciones": []
         }
@@ -41351,7 +41351,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K108-orderflow.py:984",
-            "harness/checks/K112-banco.py:135",
+            "harness/checks/K112-banco.py:152",
             "harness/checks/K112-control.bash:176",
             "harness/checks/K112-control.bash:249",
             "harness/checks/K120-banco.py:171",
@@ -41486,7 +41486,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K108-orderflow.py:990",
-            "harness/checks/K112-banco.py:136"
+            "harness/checks/K112-banco.py:153"
           ],
           "menciones": []
         }
@@ -41627,8 +41627,8 @@
           "llamadas": [
             "harness/checks/K108-orderflow.py:888",
             "harness/checks/K108-orderflow.py:890",
-            "harness/checks/K109-banco.py:74",
-            "harness/checks/K112-banco.py:139"
+            "harness/checks/K109-banco.py:84",
+            "harness/checks/K112-banco.py:156"
           ],
           "menciones": [
             "harness/checks/K111-banco.py:271"
@@ -41855,8 +41855,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K109-banco.py:75",
-            "harness/checks/K112-banco.py:138"
+            "harness/checks/K109-banco.py:85",
+            "harness/checks/K112-banco.py:155"
           ],
           "menciones": []
         }
@@ -42000,8 +42000,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K109-banco.py:77",
-            "harness/checks/K112-banco.py:141"
+            "harness/checks/K109-banco.py:87",
+            "harness/checks/K112-banco.py:158"
           ],
           "menciones": []
         }
@@ -42138,8 +42138,8 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K109-banco.py:76",
-            "harness/checks/K112-banco.py:140"
+            "harness/checks/K109-banco.py:86",
+            "harness/checks/K112-banco.py:157"
           ],
           "menciones": []
         }
@@ -48137,22 +48137,22 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K109-banco.py:163",
-            "harness/checks/K109-banco.py:164",
-            "harness/checks/K109-banco.py:165",
+            "harness/checks/K109-banco.py:173",
+            "harness/checks/K109-banco.py:174",
+            "harness/checks/K109-banco.py:175",
             "harness/checks/K109-footprint.py:283",
             "harness/checks/K109-footprint.py:821",
             "harness/checks/K109-footprint.py:826",
             "harness/checks/K109-footprint.py:829",
-            "harness/checks/K112-banco.py:238",
-            "harness/checks/K112-banco.py:239",
-            "harness/checks/K112-banco.py:240",
+            "harness/checks/K112-banco.py:255",
+            "harness/checks/K112-banco.py:256",
+            "harness/checks/K112-banco.py:257",
             "harness/checks/K112-control.bash:246",
             "harness/checks/K112-indicadores.py:402",
-            "harness/checks/K112-indicadores.py:1307",
-            "harness/checks/K112-indicadores.py:1314",
-            "harness/checks/K112-indicadores.py:1317",
-            "harness/checks/K112-indicadores.py:1321",
+            "harness/checks/K112-indicadores.py:1319",
+            "harness/checks/K112-indicadores.py:1326",
+            "harness/checks/K112-indicadores.py:1329",
+            "harness/checks/K112-indicadores.py:1333",
             "harness/checks/K113-control.bash:159",
             "harness/checks/K113-raton.py:448",
             "harness/checks/K113-raton.py:1467",
@@ -48166,11 +48166,11 @@
             "harness/checks/K120-liq.py:243",
             "harness/checks/K120-liq.py:383",
             "harness/checks/K120-liq.py:485",
-            "harness/checks/K121-control.bash:134",
-            "harness/checks/K121-trazos.py:340",
-            "harness/checks/K121-trazos.py:471",
-            "harness/checks/K121-trazos.py:477",
-            "harness/checks/K121-trazos.py:481",
+            "harness/checks/K121-control.bash:137",
+            "harness/checks/K121-trazos.py:376",
+            "harness/checks/K121-trazos.py:516",
+            "harness/checks/K121-trazos.py:522",
+            "harness/checks/K121-trazos.py:526",
             "harness/checks/K44-control.bash:1125",
             "harness/checks/K44-control.bash:1126",
             "harness/checks/K44-control.bash:1154",
@@ -48192,7 +48192,7 @@
             "harness/checks/K112-banco.py:2",
             "harness/checks/K112-banco.py:16",
             "harness/checks/K112-banco.py:21",
-            "harness/checks/K112-banco.py:142",
+            "harness/checks/K112-banco.py:159",
             "harness/checks/K112-indicadores.py:1",
             "harness/checks/K112-indicadores.py:87",
             "harness/checks/K112-indicadores.py:192",
@@ -48210,6 +48210,7 @@
             "harness/checks/K121-los-trazos-donde-se-pusieron.sh:2",
             "harness/checks/K121-los-trazos-donde-se-pusieron.sh:4",
             "harness/checks/K121-trazos.py:1",
+            "harness/checks/K122-los-bancos-siguen-al-esquema.sh:2",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:48",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:248",
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:331",
@@ -48234,7 +48235,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 49,
-        "n_menciones": 29,
+        "n_menciones": 30,
         "sin_ninguno": false,
         "solo_mencion": false
       },

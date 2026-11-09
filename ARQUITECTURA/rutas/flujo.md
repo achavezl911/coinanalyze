@@ -50,7 +50,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K109-banco.py:163`, `harness/checks/K109-banco.py:164`, `harness/checks/K109-banco.py:165`, `harness/checks/K109-footprint.py:283` _(+43)_ | `harness/checks/K109-banco.py:9`, `harness/checks/K109-banco.py:16`, `harness/checks/K109-lo-pintado-es-lo-servido.sh:4`, `harness/checks/K112-banco.py:2` _(+24)_ |
+| **checks** | `harness/checks/K109-banco.py:173`, `harness/checks/K109-banco.py:174`, `harness/checks/K109-banco.py:175`, `harness/checks/K109-footprint.py:283` _(+43)_ | `harness/checks/K109-banco.py:9`, `harness/checks/K109-banco.py:16`, `harness/checks/K109-lo-pintado-es-lo-servido.sh:4`, `harness/checks/K112-banco.py:2` _(+25)_ |
 | **panel-html** | `static/index.html:91` | — |
 | **tests** | `tests/js/flujo_trazos.test.js:2` | `tests/js/libro_pantalla.test.js:8` |
 
