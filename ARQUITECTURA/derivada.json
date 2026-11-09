@@ -40802,12 +40802,12 @@
         "checks": {
           "llamadas": [
             "harness/checks/K112-banco.py:160",
-            "harness/checks/K113-raton.py:407",
-            "harness/checks/K113-raton.py:892"
+            "harness/checks/K113-raton.py:409",
+            "harness/checks/K113-raton.py:923"
           ],
           "menciones": [
             "harness/checks/K111-banco.py:255",
-            "harness/checks/K113-raton.py:405"
+            "harness/checks/K113-raton.py:407"
           ]
         }
       },
@@ -48153,14 +48153,14 @@
             "harness/checks/K112-indicadores.py:1326",
             "harness/checks/K112-indicadores.py:1329",
             "harness/checks/K112-indicadores.py:1333",
-            "harness/checks/K113-control.bash:159",
-            "harness/checks/K113-raton.py:448",
-            "harness/checks/K113-raton.py:1467",
-            "harness/checks/K113-raton.py:1473",
-            "harness/checks/K113-raton.py:1476",
-            "harness/checks/K113-raton.py:1479",
-            "harness/checks/K113-raton.py:1526",
-            "harness/checks/K113-raton.py:1531",
+            "harness/checks/K113-control.bash:167",
+            "harness/checks/K113-raton.py:450",
+            "harness/checks/K113-raton.py:1498",
+            "harness/checks/K113-raton.py:1504",
+            "harness/checks/K113-raton.py:1507",
+            "harness/checks/K113-raton.py:1510",
+            "harness/checks/K113-raton.py:1557",
+            "harness/checks/K113-raton.py:1562",
             "harness/checks/K120-control.bash:66",
             "harness/checks/K120-liq.py:207",
             "harness/checks/K120-liq.py:243",
@@ -48313,7 +48313,7 @@
             "harness/checks/K111-banco.py:197",
             "harness/checks/K111-el-libro-pintado-es-el-servido.sh:4",
             "harness/checks/K113-el-raton-y-el-aspecto.sh:19",
-            "harness/checks/K113-raton.py:37",
+            "harness/checks/K113-raton.py:39",
             "harness/checks/K114-el-raton-del-libro.sh:2",
             "harness/checks/K114-el-raton-del-libro.sh:4",
             "harness/checks/K114-raton-libro.py:1",
