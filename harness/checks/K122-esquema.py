@@ -11,7 +11,7 @@ Lo usan K109-banco.py y K112-banco.py al cargar (ddl), y K122-los-bancos-siguen-
                              de tabla en las cadenas (SQL, f-strings, y los `{tabla}` que salen de tuplas) que alcanzan
                              por el grafo de nombres del modulo (funciones y constantes; sin docstrings).
     K122-esquema.py juzga <banco.py>...   por banco: las tablas que leen las funciones de su RUTAS contra las que crea
-                             su DDL (`ddl_banco()`). Sale 1 nombrando cada tabla que falta, 0 si estan todas.
+                             su DDL (`ddl_banco()`, o `DDL` en un banco anterior). Sale 1 nombrando cada tabla que falta, 0 si estan todas.
 """
 
 from __future__ import annotations
@@ -124,10 +124,15 @@ def carga_banco(ruta: Path):
 def juzga(bancos: list[Path]) -> int:
     malos, lineas = [], []
     for ruta in bancos:
-        b = carga_banco(ruta)
-        servidas = {nombre for nombre, _ in b.RUTAS.values()}
-        crea = {m.group(1) for m in CREA.finditer(b.ddl_banco())}
-        leidas = lee(servidas)
+        try:
+            b = carga_banco(ruta)
+            servidas = {nombre for nombre, _ in b.RUTAS.values()}
+            # un banco de antes de K122 (main@fdab736) no tiene ddl_banco(): su DDL a mano es lo que crea
+            crea = {m.group(1) for m in CREA.finditer(b.ddl_banco() if hasattr(b, "ddl_banco") else b.DDL)}
+            leidas = lee(servidas)
+        except (SystemExit, Exception) as exc:  # noqa: BLE001 - lo que sea, no es una medida: NO MEDIDO
+            print(f"NO MEDIDO: {ruta.name}: {type(exc).__name__}: {exc}")
+            return 2
         for t in sorted(set(leidas) - crea):
             malos.append(f"{ruta.name} no crea {t}, que leen {', '.join(sorted(leidas[t]))} (app/orderflow_lectura.py)")
         lineas.append(f"  {ruta.name}: sirve {len(servidas)} rutas, que leen {len(leidas)} tablas: "
