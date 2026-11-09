@@ -16,6 +16,9 @@ Brazos:  (X) cada punto en la x de su instante y la y de su precio, 1 px     (F)
          (C) el canal: pendiente, sigma (1e-6 relativo), n y los extremos de sus tres rectas
          (G) lo guardado: los mismos trazos tras cambiar de marco y tras recargar
          (H) sin herramienta, un arrastre mueve el grafico y no pone nada     (P) la pagina: excepciones
+         (K) al poner, cada punto guardado cae en el pixel de SU clic (1 px), con la escala y las velas de la pagina
+             leidas justo antes de ese clic: (X) solo mira que lo pintado siga al punto guardado, y un punto guardado
+             12 px a la derecha del clic se pinta donde dice su instante
 """
 
 from __future__ import annotations
@@ -136,6 +139,16 @@ def x_de(t: float, ts: list, marco_ms: int, x0: float, bs: float) -> float:
     return x0 + (i - 0.5) * bs + frac * bs
 
 
+def t_de(x: float, ts: list, marco_ms: int, x0: float, bs: float) -> float:
+    """El instante de una x: la inversa de x_de (dentro de la vela i, su fraccion; fuera de las velas, extrapolado)."""
+    u = (x - x0) / bs + 0.5
+    i = math.floor(u)
+    if i < 0:
+        return ts[0] + u * marco_ms
+    i = min(i, len(ts) - 1)
+    return ts[i] + (u - i) * marco_ms
+
+
 def tramo(ta: float, tb: float, ts: list, marco_ms: int):
     """Las velas que se solapan con [min, max] de los dos instantes: (primera, ultima) o None."""
     a, b = min(ta, tb), max(ta, tb)
@@ -240,6 +253,29 @@ def juzga_momento(J: Juez, pref: str, pin: dict, velas: list) -> None:  # noqa: 
                 if None in got or any(abs(a - b) > TOL_PX for a, b in zip(got, exp, strict=True)):
                     J.mal("C", pref, f"{nom}: la recta {nombre} va de {got} y va de "
                                      f"({exp[0]:.2f}, {exp[1]:.2f}, {exp[2]:.2f}, {exp[3]:.2f})")
+
+
+def juzga_clics(J: Juez, z: dict, vistos: list, velas_de_foto) -> None:
+    """(K) cada punto guardado cae en el pixel de SU clic, con la escala y las velas que la pagina tenia al hacerlo."""
+    nom = f"{z['tipo']} {z['id']}"
+    if len(z["puntos"]) != len(vistos):
+        J.mal("K", "al poner", f"{nom}: {len(vistos)} clics dejaron {len(z['puntos'])} puntos")
+        return
+    for k, ((cx, cy, foto), q) in enumerate(zip(vistos, z["puntos"], strict=True)):
+        pin = foto["pin"]
+        g = geo(pin)
+        e = pin["escala"]
+        ts = [ms(v["ts"]) for v in velas_de_foto(foto)]
+        if not ts:
+            raise NoMedido(f"al poner {nom}: sin velas en la pagina al hacer el clic {k}")
+        mm = MARCO_MS[pin["marco"]]
+        px, py = cx - foto["lienzo"][0], cy - foto["lienzo"][1]
+        t_clic = t_de(px, ts, mm, g["x0"], g["bs"])
+        p_clic = e["hi"] - (py - g["arriba"]) / (g["abajo"] - g["arriba"]) * (e["hi"] - e["lo"])
+        ex, ey = x_de(q["t"], ts, mm, g["x0"], g["bs"]), g["y"](q["p"])
+        if abs(ex - px) > TOL_PX or abs(ey - py) > TOL_PX:
+            J.mal("K", "al poner", f"{nom}: el clic {k} fue en ({px:.2f}, {py:.2f}), que es {isoz(t_clic)} a {p_clic:.2f}, "
+                                   f"y su punto guardado ({isoz(q['t'])} a {q['p']:.2f}) cae en ({ex:.2f}, {ey:.2f})")
 
 
 def mismos(J: Juez, pref: str, antes: list, despues: list) -> None:
@@ -367,9 +403,18 @@ async def recorrido(K, T, K112, vista: str, cab: dict, J: Juez, huella) -> dict:
                           ("canal", [P(hueco - 4, 0), P(fin, 0)])]
                 for tipo, clics in gestos:
                     await v.clic_en(f'#sel-trazo button[data-trazo="{tipo}"]')
+                    vistos = []  # (x, y, la pagina justo antes del clic): su escala y sus velas son las de ESE momento
                     for x, y in clics:
+                        x, y = round(x), round(y)  # un clientX entero: el pixel del clic es exacto
                         await v.mueve(x, y)
+                        vistos.append((x, y, await lee(s)))
                         await v.clic(x, y)
+                    antes = {z["id"] for z in vistos[0][2]["pin"]["trazos"] or []}
+                    nuevos = [z for z in (await lee(s))["pin"]["trazos"] or [] if z["id"] not in antes]
+                    if [z["tipo"] for z in nuevos] != [tipo]:
+                        J.mal("K", "al poner", f"{len(clics)} clics con {tipo} dejaron {[z['tipo'] for z in nuevos]}")
+                    else:
+                        juzga_clics(J, nuevos[0], vistos, lambda foto: velas_de(red, foto, K112))
                     await v.tecla("Escape")
                 f = await lee(s)
                 tipos = sorted(z["tipo"] for z in f["pin"]["trazos"])
@@ -506,7 +551,7 @@ def juzga() -> int:
             if vistos[b] <= 6:
                 print(f"   · ({b}) {t[:400]}")
         return 1
-    print(f"VERDE  K121 · los trazos donde se pusieron: 4 trazos en {len(out['momentos'])} momentos, x/y a 1 px, "
+    print(f"VERDE  K121 · los trazos donde se pusieron: 7 clics en su pixel, 4 trazos en {len(out['momentos'])} momentos, x/y a 1 px, "
           f"Fibonacci en sus 7 precios, canal a 1e-6 ({out['canal_medido']} juicios) · {cola}")
     return 0
 

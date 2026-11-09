@@ -14,6 +14,8 @@
 #   (G) los mismos trazos (id, tipo, puntos) tras cambiar de marco y tras recargar
 #   (H) sin herramienta, un arrastre lejos de los trazos mueve el grafico y no pone nada
 #   (P) cuatro gestos dejan cuatro trazos, Esc suelta la herramienta, la rueda cambia la vista, cero excepciones
+#   (K) al poner, cada punto guardado cae en el pixel de su clic (1 px), con la escala y las velas que la pagina
+#       tenia justo antes de ese clic (el instante y el precio que el clic quiere decir)
 #
 # NO MEDIDO: sin Chromium, sin celdas en la hora de la vista, o «FALTA DESPLEGAR» si el sujeto no sirve
 # flujo-trazos.js o su FLUJO_PINTADO no trae `trazos`.
