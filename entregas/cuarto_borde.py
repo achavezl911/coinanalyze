@@ -68,7 +68,7 @@ def main() -> None:
             ok = res.endswith("rc=0")
             fallos += not ok
             motivo = "" if ok else " | " + next((ln.strip() for ln in salida.splitlines()
-                                                 if ln.startswith("E ") and "assert" in ln), "?")[:200]
+                                                 if ln.startswith(">") and "assert" in ln), "?")[:200]
             print(f"{fase} d={d:<4} {res[4:]}{motivo}", flush=True)
         cuenta[fase] = fallos
     n = len(DESFASES)
