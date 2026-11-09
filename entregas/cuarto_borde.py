@@ -67,8 +67,13 @@ def main() -> None:
             res = next((ln for ln in salida.splitlines() if ln.startswith("RES ")), "RES sin-resultado rc=9")
             ok = res.endswith("rc=0")
             fallos += not ok
-            motivo = "" if ok else " | " + next((ln.strip() for ln in salida.splitlines()
-                                                 if ln.startswith(">") and "assert" in ln), "?")[:200]
+            lineas = salida.splitlines()
+            motivo = "" if ok else " | " + next(
+                (ln.strip() for ln in lineas if ln.startswith(">") and "assert" in ln),
+                next((ln.strip() for ln in reversed(lineas) if ln.startswith("E ")), "?"))[:200]
+            if not ok:  # el fallo entero, para no quedarse con un «?»
+                with open(f"/srv/coinanalyze/x1-tmp/cb-fallo-{os.path.basename(raiz)}-{fase}-{d}.txt", "w") as f:
+                    f.write(salida[-6000:])
             print(f"{fase} d={d:<4} {res[4:]}{motivo}", flush=True)
         cuenta[fase] = fallos
     n = len(DESFASES)
