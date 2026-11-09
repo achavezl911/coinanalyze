@@ -69,7 +69,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K109-banco.py:77`, `harness/checks/K112-banco.py:141` | — |
+| **checks** | `harness/checks/K109-banco.py:87`, `harness/checks/K112-banco.py:158` | — |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.

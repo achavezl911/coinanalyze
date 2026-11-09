@@ -1060,7 +1060,8 @@ def juzga_cinta(vio: dict, e: dict, fam: list, casa, malos: list) -> int:
 def servido_tiempo_agotado(rojos: list, nomed: list, info: list) -> None:
     """(S) REMATE 3 (148): la ruta del footprint con la consulta cancelada por el statement_timeout (app/db.py) dice 503
     con su porque, nunca 500. Se llama a la ruta del app/ de K112_APP (por omision, el del repo) en un proceso aparte,
-    con una conexion que cancela; sin base ni red."""
+    con una conexion que cancela; sin base ni red. La conexion doble hace lo que la ruta le pide a una del pool
+    (is_in_transaction, transaction, SET): si le falta un metodo, la ruta cae por AttributeError y no por el tiempo."""
     repo = str(pathlib.Path(__file__).resolve().parents[2])
     raiz_app = os.environ.get("K112_APP") or repo
     prog = (
@@ -1071,10 +1072,21 @@ def servido_tiempo_agotado(rojos: list, nomed: list, info: list) -> None:
         "from fastapi import HTTPException\n"
         "import app.api as api, app.orderflow_lectura as lec\n"
         f"assert api.__file__.startswith({raiz_app!r}), api.__file__\n"
+        # como una conexion recien sacada del pool: fuera de transaccion, abre las suyas, el SET pasa y la consulta se cancela
+        "class T:\n"
+        "    def __init__(self, c): self.c = c\n"
+        "    async def __aenter__(self): self.c.dentro = True; return self\n"
+        "    async def __aexit__(self, *a): self.c.dentro = False; return False\n"
         "class C:\n"
+        "    dentro = False\n"
+        "    def is_in_transaction(self): return self.dentro\n"
+        "    def transaction(self, **k): return T(self)\n"
         "    async def fetch(self, *a, **k):\n"
         "        raise asyncpg.QueryCanceledError('canceling statement due to statement timeout')\n"
-        "    fetchrow = fetchval = execute = fetch\n"
+        "    fetchrow = fetchval = fetch\n"
+        "    async def execute(self, sql, *a, **k):\n"
+        "        if sql.lstrip().upper().startswith('SET '): return 'SET'\n"
+        "        return await self.fetch(sql, *a, **k)\n"
         "class A:\n"
         "    async def __aenter__(self): return C()\n"
         "    async def __aexit__(self, *a): return False\n"

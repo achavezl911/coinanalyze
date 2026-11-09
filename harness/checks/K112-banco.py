@@ -42,20 +42,24 @@ TIPOS = {".html": "text/html; charset=utf-8", ".js": "application/javascript; ch
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; "
        "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
        "form-action 'none'")
+# Las tablas de order-flow que leen las rutas que sirve SALEN de sql/schema.sql al cargar (K122-esquema.py: columnas,
+# CHECK, clave, indices; las particionadas con una particion DEFAULT): si schema.sql cambia una columna, el banco la
+# sigue. orderflow_celda_hora y orderflow_hora_hecha (OF-1b) se crean VACIAS: sin marca en orderflow_hora_hecha la 1h y
+# mas se lee de los minutos (app/orderflow_lectura.py:185). Las demas, a mano (no las lee el footprint).
+TABLAS_OF = ("orderflow_paso", "orderflow_celda", "orderflow_cobertura", "orderflow_cinta", "orderflow_grande",
+             "orderflow_celda_hora", "orderflow_hora_hecha")
+# las columnas del sujeto, en su orden (las de schema.sql que no trae, como `escrito`, van con su DEFAULT)
+COLUMNAS = {"orderflow_paso": "symbol, paso",
+            "orderflow_celda": "ts, venue, symbol, nivel, compra_base, venta_base, compra_usd, venta_usd, compras, ventas",
+            "orderflow_cobertura": "ts, venue, symbol, segundos, operaciones, tardias, fuera, reconexiones, definitivo",
+            "orderflow_cinta": "ts, venue, symbol, precio, base, usd, compra, id",
+            "orderflow_grande": "ts, venue, symbol, precio, base, usd, compra, id, umbral_usd"}
+# orderflow_cinta sigue aqui A MANO solo para K120-banco.py siembra (lee K112.DDL y crea la cinta en una base de
+# K111-banco); el banco NO usa esta linea: ddl_banco() la quita y crea la de schema.sql.
 DDL = """
-CREATE TABLE orderflow_paso (symbol text PRIMARY KEY, paso numeric NOT NULL);
-CREATE TABLE orderflow_celda (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL, nivel numeric NOT NULL,
-    compra_base numeric NOT NULL, venta_base numeric NOT NULL, compra_usd numeric NOT NULL, venta_usd numeric NOT NULL,
-    compras integer NOT NULL, ventas integer NOT NULL, PRIMARY KEY (symbol, ts, venue, nivel));
-CREATE TABLE orderflow_cobertura (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL,
-    segundos smallint NOT NULL, operaciones integer NOT NULL, tardias integer NOT NULL, fuera integer NOT NULL,
-    reconexiones smallint NOT NULL, definitivo boolean NOT NULL, PRIMARY KEY (symbol, ts, venue));
 CREATE TABLE orderflow_cinta (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL, precio numeric NOT NULL,
     base numeric NOT NULL, usd numeric NOT NULL, compra boolean NOT NULL, id text NOT NULL);
 CREATE INDEX ON orderflow_cinta (symbol, ts DESC);
-CREATE TABLE orderflow_grande (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL, precio numeric NOT NULL,
-    base numeric NOT NULL, usd numeric NOT NULL, compra boolean NOT NULL, id text NOT NULL, umbral_usd numeric NOT NULL,
-    PRIMARY KEY (venue, symbol, id));
 CREATE TABLE open_interest (ts timestamptz, symbol text, interval text, oi_open float8, oi_high float8, oi_low float8,
     oi_close float8, PRIMARY KEY (symbol, interval, ts));
 CREATE TABLE oi_bybit (LIKE open_interest INCLUDING ALL);
@@ -73,6 +77,18 @@ CREATE TABLE pipeline_heartbeat (service text PRIMARY KEY, updated_at timestampt
 CREATE TABLE data_gap (feed text, exchange text, symbol text, start_ts timestamptz, end_ts timestamptz,
     evidence_type text, status text);
 """
+
+
+def ddl_banco() -> str:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("k122_esquema", Path(__file__).resolve().parent / "K122-esquema.py")
+    esquema = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(esquema)
+    a_mano = [x.strip() + ";\n" for x in DDL.split(";") if x.strip() and " orderflow_" not in x.split("(")[0]]
+    return esquema.ddl(TABLAS_OF, REPO / "sql" / "schema.sql") + "".join(a_mano)
+
+
 # liq-precio r1 (campana 150): la novena columna (la `ap` de binance) DESPUES de los fixtures, que traen 8 campos
 DDL_DESPUES = "ALTER TABLE liquidations_realtime ADD COLUMN IF NOT EXISTS avg_price float8;\n"
 # por tabla: las columnas que son instantes (en epoch ms en el sujeto)
@@ -119,8 +135,9 @@ def carga(dsn: str, ahora: datetime, sujeto: Path = SUJETO, mas: Path | None = N
                     det[k] = int(det[k]) + dh // 1000
                 x = x[:3] + [json.dumps(det, separators=(",", ":"), sort_keys=True)]
             bloque.append("\t".join(x))
-        lineas.append(f"COPY {destino} FROM STDIN;\n" + "\n".join(bloque) + "\n\\.\n")
-    r = subprocess.run(["psql", dsn, "-X", "-q", "-v", "ON_ERROR_STOP=1"], input=DDL + "".join(lineas) + DDL_DESPUES, text=True,
+        cols = f" ({COLUMNAS[destino]})" if destino in COLUMNAS else ""
+        lineas.append(f"COPY {destino}{cols} FROM STDIN;\n" + "\n".join(bloque) + "\n\\.\n")
+    r = subprocess.run(["psql", dsn, "-X", "-q", "-v", "ON_ERROR_STOP=1"], input=ddl_banco() + "".join(lineas) + DDL_DESPUES, text=True,
                        capture_output=True, timeout=600)
     if r.returncode:
         print(f"carga rc={r.returncode}: {r.stderr[:400]}", file=sys.stderr)

@@ -11,6 +11,7 @@
 #   (C) sigma_n_menos_1        sigma con n - 1 (la muestral) en vez de n
 #   (G) guardado_por_marco     lo guardado va por activo Y marco: en 5m no esta lo puesto en 1m
 #   (H) gesto_sin_herramienta  sin herramienta, un clic pone un nivel (y el grafico no se arrastra)
+#   (K) punto_12px_a_la_derecha cada punto se guarda 12 px a la derecha de su clic (`G.t(p.x + 12)`)
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina (404) y pagina_sin_trazos (el flujo.html de main@1767616, que no carga
 # flujo-trazos.js): «FALTA DESPLEGAR» · sin_chromium · sin_dato · sin_canal. Y el check: A89 los dos modos de SIGPIPE,
 # A56 las tres invocaciones; el escenario restaurado; el arbol intacto.
@@ -127,6 +128,8 @@ planta_pagina $TRZ "s/^  if (TRZ\\.activo !== m\\.activo) cargaTrazos(m\\.activo
 juzga_plantado guardado_por_marco G "tras cambiar a 5m: habia 4 trazos y hay 0" $m "lo guardado por activo y marco"
 planta_pagina $TRZ 's/^  if (TRZ\.herramienta) {$/  if (true) {/; s/^    const h = TRZ\.herramienta;$/    const h = TRZ.herramienta || '"'nivel'"';/' 2; m=$?
 juzga_plantado gesto_sin_herramienta H "un gesto sin herramienta puso" $m "sin herramienta, un clic pone un nivel"
+planta_pagina $TRZ 's/^  const punto = { t: G\.t(p\.x), p: G\.p(p\.y) };$/  const punto = { t: G.t(p.x + 12), p: G.p(p.y) };/' 1; m=$?
+juzga_plantado punto_12px_a_la_derecha K "el clic [0-9] fue en" $m "cada punto 12 px a la derecha de su clic"
 
 echo "== lo que no se puede medir: NO MEDIDO, ni ROJO ni VERDE"
 echo sin_pagina > "$T/plantado"
