@@ -135,7 +135,8 @@ planta_pagina flujo/flujo-dibujo.js 's/\.filter((p) => ancho(p\[1\], p\[2\]) + 4
 juzga_plantado cifra_que_no_sale T "tiene que escribir" $m "14 px de holgura en vez de 4"
 planta_pagina flujo/flujo-dibujo.js 's/^  FILA_TEXTO: 10,/  FILA_TEXTO: 6,/' 1; m=$?
 juzga_plantado cifra_que_sale_sin_sitio T "con filas de .* px el lienzo escribe|tiene que escribir" $m "el alto minimo de fila, 6 px"
-planta_pagina flujo/flujo-calculo.js 's/^  return { vol: v\.total, delta: v\.delta,/  return { vol: v.total, delta: v.compra,/' 1; m=$?
+# bancos R1: desde #231 la fila lleva compra y venta antes del delta; el sed de antes no mordia
+planta_pagina flujo/flujo-calculo.js 's/^  return { vol: v\.total, compra: v\.compra, venta: v\.venta, delta: v\.delta,/  return { vol: v.total, compra: v.compra, venta: v.venta, delta: v.compra,/' 1; m=$?
 juzga_plantado fila_de_resumen_ajena F "la fila delta vale" $m "la fila del delta escribe la compra"
 planta_pagina flujo/flujo-app.js "s/^  if (window\\.location\\.hash !== h) window\\.history\\.replaceState(null, '', h);\$/  if (window.location.hash !== h) window.history.replaceState(null, '', h); carga();/" 1; m=$?
 juzga_plantado arrastre_que_vuelve_a_pedir P "la historia del footprint se pidio" $m "cada gesto vuelve a cargar la vista"
