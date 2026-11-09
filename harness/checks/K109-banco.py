@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """K109-banco · sirve la pagina del FOOTPRINT del ARBOL sobre una base local con celdas de produccion (campana 142).
 
-    K109-banco.py carga <dsn>      crea en <dsn> las tres tablas que lee el footprint y las llena con
+    K109-banco.py carga <dsn>      crea en <dsn> las tablas que lee el footprint (de sql/schema.sql) y llena tres con
                                    K109-celdas.tsv.gz (celdas, cobertura y pasos de produccion bajados una vez)
     K109-banco.py sirve --puerto P --db <dsn> [--sobre DIR] [--plantado FICHERO] [--diario F]
 
@@ -40,15 +40,25 @@ TIPOS = {".html": "text/html; charset=utf-8", ".js": "application/javascript; ch
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data:; "
        "connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
        "form-action 'none'")
-DDL = """
-CREATE TABLE orderflow_paso (symbol text PRIMARY KEY, paso numeric NOT NULL);
-CREATE TABLE orderflow_celda (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL, nivel numeric NOT NULL,
-    compra_base numeric NOT NULL, venta_base numeric NOT NULL, compra_usd numeric NOT NULL, venta_usd numeric NOT NULL,
-    compras integer NOT NULL, ventas integer NOT NULL, PRIMARY KEY (symbol, ts, venue, nivel));
-CREATE TABLE orderflow_cobertura (ts timestamptz NOT NULL, venue text NOT NULL, symbol text NOT NULL,
-    segundos smallint NOT NULL, operaciones integer NOT NULL, tardias integer NOT NULL, fuera integer NOT NULL,
-    reconexiones smallint NOT NULL, definitivo boolean NOT NULL, PRIMARY KEY (symbol, ts, venue));
-"""
+# Las tablas de order-flow que lee el footprint SALEN de sql/schema.sql al cargar (K122-esquema.py: columnas, CHECK,
+# clave, indices; las particionadas con una particion DEFAULT): si schema.sql cambia una columna, el banco la sigue.
+# orderflow_cinta (el footprint la lee desde 56a131d), orderflow_celda_hora y orderflow_hora_hecha (OF-1b) se crean
+# VACIAS: sin marca en orderflow_hora_hecha la 1h y mas se lee de los minutos (app/orderflow_lectura.py:185).
+TABLAS_OF = ("orderflow_paso", "orderflow_celda", "orderflow_cobertura", "orderflow_cinta", "orderflow_celda_hora",
+             "orderflow_hora_hecha")
+# las columnas de K109-celdas.tsv.gz, en su orden (las de schema.sql que no trae, como `escrito`, van con su DEFAULT)
+COLUMNAS = {"orderflow_paso": "symbol, paso",
+            "orderflow_celda": "ts, venue, symbol, nivel, compra_base, venta_base, compra_usd, venta_usd, compras, ventas",
+            "orderflow_cobertura": "ts, venue, symbol, segundos, operaciones, tardias, fuera, reconexiones, definitivo"}
+
+
+def ddl_banco() -> str:
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("k122_esquema", Path(__file__).resolve().parent / "K122-esquema.py")
+    esquema = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(esquema)
+    return esquema.ddl(TABLAS_OF, REPO / "sql" / "schema.sql")
 
 
 def carga(dsn: str) -> int:
@@ -57,8 +67,8 @@ def carga(dsn: str) -> int:
         for linea in f:
             tabla, _, resto = linea.rstrip("\n").partition("|")
             filas[tabla].append(resto)
-    guion = DDL + "".join(f"COPY {t} FROM STDIN WITH (DELIMITER '|');\n" + "\n".join(xs) + "\n\\.\n"
-                          for t, xs in filas.items())
+    guion = ddl_banco() + "".join(f"COPY {t} ({COLUMNAS[t]}) FROM STDIN WITH (DELIMITER '|');\n" + "\n".join(xs)
+                                  + "\n\\.\n" for t, xs in filas.items())
     r = subprocess.run(["psql", dsn, "-X", "-q", "-v", "ON_ERROR_STOP=1"], input=guion, text=True,
                        capture_output=True, timeout=300)
     if r.returncode:
