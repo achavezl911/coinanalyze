@@ -15,6 +15,7 @@ Lo que se induce aqui en vez de citarse:
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import json
 import os
@@ -74,6 +75,23 @@ async def _ahora_T(conn) -> datetime:
     return await conn.fetchval(
         "SELECT date_bin('15 minutes', clock_timestamp(), TIMESTAMPTZ '1970-01-01 00:00:00+00')"
     )
+
+
+# Lo que un test que registra un DISPARADO de la vela en curso necesita por delante en el cuarto:
+# un tope de 900 s sobre la T en curso vence justo al cambiar el cuarto (CI del PR #238, 11-08).
+SITIO_S = 60.0
+
+
+async def _T_con_sitio(conn, necesita_s: float = SITIO_S) -> datetime:
+    """La T del cuarto en curso con `necesita_s` por delante: si al cuarto le queda menos, espera
+    al siguiente y la recalcula. Para el test cuyo veredicto pide que la vela siga siendo la del
+    cuarto en curso o que el retraso quepa en un tope."""
+    T = await _ahora_T(conn)
+    queda = 900 - (await conn.fetchval("SELECT clock_timestamp()") - T).total_seconds()
+    if queda < necesita_s:
+        await asyncio.sleep(queda + 0.5)
+        T = await _ahora_T(conn)
+    return T
 
 
 def _transicion(T: datetime, *, estado: str = "VIGILANDO", episodio: str | None = None,
@@ -155,14 +173,14 @@ async def test_un_disparado_tardio_lo_rechaza_la_base_y_queda_como_sombra_tardia
     assert fila["estado"] == "SOMBRA" and fila["caduca_en"] is None
     assert fila["huella_foto"] == t["huella_foto"]  # la misma foto: solo cambia el estado
     # el gemelo a tiempo entra como DISPARADO
-    T = await _ahora_T(conn)
+    T = await _T_con_sitio(conn)
     a_tiempo = _transicion(T, estado="DISPARADO", caduca=T + timedelta(minutes=240), tope=900,
                            clave="zona:1:2")
     assert (await G.insertar(conn, a_tiempo, "c" * 64))["estado"] == "DISPARADO"
 
 
 async def test_dos_vivos_en_una_clave_los_rechaza_la_base(conn):
-    T = await _ahora_T(conn)
+    T = await _T_con_sitio(conn)
     primero = _transicion(T - timedelta(minutes=30))
     await G.insertar(conn, primero, "c" * 64)
     segundo = _transicion(T)
@@ -320,7 +338,7 @@ async def resolutor_de_juguete(conn, registro_id: int) -> str:
 
 
 async def test_de_punta_a_punta_la_vela_T_dispara_y_el_juguete_resuelve_desde_el_registro(conn):
-    T = await _ahora_T(conn)
+    T = await _T_con_sitio(conn)
     doc = _doc_de_prueba(T)
     for symbol, base in SIMBOLOS[:2]:
         await _sembrar(conn, T, B.insumos(T), symbol, base)

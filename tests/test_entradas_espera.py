@@ -45,6 +45,7 @@ from test_entradas_registro_postgres import (  # noqa: F401 - `conn` es la base 
     SIMBOLOS,
     _ahora_T,
     _dsn,
+    _T_con_sitio,
     conn,
 )
 from test_entradas_servicio import _con_recolector
@@ -589,7 +590,7 @@ async def test_una_vela_reevaluada_no_registra_dos_veces(conn):  # noqa: F811
     """Una pasada que muere a medias (un reinicio durante la espera) no deja latido: al volver,
     la recuperacion re-evalua esa vela con los mismos previos (< T) y el motor vuelve a emitir
     las mismas transiciones. Lo que ya estaba registrado no se registra otra vez."""
-    T = await _ahora_T(conn)
+    T = await _T_con_sitio(conn)  # tope 900 sobre la T en curso: que el cuarto no cambie a medias
     doc = B.doc_de_prueba(T, tope_s=900)
     await B.sembrar(conn, T, B.insumos(T), BTC, "BTC")
     primera = await S.evaluar_vela(conn, T=T, doc=doc, huella_codigo="c" * 64, esperar=False)
@@ -610,11 +611,7 @@ async def test_f_la_recuperacion_ni_espera_ni_dispara_ni_repite(conn, monkeypatc
     esa vela SIN esperar -aunque su ultimo minuto de spot no este- y nada de ella dispara; lo que
     v1 ya tenia no se repite. La vela en curso si espera."""
     # la pasada entera calcula T ella misma: que a la vela real le quede sitio para todo el test
-    T = await _ahora_T(conn)
-    queda = VELA_S - (await conn.fetchval("SELECT clock_timestamp()") - T).total_seconds()
-    if queda < 60 + B.comun("v2")["tope_retraso_s"] / RAPIDA:
-        await asyncio.sleep(queda + 0.5)
-        T = await _ahora_T(conn)
+    T = await _T_con_sitio(conn, 60 + B.comun("v2")["tope_retraso_s"] / RAPIDA)
     anterior = T - timedelta(seconds=VELA_S)
     esquema = await conn.fetchval("SELECT current_schema()")
     await B.sembrar(conn, anterior, B.insumos(anterior), BTC, "BTC")           # todo llego: cumple
