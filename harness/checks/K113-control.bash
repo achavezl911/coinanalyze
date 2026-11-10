@@ -16,6 +16,7 @@
 #   (F) fila_de_resumen_ajena     la fila del delta escribe la compra
 #   (P) arrastre_que_vuelve_a_pedir  cada gesto vuelve a cargar la vista: lo servido cambia por el raton
 #   (R) seguir_que_no_para        con el seguimiento parado, una vela nueva mueve la vista igual
+#   (R) fin_que_no_sigue          la tecla Fin no hace nada (`End: () => {}`): no vuelve a seguir la ultima vela (bancos R2)
 #   (E) comprador_verde           el comprador vuelve al verde de antes, que no pasa la deuteranopia
 #   (T) carril_en_los_dos         la regla del remate 3: el carril de las grandes restado de la venta Y la compra en toda fila
 #   (T) carril_ninguno            la venta escrita sin restar el carril (hueco w/2 siempre) aunque una grande la tape
@@ -142,6 +143,9 @@ planta_pagina flujo/flujo-app.js "s/^  if (window\\.location\\.hash !== h) windo
 juzga_plantado arrastre_que_vuelve_a_pedir P "la historia del footprint se pidio" $m "cada gesto vuelve a cargar la vista"
 planta_pagina flujo/flujo-dibujo.js 's/^      if (L\.sigue) L\.fin = L\.modelo\.velas\.length - 1;$/      L.fin = L.modelo.velas.length - 1;/' 1; m=$?
 juzga_plantado seguir_que_no_para R "con el seguimiento parado llego una vela nueva" $m "una vela nueva mueve la vista parada"
+# bancos R2: el juez de Fin espera un latido y 2 s; una pagina en la que Fin no hace nada sigue cayendo
+planta_pagina flujo/flujo-app.js 's/End: () => LIENZO\.presente() }/End: () => {} }/' 1; m=$?
+juzga_plantado fin_que_no_sigue R "la tecla Fin no vuelve a seguir" $m "la tecla Fin no hace nada"
 planta_pagina flujo/flujo.css 's/^  --comprador: #60a5fa;$/  --comprador: #3ecf8e;/' 1; m=$?
 juzga_plantado comprador_verde E "E-02" $m "el comprador vuelve al verde de antes"
 # remate 1 y su adenda (148): la fuente por vista y el precio en vivo
