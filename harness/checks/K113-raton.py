@@ -984,6 +984,66 @@ def _juzga_vivo(c: dict, e: dict, J: Juez, pref: str, r: dict) -> None:  # noqa:
         J.mal("V", pref, f"la ultima operacion de {ref} tiene {edad:.1f} s y la etiqueta dice «{vivo.get('aviso')}»")
 
 
+def vivo_ejercitado(J: Juez, pref: str) -> str | None:
+    """bancos R3: None si «la linea se mueve con el eje» se juzgo en la vista con respuestas de la cinta llegadas, la linea
+    DENTRO de la escala y dos escalas que la ponen a mas de 2 TOL px una de otra (una, al menos, no es la de su primer
+    pintado, que el juez no ve); si no, la condicion que falto."""
+    rs = [r for r in J.vivo if r["pref"].startswith(pref)]
+    lleg = [r for r in rs if r["llegadas"] and r["vivo"]]
+    if not lleg:
+        return f"en ninguna de sus {len(rs)} llamadas habia una respuesta de la cinta con operaciones y la linea pintada"
+    den = [r for r in lleg if r["fuera"] is None and r.get("fuera_juez", "?") is None and r["yq"] is not None]
+    if not den:
+        return f"con la cinta llegada ({len(lleg)} llamadas) la linea nunca estuvo dentro de la escala"
+    ys = [r["yq"] for r in den]
+    if len({(r["lo"], r["hi"]) for r in den}) < 2 or max(ys) - min(ys) <= 2 * TOL:
+        return (f"con la linea dentro ({len(den)} llamadas) la escala no la movio: y de {min(ys)} a {max(ys)}, "
+                f"{len({(r['lo'], r['hi']) for r in den})} escala(s)")
+    return None
+
+
+async def ejercita_vivo(v: Vista, J: Juez, pref: str, L, xm: float, ym: float, paso, medido) -> None:
+    """bancos R3 (V): el recorrido solo no siempre pone la linea dentro de la escala con la cinta llegada (corrida 1 del
+    paso 1: fuera=abajo en las 12 llamadas con cinta). El juez lo provoca, el mismo gesto en cada corrida (va en la
+    huella): Fin; la cinta, como mucho ASIENTA_S; arrastrar el grafico en vertical hasta que el precio en vivo quede
+    dentro; y otro arrastre de 60 px hacia el centro, que mueve la escala con la linea dentro. Si aun asi no, ROJO."""
+    await v.tecla("End")
+    limite = time.monotonic() + ASIENTA_S
+    while True:
+        c = await v.cosecha()
+        vv = (c["pin"] or {}).get("vivo") or {}
+        lleg = any((x.get("cuerpo") or {}).get("operaciones") for x in c.get("red") or []
+                   if x["ruta"] == "/api/orderflow/cinta" and x["q"].get("limit") == "1")
+        if (lleg and vv) or time.monotonic() >= limite:
+            break
+        await v.s.drena(0.5)
+    await paso("Fin, con el precio en vivo", c)
+    hecho = None
+    for _ in range(30):  # cada arrastre, un tercio del alto como mucho (el raton no sale del grafico); medido en la rama:
+        pin = (await v.cosecha())["pin"] or {}  # el precio en vivo del banco llego a ir 4300 px por debajo del grafico
+        g, p = pin.get("escala") or {}, float(((pin.get("vivo") or {}).get("precio")) or 0)
+        if not p or not g or g["hi"] <= g["lo"] or (g["lo"], g["hi"]) == hecho:
+            break
+        hecho = (g["lo"], g["hi"])
+        alto = g["abajo"] - g["arriba"]
+        yq = g["arriba"] + (g["hi"] - p) / (g["hi"] - g["lo"]) * alto
+        if g["arriba"] + alto / 4 < yq < g["abajo"] - alto / 4:
+            break
+        dy = max(-alto / 3, min(alto / 3, (g["arriba"] + g["abajo"]) / 2 - yq))
+        await v.arrastra(*L(xm, ym), *L(xm, ym + dy))
+        await v.s.drena(0.3)
+    pr = await paso("arrastre hasta el precio en vivo")
+    yv = ((pr["c"]["pin"] or {}).get("vivo") or {}).get("y")
+
+    async def arrastre():
+        await v.arrastra(*L(xm, ym), *L(xm, ym + (60 if yv is None or yv < ym else -60)))
+        await v.s.drena(0.3)
+    await medido("arrastre de 60 px con el precio en vivo", arrastre)
+    falta = vivo_ejercitado(J, pref)
+    if falta:
+        J.mal("V", pref, f"la linea del precio en vivo no se ejercito contra el eje (no se sabe si se mueve con el): {falta}")
+
+
 def estado_ejes(c: dict) -> dict:
     p = c["pin"] or {}
     e = p.get("escala") or {}
@@ -1265,6 +1325,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
     if completo and not e.get("hasta"):
         await recorrido_sigue(v, out, ctx, L, xm, ym, pref)
     if completo and not e.get("hasta"):
+        await ejercita_vivo(v, J, pref, L, xm, ym, paso, medido)
         # (V) la cinta parada: la sonda le devuelve a la pagina la misma operacion con el as_of nuevo, 14 s
         c = await v.cinta_parada(14)
         juzga_vivo(c, e, J, f"{pref} con la cinta parada")
