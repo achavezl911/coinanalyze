@@ -17,6 +17,8 @@
 #   (P) arrastre_que_vuelve_a_pedir  cada gesto vuelve a cargar la vista: lo servido cambia por el raton
 #   (R) seguir_que_no_para        con el seguimiento parado, una vela nueva mueve la vista igual
 #   (E) comprador_verde           el comprador vuelve al verde de antes, que no pasa la deuteranopia
+#   (T) carril_en_los_dos         la regla del remate 3: el carril de las grandes restado de la venta Y la compra en toda fila
+#   (T) carril_ninguno            la venta escrita sin restar el carril (hueco w/2 siempre) aunque una grande la tape
 # NO MEDIDO, ni ROJO ni VERDE: sin_pagina (404) y pagina_anterior_a_of6a (la de main@d91d935): «FALTA DESPLEGAR» ·
 # sin_chromium · sin_dato · sin_canal. Y el check: A89 los dos modos de SIGPIPE, A56 las tres invocaciones; el
 # escenario restaurado; el arbol intacto.
@@ -128,11 +130,13 @@ planta_pagina flujo/flujo-dibujo.js 's/pin\.niveles\.find((x) => Number(x\.nivel
 juzga_plantado ficha_de_otra_celda C "la ficha dice" $m "la ficha de la celda de encima"
 planta_pagina flujo/flujo-dibujo.js 's/const xv = Math\.round(dx + g\.x(b\.i)) + 0\.5;/const xv = Math.round(dx + g.x(b.i + 1)) + 0.5;/' 1; m=$?
 juzga_plantado cruz_desplazada C "la etiqueta de hora de la cruz" $m "la vertical de la cruz en la vela siguiente"
-planta_pagina flujo/flujo-dibujo.js 's/if (wv + 4 <= w \/ 2 \&\& wc + 4 <= w \/ 2) {/if (wv + 14 <= w \/ 2 \&\& wc + 14 <= w \/ 2) {/' 1; m=$?
+# bancos R1: desde #231 (remate 4) cada lado se filtra por su hueco; el `if (wv + 4 <= w / 2 && wc + 4 ...)` ya no existe
+planta_pagina flujo/flujo-dibujo.js 's/\.filter((p) => ancho(p\[1\], p\[2\]) + 4 <= hueco\[p\[0\]\]);/.filter((p) => ancho(p[1], p[2]) + 14 <= hueco[p[0]]);/' 1; m=$?
 juzga_plantado cifra_que_no_sale T "tiene que escribir" $m "14 px de holgura en vez de 4"
 planta_pagina flujo/flujo-dibujo.js 's/^  FILA_TEXTO: 10,/  FILA_TEXTO: 6,/' 1; m=$?
 juzga_plantado cifra_que_sale_sin_sitio T "con filas de .* px el lienzo escribe|tiene que escribir" $m "el alto minimo de fila, 6 px"
-planta_pagina flujo/flujo-calculo.js 's/^  return { vol: v\.total, delta: v\.delta,/  return { vol: v.total, delta: v.compra,/' 1; m=$?
+# bancos R1: desde #231 la fila lleva compra y venta antes del delta; el sed de antes no mordia
+planta_pagina flujo/flujo-calculo.js 's/^  return { vol: v\.total, compra: v\.compra, venta: v\.venta, delta: v\.delta,/  return { vol: v.total, compra: v.compra, venta: v.venta, delta: v.compra,/' 1; m=$?
 juzga_plantado fila_de_resumen_ajena F "la fila delta vale" $m "la fila del delta escribe la compra"
 planta_pagina flujo/flujo-app.js "s/^  if (window\\.location\\.hash !== h) window\\.history\\.replaceState(null, '', h);\$/  if (window.location.hash !== h) window.history.replaceState(null, '', h); carga();/" 1; m=$?
 juzga_plantado arrastre_que_vuelve_a_pedir P "la historia del footprint se pidio" $m "cada gesto vuelve a cargar la vista"
@@ -143,6 +147,11 @@ juzga_plantado comprador_verde E "E-02" $m "el comprador vuelve al verde de ante
 # remate 1 y su adenda (148): la fuente por vista y el precio en vivo
 planta_pagina flujo/flujo-dibujo.js 's/^    L\.fuente = fuenteDeLaVista(ctx, g, y, m, i0, i1);$/    L.fuente = fuenteDe(L.fila);/' 1; m=$?
 juzga_plantado fuente_de_hoy T "la mayor con la que cabe|acercar no esconde" $m "la fuente de antes del remate: fuenteDe(fila), acercar esconde cifras"
+# bancos R1 · remate 4 (#231): el carril de las grandes solo le quita sitio a la venta de la fila que una grande tapa
+planta_pagina flujo/flujo-dibujo.js 's/venta: w \/ 2 - carrilVenta(carril, iv, y0, y1, fuente), compra: w \/ 2 }/venta: w \/ 2 - carril, compra: w \/ 2 - carril }/; s/hueco: w \/ 2 - carrilVenta(carril, i, y0, y1, tope), piezas/hueco: w \/ 2 - carril, piezas/; s/hueco: w \/ 2, piezas: \[\[cifraE04(l\.compra/hueco: w \/ 2 - carril, piezas: [[cifraE04(l.compra/' 3; m=$?
+juzga_plantado carril_en_los_dos T "tiene que escribir|la mayor con la que cabe" $m "la regla del remate 3: el carril en la venta y la compra de toda fila"
+planta_pagina flujo/flujo-dibujo.js 's/w \/ 2 - carrilVenta(carril, i[v]*, y0, y1, [a-z]*)/w \/ 2/' 2; m=$?
+juzga_plantado carril_ninguno T "tiene que escribir|la mayor con la que cabe" $m "la venta sin restar el carril: hueco w/2 siempre"
 planta_pagina flujo/flujo-app.js 's/venues: ref, minutos: 1, limit: 1 }/venues: FAMILIAS[VISTA.familia].venues.find((x) => x !== ref) || ref, minutos: 1, limit: 1 }/' 1; m=$?
 juzga_plantado vivo_de_otro_venue V "la linea esta en el precio de" $m "el precio en vivo de otro venue que el de referencia"
 planta_pagina flujo/flujo-dibujo.js 's/^    const yv = Math\.round(y(e\.precio)) + 0\.5;$/    const yv = (L.yVivo ??= Math.round(y(e.precio)) + 0.5);/' 1; m=$?
