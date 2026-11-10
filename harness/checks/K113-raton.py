@@ -71,6 +71,7 @@ BASE = os.environ.get("K113_BASE", "")  # sin ella: PRODUCCION
 DB = os.environ.get("K113_DB", "")
 HASTA = os.environ.get("K113_HASTA", "")
 ESPERA_VELA_S = float(os.environ.get("K113_ESPERA_VELA", "75"))
+CUENTA_VIVO = os.environ.get("K113_CUENTA_VIVO", "")  # bancos R3: un fichero, una linea JSON por llamada de juzga_vivo
 ASIENTA_S = 5 + 2  # bancos R2: un latido del vivo (VIVO_S, static/flujo/flujo-app.js:19) y 2 s: lo que el teclado espera
 RUTA_FP, RUTA_SES, RUTA_PERFIL = "/api" + "/orderflow/footprint", "/api" + "/orderflow/sesiones", "/api" + "/orderflow/perfil"
 # LO DECIDIDO, escrito aqui y no leido de la pagina (la investigacion, P2 de la 148 y OF-2):
@@ -474,6 +475,7 @@ class Juez:
         self.malos = {b: [] for b in "PFCTREV"}
         self.info: list[str] = []
         self.pasos = 0
+        self.vivo: list[dict] = []  # bancos R3: una entrada por llamada de juzga_vivo
 
     def mal(self, brazo: str, pref: str, texto: str):
         self.malos[brazo].append(f"{pref} {texto}")
@@ -917,7 +919,19 @@ def monotonia(J: Juez, pref: str, nombre: str, pa: dict, pb: dict) -> None:
                          f"{(pb.get('escala') or {}).get('fuente')} px; F-09: acercar no esconde)")
 
 
-def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un juicio por propiedad de la adenda
+def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:
+    """(V) y su cuenta (bancos R3): con que se juzgo «la linea se mueve con el eje» en esta llamada."""
+    r = {"pref": pref, "llegadas": 0, "vivo": False, "fuera": "?", "lo": None, "hi": None, "y": None, "yq": None}
+    try:
+        _juzga_vivo(c, e, J, pref, r)
+    finally:
+        J.vivo.append(r)
+        if CUENTA_VIVO:
+            with open(CUENTA_VIVO, "a") as f:
+                f.write(json.dumps(r) + "\n")
+
+
+def _juzga_vivo(c: dict, e: dict, J: Juez, pref: str, r: dict) -> None:  # noqa: C901 - un juicio por propiedad de la adenda
     """(V) la linea del precio en vivo, contra las respuestas de la cinta que la pagina RECIBIO (la red, no su contrato)."""
     pin = c.get("pin") or {}
     vivo = pin.get("vivo")
@@ -932,6 +946,7 @@ def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un
     ref = "binance_spot" if e.get("familia") == "spot" else "binance_usdm"
     ref = ref if ref in vs or not vs else vs[0]
     llegadas = [x for x in pedidas if (x.get("cuerpo") or {}).get("operaciones")]
+    r.update(llegadas=len(llegadas), vivo=bool(vivo), fuera=(vivo or {}).get("fuera"), y=(vivo or {}).get("y"))
     if not llegadas:
         if vivo:
             J.mal("V", pref, f"la linea esta en {vivo.get('texto')} y no llego ninguna operacion de la cinta (lo ausente no es un precio)")
@@ -953,6 +968,7 @@ def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un
     if esc and esc["hi"] > esc["lo"]:
         fuera = "arriba" if p > esc["hi"] else "abajo" if p < esc["lo"] else None
         yq = round(esc["arriba"] + (esc["hi"] - p) / (esc["hi"] - esc["lo"]) * (esc["abajo"] - esc["arriba"])) + 0.5
+        r.update(lo=esc["lo"], hi=esc["hi"], yq=yq, fuera_juez=fuera)
         if vivo.get("fuera") != fuera or (fuera is None and abs((vivo.get("y") or -1e9) - yq) > TOL):
             J.mal("V", pref, f"la linea del precio en vivo esta en y={vivo.get('y')} ({vivo.get('fuera')}) y {vivo.get('texto')} "
                              f"en esta escala va en y={yq} ({fuera}): no se mueve con el eje")
@@ -966,6 +982,66 @@ def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un
                          "de que no hay vivo")
     if edad < 7 and vivo.get("estado") != "vivo":
         J.mal("V", pref, f"la ultima operacion de {ref} tiene {edad:.1f} s y la etiqueta dice «{vivo.get('aviso')}»")
+
+
+def vivo_ejercitado(J: Juez, pref: str) -> str | None:
+    """bancos R3: None si «la linea se mueve con el eje» se juzgo en la vista con respuestas de la cinta llegadas, la linea
+    DENTRO de la escala y dos escalas que la ponen a mas de 2 TOL px una de otra (una, al menos, no es la de su primer
+    pintado, que el juez no ve); si no, la condicion que falto."""
+    rs = [r for r in J.vivo if r["pref"].startswith(pref)]
+    lleg = [r for r in rs if r["llegadas"] and r["vivo"]]
+    if not lleg:
+        return f"en ninguna de sus {len(rs)} llamadas habia una respuesta de la cinta con operaciones y la linea pintada"
+    den = [r for r in lleg if r["fuera"] is None and r.get("fuera_juez", "?") is None and r["yq"] is not None]
+    if not den:
+        return f"con la cinta llegada ({len(lleg)} llamadas) la linea nunca estuvo dentro de la escala"
+    ys = [r["yq"] for r in den]
+    if len({(r["lo"], r["hi"]) for r in den}) < 2 or max(ys) - min(ys) <= 2 * TOL:
+        return (f"con la linea dentro ({len(den)} llamadas) la escala no la movio: y de {min(ys)} a {max(ys)}, "
+                f"{len({(r['lo'], r['hi']) for r in den})} escala(s)")
+    return None
+
+
+async def ejercita_vivo(v: Vista, J: Juez, pref: str, L, xm: float, ym: float, paso, medido) -> None:
+    """bancos R3 (V): el recorrido solo no siempre pone la linea dentro de la escala con la cinta llegada (corrida 1 del
+    paso 1: fuera=abajo en las 12 llamadas con cinta). El juez lo provoca, el mismo gesto en cada corrida (va en la
+    huella): Fin; la cinta, como mucho ASIENTA_S; arrastrar el grafico en vertical hasta que el precio en vivo quede
+    dentro; y otro arrastre de 60 px hacia el centro, que mueve la escala con la linea dentro. Si aun asi no, ROJO."""
+    await v.tecla("End")
+    limite = time.monotonic() + ASIENTA_S
+    while True:
+        c = await v.cosecha()
+        vv = (c["pin"] or {}).get("vivo") or {}
+        lleg = any((x.get("cuerpo") or {}).get("operaciones") for x in c.get("red") or []
+                   if x["ruta"] == "/api/orderflow/cinta" and x["q"].get("limit") == "1")
+        if (lleg and vv) or time.monotonic() >= limite:
+            break
+        await v.s.drena(0.5)
+    await paso("Fin, con el precio en vivo", c)
+    hecho = None
+    for _ in range(30):  # cada arrastre, un tercio del alto como mucho (el raton no sale del grafico); medido en la rama:
+        pin = (await v.cosecha())["pin"] or {}  # el precio en vivo del banco llego a ir 4300 px por debajo del grafico
+        g, p = pin.get("escala") or {}, float(((pin.get("vivo") or {}).get("precio")) or 0)
+        if not p or not g or g["hi"] <= g["lo"] or (g["lo"], g["hi"]) == hecho:
+            break
+        hecho = (g["lo"], g["hi"])
+        alto = g["abajo"] - g["arriba"]
+        yq = g["arriba"] + (g["hi"] - p) / (g["hi"] - g["lo"]) * alto
+        if g["arriba"] + alto / 4 < yq < g["abajo"] - alto / 4:
+            break
+        dy = max(-alto / 3, min(alto / 3, (g["arriba"] + g["abajo"]) / 2 - yq))
+        await v.arrastra(*L(xm, ym), *L(xm, ym + dy))
+        await v.s.drena(0.3)
+    pr = await paso("arrastre hasta el precio en vivo")
+    yv = ((pr["c"]["pin"] or {}).get("vivo") or {}).get("y")
+
+    async def arrastre():
+        await v.arrastra(*L(xm, ym), *L(xm, ym + (60 if yv is None or yv < ym else -60)))
+        await v.s.drena(0.3)
+    await medido("arrastre de 60 px con el precio en vivo", arrastre)
+    falta = vivo_ejercitado(J, pref)
+    if falta:
+        J.mal("V", pref, f"la linea del precio en vivo no se ejercito contra el eje (no se sabe si se mueve con el): {falta}")
 
 
 def estado_ejes(c: dict) -> dict:
@@ -1249,6 +1325,7 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
     if completo and not e.get("hasta"):
         await recorrido_sigue(v, out, ctx, L, xm, ym, pref)
     if completo and not e.get("hasta"):
+        await ejercita_vivo(v, J, pref, L, xm, ym, paso, medido)
         # (V) la cinta parada: la sonda le devuelve a la pagina la misma operacion con el as_of nuevo, 14 s
         c = await v.cinta_parada(14)
         juzga_vivo(c, e, J, f"{pref} con la cinta parada")
