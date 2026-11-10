@@ -71,6 +71,7 @@ BASE = os.environ.get("K113_BASE", "")  # sin ella: PRODUCCION
 DB = os.environ.get("K113_DB", "")
 HASTA = os.environ.get("K113_HASTA", "")
 ESPERA_VELA_S = float(os.environ.get("K113_ESPERA_VELA", "75"))
+CUENTA_VIVO = os.environ.get("K113_CUENTA_VIVO", "")  # bancos R3: un fichero, una linea JSON por llamada de juzga_vivo
 ASIENTA_S = 5 + 2  # bancos R2: un latido del vivo (VIVO_S, static/flujo/flujo-app.js:19) y 2 s: lo que el teclado espera
 RUTA_FP, RUTA_SES, RUTA_PERFIL = "/api" + "/orderflow/footprint", "/api" + "/orderflow/sesiones", "/api" + "/orderflow/perfil"
 # LO DECIDIDO, escrito aqui y no leido de la pagina (la investigacion, P2 de la 148 y OF-2):
@@ -474,6 +475,7 @@ class Juez:
         self.malos = {b: [] for b in "PFCTREV"}
         self.info: list[str] = []
         self.pasos = 0
+        self.vivo: list[dict] = []  # bancos R3: una entrada por llamada de juzga_vivo
 
     def mal(self, brazo: str, pref: str, texto: str):
         self.malos[brazo].append(f"{pref} {texto}")
@@ -917,7 +919,19 @@ def monotonia(J: Juez, pref: str, nombre: str, pa: dict, pb: dict) -> None:
                          f"{(pb.get('escala') or {}).get('fuente')} px; F-09: acercar no esconde)")
 
 
-def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un juicio por propiedad de la adenda
+def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:
+    """(V) y su cuenta (bancos R3): con que se juzgo «la linea se mueve con el eje» en esta llamada."""
+    r = {"pref": pref, "llegadas": 0, "vivo": False, "fuera": "?", "lo": None, "hi": None, "y": None, "yq": None}
+    try:
+        _juzga_vivo(c, e, J, pref, r)
+    finally:
+        J.vivo.append(r)
+        if CUENTA_VIVO:
+            with open(CUENTA_VIVO, "a") as f:
+                f.write(json.dumps(r) + "\n")
+
+
+def _juzga_vivo(c: dict, e: dict, J: Juez, pref: str, r: dict) -> None:  # noqa: C901 - un juicio por propiedad de la adenda
     """(V) la linea del precio en vivo, contra las respuestas de la cinta que la pagina RECIBIO (la red, no su contrato)."""
     pin = c.get("pin") or {}
     vivo = pin.get("vivo")
@@ -932,6 +946,7 @@ def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un
     ref = "binance_spot" if e.get("familia") == "spot" else "binance_usdm"
     ref = ref if ref in vs or not vs else vs[0]
     llegadas = [x for x in pedidas if (x.get("cuerpo") or {}).get("operaciones")]
+    r.update(llegadas=len(llegadas), vivo=bool(vivo), fuera=(vivo or {}).get("fuera"), y=(vivo or {}).get("y"))
     if not llegadas:
         if vivo:
             J.mal("V", pref, f"la linea esta en {vivo.get('texto')} y no llego ninguna operacion de la cinta (lo ausente no es un precio)")
@@ -953,6 +968,7 @@ def juzga_vivo(c: dict, e: dict, J: Juez, pref: str) -> None:  # noqa: C901 - un
     if esc and esc["hi"] > esc["lo"]:
         fuera = "arriba" if p > esc["hi"] else "abajo" if p < esc["lo"] else None
         yq = round(esc["arriba"] + (esc["hi"] - p) / (esc["hi"] - esc["lo"]) * (esc["abajo"] - esc["arriba"])) + 0.5
+        r.update(lo=esc["lo"], hi=esc["hi"], yq=yq, fuera_juez=fuera)
         if vivo.get("fuera") != fuera or (fuera is None and abs((vivo.get("y") or -1e9) - yq) > TOL):
             J.mal("V", pref, f"la linea del precio en vivo esta en y={vivo.get('y')} ({vivo.get('fuera')}) y {vivo.get('texto')} "
                              f"en esta escala va en y={yq} ({fuera}): no se mueve con el eje")
