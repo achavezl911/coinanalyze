@@ -71,6 +71,7 @@ BASE = os.environ.get("K113_BASE", "")  # sin ella: PRODUCCION
 DB = os.environ.get("K113_DB", "")
 HASTA = os.environ.get("K113_HASTA", "")
 ESPERA_VELA_S = float(os.environ.get("K113_ESPERA_VELA", "75"))
+ASIENTA_S = 5 + 2  # bancos R2: un latido del vivo (VIVO_S, static/flujo/flujo-app.js:19) y 2 s: lo que el teclado espera
 RUTA_FP, RUTA_SES, RUTA_PERFIL = "/api" + "/orderflow/footprint", "/api" + "/orderflow/sesiones", "/api" + "/orderflow/perfil"
 # LO DECIDIDO, escrito aqui y no leido de la pagina (la investigacion, P2 de la 148 y OF-2):
 EJE_P, EJE_T, CABEZA, FILA_RES = 76, 20, 16, 18
@@ -1153,17 +1154,35 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
                          f"{b['sigue']}, hash {b['hash']} (I-03: los dos ejes, MANUAL, y la vista en el hash)")
     if completo:
         # I-06: el teclado
+        # bancos R2: lo que la pagina promete y nada mas. `fin`, `sigue` y n salen de la MISMA cosecha, sondeando hasta
+        # ASIENTA_S; n es la de despues (una vela nueva solo alarga el final y mueve el tope). Y si la vista seguia la
+        # ultima vela, un latido puede ponerla en n - 1 (I-05) entre la cosecha de antes y la tecla: la tecla vale
+        # tambien desde ahi (el PageUp de la entrega r1: 242.35 era n - 1 + 0.3 ver = 239 + 3.35; el latido la llevo a 239)
         for tecla, quiero in (("ArrowRight", lambda s: s["fin"] + 1), ("ArrowLeft", lambda s: s["fin"] - 1),
                               ("PageDown", lambda s: s["fin"] + s["ver"]), ("PageUp", lambda s: s["fin"] - s["ver"]),
                               ("Home", lambda s: s["ver"] - 1)):
-            a, _, b = await medido(None, lambda tecla=tecla: v.tecla(tecla))
-            n = b["n"] or len(p0["velas"])  # las velas de AHORA: en el vivo puede haber llegado una durante la prueba
-            esperado = min(n - 1 + b["ver"] * 0.3, max(b["ver"] * 0.3, quiero(a)))
-            # si la tecla llega al final, la vista vuelve a seguir la ultima vela (I-05) y el latido siguiente la pone
-            # en el borde: n - 1 tambien vale, y SOLO entonces
-            al_borde = quiero(a) >= n - 1 and b["sigue"] and abs(b["fin"] - (n - 1)) <= 0.01
-            if abs(b["fin"] - esperado) > 0.01 and not al_borde:
-                J.mal("R", pref, f"la tecla {tecla}: fin {a['fin']:.2f} -> {b['fin']:.2f} y tenia que ir a {esperado:.2f} (I-06)")
+            a = estado_ejes(await v.cosecha())
+            await v.tecla(tecla)
+            limite = time.monotonic() + ASIENTA_S
+            while True:
+                b = estado_ejes(await v.cosecha())
+                n = b["n"] or len(p0["velas"])
+                bases = [a["fin"]] + ([k - 1 for k in (a["n"], n) if k] if a["sigue"] else [])
+                cumple = False
+                for f0 in bases:
+                    q = quiero({**a, "fin": f0})
+                    esperado = min(n - 1 + b["ver"] * 0.3, max(b["ver"] * 0.3, q))
+                    # si la tecla llega al final, la vista vuelve a seguir la ultima vela (I-05) y el latido siguiente
+                    # la pone en el borde: n - 1 tambien vale, y SOLO entonces
+                    al_borde = q >= n - 1 and b["sigue"] and abs(b["fin"] - (n - 1)) <= 0.01
+                    cumple = cumple or abs(b["fin"] - esperado) <= 0.01 or al_borde
+                if cumple or time.monotonic() >= limite:
+                    break
+                await v.s.drena(0.5)
+            if not cumple:
+                esperado = min(n - 1 + b["ver"] * 0.3, max(b["ver"] * 0.3, quiero(a)))
+                J.mal("R", pref, f"la tecla {tecla}: fin {a['fin']:.2f} -> {b['fin']:.2f} y tenia que ir a {esperado:.2f} (I-06, "
+                                 f"n {a['n']} -> {n}, sigue {a['sigue']} -> {b['sigue']}, esperado {ASIENTA_S:g} s)")
         # I-07: el menu del eje de precio y lo que cambia cada opcion
         await v.clic(*L(xe, ym), boton="right")
         c = await v.cosecha()
@@ -1195,10 +1214,18 @@ async def recorrido(v: Vista, out: dict, ctx: dict, completo: bool) -> None:  # 
             await v.tecla("Escape")
             if (await v.cosecha())["menu"]:
                 J.mal("R", pref, "Esc no cierra el menu del eje (I-06)")
+        # bancos R2: `sigue`, `fin` y las velas de la MISMA cosecha, sondeando hasta ASIENTA_S
         await v.tecla("End")
-        b = estado_ejes(await v.cosecha())
-        if not b["sigue"] or abs(b["fin"] - (len(velas_aplicadas(await v.cosecha(), K112, e["marco"])) - 1)) > 0.01:
-            J.mal("R", pref, f"la tecla Fin no vuelve a seguir la ultima vela: sigue {b['sigue']}, fin {b['fin']} (I-05)")
+        limite = time.monotonic() + ASIENTA_S
+        while True:
+            c = await v.cosecha()
+            b, n = estado_ejes(c), len(velas_aplicadas(c, K112, e["marco"]))
+            if (b["sigue"] and abs(b["fin"] - (n - 1)) <= 0.01) or time.monotonic() >= limite:
+                break
+            await v.s.drena(0.5)
+        if not b["sigue"] or abs(b["fin"] - (n - 1)) > 0.01:
+            J.mal("R", pref, f"la tecla Fin no vuelve a seguir la ultima vela: sigue {b['sigue']}, fin {b['fin']} con {n} velas "
+                             f"aplicadas y {b['n']} en el lienzo (I-05, esperado {ASIENTA_S:g} s)")
     # F-01: los modos de la celda, sin volver a pedir nada
     for modo in (("delta", "trades", "volumen", "bidask") if completo else ("delta", "bidask")):
         await v.clic_en(f"#sel-celda button[data-valor={modo}]")
