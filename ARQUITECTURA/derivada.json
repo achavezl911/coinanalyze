@@ -40802,12 +40802,12 @@
         "checks": {
           "llamadas": [
             "harness/checks/K112-banco.py:160",
-            "harness/checks/K113-raton.py:409",
-            "harness/checks/K113-raton.py:923"
+            "harness/checks/K113-raton.py:410",
+            "harness/checks/K113-raton.py:924"
           ],
           "menciones": [
             "harness/checks/K111-banco.py:255",
-            "harness/checks/K113-raton.py:407"
+            "harness/checks/K113-raton.py:408"
           ]
         }
       },
@@ -48153,14 +48153,14 @@
             "harness/checks/K112-indicadores.py:1326",
             "harness/checks/K112-indicadores.py:1329",
             "harness/checks/K112-indicadores.py:1333",
-            "harness/checks/K113-control.bash:168",
-            "harness/checks/K113-raton.py:450",
-            "harness/checks/K113-raton.py:1498",
-            "harness/checks/K113-raton.py:1504",
-            "harness/checks/K113-raton.py:1507",
-            "harness/checks/K113-raton.py:1510",
-            "harness/checks/K113-raton.py:1557",
-            "harness/checks/K113-raton.py:1562",
+            "harness/checks/K113-control.bash:172",
+            "harness/checks/K113-raton.py:451",
+            "harness/checks/K113-raton.py:1525",
+            "harness/checks/K113-raton.py:1531",
+            "harness/checks/K113-raton.py:1534",
+            "harness/checks/K113-raton.py:1537",
+            "harness/checks/K113-raton.py:1584",
+            "harness/checks/K113-raton.py:1589",
             "harness/checks/K120-control.bash:66",
             "harness/checks/K120-liq.py:207",
             "harness/checks/K120-liq.py:243",
