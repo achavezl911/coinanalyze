@@ -15,10 +15,19 @@ S3 SELLO Y RESOLUCION: cada propuesta se DESANONIMIZA con su clave (precios x fa
   (fuentes.rejilla; id con «@<instante>»). Se resuelve con resuelve.py sobre las velas de 5 min DEL BANCO posteriores a t,
   con «ahora» = fin del banco. El banco de 5 min no trae apertura: la apertura es el cierre de la vela anterior
   recortado a [bajo, alto] y, sin vela anterior, la vela no existe (hueco: la propuesta queda pendiente).
+S4 PLAN Y CORRIDA: `plan` sortea de antemano, con semilla fija, 64 de los 99 dias de 2026-08-01..2026-11-07 y en 16 de
+  ellos dos instantes (activos y horas distintos): 80 cierres de 4 h repartidos entre BTC, ETH y SOL. `corre` los
+  recorre en orden, de uno en uno: foto, clave aparte (claves/), llamada, respuesta guardada (respuestas/; un fallo,
+  a errores/ y se reintenta en la siguiente corrida; al segundo fallo se sella como rechazo), sello, y al final
+  resolucion y marcador. Lo ya sellado o ya contestado no se vuelve a pedir. Tope de gasto ACUMULADO (USD
+  equivalentes que informa `claude -p`, sumados de respuestas/ y errores/): alcanzado, no se hace otra llamada.
 """
 from __future__ import annotations
 
+import fcntl
 import functools
+import glob
+import json
 import math
 import os
 import random
@@ -37,6 +46,10 @@ DIA, H4, M5 = 86400, 14400, 300
 N_D, N_H, N_M = 90, 120, 288
 OBJ_MIN, OBJ_MAX = 5.0, 20.0
 SEMILLA = 20261115
+DESDE, HASTA = 1785542400, 1794009600  # 2026-08-01 y 2026-11-07, 00:00Z (ambos incluidos: 99 dias)
+N_DIAS, N_DOBLES = 64, 16
+DIR = os.environ.get("DIARIO_CIEGO_DIR", "/srv/coinanalyze/diario-ciego")
+INTENTOS = 2
 
 
 @functools.lru_cache(maxsize=16)
@@ -181,3 +194,149 @@ def resuelve_y_marca(L: lb.Libro, banco: str, carpeta: str) -> dict:
     with open(os.path.join(carpeta, "marcador.txt"), "w") as f:
         f.write(t + "\n")
     return {"resueltas": n, "huecos": len(huecos), "fin_banco": fin, "marcador": t}
+
+
+# ---------- S4: plan y corrida ----------
+def plan(semilla: int = SEMILLA) -> list[dict]:
+    """Los instantes, sorteados ANTES de ver nada: [{'iid', 'activo', 't'}] en orden de t."""
+    az = random.Random(f"plan:{semilla}")
+    dias = sorted(az.sample(range((HASTA - DESDE) // DIA + 1), N_DIAS))
+    dobles = set(az.sample(dias, N_DOBLES))
+    cuenta = dict.fromkeys(ACTIVOS, 0)
+    out = []
+    for d in dias:
+        if d in dobles:
+            acts = az.sample(ACTIVOS, 2)
+        else:
+            menos = min(cuenta.values())
+            acts = [az.choice([a for a in ACTIVOS if cuenta[a] == menos])]
+        for a, h in zip(acts, az.sample(range(0, 24, 4), len(acts)), strict=True):
+            cuenta[a] += 1
+            t = DESDE + d * DIA + h * 3600
+            out.append({"iid": f"{a}-{t}", "activo": a, "t": t})
+    return sorted(out, key=lambda x: (x["t"], x["activo"]))
+
+
+def _json(ruta: str, obj) -> None:
+    tmp = ruta + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(obj, f, indent=1, ensure_ascii=False)
+    os.replace(tmp, ruta)
+
+
+def gastado(carpeta: str) -> float:
+    total = 0.0
+    for r in glob.glob(os.path.join(carpeta, "respuestas", "*.json")) + glob.glob(os.path.join(carpeta, "errores", "*.json")):
+        with open(r) as f:
+            total += json.load(f).get("coste_usd") or 0.0
+    return total
+
+
+def corre(carpeta: str, tope_usd: float, maximo: int | None = None, effort: str = pr.EFFORT, modelo: str = pr.MODELO,
+          banco: str = BANCO, semilla: int = SEMILLA) -> dict:
+    """Una corrida cada vez (cerrojo en <dir>/.corrida). Reanuda: lo sellado no se toca, lo contestado no se repide."""
+    for sub in ("claves", "fotos", "respuestas", "errores"):
+        os.makedirs(os.path.join(carpeta, sub), exist_ok=True)
+    with open(os.path.join(carpeta, ".corrida"), "w") as cerrojo:
+        fcntl.flock(cerrojo, fcntl.LOCK_EX)
+        return _corre(carpeta, tope_usd, maximo, effort, modelo, banco, semilla)
+
+
+def _corre(carpeta, tope_usd, maximo, effort, modelo, banco, semilla) -> dict:
+    ruta = os.path.join(carpeta, "diario-ciego.jsonl")
+    malos = lb.verifica(ruta) if os.path.exists(ruta) else []
+    if malos:
+        return {"rc": 2, "libro_tocado": malos[:5]}
+    instantes = plan(semilla)
+    rp = os.path.join(carpeta, "plan.json")
+    if os.path.exists(rp):
+        with open(rp) as f:
+            if json.load(f)["instantes"] != instantes:
+                return {"rc": 2, "error": f"{rp} no es el plan de la semilla {semilla}: otra carpeta"}
+    else:
+        _json(rp, {"semilla": semilla, "desde": DESDE, "hasta": HASTA, "instantes": instantes})
+    L = lb.Libro(ruta)
+    filas = L.lee()
+    vistos = {f["id"] for f in filas if f["tipo"] in ("propuesta", "rechazo")}
+    sellados = {i.rsplit("@", 1)[1] for i in vistos if "@" in i}
+    est = {"plan": len(instantes), "ya_sellados": len(sellados), "llamadas": 0, "sellados": 0, "fallos": 0,
+           "gasto_previo_usd": round(gastado(carpeta), 4), "parada": None}
+    gasto = est["gasto_previo_usd"]
+    for x in instantes:
+        iid = x["iid"]
+        if iid in sellados:
+            continue
+        rr = os.path.join(carpeta, "respuestas", f"{iid}.json")
+        texto, clave = foto(banco, x["activo"], x["t"], semilla)
+        if os.path.exists(rr):
+            with open(rr) as f:
+                reg = json.load(f)
+        else:
+            errs = sorted(glob.glob(os.path.join(carpeta, "errores", f"{iid}.*.json")))
+            if len(errs) >= INTENTOS:
+                with open(errs[-1]) as f:
+                    reg = json.load(f)
+            else:
+                if gasto >= tope_usd:
+                    est["parada"] = f"tope de {tope_usd:g} USD alcanzado ({gasto:.4f})"
+                    break
+                if maximo is not None and est["llamadas"] >= maximo:
+                    est["parada"] = f"--max {maximo} llamadas"
+                    break
+                _json(os.path.join(carpeta, "claves", f"{iid}.json"), clave)
+                with open(os.path.join(carpeta, "fotos", f"{iid}.txt"), "w") as f:
+                    f.write(texto)
+                reg = pr.pide(texto, modelo, effort, tope_usd=min(2.0, max(tope_usd - gasto, 0.05)))
+                reg["iid"] = iid
+                est["llamadas"] += 1
+                gasto += reg.get("coste_usd") or 0.0
+                if reg["error"] and "TENIA herramientas" not in reg["error"]:
+                    _json(os.path.join(carpeta, "errores", f"{iid}.{len(errs) + 1}.json"), reg)
+                    est["fallos"] += 1
+                    if len(errs) + 1 < INTENTOS:
+                        continue
+                else:
+                    _json(rr, reg)
+        sella_instante(L, banco, clave, iid, reg, vistos)
+        sellados.add(iid)
+        est["sellados"] += 1
+    est["gasto_usd"] = round(gasto, 4)
+    est["pendientes_del_plan"] = len(instantes) - len(sellados)
+    est.update({k: v for k, v in resuelve_y_marca(L, banco, carpeta).items() if k != "marcador"})
+    est["cabeza"] = L.cabeza()
+    _json(os.path.join(carpeta, "estado.json"), est)
+    est["rc"] = 0
+    return est
+
+
+def main(argv: list[str]) -> int:
+    import argparse
+    ap = argparse.ArgumentParser(prog="python -m app.diario ciego")
+    ap.add_argument("orden", choices=("plan", "foto", "corre"))
+    ap.add_argument("--dir", default=DIR)
+    ap.add_argument("--banco", default=BANCO)
+    ap.add_argument("--semilla", type=int, default=SEMILLA)
+    ap.add_argument("--instante", help="foto: el iid del plan (p. ej. BTC-1785556800)")
+    ap.add_argument("--tope-usd", type=float, help="corre: tope de gasto ACUMULADO de la carpeta (obligatorio)")
+    ap.add_argument("--max", type=int, default=None, help="corre: como mucho tantas llamadas nuevas")
+    ap.add_argument("--effort", default=pr.EFFORT)
+    ap.add_argument("--modelo", default=pr.MODELO)
+    a = ap.parse_args(argv)
+    if a.orden == "plan":
+        ins = plan(a.semilla)
+        por = {x: sum(1 for i in ins if i["activo"] == x) for x in ACTIVOS}
+        print(json.dumps({"semilla": a.semilla, "n": len(ins), "dias": len({i["t"] // DIA for i in ins}),
+                          "por_activo": por, "primero": ins[0]["iid"], "ultimo": ins[-1]["iid"]}))
+        return 0
+    if a.orden == "foto":
+        x = next((i for i in plan(a.semilla) if i["iid"] == a.instante), None)
+        if x is None:
+            ap.error("--instante no esta en el plan")
+        print(foto(a.banco, x["activo"], x["t"], a.semilla)[0], end="")
+        return 0
+    if a.tope_usd is None:
+        ap.error("corre necesita --tope-usd")
+    os.makedirs(a.dir, exist_ok=True)
+    est = corre(a.dir, a.tope_usd, a.max, a.effort, a.modelo, a.banco, a.semilla)
+    print(json.dumps(est, separators=(",", ":"), ensure_ascii=False)[:2000])
+    return est["rc"]

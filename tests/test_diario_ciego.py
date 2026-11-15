@@ -109,6 +109,9 @@ a = sys.argv
 tools = [] if "--tools" in a and a[a.index("--tools") + 1] == "" else ["Bash", "Read"]
 if os.environ.get("DOBLE_HERRAMIENTAS"):
     tools = ["Read"]
+if os.environ.get("DOBLE_CUENTA"):
+    with open(os.environ["DOBLE_CUENTA"], "a") as f:
+        f.write("1\n")
 with open(os.environ["DOBLE_SALIDA"], "w") as f:
     json.dump({"argv": a[1:], "cwd": os.getcwd(), "cwd_vacio": os.listdir("."),
                "api_key": "ANTHROPIC_API_KEY" in os.environ, "stdin": sys.stdin.read()}, f)
@@ -217,6 +220,42 @@ def test_s3_sello_y_resolucion_como_la_fase_2(tmp_path):
     assert r["r_neto"] == pytest.approx(((p["objetivo"] / e - 1) - rs.COM_MAKER - rs.COM_TAKER) / d, abs=1e-6)
     assert all(i.endswith("@BTC-1") for i in props if i.startswith("rejilla:"))
     assert "fable-ciego: 1 propuestas, 1 resueltas, 1 llenadas, 1 rechazadas" in out["marcador"]
+
+
+def test_s4_plan_reproducible_y_en_sus_limites():
+    p = cg.plan()
+    assert p == cg.plan() and p != cg.plan(cg.SEMILLA + 1)
+    assert len(p) == cg.N_DIAS + cg.N_DOBLES == 80 and len({x["iid"] for x in p}) == 80
+    assert all(cg.DESDE <= x["t"] < cg.HASTA + cg.DIA and x["t"] % cg.H4 == 0 for x in p)
+    por_dia = {}
+    for x in p:
+        por_dia.setdefault(x["t"] // cg.DIA, []).append(x)
+    assert len(por_dia) == 64 and sorted({len(v) for v in por_dia.values()}) == [1, 2]
+    for v in por_dia.values():
+        assert len({x["activo"] for x in v}) == len(v) == len({x["t"] for x in v})
+    n = [sum(1 for x in p if x["activo"] == a) for a in cg.ACTIVOS]
+    assert max(n) - min(n) <= 3
+
+
+def test_s4_la_corrida_reanuda_sin_repetir_y_respeta_el_tope(tmp_path, doble, monkeypatch):
+    from app.diario import libro as lb
+    banco = _banco(tmp_path)
+    ins = [{"iid": f"BTC-{T0 + k * 14400}", "activo": "BTC", "t": T0 + k * 14400} for k in (1, 7, 13)]
+    monkeypatch.setattr(cg, "plan", lambda semilla=cg.SEMILLA: ins)
+    cuenta = tmp_path / "cuenta"
+    monkeypatch.setenv("DOBLE_CUENTA", str(cuenta))
+    d = str(tmp_path / "ciego")
+    e1 = cg.corre(d, tope_usd=0.3, banco=banco)  # 0.25 por llamada: la tercera ya no se hace
+    assert e1["llamadas"] == 2 and "tope" in e1["parada"] and len(cuenta.read_text().split()) == 2
+    e2 = cg.corre(d, tope_usd=10, maximo=5, banco=banco)
+    assert e2["ya_sellados"] == 2 and e2["llamadas"] == 1 and e2["pendientes_del_plan"] == 0
+    e3 = cg.corre(d, tope_usd=10, banco=banco)
+    assert e3["llamadas"] == 0 and len(cuenta.read_text().split()) == 3 and e3["gasto_previo_usd"] == 0.75
+    assert lb.verifica(f"{d}/diario-ciego.jsonl") == []
+    for x in ins:
+        clave = json.loads((tmp_path / "ciego" / "claves" / f"{x['iid']}.json").read_text())
+        foto = (tmp_path / "ciego" / "fotos" / f"{x['iid']}.txt").read_text()
+        assert clave["t"] == x["t"] and str(x["t"]) not in foto and f"{clave['factor']:.6g}" not in foto
 
 
 def test_s2_ninguna_y_json_valido():
