@@ -554,15 +554,14 @@ NO_ASCII = "señal «cascada» · ¿ha cambiado? — 1 €"
 
 
 @pytest.fixture
-async def base_ascii():
-    """Una base DESECHABLE como la de 140: ENCODING 'SQL_ASCII' TEMPLATE template0, LC C, con sql/schema.sql entero."""
-    dsn = os.environ.get("TEST_DATABASE_URL")
-    if not dsn:
-        pytest.skip("TEST_DATABASE_URL is not configured")
+async def base_ascii(plantilla_sql_ascii):
+    """Una base DESECHABLE como la de 140: ENCODING 'SQL_ASCII' TEMPLATE template0, LC C, con sql/schema.sql entero.
+    Es una COPIA de la plantilla de tests/conftest.py (`plantilla_sql_ascii`), que carga el esquema una vez."""
+    dsn, plantilla = plantilla_sql_ascii
     nombre = f"bot_sqlascii_{uuid.uuid4().hex[:10]}"
     adm = await asyncpg.connect(dsn)
     try:
-        await adm.execute(f"CREATE DATABASE {nombre} ENCODING 'SQL_ASCII' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C'")
+        await adm.execute(f"CREATE DATABASE {nombre} TEMPLATE {plantilla}")
     except asyncpg.InsufficientPrivilegeError:
         await adm.close()
         pytest.skip("el rol de las pruebas no puede crear bases")
@@ -571,7 +570,8 @@ async def base_ascii():
     c = await asyncpg.connect(dsn_ascii)
     try:
         assert await c.fetchval("SHOW server_encoding") == "SQL_ASCII"
-        await c.execute((RAIZ / "sql" / "schema.sql").read_text(encoding="utf-8"))
+        assert await c.fetchval("SELECT datcollate FROM pg_database WHERE datname = current_database()") == "C"
+        assert await c.fetchval("SELECT to_regclass('bot_evento') IS NOT NULL")
         yield c, dsn_ascii
     finally:
         await c.close()
