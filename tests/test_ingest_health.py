@@ -123,6 +123,8 @@ async def test_failed_ingest_subfeed_keeps_health_and_data_confidence_degraded(
         return {"8h": {"combined": {"complete": True, "source": "test", "end_gap_seconds": 1}}}
 
     monkeypatch.setattr(ai_context, "spot_flow_windows", complete_spot)
+    # DATOS A (A1): la pata futura de data_confidence sale ya de la misma ventana que la spot
+    monkeypatch.setattr(ai_context, "futures_flow_windows", complete_spot)
     confidence = await data_confidence_row(
         context_conn,  # type: ignore[arg-type]
         "BTCUSDT_PERP.A",
@@ -215,6 +217,8 @@ async def test_healthz_and_data_confidence_degrade_the_same_heartbeat_from_db_cl
         return {"8h": {"combined": {"complete": True, "source": "test", "end_gap_seconds": 1}}}
 
     monkeypatch.setattr(ai_context, "spot_flow_windows", complete_spot)
+    # DATOS A (A1): la pata futura de data_confidence sale ya de la misma ventana que la spot
+    monkeypatch.setattr(ai_context, "futures_flow_windows", complete_spot)
 
     health = await api.health()
     confidence = await data_confidence_row(conn, "BTCUSDT_PERP.A")  # type: ignore[arg-type]
