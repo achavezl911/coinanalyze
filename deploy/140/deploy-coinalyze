@@ -23,11 +23,30 @@ ENV_FILE=/etc/coinalyze/coinalyze.env
 INCOMING=/home/coinalyze-deploy/incoming
 BACKUPDIR=/var/backups/coinalyze
 LOCKFILE=/run/lock/deploy-coinalyze.lock
+# Solo se despliega lo que es origin/main en GitHub en ese momento (API publica, solo lectura, sin credenciales).
+GITHUB_API=https://api.github.com
+GITHUB_REPO=achavezl911/coinanalyze
+# El venv del release lo construye el usuario del servicio, no root: pip ejecuta codigo de los paquetes al instalar.
+SERVICE_USER=coinalyze
 
 SERVICES=(coinalyze-api coinalyze-ingest coinalyze-ws coinalyze-scalp coinalyze-daily)
+UNIT_DIR=/etc/systemd/system
+# Unidades que se instalan aparte (el OPERADOR, una vez): se paran y se vuelven a arrancar con el despliegue SOLO si
+# estan instaladas. El recuperador (deploy/140/coinalyze-recupera.*) abre sesion en la base: corriendo durante el
+# despliegue, wait_db_quiet negaria el esquema.
+OPTIONAL_STOP=(coinalyze-recupera.timer coinalyze-recupera.service)
+OPTIONAL_START=(coinalyze-recupera.timer)
 
 KEEP_RELEASES=5
-SMOKE_TRIES=45
+SMOKE_URL=http://127.0.0.1:8000
+# Espera maxima DECLARADA para un «degraded» de arranque. Lo mas lento que se espera: ingest, que late con su
+# primer ciclo (~60 s) y la cola de simbolos (lag de metrics_snapshot <= 180 s). 450 s cubre los dos con margen.
+SMOKE_MAX_WAIT=450
+SMOKE_SLEEP=5
+# Latidos que tienen que haber llegado DESPUES del reinicio. daily no: late al acabar su ciclo (horario).
+SMOKE_REQUIRED_HEARTBEATS="api ingest ws scalp"
+SMOKE_SINCE=""
+SMOKE_PREFER=""
 DB_QUIET_TRIES=20
 DB_QUIET_SLEEP=1
 PG_LOCK_TIMEOUT=15s
@@ -70,25 +89,74 @@ JSON
   chmod 644 "$STATE"
 }
 
-smoke(){
-  local base="http://127.0.0.1:8000" token H=()
-  token="$(sed -n 's/^API_INTERNAL_TOKEN=//p' "$ENV_FILE" | head -1 | tr -d "\"'")"
-  [ -n "$token" ] && H=(-H "X-Internal-Token: $token")
-
-  local i
-  for i in $(seq 1 "$SMOKE_TRIES"); do
-    if curl -fsS "${H[@]}" "$base/api/healthz" >/dev/null 2>&1 \
-       && curl -fsS "${H[@]}" "$base/api/symbols" >/dev/null 2>&1 \
-       && curl -fsS "${H[@]}" "$base/api/ai/profiles" >/dev/null 2>&1; then
+# Smoke = scripts/smoke_test.sh de un release (healthz «ok», latidos posteriores al reinicio, unidades
+# activas, simbolos, perfiles, /metrics y las rutas por simbolo). «degraded» solo se espera mientras sea por
+# un motivo de ARRANQUE conocido (smoke_test.sh sale con 75), como mucho SMOKE_MAX_WAIT segundos; un fallo
+# definitivo (86: unidad failed, latido en error despues del reinicio, degraded sin motivo de arranque) no
+# se espera. Si no pasa, quien llama revierte como siempre. El token no lo toca este fichero: smoke_test.sh
+# lo lee de ENV_FILE y se lo da a curl en un fichero de cabeceras 0600, nunca en el argv.
+smoke_script(){
+  local c
+  for c in "$SMOKE_PREFER" "$(readlink -f "$CURRENT" 2>/dev/null || true)/scripts/smoke_test.sh"; do
+    if [ -n "$c" ] && [ -f "$c" ] && grep -q '^# smoke-contract: 2 ' "$c"; then
+      printf '%s\n' "$c"
       return 0
     fi
-    sleep 2
   done
   return 1
 }
 
+smoke(){
+  local script rc out deadline
+  script="$(smoke_script)" || {
+    log "smoke FAILED: no smoke_test.sh with smoke-contract 2 in the candidate or current release"
+    return 1
+  }
+  deadline=$(( $(date +%s) + SMOKE_MAX_WAIT ))
+  while :; do
+    rc=0
+    out="$(COINALYZE_ENV_FILE="$ENV_FILE" DEPLOY_RESTART_EPOCH="$SMOKE_SINCE" \
+      REQUIRED_HEARTBEATS="$SMOKE_REQUIRED_HEARTBEATS" REQUIRED_SYSTEMD_SERVICES="${SERVICES[*]}" \
+      bash "$script" "$SMOKE_URL" 2>&1)" || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      log "smoke OK ($script)"
+      return 0
+    fi
+    if [ "$rc" -eq 86 ]; then
+      log "smoke FAILED (definitive, rc=86): $(printf '%s' "$out" | tail -n 1)"
+      return 1
+    fi
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      log "smoke FAILED after ${SMOKE_MAX_WAIT}s (rc=$rc): $(printf '%s' "$out" | tail -n 1)"
+      return 1
+    fi
+    sleep "$SMOKE_SLEEP"
+  done
+}
+
+github_main_sha(){
+  local sha
+  sha="$(curl -fsS --proto '=https' -m 20 -H 'Accept: application/vnd.github.sha' \
+    "$GITHUB_API/repos/$GITHUB_REPO/commits/main" | tr -d '[:space:]')" || return 1
+  printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$' || return 1
+  printf '%s\n' "$sha"
+}
+
+as_service(){
+  runuser -u "$SERVICE_USER" -- env HOME=/nonexistent PIP_NO_CACHE_DIR=1 "$@"
+}
+
+installed_units(){
+  local u
+  for u in "$@"; do [ -f "$UNIT_DIR/$u" ] && printf '%s\n' "$u"; done
+  return 0
+}
+
 stop_services(){
   log "stopping application services before schema"
+  local opt=()
+  mapfile -t opt < <(installed_units "${OPTIONAL_STOP[@]}")
+  [ "${#opt[@]}" -eq 0 ] || systemctl stop "${opt[@]}" || log "optional units did not stop: ${opt[*]}"
   systemctl stop "${SERVICES[@]}"
   local s
   for s in "${SERVICES[@]}"; do
@@ -100,12 +168,23 @@ stop_services(){
   log "application services stopped"
 }
 
+start_optional(){
+  local opt=()
+  mapfile -t opt < <(installed_units "${OPTIONAL_START[@]}")
+  [ "${#opt[@]}" -eq 0 ] || systemctl start "${opt[@]}" || log "optional units did not start: ${opt[*]}"
+  return 0
+}
+
 start_services(){
-  systemctl start "${SERVICES[@]}"
+  SMOKE_SINCE="$(date +%s)"
+  systemctl start "${SERVICES[@]}" || return 1
+  start_optional
 }
 
 restart_services(){
-  systemctl restart "${SERVICES[@]}"
+  SMOKE_SINCE="$(date +%s)"
+  systemctl restart "${SERVICES[@]}" || return 1
+  start_optional
 }
 
 prune_releases(){
@@ -122,7 +201,7 @@ prune_releases(){
 ensure_units(){
   local u changed=0
   for u in "${SERVICES[@]}"; do
-    local f="/etc/systemd/system/$u.service"
+    local f="$UNIT_DIR/$u.service"
     [ -f "$f" ] || continue
     if ! grep -q "$CURRENT" "$f"; then
       cp -a "$f" "$f.pre-releases.bak" 2>/dev/null || true
@@ -325,16 +404,23 @@ cmd_deploy(){
   esac
 
   [ -f "$artifact" ] || die "artifact not found: $artifact" 2
-  echo "$commit" | grep -Eq '^[0-9a-f]{7,40}$' || die "bad commit sha: $commit" 2
+  echo "$commit" | grep -Eq '^[0-9a-f]{40}$' || die "bad commit sha (want the full 40-hex sha): $commit" 2
 
   local got
   got="$(sha256sum "$artifact" | awk '{print $1}')"
   [ "$got" = "$expsha" ] || die "sha256 mismatch (got $got want $expsha)" 3
   log "checksum OK ($commit)"
 
+  # Falla cerrado: GitHub que no contesta o un main que ya se movio niegan el despliegue (se relanza).
+  local main_sha=""
+  main_sha="$(github_main_sha)" || main_sha=""
+  [ "$main_sha" = "$commit" ] \
+    || die "commit $commit is not origin/main on GitHub (main=${main_sha:-unreachable})" 16
+  log "commit is origin/main on GitHub"
+
   local stage
   stage="$(mktemp -d "$RELEASES/.stage.XXXXXX")"
-  tar xzf "$artifact" -C "$stage"
+  tar --no-same-owner --no-same-permissions -xzf "$artifact" -C "$stage"
 
   local src="$stage"
   if [ ! -f "$stage/pyproject.toml" ]; then
@@ -352,18 +438,20 @@ cmd_deploy(){
   done
 
   local rel="$RELEASES/$commit"
+  SMOKE_PREFER="$rel/scripts/smoke_test.sh"
   rm -rf "$rel"
   mkdir -p "$rel"
   cp -a "$src/." "$rel/"
   rm -rf "$stage"
 
-  python3 -m venv "$rel/.venv"
-  "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q \
+  # Construido por SERVICE_USER, sin cache ni HOME de root; despues, el release pasa a root:coinalyze de solo lectura.
+  chown -R "$SERVICE_USER:$SERVICE_USER" "$rel"
+  as_service python3 -m venv "$rel/.venv" || die "venv creation failed" 7
+  as_service "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q \
     -r "$rel/requirements.lock" || die "pip requirements failed" 7
-  "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q --no-deps \
+  as_service "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q --no-deps \
     "$rel" || die "pip package install failed" 7
 
-  # Harden the candidate before it can ever become current.
   chown -R root:coinalyze "$rel"
   find "$rel" -path "$rel/.venv" -prune -o -type d -exec chmod 0750 {} + 2>/dev/null || true
   find "$rel" -path "$rel/.venv" -prune -o -type f -exec chmod 0640 {} + 2>/dev/null || true
@@ -439,6 +527,8 @@ cmd_rollback(){
   local cur
   cur="$(active_sha)"
   [ -n "$cur" ] && [ -d "$RELEASES/$cur" ] || die "current release is invalid ($cur)" 12
+  # El smoke del release del que se sale (el mas nuevo): el del destino puede ser de antes del contrato 2.
+  SMOKE_PREFER="$RELEASES/$cur/scripts/smoke_test.sh"
 
   if do_rollback_to "$target"; then
     write_state "$target" "$cur" "manual-rollback"
@@ -478,6 +568,7 @@ cmd_status(){
     echo "  (none)"
   fi
 
+  SMOKE_MAX_WAIT=0  # una foto, sin esperar arranques
   if smoke; then
     echo "smoke: OK"
   else

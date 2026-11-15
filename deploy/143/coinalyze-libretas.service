@@ -1,0 +1,11 @@
+# DATOS B (fable-f8 F3): la de deploy/systemd, pero desde la COPIA CONGELADA de main (/opt/coinalyze-143, de root y solo
+# lectura) en vez del arbol de trabajo. Su temporizador es deploy/systemd/coinalyze-libretas.timer, sin cambios.
+# La instala el OPERADOR con deploy/143/instala.sh.
+[Unit]
+Description=Respalda las cuatro libretas del arnes fuera del nodo Proxmox (K49)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/coinalyze-143/current/harness/bin/respalda-libretas

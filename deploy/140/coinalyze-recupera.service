@@ -1,0 +1,39 @@
+# DATOS B (fable-f6 R2) · el RECUPERADOR de huecos de cadencia (scripts/recupera_huecos.py). Lo lanza
+# coinalyze-recupera.timer: pide a la fuente lo que falta de los huecos sin resolver MIENTRAS esta dentro de su
+# horizonte (ohlcv 1min ~24 h), reconcilia el hueco entero y escribe un latido que lee la vigia (app/bot/vigia.py).
+# Nunca archiva ni marca irrecuperable. Mismo usuario, entorno y arbol que la ingesta. El latido va en su
+# StateDirectory, 0750/0640 de coinalyze: la vigia (coinalyze-ai, SupplementaryGroups=coinalyze) lo lee.
+# Lo instala el OPERADOR una vez (nota en la entrega de DATOS B). El despliegue para y rearranca el temporizador
+# si esta instalado (deploy-coinalyze, OPTIONAL_STOP).
+[Unit]
+Description=Coinalyze recuperador: pide a la fuente lo que falta de los huecos antes de que salga de su horizonte
+After=network-online.target postgresql.service coinalyze-ingest.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=coinalyze
+Group=coinalyze
+WorkingDirectory=/opt/coinalyze/current
+EnvironmentFile=/etc/coinalyze/coinalyze.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=RECUPERA_LATIDO=/var/lib/coinalyze-recupera/latido.json
+ExecStart=/opt/coinalyze/current/.venv/bin/python /opt/coinalyze/current/scripts/recupera_huecos.py
+StandardInput=null
+StateDirectory=coinalyze-recupera
+StateDirectoryMode=0750
+TimeoutStartSec=20min
+MemoryMax=256M
+CPUQuota=50%
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0027

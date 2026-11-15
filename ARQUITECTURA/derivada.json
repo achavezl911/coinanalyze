@@ -34173,11 +34173,17 @@
             "harness/checks/K31-eslabon5.sh:65"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/test_deploy_wrapper.py:219"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 1,
+        "n_llamadas": 2,
         "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -35816,6 +35822,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/test_deploy_wrapper.py:219",
             "tests/test_metrics_endpoint.py:253",
             "tests/test_v121_hardening.py:35",
             "tests/test_v150_desk_snapshot.py:130"
@@ -35825,7 +35832,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 28,
+        "n_llamadas": 29,
         "n_menciones": 14,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -37142,7 +37149,8 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_dashboard_layout.py:134"
+            "tests/test_dashboard_layout.py:134",
+            "tests/test_deploy_wrapper.py:219"
           ],
           "menciones": [
             "tests/test_dashboard_layout.py:130"
@@ -37152,7 +37160,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 5,
+        "n_llamadas": 6,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -37594,7 +37602,8 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_bot_r3.py:337"
+            "tests/test_bot_r3.py:337",
+            "tests/test_deploy_wrapper.py:211"
           ],
           "menciones": [
             "tests/test_bot_r3.py:336",
@@ -37602,14 +37611,15 @@
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
             "tests/test_deploy_health_gate.py:154",
+            "tests/test_deploy_wrapper.py:49",
             "tests/test_ingest_health.py:236"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 14,
-        "n_menciones": 13,
+        "n_llamadas": 15,
+        "n_menciones": 14,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -46853,18 +46863,20 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_health_gate.py:180"
+            "tests/test_deploy_health_gate.py:180",
+            "tests/test_deploy_wrapper.py:219"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
-            "tests/test_deploy_health_gate.py:158"
+            "tests/test_deploy_health_gate.py:158",
+            "tests/test_deploy_wrapper.py:62"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 5,
-        "n_menciones": 2,
+        "n_llamadas": 6,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -51256,7 +51268,7 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:300",
+          "sitio": "app/bot/vigia.py:340",
           "verbo": "INSERT"
         }
       ],
@@ -51269,17 +51281,17 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:238"
+          "sitio": "app/bot/vigia.py:278"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:239"
+          "sitio": "app/bot/vigia.py:279"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:245"
+          "sitio": "app/bot/vigia.py:285"
         }
       ]
     },
@@ -51348,7 +51360,7 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:293",
+          "sitio": "app/bot/vigia.py:333",
           "verbo": "INSERT"
         }
       ],
@@ -51406,22 +51418,22 @@
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:246"
+          "sitio": "app/bot/vigia.py:286"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:248"
+          "sitio": "app/bot/vigia.py:288"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:261"
+          "sitio": "app/bot/vigia.py:301"
         },
         {
           "funcion": "app.bot.vigia.pasada",
           "origen": "literal",
-          "sitio": "app/bot/vigia.py:262"
+          "sitio": "app/bot/vigia.py:302"
         }
       ]
     },

@@ -172,15 +172,63 @@ async def observaciones_conocidas(
 
 
 async def _pendientes_en(conn, ident, inicio, fin) -> int:
+    """Huecos sin resolver que TOCAN la ventana, no los que caben enteros en ella.
+
+    Con 'caben enteros' (start_ts >= inicio AND end_ts <= fin) un hueco de mas de un trozo,
+    o uno que cruza la rejilla, no cabia en ninguna ventana y no se pedia NUNCA: los casos
+    B, D y E de fable-f6 (tests/test_recupera_huecos_postgres.py).
+    """
     return await conn.fetchval(
         """
         SELECT count(*) FROM data_gap
         WHERE status='unresolved' AND feed_class='cadence'
           AND feed=$1 AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
-          AND start_ts >= $6 AND end_ts <= $7
+          AND start_ts < $7 AND end_ts > $6
         """,
         ident["feed"], ident["exchange"], ident["market"], ident["symbol"],
         ident["granularity"], inicio, fin,
+    )
+
+
+async def huecos_que_tocan(conn, ident, inicio: datetime, fin: datetime) -> list[tuple[datetime, datetime]]:
+    """Los huecos sin resolver de la identidad que tocan [inicio, fin), FUNDIDOS: la misma ausencia vista por dos
+    detectores son dos filas (detection_source va en la clave), y se reconcilia una vez."""
+    filas = await conn.fetch(
+        """
+        SELECT start_ts, end_ts FROM data_gap
+        WHERE status='unresolved' AND feed_class='cadence' AND evidence_type='missing_interval'
+          AND feed=$1 AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
+          AND start_ts < $7 AND end_ts > $6
+        ORDER BY start_ts, end_ts
+        """,
+        ident["feed"], ident["exchange"], ident["market"], ident["symbol"],
+        ident["granularity"], inicio, fin,
+    )
+    fundidos: list[tuple[datetime, datetime]] = []
+    for fila in filas:
+        if fundidos and fila["start_ts"] <= fundidos[-1][1]:
+            fundidos[-1] = (fundidos[-1][0], max(fundidos[-1][1], fila["end_ts"]))
+        else:
+            fundidos.append((fila["start_ts"], fila["end_ts"]))
+    return fundidos
+
+
+async def reconcilia_hueco_entero(
+    conn, plan: FeedPlan, ident, inicio: datetime, fin: datetime, detection_source: str
+):
+    """UN reconcile sobre el hueco ENTERO, con lo que hay guardado. Hace falta porque reconcile_cadence_coverage solo
+    recupera un hueco que cabe entero en su ventana: pedido en trozos, ningun trozo lo contiene y se quedaba unresolved
+    con todas sus velas dentro (el caso F de fable-f6). Sin source_response_buckets, a proposito: el almacen no prueba
+    nada de la fuente, asi que esto recupera o se abstiene, NUNCA archiva. Y con omitir_ya_declarados, para no apuntar
+    otra vez lo que la fila de otro detector ya tiene apuntado."""
+    return await reconcile_cadence_coverage(
+        conn,
+        observations=await plan.almacenado(conn, ident, inicio, fin),
+        feed=ident["feed"], exchange=ident["exchange"], market=ident["market"],
+        symbol=ident["symbol"], granularity=ident["granularity"],
+        start=inicio, end=fin, cadence=plan.cadence,
+        detection_source=detection_source,
+        omitir_ya_declarados=True,
     )
 
 
@@ -220,6 +268,7 @@ async def run(feed: str | None, limit: int, dry_run: bool, archive_exhausted: bo
                         continue
                     resumen["identidades"] += 1
                     mapa = {ident["symbol"]: ident["symbol"]}
+                    guardadas: list[tuple[datetime, datetime]] = []
 
                     for inicio, fin in _windows(
                         ident["desde"], ident["hasta"], plan.chunk, plan.cadence
@@ -283,6 +332,17 @@ async def run(feed: str | None, limit: int, dry_run: bool, archive_exhausted: bo
                         )
                         resumen["huecos_recuperados"] += cobertura.recovered_gaps
                         resumen["huecos_archivados_ausencia"] += cobertura.archived_gaps
+                        guardadas.append((inicio, fin))
+
+                    # Lo pedido en trozos se juzga por hueco entero: ver reconcilia_hueco_entero.
+                    if guardadas:
+                        for h_ini, h_fin in await huecos_que_tocan(
+                            conn, ident, guardadas[0][0], guardadas[-1][1]
+                        ):
+                            cobertura = await reconcilia_hueco_entero(
+                                conn, plan, ident, h_ini, h_fin, RESWEEP_DETECTION_SOURCE
+                            )
+                            resumen["huecos_recuperados"] += cobertura.recovered_gaps
 
             async with pool.acquire() as conn:
                 resumen["unresolved_restantes"] = await conn.fetchval(

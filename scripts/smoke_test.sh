@@ -12,9 +12,19 @@ if [[ -f "$COINALYZE_ENV_FILE" ]]; then
   source "$COINALYZE_ENV_FILE"
   set +a
 fi
+# smoke-contract: 2 (deploy-coinalyze lo exige antes de usar este fichero)
+# Salida: 0 sano; 75 aun arrancando (motivo de arranque conocido: quien llama puede reintentar
+# hasta su espera maxima); 86 fallo definitivo (no se reintenta); cualquier otro, un sondeo fallido.
+# El token va en un fichero de cabeceras 0600 (curl -H @fichero), nunca en el argv de curl: el argv
+# de un proceso lo lee cualquier usuario de la maquina.
+HEADER_FILE=$(umask 077 && mktemp)
+HEALTH_JSON=$(umask 077 && mktemp)
+trap 'rm -f "$HEADER_FILE" "$HEALTH_JSON"' EXIT
 if [[ -n "${API_INTERNAL_TOKEN:-}" && "$BASE_URL" == http://127.0.0.1:* ]]; then
-  CURL_HEADERS=(-H "X-Internal-Token: ${API_INTERNAL_TOKEN}")
+  printf 'X-Internal-Token: %s\n' "$API_INTERNAL_TOKEN" >"$HEADER_FILE"
+  CURL_HEADERS=(-H "@$HEADER_FILE")
 fi
+unset API_INTERNAL_TOKEN
 # A collector can pass this check and still die while the HTTP probes below run: its
 # heartbeat can stay inside the freshness window even after the process is gone. Reusing
 # this function both before and after the probes closes that window instead of trusting
@@ -22,52 +32,90 @@ fi
 require_active_services() {
   local service
   for service in $REQUIRED_SYSTEMD_SERVICES; do
-    if systemctl is-failed --quiet "$service" || ! systemctl is-active --quiet "$service"; then
-      echo "Required service is not active and healthy: $service" >&2
-      return 1
+    if systemctl is-failed --quiet "$service"; then
+      echo "Required service is not active and healthy: $service (failed)" >&2
+      return 86
+    fi
+    if ! systemctl is-active --quiet "$service"; then
+      echo "Required service is not active and healthy: $service (not active yet)" >&2
+      return 75
     fi
   done
   return 0
 }
 
-require_active_services || exit 1
+require_active_services || exit $?
 curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/symbols" >/dev/null
-HEALTH_JSON=$(mktemp)
-trap 'rm -f "$HEALTH_JSON"' EXIT
 curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/healthz" >"$HEALTH_JSON"
 python3 - "$HEALTH_JSON" "$DEPLOY_RESTART_EPOCH" "$REQUIRED_HEARTBEATS" <<'PY_HEALTH'
 import datetime
 import json
 import sys
 
+STARTING, DEFINITIVE = 75, 86
+
+
+def fail(code: int, message: str) -> None:
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
+
+def parse_ts(value: object) -> datetime.datetime:
+    return datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
 path, restart_epoch, required_raw = sys.argv[1:]
 try:
     with open(path, encoding="utf-8") as handle:
         health = json.load(handle)
 except (OSError, json.JSONDecodeError) as exc:
-    raise SystemExit(f"healthz did not return valid JSON: {exc}")
-if health.get("status") != "ok":
-    raise SystemExit(f"healthz is not ok: {health.get('status')!r}")
+    fail(DEFINITIVE, f"healthz did not return valid JSON: {exc}")
+deployed_at = None
 if restart_epoch:
     try:
         deployed_at = datetime.datetime.fromtimestamp(float(restart_epoch), datetime.UTC)
     except (ValueError, OverflowError) as exc:
-        raise SystemExit(f"invalid deploy restart epoch: {exc}")
-    services = {str(row.get("service")): row for row in health.get("services", [])}
+        fail(DEFINITIVE, f"invalid deploy restart epoch: {exc}")
+services = {str(row.get("service")): row for row in health.get("services") or []}
+status = health.get("status")
+if status != "ok":
+    # «degraded» solo se tolera por un motivo de ARRANQUE conocido: un latido gobernado que aun no ha
+    # llegado (falta, o es de antes del reinicio) o la ingesta que aun no ha alcanzado a los simbolos.
+    # Un latido gobernado que, DESPUES del reinicio, dice algo distinto de ok es un fallo, no un arranque.
+    informative = {str(r.get("service")) for r in health.get("informative_services") or []}
+    starting: list[str] = [f"missing heartbeat: {s}" for s in health.get("missing_services") or []]
+    for name, row in sorted(services.items()):
+        if name in informative:
+            continue
+        try:
+            updated_at = parse_ts(row.get("updated_at"))
+        except ValueError:
+            fail(DEFINITIVE, f"invalid heartbeat timestamp for {name}")
+        if deployed_at is None or updated_at < deployed_at:
+            if deployed_at is not None or row.get("status") != "ok":
+                starting.append(f"awaiting first heartbeat since restart: {name}")
+        elif row.get("status") != "ok":
+            detail = str(row.get("detail") or "")[:200]
+            fail(DEFINITIVE, f"healthz is {status!r}: {name} reported {row.get('status')!r} after the restart: {detail}")
+    if health.get("missing_symbols") or any(float(r.get("lag_seconds") or 0) > 180.0 for r in health.get("symbols") or []):
+        starting.append("ingest has not caught up with every symbol")
+    if status != "degraded" or not starting:
+        fail(DEFINITIVE, f"healthz is not ok: {status!r} and no known startup reason explains it")
+    fail(STARTING, f"healthz is not ok: {status!r} (starting: {'; '.join(starting[:6])})")
+if deployed_at is not None:
     for service in required_raw.split():
         row = services.get(service)
         if row is None:
-            raise SystemExit(f"post-restart heartbeat missing: {service}")
+            fail(STARTING, f"post-restart heartbeat missing: {service}")
         try:
-            updated_at = datetime.datetime.fromisoformat(
-                str(row["updated_at"]).replace("Z", "+00:00")
-            )
+            updated_at = parse_ts(row["updated_at"])
         except (KeyError, ValueError) as exc:
-            raise SystemExit(f"invalid heartbeat timestamp for {service}: {exc}")
+            fail(DEFINITIVE, f"invalid heartbeat timestamp for {service}: {exc}")
         if updated_at < deployed_at:
-            raise SystemExit(
+            fail(
+                STARTING,
                 f"heartbeat predates restart: {service} updated_at={updated_at.isoformat()} "
-                f"restart={deployed_at.isoformat()}"
+                f"restart={deployed_at.isoformat()}",
             )
 PY_HEALTH
 curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/ai/profiles" >/dev/null
@@ -86,5 +134,5 @@ if [[ -n "$SYMBOL" ]]; then
 fi
 # Required again, immediately before success: a collector that died mid-probe must not
 # be masked by a still-fresh heartbeat or by probes that happened to succeed anyway.
-require_active_services || exit 1
+require_active_services || exit $?
 printf 'Smoke test OK: %s\n' "$BASE_URL"
