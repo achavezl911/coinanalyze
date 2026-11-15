@@ -16,6 +16,13 @@
  * SE GUARDAN POR ACTIVO en localStorage (GUARDADO, version VERSION), cada lectura y escritura en try/catch: sin
  * almacenamiento o con basura, la pantalla funciona sin trazos; un trazo malo se descarta y los buenos se quedan.
  *
+ * VARIOS /flujo DEL MISMO ACTIVO NO SE PISAN (campana OF-6b: dos pestanas, o dos marcos de /espacio). Cada trazo lleva
+ * `m`, el instante (ms) de su ultimo cambio; borrar deja una LAPIDA {id: instante}. Al guardar, lo de la pagina se
+ * FUSIONA por id con lo guardado (fusiona: gana el `m` mayor; una lapida de instante >= m quita el trazo) y la pagina
+ * se queda con el resultado; y cada /flujo escucha `storage` y repinta con la misma fusion. Las lapidas caducan a los
+ * LAPIDA_DIAS dias y como mucho quedan LAPIDA_TOPE por activo (las mas recientes). Lo guardado en VERSION 1 (sin `m`
+ * ni lapidas) se lee con m = 0 y se reescribe en la 2 sin perder un trazo. Nada va al servidor.
+ *
  * EL CONTRATO: `FLUJO_PINTADO.trazos`, una lista con, por trazo, tipo, id, puntos [{t, p}] y lo pintado en pixeles
  * del lienzo (px: la x, y de cada punto; nivel: y; fib: la razon, el precio y la y de cada linea; canal: pendiente,
  * ordenada, sigma, n y los extremos de las tres rectas). El estado de la botonera, en `FLUJO_TRAZOS`.
@@ -25,7 +32,9 @@ const TRAZOS_TIPOS = { nivel: 1, linea: 2, fib: 2, canal: 2 };
 const RAZONES_FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 const MARCO_MS = { '1m': 60000, '5m': 300000, '15m': 900000, '1h': 3600000, '4h': 14400000, '1d': 86400000 };
 const GUARDADO = 'flujo.trazos';
-const VERSION = 1;
+const VERSION = 2;
+const LAPIDA_DIAS = 7;
+const LAPIDA_TOPE = 500;
 const CERCA_PX = 6;
 const CANAL_SIGMAS = 2;
 
@@ -128,7 +137,7 @@ function canalDe(velas, iA, iB) {
 }
 
 /* Un trazo guardado es bueno si su tipo existe, tiene id y el numero de puntos de su tipo, cada uno con t y p
- * finitos. -> el trazo limpio o null. */
+ * finitos. -> el trazo limpio o null. `m` (el instante de su ultimo cambio) que falte o no sea un numero >= 0 es 0. */
 function trazoValido(x) {
   if (!x || typeof x !== 'object' || !Object.prototype.hasOwnProperty.call(TRAZOS_TIPOS, x.tipo)) return null;
   if (typeof x.id !== 'string' || !x.id || !Array.isArray(x.puntos) || x.puntos.length !== TRAZOS_TIPOS[x.tipo]) return null;
@@ -140,37 +149,113 @@ function trazoValido(x) {
     if (!Number.isFinite(t) || !Number.isFinite(p) || q.t === null || q.p === null) return null;
     puntos.push({ t: Math.round(t), p });
   }
-  return { tipo: x.tipo, id: x.id, puntos };
+  const m = typeof x.m === 'number' && Number.isFinite(x.m) && x.m >= 0 ? Math.round(x.m) : 0;
+  return { tipo: x.tipo, id: x.id, puntos, m };
 }
 
-/* Lo guardado (el texto de localStorage) -> los trazos buenos de `activo`. Basura, otra version o nada: []. */
-function leeGuardado(texto, activo) {
+/* Las lapidas buenas de un objeto {id: instante}: id no vacio e instante finito >= 0. */
+function lapidasValidas(o) {
+  const r = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return r;
+  Object.keys(o).forEach((id) => {
+    const m = o[id];
+    if (id && typeof m === 'number' && Number.isFinite(m) && m >= 0) r[id] = Math.round(m);
+  });
+  return r;
+}
+
+/* El texto -> {version, activos: {A: {trazos, lapidas}}}, o null si no es un guardado (basura u otra version).
+ * La VERSION 1: sus listas, con m = 0 y sin lapidas (es lo que el usuario ya dibujo: se conserva). */
+function leeTodo(texto) {
   let d;
   try {
     d = JSON.parse(texto);
   } catch (e) {
-    return [];
+    return null;
   }
-  if (!d || typeof d !== 'object' || d.version !== VERSION || !d.activos || typeof d.activos !== 'object') return [];
-  const lista = d.activos[activo];
-  if (!Array.isArray(lista)) return [];
-  const vistos = new Set();
-  return lista.map(trazoValido).filter((x) => x && !vistos.has(x.id) && vistos.add(x.id));
+  if (!d || typeof d !== 'object' || (d.version !== 1 && d.version !== VERSION) || !d.activos
+      || typeof d.activos !== 'object' || Array.isArray(d.activos)) return null;
+  const v2 = d.version === VERSION;
+  const lap = v2 && d.lapidas && typeof d.lapidas === 'object' ? d.lapidas : {};
+  const activos = {};
+  new Set(Object.keys(d.activos).concat(Object.keys(lap))).forEach((a) => {
+    const lista = Array.isArray(d.activos[a]) ? d.activos[a] : [];
+    const vistos = new Set();
+    const trazos = lista.map(trazoValido).filter((x) => x && !vistos.has(x.id) && vistos.add(x.id))
+      .map((x) => (v2 ? x : Object.assign(x, { m: 0 })));
+    activos[a] = { trazos, lapidas: lapidasValidas(lap[a]) };
+  });
+  return { version: d.version, activos };
 }
 
-/* El texto nuevo con los trazos de `activo` y los de los demas activos como estaban (si lo previo se deja leer). */
-function escribeGuardado(previo, activo, trazos) {
-  let d = null;
-  try {
-    d = JSON.parse(previo);
-  } catch (e) {
-    d = null;
+/* Lo guardado de `activo`: {trazos, lapidas}. Basura, otra version o nada: vacio. */
+function leeEstado(texto, activo) {
+  const t = leeTodo(texto);
+  const e = t && t.activos[activo];
+  return e ? { trazos: e.trazos, lapidas: e.lapidas } : { trazos: [], lapidas: {} };
+}
+
+/* Lo guardado (el texto de localStorage) -> los trazos buenos de `activo`. Basura, otra version o nada: []. */
+function leeGuardado(texto, activo) {
+  return leeEstado(texto, activo).trazos;
+}
+
+/* Desempate de dos versiones del mismo trazo con el mismo `m`: la de texto mayor (no depende del orden). */
+const claveTrazo = (z) => JSON.stringify([z.tipo, z.puntos]);
+const porId = (x, y) => (x < y ? -1 : x > y ? 1 : 0);
+
+/* LA FUSION de dos estados {trazos, lapidas} del mismo activo. Por id gana el trazo de `m` mayor; de cada lapida, el
+ * instante mayor; un trazo con lapida de instante >= su m se va (borrar es posterior a su ultimo cambio). Conmutativa
+ * e idempotente sobre lo que queda; la salida, ordenada por id. Con `ahora` (ms), las lapidas de antes de
+ * ahora - LAPIDA_DIAS dias se van y quedan como mucho las LAPIDA_TOPE mas recientes. */
+function fusiona(a, b, ahora) {
+  const lapidas = {};
+  [a, b].forEach((e) => {
+    const l = (e && e.lapidas) || {};
+    Object.keys(l).forEach((id) => {
+      if (!(id in lapidas) || l[id] > lapidas[id]) lapidas[id] = l[id];
+    });
+  });
+  const mejor = new Map();
+  [a, b].forEach((e) => {
+    ((e && e.trazos) || []).forEach((z) => {
+      const y = mejor.get(z.id);
+      if (!y || z.m > y.m || (z.m === y.m && claveTrazo(z) > claveTrazo(y))) mejor.set(z.id, z);
+    });
+  });
+  const trazos = [...mejor.values()]
+    .filter((z) => !(z.id in lapidas) || lapidas[z.id] < z.m)
+    .sort((x, y) => porId(x.id, y.id))
+    .map((z) => ({ tipo: z.tipo, id: z.id, puntos: z.puntos.map((q) => ({ t: q.t, p: q.p })), m: z.m }));
+  let ids = Object.keys(lapidas);
+  if (typeof ahora === 'number' && Number.isFinite(ahora)) {
+    const suelo = ahora - LAPIDA_DIAS * 86400000;
+    ids = ids.filter((id) => lapidas[id] >= suelo)
+      .sort((x, y) => lapidas[y] - lapidas[x] || porId(x, y)).slice(0, LAPIDA_TOPE);
   }
-  if (!d || typeof d !== 'object' || d.version !== VERSION || !d.activos || typeof d.activos !== 'object') {
-    d = { version: VERSION, activos: {} };
-  }
-  d.activos[activo] = trazos.map((x) => ({ tipo: x.tipo, id: x.id, puntos: x.puntos.map((q) => ({ t: q.t, p: q.p })) }));
-  return JSON.stringify(d);
+  const quedan = {};
+  ids.sort(porId).forEach((id) => { quedan[id] = lapidas[id]; });
+  return { trazos, lapidas: quedan };
+}
+
+/* Guardar: lo previo (v1 o v2; basura = nada) con `estado` fusionado en `activo` y caducado a `ahora`; los demas
+ * activos como estaban (los de la v1, con m = 0). -> {texto, estado}: el texto nuevo (VERSION) y lo que la pagina
+ * tiene que pintar (lo suyo y lo de los demas /flujo). */
+function guardaEstado(previo, activo, estado, ahora) {
+  const t = leeTodo(previo) || { activos: {} };
+  const nuevo = fusiona(t.activos[activo] || null, estado, ahora);
+  t.activos[activo] = nuevo;
+  const d = { version: VERSION, activos: {}, lapidas: {} };
+  Object.keys(t.activos).sort(porId).forEach((a) => {
+    d.activos[a] = t.activos[a].trazos.map((z) => ({ tipo: z.tipo, id: z.id, puntos: z.puntos, m: z.m }));
+    if (Object.keys(t.activos[a].lapidas).length) d.lapidas[a] = t.activos[a].lapidas;
+  });
+  return { texto: JSON.stringify(d), estado: nuevo };
+}
+
+/* El texto nuevo con los trazos de `activo` FUSIONADOS con lo previo (sin lapidas: guardar una lista no borra nada). */
+function escribeGuardado(previo, activo, trazos, ahora) {
+  return guardaEstado(previo, activo, { trazos: trazos.map(trazoValido).filter(Boolean), lapidas: {} }, ahora).texto;
 }
 
 /* ------------------------------------------------------------ la pagina */
@@ -514,5 +599,6 @@ function conectaTrazos(ctl) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { RAZONES_FIB, MARCO_MS, GUARDADO, VERSION, TRAZOS_TIPOS, fibonacci, regresion, distSegmento, xDeInstante,
-                     instanteDeX, tramoDe, canalDe, trazoValido, leeGuardado, escribeGuardado };
+                     instanteDeX, tramoDe, canalDe, trazoValido, leeGuardado, escribeGuardado, LAPIDA_DIAS, LAPIDA_TOPE,
+                     lapidasValidas, leeTodo, leeEstado, fusiona, guardaEstado };
 }
