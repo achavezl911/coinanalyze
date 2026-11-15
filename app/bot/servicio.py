@@ -36,6 +36,7 @@ import httpx
 from app.bot import bybit as bb
 from app.bot import calc, calidad, historial, llm, vidas
 from app.bot import centinela as cen
+from app.bot import sesgo as ses
 from app.bot import sombra as sb
 
 log = logging.getLogger("app.bot")
@@ -1255,6 +1256,7 @@ class Bot:
             return
         s = await self.salud()
         texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}") + "\n" + await self.texto_sombra(corto=True)
+        texto += "\n" + await self.texto_sesgo(corto=True)
         enviada = await self.manda(texto)
         if not enviada and self.tg:
             return  # se reintenta al minuto siguiente; el interruptor avisa si a las 13:30Z no ha salido
@@ -1292,6 +1294,17 @@ class Bot:
         except Exception as e:
             return f"SOMBRA: sin cuenta ({type(e).__name__} {str(e)[:160]})"
 
+    async def texto_sesgo(self, corto: bool = False) -> str:
+        """E2: el sesgo diario de cada activo (app/bot/sesgo.py), para /entrada y el parte. CONTEXTO, NO una entrada; un
+        fallo de lectura no tumba ni la orden ni el parte."""
+        try:
+            ahora = int(time.time())
+            lat = await self.db.fetchval(ses.LATIDO_SQL)
+            filas = await self.db.fetch(ses.SQL, [cen.SIMBOLO[a] for a in cen.ACTIVOS], ahora - 90 * 86400, ahora - 3 * 86400)
+            return ses.texto([tuple(f) for f in filas], lat, ahora, cen.ACTIVOS, corto)
+        except Exception as e:
+            return f"SESGO: sin leer ({type(e).__name__} {str(e)[:160]}) · {ses.AVISO}"
+
     async def tic_informe(self):
         """El informe semanal que redacta Claude Max en 143 (tools/bot/semanal.py) y deja en BOT_INFORMES/<semana>.txt."""
         sem = semana_iso(datetime.now(UTC))
@@ -1319,7 +1332,7 @@ class Bot:
                     await self.evalua(p, "a peticion")
                 return "" if ps else "no hay posicion abierta que evaluar"
             if orden in ("/entrada", "/entradas", "entrada"):
-                return ENTRADAS + "\n" + await self.texto_sombra()
+                return ENTRADAS + "\n" + await self.texto_sombra() + "\n" + await self.texto_sesgo()
             if orden == "/estado":
                 return self.texto_salud(await self.salud(), "ESTADO")
             if orden == "/prueba":

@@ -277,3 +277,76 @@ def test_b6_prueba_manda_una_muestra_del_stop_cerca_sin_tocar_los_avisos(monkeyp
     assert b.avisados == set() and b.fallidos == set() and b.eventos == []
     asyncio.run(b.seguridad([POS]))  # el aviso real de esa misma posicion sale igual, con el mismo formato
     assert len(b.mandados) == 2 and m[len("PRUEBA · "):].split(" · (MUESTRA")[0] == b.mandados[1]
+
+
+# ------------------------------------------------------------------------- E1 / E2
+DIA = 86400
+HOY = 1794700800  # 2026-11-15 00:00Z
+
+
+def diarias_btc(n: int = 60, hasta: int = HOY) -> list:
+    """n diarias de BTC que acaban en la que CIERRA en «hasta», cierre subiendo de 1 en 1 (100, 101...), alto = bajo = cierre;
+    mas la diaria en curso (abre en «hasta») con cierre 1 y unas 4 h."""
+    t0 = hasta - n * DIA
+    f = [("BTCUSDT", "daily", t0 + k * DIA, 100.0 + k, 100.0 + k, 100.0 + k) for k in range(n)]
+    f.append(("BTCUSDT", "daily", hasta, 1.0, 1.0, 1.0))  # abierta: no cuenta
+    f += [("BTCUSDT", "4hour", hasta - 8 * 3600 + k * 14400, 150.0 + k, 150.0 + k, 150.0 + k) for k in range(3)]
+    return f
+
+
+def test_e1_solo_velas_cerradas_y_con_la_ingesta_posterior_a_su_cierre():
+    from app.bot import sesgo as ses
+    f = diarias_btc()
+    d = ses.cerradas(f, "daily", HOY + 1200, HOY + 1800)  # latido 00:20Z: la que cerro a las 00:00Z cuenta
+    assert len(d) == 60 and d[-1][0] == HOY - DIA and d[-1][3] == 159.0
+    d = ses.cerradas(f, "daily", HOY + 300, HOY + 1800)  # latido 00:05Z: pudo escribirla a medias, no cuenta
+    assert d[-1][0] == HOY - 2 * DIA
+    h4 = ses.cerradas(f, "4hour", HOY + 1200, HOY + 1800)  # la de 00:00Z esta abierta
+    assert [x[0] for x in h4] == [HOY - 8 * 3600, HOY - 4 * 3600]
+    assert ses.cerradas(f, "daily", None, HOY + 1800) == []
+
+
+def test_e2_el_sesgo_su_racha_su_rango_y_su_invalidacion():
+    from app.bot import sesgo as ses
+    s = ses.sesgo(ses.cerradas(diarias_btc(), "daily", HOY + 1200, HOY + 1800), HOY + 1800)
+    media = sum(range(110, 160)) / 50  # 134.5
+    assert s["dato"] and s["cierre"] == 159.0 and abs(s["media"] - media) < 1e-9
+    assert abs(s["pct"] - (159 / media - 1) * 100) < 1e-9 and s["lado"] == 1 and s["dias"] == 11  # 60 - 49 con media
+    assert s["rompe"] == "maximo" and s["max20"] == 158.0
+    t = ses.texto(diarias_btc(), HOY + 1200, HOY + 1800)
+    assert "contexto, NO es una entrada" in t and "ninguna regla medida ha confirmado ventaja" in t and "claude/fable-be" in t
+    assert "BTC: diario del 11-14" in t and "+18.22 % por encima de su media de 50 d (134.5)" in t
+    assert "11 d seguidos por encima" in t and "rompio el maximo de 20 d (158)" in t
+    assert "invalidacion: un cierre diario por debajo de la media" in t and "4 h: ultima cerrada 11-15 00:00Z, 151" in t
+    assert "ETH: sin dato desde nunca" in t
+    viejo = ses.texto(diarias_btc(hasta=HOY - 3 * DIA), HOY + 1200, HOY + 1800)  # la ultima cerrada, la de 11-12 (cierra 11-13 00:00Z): 48 h
+    assert "BTC: sin dato desde 11-13 00:00Z" in viejo
+
+
+def test_e2_entrada_y_el_parte_dicen_el_sesgo(monkeypatch):
+    b = bot(monkeypatch, [True])
+
+    class DBs:
+        async def fetchval(self, sql, *a):
+            return HOY + 1200
+
+        async def fetch(self, sql, simbolos, *a):
+            assert simbolos == ["BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"]
+            return diarias_btc()
+    b.db = DBs()
+
+    async def sombra(corto=False):
+        return "SOMBRA"
+    monkeypatch.setattr(b, "texto_sombra", sombra)
+    monkeypatch.setattr(sv.time, "time", lambda: HOY + 1800.0)
+    e = asyncio.run(b.atiende("/entrada"))
+    assert e.startswith(sv.ENTRADAS) and "SESGO (contexto, NO es una entrada" in e and "BTC: diario del 11-14" in e
+    b.cargado, b.parte_hoy = True, None
+    monkeypatch.setattr(sv, "PARTE_HORA_UTC", 0)
+    monkeypatch.setattr(b, "salud", lambda: _salud())
+    asyncio.run(b.tic_parte())
+    assert any(m.startswith("PARTE ") and "SESGO (contexto, NO es una entrada" in m for m in b.mandados)
+
+
+async def _salud():
+    return dict(SALUD, datos=None)
