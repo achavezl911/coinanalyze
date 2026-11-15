@@ -2,6 +2,7 @@
 Banco sintetico en tmp_path y un proponente doble: sin red ni modelo real."""
 from __future__ import annotations
 
+import json
 import random
 import re
 
@@ -98,3 +99,68 @@ def test_s1_sorteo_reproducible_con_su_semilla(tmp_path):
     assert letras == {"A", "B", "C"}
     with pytest.raises(ValueError):
         cg.foto(banco, "BTC", t + 300)
+
+
+# ---------- S2: el proponente ----------
+DOBLE = r'''#!/usr/bin/env python3
+"""claude doble: apunta lo que recibe y contesta como `claude -p --output-format stream-json`."""
+import json, os, sys
+a = sys.argv
+tools = [] if "--tools" in a and a[a.index("--tools") + 1] == "" else ["Bash", "Read"]
+if os.environ.get("DOBLE_HERRAMIENTAS"):
+    tools = ["Read"]
+with open(os.environ["DOBLE_SALIDA"], "w") as f:
+    json.dump({"argv": a[1:], "cwd": os.getcwd(), "cwd_vacio": os.listdir("."),
+               "api_key": "ANTHROPIC_API_KEY" in os.environ, "stdin": sys.stdin.read()}, f)
+print(json.dumps({"type": "system", "subtype": "init", "tools": tools, "mcp_servers": [], "model": "doble"}))
+print(json.dumps({"type": "result", "is_error": False, "result": os.environ.get("DOBLE_RESPUESTA", "ninguna"),
+                  "total_cost_usd": 0.25, "usage": {"input_tokens": 9000, "output_tokens": 400}}))
+'''
+
+
+@pytest.fixture
+def doble(tmp_path, monkeypatch):
+    b = tmp_path / "claude-doble"
+    b.write_text(DOBLE)
+    b.chmod(0o755)
+    monkeypatch.setenv("DIARIO_CIEGO_CLAUDE", str(b))
+    monkeypatch.setenv("DOBLE_SALIDA", str(tmp_path / "doble.json"))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-no-se-pasa")
+    return tmp_path / "doble.json"
+
+
+def test_s2_el_proponente_no_recibe_herramientas(doble):
+    from app.diario import proponente as pr
+    reg = pr.pide("FOTO-DE-PRUEBA")
+    vio = json.loads(doble.read_text())
+    a = vio["argv"]
+    assert a[a.index("--tools") + 1] == "" and "--safe-mode" in a and "--strict-mcp-config" in a
+    assert not {"--allowedTools", "--allowed-tools", "--add-dir", "--mcp-config", "--dangerously-skip-permissions",
+                "--permission-mode", "--agents", "--plugin-dir"} & set(a)
+    assert a[a.index("--system-prompt") + 1] == pr.SISTEMA and a[a.index("--model") + 1] == pr.MODELO
+    assert vio["cwd_vacio"] == [] and "ciego-vacio-" in vio["cwd"] and vio["api_key"] is False
+    assert vio["stdin"] == pr.INSTRUCCIONES + "\nFOTO-DE-PRUEBA"
+    assert reg["error"] is None and reg["herramientas"] == [] and reg["texto"] == "ninguna" and reg["coste_usd"] == 0.25
+
+
+def test_s2_con_herramientas_la_respuesta_no_vale(doble, monkeypatch):
+    from app.diario import proponente as pr
+    monkeypatch.setenv("DOBLE_HERRAMIENTAS", "1")
+    assert "TENIA herramientas" in pr.pide("F")["error"]
+
+
+@pytest.mark.parametrize("texto,motivo", [
+    ("", "vacia"), ("Creo que compraria", "no es JSON"), ('{"propuestas": [', "no es JSON"),
+    ('{"formato": "otro", "propuestas": []}', "diario-entradas/1"), ('{"formato": "diario-entradas/1"}', "propuestas"),
+    ('{"formato": "diario-entradas/1", "propuestas": [{}, {}, {}, {}]}', "como mucho 3")])
+def test_s2_json_roto_se_rechaza_con_motivo(texto, motivo):
+    from app.diario import proponente as pr
+    crudas, m = pr.lee(texto)
+    assert crudas == [] and m and motivo in m
+
+
+def test_s2_ninguna_y_json_valido():
+    from app.diario import proponente as pr
+    assert pr.lee("ninguna") == ([], None) and pr.lee("«Ninguna».") == ([], None)
+    j = '{"formato": "diario-entradas/1", "propuestas": [{"id": "1"}]}'
+    assert pr.lee(j) == ([{"id": "1"}], None) and pr.lee(f"```json\n{j}\n```") == ([{"id": "1"}], None)
