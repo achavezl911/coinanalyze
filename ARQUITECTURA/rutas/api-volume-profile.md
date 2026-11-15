@@ -89,13 +89,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 docstring o un `.md` que la nombra. No pesan igual: una ruta cuyo unico rastro es un
 comentario no tiene consumidor, tiene quien habla de ella.
 
-| donde | llamadas | menciones |
-|---|---|---|
-| **readme** | — | `README.md:121` |
+**NINGUN rastro**, ni llamada ni mencion, en `static/app.js`, `static/index.html`,
+`harness/checks`, `tests`, `tools` ni `README.md`.
 
-**Nadie la llama.** Sus 1 rastros son todos MENCION -comentario,
-docstring o documento-. Es la forma del patron que en esta casa se ha repetido
-nueve veces: algo de lo que se habla y nadie ejecuta. **Merece una mirada.**
+No prueba que este muerta -puede llamarla algo fuera del repo, o una IA por su
+nombre-, pero es la forma exacta del patron que en esta casa se ha repetido nueve
+veces. **Merece una mirada, no una conclusion.**
 
 ## Ventana · con que clave la declara (derivado)
 
