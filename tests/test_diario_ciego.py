@@ -159,6 +159,66 @@ def test_s2_json_roto_se_rechaza_con_motivo(texto, motivo):
     assert crudas == [] and m and motivo in m
 
 
+def _cruda(clave, px, **k):
+    f = clave["factor"]
+    return {"id": "1", "activo": clave["letra"], "lado": "largo", "orden": "limite", "entrada": round(0.99 * px / f, 5),
+            "stop": round(0.97 * px / f, 5), "objetivo": round(1.03 * px / f, 5), "caduca": 86400, "plazo_h": 48,
+            "riesgo_usd": 5, "porque": "rebote en el minimo", **k}
+
+
+def test_s3_desanonimizacion_exacta(tmp_path):
+    from app.diario import fuentes as fu
+    banco = _banco(tmp_path)
+    t = T0 + 3 * 14400
+    _, clave = cg.foto(banco, "BTC", t)
+    px = fu.precio(cg.velas5(banco, "BTC"), t)
+    c = _cruda(clave, px)
+    p, m = cg.desanonimiza(c, clave, "BTC-1")
+    assert m is None and fu.valida(p, px, t, set()) is None
+    assert p["activo"] == "BTC" and p["fuente"] == "fable-ciego" and p["id"] == "fable-ciego:BTC-1:1"
+    for k in ("entrada", "stop", "objetivo"):
+        assert p[k] == c[k] * clave["factor"]
+    assert p["caduca"] == t + 86400 and p["plazo_s"] == 48 * 3600 and p["sello"] == t and p["riesgo_usd"] == 5
+    otra = next(x for x in "ABC" if x != clave["letra"])
+    assert "la foto era" in cg.desanonimiza({**c, "activo": otra}, clave, "i")[1]
+    assert "caduca" in cg.desanonimiza({**c, "caduca": 432001}, clave, "i")[1]
+    assert "plazo_h" in cg.desanonimiza({**c, "plazo_h": 241}, clave, "i")[1]
+
+
+def test_s3_sello_y_resolucion_como_la_fase_2(tmp_path):
+    from app.diario import fuentes as fu
+    from app.diario import libro as lb
+    from app.diario import resuelve as rs
+    banco = _banco(tmp_path)
+    t = T0 + 3 * 14400
+    px = fu.precio(cg.velas5(banco, "BTC"), t)
+    # despues de t, a mano: t+300 toca la entrada (0.99), t+1500 toca el objetivo (1.03) sin tocar el stop (0.97)
+    a_mano = {0: (1.001, 0.999, 1.0), 1: (1.0, 0.985, 0.99), 2: (0.996, 0.994, 0.995), 3: (0.996, 0.994, 0.995),
+              4: (0.996, 0.994, 0.995), 5: (1.04, 0.995, 1.035)}
+    p5 = tmp_path / "banco" / "BTC-5m.txt"
+    filas = [x.split("|") for x in p5.read_text().splitlines()]
+    _escribe(p5, [[f[0], *(str(px * y) for y in a_mano[(int(f[0]) - t) // 300]), f[4]]
+                  if 0 <= int(f[0]) - t < 1800 else f for f in filas])
+    cg.carga.cache_clear()
+    _, clave = cg.foto(banco, "BTC", t)
+    c = _cruda(clave, px)
+    texto = json.dumps({"formato": "diario-entradas/1", "propuestas": [c, {**c, "id": "2", "caduca": -5}]})
+    L = lb.Libro(str(tmp_path / "diario-ciego.jsonl"))
+    n = cg.sella_instante(L, banco, clave, "BTC-1", {"error": None, "texto": texto}, set())
+    assert n["selladas"] == 1 and n["rechazadas"] == 1 and n["rejilla"][0] + n["rejilla"][1] == 6
+    out = cg.resuelve_y_marca(L, banco, str(tmp_path))
+    assert lb.verifica(str(tmp_path / "diario-ciego.jsonl")) == []
+    props, res = cg.mc.operaciones(L.lee())
+    r, p = res["fable-ciego:BTC-1:1"], props["fable-ciego:BTC-1:1"]
+    assert {k: v for k, v in r.items() if k not in ("n", "prev", "tipo", "t")} == \
+        rs.resuelve(p, cg.velas5(banco, "BTC"), out["fin_banco"])["resultado"]
+    e, d = p["entrada"], (p["entrada"] - p["stop"]) / p["entrada"]
+    assert r["salida"] == "objetivo" and r["t_llenado"] == t + 300 and r["t_salida"] == t + 1800
+    assert r["r_neto"] == pytest.approx(((p["objetivo"] / e - 1) - rs.COM_MAKER - rs.COM_TAKER) / d, abs=1e-6)
+    assert all(i.endswith("@BTC-1") for i in props if i.startswith("rejilla:"))
+    assert "fable-ciego: 1 propuestas, 1 resueltas, 1 llenadas, 1 rechazadas" in out["marcador"]
+
+
 def test_s2_ninguna_y_json_valido():
     from app.diario import proponente as pr
     assert pr.lee("ninguna") == ([], None) and pr.lee("«Ninguna».") == ([], None)
