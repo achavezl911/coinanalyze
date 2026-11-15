@@ -58,8 +58,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:65` | — |
 | **readme** | — | `README.md:420`, `README.md:524` |
+| **tests** | `tests/test_deploy_wrapper.py:219` | — |
 
-**No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

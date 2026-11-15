@@ -164,7 +164,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:151`, `harness/checks/K43-foto-unica.sh:209` | `harness/checks/K20-cincoxx.sh:2` |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:220`, `static/js/07-decision-y-ciclos.js:432` | — |
-| **tests** | `tests/test_dashboard_layout.py:134` | `tests/test_dashboard_layout.py:130` |
+| **tests** | `tests/test_dashboard_layout.py:134`, `tests/test_deploy_wrapper.py:219` | `tests/test_dashboard_layout.py:130` |
 
 **La llama el panel: es superficie de producto.**
 
