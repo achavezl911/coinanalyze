@@ -8,17 +8,17 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_ts`](#-ts) | 467 | 0 | **0** | 24 ↑ | **0** |
-| [`declara_hueco`](#declara-hueco) | 471 | 0 | **24** | 24 | **24** |
-| [`declara_parada_anterior`](#declara-parada-anterior) | 596 | 0 | **0** | 24 ↑ | **0** |
-| [`escribe_minutos`](#escribe-minutos) | 479 | 0 | **0** | 24 ↑ | **0** |
+| [`_ts`](#-ts) | 524 | 0 | **0** | 22 ↑ | **0** |
+| [`declara_hueco`](#declara-hueco) | 528 | 0 | **22** | 22 | **22** |
+| [`declara_parada_anterior`](#declara-parada-anterior) | 654 | 0 | **0** | 22 ↑ | **0** |
+| [`escribe_minutos`](#escribe-minutos) | 536 | 0 | **0** | 22 ↑ | **0** |
 | [`nivel_de`](#nivel-de) | 310 | 1 | **0** | 0 | **1** |
 
 ## _ts
 
-`app/orderflow.py:467` · clave completa `app.orderflow._ts`
+`app/orderflow.py:524` · clave completa `app.orderflow._ts`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -31,9 +31,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 24 rutas · **cota superior**
+### Por tabla · k<=2 — 22 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -56,13 +56,11 @@ Y esas tablas las leen:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -74,7 +72,7 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**24 rutas se enteran SOLO por el dato**, sin
+**22 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -84,13 +82,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -106,9 +102,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## declara_hueco
 
-`app/orderflow.py:471` · clave completa `app.orderflow.declara_hueco`
+`app/orderflow.py:528` · clave completa `app.orderflow.declara_hueco`
 
-**Radio exacto: 24 rutas** de 93 · **cota superior: 24** (igual al exacto)
+**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -116,7 +112,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 24 rutas · **exacto**
+### Por tabla · k=0 — 22 rutas · **exacto**
 
 Escribe **ella misma**: `data_gap`
 
@@ -129,13 +125,11 @@ Y esas tablas las leen:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -147,7 +141,7 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla · k<=2 — 24 rutas · **cota superior**
+### Por tabla · k<=2 — 22 rutas · **cota superior**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
@@ -168,13 +162,11 @@ Y esas tablas las leen:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -186,7 +178,7 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**24 rutas se enteran SOLO por el dato**, sin
+**22 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -196,13 +188,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -218,9 +208,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## declara_parada_anterior
 
-`app/orderflow.py:596` · clave completa `app.orderflow.declara_parada_anterior`
+`app/orderflow.py:654` · clave completa `app.orderflow.declara_parada_anterior`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -236,9 +226,9 @@ Y esas tablas las leen:
 
 
 
-### Por tabla · k<=2 — 24 rutas · **cota superior**
+### Por tabla · k<=2 — 22 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -260,13 +250,11 @@ Y esas tablas las leen:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -278,7 +266,7 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**24 rutas se enteran SOLO por el dato**, sin
+**22 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -288,13 +276,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -310,9 +296,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## escribe_minutos
 
-`app/orderflow.py:479` · clave completa `app.orderflow.escribe_minutos`
+`app/orderflow.py:536` · clave completa `app.orderflow.escribe_minutos`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 24** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -328,9 +314,9 @@ Y esas tablas las leen:
 
 
 
-### Por tabla · k<=2 — 24 rutas · **cota superior**
+### Por tabla · k<=2 — 22 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (24 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -353,13 +339,11 @@ Y esas tablas las leen:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)
@@ -371,7 +355,7 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**24 rutas se enteran SOLO por el dato**, sin
+**22 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -381,13 +365,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/daily`](../rutas/api-daily.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
 - [`/api/oi`](../rutas/api-oi.md)

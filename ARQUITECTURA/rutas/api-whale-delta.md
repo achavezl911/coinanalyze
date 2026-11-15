@@ -48,11 +48,11 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
 
 ## Funciones que la componen
 
@@ -105,7 +105,6 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K43-foto-unica.sh:161`, `harness/checks/K52b-la-ruta-no-falla-abierta.sh:57` | `harness/checks/K52b-la-ruta-no-falla-abierta.sh:6`, `harness/checks/K59-whale-vota-cero.sh:15` |
 | **panel** | `static/js/07-decision-y-ciclos.js:319` | — |
-| **readme** | — | `README.md:412` |
 | **tests** | — | `tests/test_data_gaps.py:325`, `tests/test_sobre_unidad_bucket.py:3`, `tests/test_sobre_unidad_bucket.py:9` |
 
 **La llama el panel: es superficie de producto.**
@@ -142,9 +141,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |

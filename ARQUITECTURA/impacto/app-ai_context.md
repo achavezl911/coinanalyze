@@ -8,42 +8,42 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`data_confidence_row`](#data-confidence-row) | 531 | 4 | **0** | 0 | **4** |
-| [`quality_score`](#quality-score) | 619 | 4 | **0** | 0 | **4** |
-| [`_corte_unico`](#-corte-unico) | 855 | 3 | **0** | 0 | **3** |
-| [`_round_number`](#-round-number) | 226 | 3 | **0** | 0 | **3** |
-| [`build_operator_read`](#build-operator-read) | 747 | 3 | **0** | 0 | **3** |
-| [`compact_dict`](#compact-dict) | 253 | 3 | **0** | 0 | **3** |
-| [`compact_value`](#compact-value) | 237 | 3 | **0** | 0 | **3** |
-| [`latest_snapshot`](#latest-snapshot) | 298 | 3 | **0** | 0 | **3** |
-| [`orderbook_freshness`](#orderbook-freshness) | 668 | 3 | **0** | 0 | **3** |
-| [`_armar_sobre`](#-armar-sobre) | 909 | 2 | **0** | 0 | **2** |
-| [`build_ai_symbol_context`](#build-ai-symbol-context) | 891 | 2 | **0** | 0 | **2** |
-| [`daily_data`](#daily-data) | 305 | 2 | **0** | 0 | **2** |
-| [`daily_history`](#daily-history) | 394 | 2 | **0** | 0 | **2** |
-| [`field_disambiguation`](#field-disambiguation) | 74 | 2 | **0** | 0 | **2** |
-| [`latest_orderbook`](#latest-orderbook) | 680 | 2 | **0** | 0 | **2** |
-| [`liquidation_levels`](#liquidation-levels) | 708 | 2 | **0** | 0 | **2** |
-| [`local_alerts`](#local-alerts) | 797 | 2 | **0** | 0 | **2** |
-| [`normalize_profile`](#normalize-profile) | 219 | 2 | **0** | 0 | **2** |
-| [`recent_signals`](#recent-signals) | 692 | 2 | **0** | 0 | **2** |
-| [`rough_token_estimate`](#rough-token-estimate) | 283 | 2 | **0** | 0 | **2** |
-| [`sin_perder_los_nulos`](#sin-perder-los-nulos) | 264 | 2 | **0** | 0 | **2** |
-| [`verdict_history`](#verdict-history) | 486 | 2 | **0** | 0 | **2** |
-| [`_dura`](#-dura) | 1431 | 1 | **0** | 0 | **1** |
-| [`_hora`](#-hora) | 1427 | 1 | **0** | 0 | **1** |
-| [`_sin_lado`](#-sin-lado) | 1325 | 1 | **0** | 0 | **1** |
-| [`build_ai_context`](#build-ai-context) | 1079 | 1 | **0** | 0 | **1** |
-| [`build_mesa_decide`](#build-mesa-decide) | 1571 | 1 | **0** | 0 | **1** |
-| [`campo_mesa`](#campo-mesa) | 1285 | 1 | **0** | 0 | **1** |
-| [`frase_del_instante`](#frase-del-instante) | 1439 | 1 | **0** | 0 | **1** |
-| [`palabra_de_la_decision`](#palabra-de-la-decision) | 1216 | 1 | **0** | 0 | **1** |
-| [`palabra_registrada`](#palabra-registrada) | 1420 | 1 | **0** | 0 | **1** |
-| [`palabra_sostenida`](#palabra-sostenida) | 1446 | 1 | **0** | 0 | **1** |
+| [`data_confidence_row`](#data-confidence-row) | 532 | 4 | **0** | 0 | **4** |
+| [`quality_score`](#quality-score) | 623 | 4 | **0** | 0 | **4** |
+| [`_corte_unico`](#-corte-unico) | 859 | 3 | **0** | 0 | **3** |
+| [`_round_number`](#-round-number) | 227 | 3 | **0** | 0 | **3** |
+| [`build_operator_read`](#build-operator-read) | 751 | 3 | **0** | 0 | **3** |
+| [`compact_dict`](#compact-dict) | 254 | 3 | **0** | 0 | **3** |
+| [`compact_value`](#compact-value) | 238 | 3 | **0** | 0 | **3** |
+| [`latest_snapshot`](#latest-snapshot) | 299 | 3 | **0** | 0 | **3** |
+| [`orderbook_freshness`](#orderbook-freshness) | 672 | 3 | **0** | 0 | **3** |
+| [`_armar_sobre`](#-armar-sobre) | 913 | 2 | **0** | 0 | **2** |
+| [`build_ai_symbol_context`](#build-ai-symbol-context) | 895 | 2 | **0** | 0 | **2** |
+| [`daily_data`](#daily-data) | 306 | 2 | **0** | 0 | **2** |
+| [`daily_history`](#daily-history) | 395 | 2 | **0** | 0 | **2** |
+| [`field_disambiguation`](#field-disambiguation) | 75 | 2 | **0** | 0 | **2** |
+| [`latest_orderbook`](#latest-orderbook) | 684 | 2 | **0** | 0 | **2** |
+| [`liquidation_levels`](#liquidation-levels) | 712 | 2 | **0** | 0 | **2** |
+| [`local_alerts`](#local-alerts) | 801 | 2 | **0** | 0 | **2** |
+| [`normalize_profile`](#normalize-profile) | 220 | 2 | **0** | 0 | **2** |
+| [`recent_signals`](#recent-signals) | 696 | 2 | **0** | 0 | **2** |
+| [`rough_token_estimate`](#rough-token-estimate) | 284 | 2 | **0** | 0 | **2** |
+| [`sin_perder_los_nulos`](#sin-perder-los-nulos) | 265 | 2 | **0** | 0 | **2** |
+| [`verdict_history`](#verdict-history) | 487 | 2 | **0** | 0 | **2** |
+| [`_dura`](#-dura) | 1435 | 1 | **0** | 0 | **1** |
+| [`_hora`](#-hora) | 1431 | 1 | **0** | 0 | **1** |
+| [`_sin_lado`](#-sin-lado) | 1329 | 1 | **0** | 0 | **1** |
+| [`build_ai_context`](#build-ai-context) | 1083 | 1 | **0** | 0 | **1** |
+| [`build_mesa_decide`](#build-mesa-decide) | 1575 | 1 | **0** | 0 | **1** |
+| [`campo_mesa`](#campo-mesa) | 1289 | 1 | **0** | 0 | **1** |
+| [`frase_del_instante`](#frase-del-instante) | 1443 | 1 | **0** | 0 | **1** |
+| [`palabra_de_la_decision`](#palabra-de-la-decision) | 1220 | 1 | **0** | 0 | **1** |
+| [`palabra_registrada`](#palabra-registrada) | 1424 | 1 | **0** | 0 | **1** |
+| [`palabra_sostenida`](#palabra-sostenida) | 1450 | 1 | **0** | 0 | **1** |
 
 ## data_confidence_row
 
-`app/ai_context.py:531` · clave completa `app.ai_context.data_confidence_row`
+`app/ai_context.py:532` · clave completa `app.ai_context.data_confidence_row`
 
 **Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
 
@@ -69,7 +69,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## quality_score
 
-`app/ai_context.py:619` · clave completa `app.ai_context.quality_score`
+`app/ai_context.py:623` · clave completa `app.ai_context.quality_score`
 
 **Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
 
@@ -95,7 +95,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _corte_unico
 
-`app/ai_context.py:855` · clave completa `app.ai_context._corte_unico`
+`app/ai_context.py:859` · clave completa `app.ai_context._corte_unico`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -120,7 +120,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _round_number
 
-`app/ai_context.py:226` · clave completa `app.ai_context._round_number`
+`app/ai_context.py:227` · clave completa `app.ai_context._round_number`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -145,7 +145,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_operator_read
 
-`app/ai_context.py:747` · clave completa `app.ai_context.build_operator_read`
+`app/ai_context.py:751` · clave completa `app.ai_context.build_operator_read`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -170,7 +170,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## compact_dict
 
-`app/ai_context.py:253` · clave completa `app.ai_context.compact_dict`
+`app/ai_context.py:254` · clave completa `app.ai_context.compact_dict`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -195,7 +195,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## compact_value
 
-`app/ai_context.py:237` · clave completa `app.ai_context.compact_value`
+`app/ai_context.py:238` · clave completa `app.ai_context.compact_value`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -220,7 +220,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## latest_snapshot
 
-`app/ai_context.py:298` · clave completa `app.ai_context.latest_snapshot`
+`app/ai_context.py:299` · clave completa `app.ai_context.latest_snapshot`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -245,7 +245,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## orderbook_freshness
 
-`app/ai_context.py:668` · clave completa `app.ai_context.orderbook_freshness`
+`app/ai_context.py:672` · clave completa `app.ai_context.orderbook_freshness`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -270,7 +270,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _armar_sobre
 
-`app/ai_context.py:909` · clave completa `app.ai_context._armar_sobre`
+`app/ai_context.py:913` · clave completa `app.ai_context._armar_sobre`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -294,7 +294,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_ai_symbol_context
 
-`app/ai_context.py:891` · clave completa `app.ai_context.build_ai_symbol_context`
+`app/ai_context.py:895` · clave completa `app.ai_context.build_ai_symbol_context`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -318,7 +318,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## daily_data
 
-`app/ai_context.py:305` · clave completa `app.ai_context.daily_data`
+`app/ai_context.py:306` · clave completa `app.ai_context.daily_data`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -342,7 +342,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## daily_history
 
-`app/ai_context.py:394` · clave completa `app.ai_context.daily_history`
+`app/ai_context.py:395` · clave completa `app.ai_context.daily_history`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -366,7 +366,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## field_disambiguation
 
-`app/ai_context.py:74` · clave completa `app.ai_context.field_disambiguation`
+`app/ai_context.py:75` · clave completa `app.ai_context.field_disambiguation`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -390,7 +390,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## latest_orderbook
 
-`app/ai_context.py:680` · clave completa `app.ai_context.latest_orderbook`
+`app/ai_context.py:684` · clave completa `app.ai_context.latest_orderbook`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -414,7 +414,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## liquidation_levels
 
-`app/ai_context.py:708` · clave completa `app.ai_context.liquidation_levels`
+`app/ai_context.py:712` · clave completa `app.ai_context.liquidation_levels`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -438,7 +438,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## local_alerts
 
-`app/ai_context.py:797` · clave completa `app.ai_context.local_alerts`
+`app/ai_context.py:801` · clave completa `app.ai_context.local_alerts`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -462,7 +462,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## normalize_profile
 
-`app/ai_context.py:219` · clave completa `app.ai_context.normalize_profile`
+`app/ai_context.py:220` · clave completa `app.ai_context.normalize_profile`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -486,7 +486,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## recent_signals
 
-`app/ai_context.py:692` · clave completa `app.ai_context.recent_signals`
+`app/ai_context.py:696` · clave completa `app.ai_context.recent_signals`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -510,7 +510,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## rough_token_estimate
 
-`app/ai_context.py:283` · clave completa `app.ai_context.rough_token_estimate`
+`app/ai_context.py:284` · clave completa `app.ai_context.rough_token_estimate`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -534,7 +534,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## sin_perder_los_nulos
 
-`app/ai_context.py:264` · clave completa `app.ai_context.sin_perder_los_nulos`
+`app/ai_context.py:265` · clave completa `app.ai_context.sin_perder_los_nulos`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -558,7 +558,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## verdict_history
 
-`app/ai_context.py:486` · clave completa `app.ai_context.verdict_history`
+`app/ai_context.py:487` · clave completa `app.ai_context.verdict_history`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -582,7 +582,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _dura
 
-`app/ai_context.py:1431` · clave completa `app.ai_context._dura`
+`app/ai_context.py:1435` · clave completa `app.ai_context._dura`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -605,7 +605,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _hora
 
-`app/ai_context.py:1427` · clave completa `app.ai_context._hora`
+`app/ai_context.py:1431` · clave completa `app.ai_context._hora`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -628,7 +628,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _sin_lado
 
-`app/ai_context.py:1325` · clave completa `app.ai_context._sin_lado`
+`app/ai_context.py:1329` · clave completa `app.ai_context._sin_lado`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -651,7 +651,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_ai_context
 
-`app/ai_context.py:1079` · clave completa `app.ai_context.build_ai_context`
+`app/ai_context.py:1083` · clave completa `app.ai_context.build_ai_context`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -674,7 +674,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_mesa_decide
 
-`app/ai_context.py:1571` · clave completa `app.ai_context.build_mesa_decide`
+`app/ai_context.py:1575` · clave completa `app.ai_context.build_mesa_decide`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -697,7 +697,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## campo_mesa
 
-`app/ai_context.py:1285` · clave completa `app.ai_context.campo_mesa`
+`app/ai_context.py:1289` · clave completa `app.ai_context.campo_mesa`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -720,7 +720,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## frase_del_instante
 
-`app/ai_context.py:1439` · clave completa `app.ai_context.frase_del_instante`
+`app/ai_context.py:1443` · clave completa `app.ai_context.frase_del_instante`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -743,7 +743,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## palabra_de_la_decision
 
-`app/ai_context.py:1216` · clave completa `app.ai_context.palabra_de_la_decision`
+`app/ai_context.py:1220` · clave completa `app.ai_context.palabra_de_la_decision`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -766,7 +766,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## palabra_registrada
 
-`app/ai_context.py:1420` · clave completa `app.ai_context.palabra_registrada`
+`app/ai_context.py:1424` · clave completa `app.ai_context.palabra_registrada`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -789,7 +789,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## palabra_sostenida
 
-`app/ai_context.py:1446` · clave completa `app.ai_context.palabra_sostenida`
+`app/ai_context.py:1450` · clave completa `app.ai_context.palabra_sostenida`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 

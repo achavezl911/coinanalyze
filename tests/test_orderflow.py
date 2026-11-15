@@ -285,7 +285,10 @@ def _cubre_todo(alm: of.Almacen, desde: float) -> None:
         c.abre(desde)
 
 
-async def test_un_minuto_escrito_dos_veces_sustituye_y_no_suma(conn):
+async def test_un_minuto_escrito_dos_veces_sustituye_y_no_suma(conn, monkeypatch):
+    # Conexiones plantadas SIN trafico: desde A3 un activo que no oye una operacion en SILENCIO_S es un hueco.
+    # Aqui no es lo que se mide, asi que el silencio por activo se aparta.
+    monkeypatch.setattr(of, "SILENCIO_S", 1e9)
     pool = _Pool(conn)
     alm = _alm(inicio=M - 300)
     _cubre_todo(alm, M - 300)
@@ -318,7 +321,45 @@ async def test_un_minuto_escrito_dos_veces_sustituye_y_no_suma(conn):
     assert await conn.fetchval("SELECT count(*) FROM data_gap") == 0
 
 
-async def test_un_minuto_incompleto_se_declara_con_su_prueba_y_los_contiguos_alargan_la_fila(conn):
+async def test_un_activo_que_el_venue_deja_de_servir_sale_como_hueco_y_no_como_minuto_sin_operaciones(conn):
+    # A3 (DATOS A, F3-F2): la conexion de binance_spot sigue viva (BTC y ETH cada segundo) pero SOL calla del
+    # segundo 20 de M hasta M+100. Antes, SOL salia «60 s, 0 operaciones» en M+60: escuchado entero, sin nada.
+    alm = _alm(inicio=M - 300)
+    alm.coberturas["binance_spot"].abre(M - 300)
+    for t in range(M - 300, M + 180):
+        ops = [_op(t * 1000, "81563", "0.01", True, f"b{t}"), _op(t * 1000, "3000", "0.1", False, f"e{t}", "ETH")]
+        if not M + 20 < t < M + 100:
+            ops.append(_op(t * 1000, "150", "1", True, f"s{t}", "SOL"))
+        alm.anade("binance_spot", ops, ahora=t + 0.5)
+    huecos = await of.escribe_minutos(conn, alm, [M - 60, M, M + 60, M + 120], ahora=M + 180.0, final=True,
+                                      inicio=M - 300)
+    nuestros = sorted((a, m - M, s) for v, a, m, s in huecos if v == "binance_spot")
+    assert nuestros == [("SOL", 0, 20), ("SOL", 60, 19)]  # oido hasta M+20.5 y desde M+100.5
+    cob = await conn.fetch(
+        "SELECT symbol, extract(epoch FROM ts)::int - $1 AS m, segundos, operaciones FROM orderflow_cobertura "
+        "WHERE venue='binance_spot' ORDER BY 1, 2", M)
+    assert {(c["symbol"], c["m"]): (c["segundos"], c["operaciones"]) for c in cob} == {
+        ("BTC", -60): (60, 60), ("BTC", 0): (60, 60), ("BTC", 60): (60, 60), ("BTC", 120): (60, 60),
+        ("ETH", -60): (60, 60), ("ETH", 0): (60, 60), ("ETH", 60): (60, 60), ("ETH", 120): (60, 60),
+        ("SOL", -60): (60, 60), ("SOL", 0): (20, 21), ("SOL", 60): (19, 20), ("SOL", 120): (60, 60)}
+
+
+def test_un_activo_lento_que_no_llega_al_silencio_sigue_entero():
+    # Control de A3: SOL con una operacion cada 30 s (la media medida en 140 es 0.53 s) no es un hueco.
+    alm = _alm(inicio=M - 300)
+    alm.coberturas["binance_spot"].abre(M - 300)
+    for t in range(M - 300, M + 120):
+        ops = [_op(t * 1000, "81563", "0.01", True, f"b{t}")]
+        if t % 30 == 0:
+            ops.append(_op(t * 1000, "150", "1", True, f"s{t}", "SOL"))
+        alm.anade("binance_spot", ops, ahora=t + 0.5)
+    assert [alm.segundos("binance_spot", a, M, M + 120.0) for a in ("BTC", "SOL")] == [60, 60]
+
+
+async def test_un_minuto_incompleto_se_declara_con_su_prueba_y_los_contiguos_alargan_la_fila(conn, monkeypatch):
+    # Conexiones plantadas SIN trafico: desde A3 un activo que no oye una operacion en SILENCIO_S es un hueco.
+    # Aqui no es lo que se mide, asi que el silencio por activo se aparta.
+    monkeypatch.setattr(of, "SILENCIO_S", 1e9)
     pool = _Pool(conn)
     alm = _alm(inicio=M - 300)
     for venue, c in alm.coberturas.items():
@@ -384,6 +425,32 @@ async def test_footprint_y_perfil_salen_de_las_celdas_en_texto_exacto(conn):
               "paso": None, "venues": None, "unidad": None, **malo}
         with pytest.raises(lec.Peticion):
             await lec.footprint(conn, **kw)
+
+
+async def test_footprint_delta_de_la_vela_y_compra_venta_en_usd_no_se_cruzan(conn):
+    """A7 (DATOS A, mutantes F4-F7, F2 y F2b que sobrevivian): la prueba de arriba aserta de la vela compra,
+    venta, poc y operaciones pero nunca su delta, y en USD solo campos simetricos (nivel, poc, val, total).
+    Aqui compra y venta son distintas en base Y en USD, para que un signo o un cruce se vean."""
+    a, b = of._ts(M), of._ts(M + 60)
+    await _celdas(conn, [
+        (a, "binance_spot", D(81563), D("0.5"), D("0.25"), D("40781.5"), D("20390.75"), 1, 1),
+        (a, "okx_spot", D(81567), D("1"), D("0"), D("81567"), D(0), 2, 0),
+        (b, "binance_spot", D(81570), D("0"), D("2"), D(0), D("163140"), 0, 3),
+    ])
+    kw = {"symbol": "BTC", "desde": lec.iso(a), "hasta": lec.iso(of._ts(M + 120)), "marco": "1m", "paso": "5",
+          "venues": None}
+    base = await lec.footprint(conn, **kw, unidad="base")
+    assert [(v["compra"], v["venta"], v["delta"]) for v in base["velas"]] == [("1.5", "0.25", "1.25"),
+                                                                           ("0", "2", "-2")]
+    usd = await lec.footprint(conn, **kw, unidad="usd")
+    assert [(v["compra"], v["venta"], v["delta"], v["total"]) for v in usd["velas"]] == [
+        ("122348.5", "20390.75", "101957.75", "142739.25"), ("0", "163140", "-163140", "163140")]
+    assert [(n["nivel"], n["compra"], n["venta"]) for n in usd["velas"][0]["niveles"]] == [
+        ("81560", "40781.5", "20390.75"), ("81565", "81567", "0")]
+    pf = await lec.perfil(conn, symbol="BTC", desde=kw["desde"], hasta=kw["hasta"], paso=None,
+                          venues="binance_spot", unidad="usd")
+    assert [(n["nivel"], n["compra"], n["venta"]) for n in pf["niveles"]] == [
+        ("81563", "40781.5", "20390.75"), ("81570", "0", "163140")]
 
 
 async def test_apertura_y_cierre_de_cada_vela_salen_de_la_cinta_del_venue_de_referencia(conn):

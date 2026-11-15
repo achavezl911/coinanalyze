@@ -20,7 +20,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_session_agg`](#daily-session-agg) | 2 | 22 | 0 |
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
-| [`data_gap`](#data-gap) | 14 | 24 | 0 |
+| [`data_gap`](#data-gap) | 14 | 22 | 0 |
 | [`entrada_latido`](#entrada-latido) | 1 | 2 | 0 |
 | [`entrada_registro`](#entrada-registro) | 1 | 2 | 0 |
 | [`entrada_reglamento`](#entrada-reglamento) | 1 | 2 | 0 |
@@ -33,7 +33,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`liquidations_realtime`](#liquidations-realtime) | 1 | 15 | 0 |
 | [`long_short_ratio`](#long-short-ratio) | 2 | 3 | 0 |
 | [`macro_event`](#macro-event) | 2 | 3 | 0 |
-| [`market_feed_health`](#market-feed-health) | 3 | 10 | 0 |
+| [`market_feed_health`](#market-feed-health) | 3 | 11 | 0 |
 | [`metric_baseline`](#metric-baseline) | 1 | 15 | 0 |
 | [`metrics_snapshot`](#metrics-snapshot) | 2 | 9 | 0 |
 | [`ohlcv`](#ohlcv) | 4 | 40 | 0 |
@@ -176,9 +176,9 @@ Y que bucle duerme con cual:
 
 | funcion | constante | valor | sitio |
 |---|---|---|---|
-| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:847` |
-| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:652` |
-| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1385` |
+| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:855` |
+| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:653` |
+| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1399` |
 
 ## EL BUCKET CORTO DEL LADO DE LA PARADA · el mismo patron en DOS tablas
 
@@ -302,9 +302,9 @@ La escriben:
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
 - `app.libro.declara_hueco` — **UPDATE** en `app/libro.py:792`
-- `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:451`
+- `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:508`
 
-**Si cambia el contenido o el esquema de `data_gap`, estas 24 rutas lo notan:**
+**Si cambia el contenido o el esquema de `data_gap`, estas 22 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -313,13 +313,11 @@ La escriben:
 - [`/api/cvd/divergence`](rutas/api-cvd-divergence.md)
 - [`/api/cvd/spot`](rutas/api-cvd-spot.md)
 - [`/api/daily`](rutas/api-daily.md)
-- [`/api/data-confidence`](rutas/api-data-confidence.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)
 - [`/api/entradas`](rutas/api-entradas.md)
 - [`/api/external-macro`](rutas/api-external-macro.md)
 - [`/api/hypothesis`](rutas/api-hypothesis.md)
 - [`/api/liquidations`](rutas/api-liquidations.md)
-- [`/api/mesa/decide`](rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](rutas/api-ohlcv.md)
 - [`/api/oi`](rutas/api-oi.md)
@@ -423,8 +421,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1571`
-- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:823`
+- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1585`
+- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:831`
 
 **Si cambia el contenido o el esquema de `futures_trades_agg`, estas 7 rutas lo notan:**
 
@@ -442,7 +440,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:794`
+- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:802`
 
 **Si cambia el contenido o el esquema de `futures_trades_realtime`, estas 17 rutas lo notan:**
 
@@ -487,7 +485,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.flush_liquidations` — **INSERT** en `app/scalp_collector.py:74`
+- `app.scalp_collector.flush_liquidations` — **INSERT** en `app/scalp_collector.py:75`
 
 **Si cambia el contenido o el esquema de `liquidations_realtime`, estas 15 rutas lo notan:**
 
@@ -547,13 +545,14 @@ La escriben:
 - `app.db._mark_feed_unhealthy` — **INSERT** en `app/db.py:609`
 - `app.db._mark_feed_shard_health` — **INSERT** en `app/db.py:706`
 
-**Si cambia el contenido o el esquema de `market_feed_health`, estas 10 rutas lo notan:**
+**Si cambia el contenido o el esquema de `market_feed_health`, estas 11 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
 - [`/api/dashboard/state`](rutas/api-dashboard-state.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)
 - [`/api/hypothesis`](rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](rutas/api-scalp-alerts.md)
@@ -712,7 +711,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:898`
+- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:906`
 
 **Si cambia el contenido o el esquema de `orderbook_depth`, estas 1 rutas lo notan:**
 
@@ -724,8 +723,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:866`
-- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:922`
+- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:874`
+- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:930`
 
 **Si cambia el contenido o el esquema de `orderbook_snapshot`, estas 15 rutas lo notan:**
 
@@ -799,7 +798,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1439`
+- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1453`
 
 **Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 5 rutas lo notan:**
 
@@ -887,8 +886,8 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:681`
-- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:264`
-- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:285`
+- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:277`
+- `app.ws_collector._write_minute` — **INSERT** en `app/ws_collector.py:298`
 
 **Si cambia el contenido o el esquema de `spot_trades_agg`, estas 12 rutas lo notan:**
 
@@ -911,8 +910,8 @@ La escriben:
 
 La escriben:
 
-- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:391`
-- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:408`
+- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:404`
+- `app.ws_collector.flush_realtime` — **INSERT** en `app/ws_collector.py:421`
 
 **Si cambia el contenido o el esquema de `spot_trades_realtime`, estas 13 rutas lo notan:**
 
@@ -953,12 +952,12 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `market_assets` — la escriben 1: `app/db.py:247`
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
-- `orderflow_celda` — la escriben 2: `app/orderflow.py:505`, `app/orderflow.py:508`
-- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:802`
-- `orderflow_cinta` — la escriben 1: `app/orderflow.py:546`
-- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:514`, `app/orderflow.py:564`, `app/orderflow.py:607`, `app/orderflow.py:750`
-- `orderflow_grande` — la escriben 2: `app/orderflow.py:552`, `app/orderflow.py:747`
-- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:754`
+- `orderflow_celda` — la escriben 2: `app/orderflow.py:562`, `app/orderflow.py:565`
+- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:860`
+- `orderflow_cinta` — la escriben 1: `app/orderflow.py:603`
+- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:808`
+- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:805`
+- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:812`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`

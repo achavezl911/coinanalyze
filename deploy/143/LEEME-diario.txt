@@ -1,0 +1,32 @@
+DIARIO DE ENTRADAS EN SOMBRA (fase 2) · instalacion en 143, la hace el OPERADOR (como root)
+
+  install -m 644 /srv/coinanalyze/repo/deploy/143/coinalyze-diario-*.service \
+                 /srv/coinanalyze/repo/deploy/143/coinalyze-diario-*.timer /etc/systemd/system/
+  mkdir -p /srv/coinanalyze/diario/buzon
+  systemctl daemon-reload
+  systemctl enable --now coinalyze-diario-cuarto.timer coinalyze-diario-dia.timer
+
+Comprobar:  systemctl list-timers 'coinalyze-diario-*'
+            journalctl -u coinalyze-diario-cuarto -n 5      (una linea JSON por pasada; rc 1 = un canal fallo)
+            cat /srv/coinanalyze/diario/estado.json         (huecos, errores, cabeza del libro)
+            cd /srv/coinanalyze/repo && .venv/bin/python -c "from app.diario import libro; \
+              print(libro.verifica('/srv/coinanalyze/diario/entradas.jsonl') or 'libro intacto')"
+Quitar:     systemctl disable --now coinalyze-diario-cuarto.timer coinalyze-diario-dia.timer
+            (el libro /srv/coinanalyze/diario/entradas.jsonl NO se borra: es el registro)
+
+Que escribe: solo /srv/coinanalyze/diario (libro, cache de velas, estado, marcador, buzon/leidos) en 143, y una vez al
+dia /var/lib/coinalyze-bot/informes/diario-entradas.txt en 140 (como el informe semanal). Lee 140 solo por
+harness/bin/api. Corre el arbol de /srv/coinanalyze/repo: hasta fusionar claude/diario-entradas en main, el modulo
+app/diario no existe en main y las unidades fallarian (rc 1 en el journal, nada escrito).
+Buzon de Fable: un JSON por corrida en /srv/coinanalyze/diario/buzon/ con el formato de app/diario/fuentes.py (c).
+
+SIMULADOR CIEGO (fase 2b) · a mano, como root (usa el plan Max de root: sin ANTHROPIC_API_KEY), sin unidad ni timer
+  cd /srv/coinanalyze/repo
+  .venv/bin/python -m app.diario ciego plan                    (80 instantes, semilla 20261115: no se cambia)
+  .venv/bin/python -m app.diario ciego foto --instante ETH-1785585600   (lo que ve el modelo, sin llamarlo)
+  nohup .venv/bin/python -m app.diario ciego corre --dir /srv/coinanalyze/diario-ciego --tope-usd 18 \
+        > /srv/coinanalyze/diario-ciego/corrida.log 2>&1 &
+--tope-usd es el gasto ACUMULADO de la carpeta (el humo ya cuenta); --max N para como mucho N llamadas; --effort
+low|medium|high (por defecto medium). Se puede cortar y relanzar: lo sellado no se repide. Resultado:
+/srv/coinanalyze/diario-ciego/marcador.txt y estado.json; el libro es diario-ciego.jsonl (aparte del diario vivo),
+las claves de anonimizado en claves/, lo que vio y contesto el modelo en fotos/ y respuestas/.

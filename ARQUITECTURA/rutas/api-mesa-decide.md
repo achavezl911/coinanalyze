@@ -19,9 +19,9 @@ Handler `mesa_decide` · `app/api.py:4135` (cuerpo hasta la 4170) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `build_finished_at` | asignado en app/ai_context.py:1922 |
-| `build_started_at` | asignado en app/ai_context.py:1921 |
-| `lectura_scalp` | asignado en app/ai_context.py:1901 |
+| `build_finished_at` | asignado en app/ai_context.py:1926 |
+| `build_started_at` | asignado en app/ai_context.py:1925 |
+| `lectura_scalp` | asignado en app/ai_context.py:1905 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -36,28 +36,13 @@ LEE:
 - `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1311`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:322`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:584`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:663`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:687`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
-  - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
 - `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1571`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:823`
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:794`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
 - `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
-  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
+  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
 - `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
@@ -75,67 +60,59 @@ LEE:
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:866`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:922`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
 - `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 - `scalp_signal_snapshot` — `sql/schema.sql:388`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1439`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1453`
 - `signal_observation` — `sql/schema.sql:422`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
-- `agg_span`
-- `choice`
-- `exchanges`
 - `m`
 - `now`
-- `parts`
-- `requested`
-- `required`
-- `rt_span`
 
 ## Funciones que la componen
 
-60 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+57 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1571`
+- `app.ai_context.build_mesa_decide` — `app/ai_context.py:1575`
 - `app.api.scalp_persistence` — `app/api.py:3195`
 - `app.api.validate_symbol` — `app/api.py:254`
 
-<details><summary>Alcanzables de forma indirecta (57)</summary>
+<details><summary>Alcanzables de forma indirecta (54)</summary>
 
-- `app.ai_context._corte_unico` — `app/ai_context.py:855`
-- `app.ai_context._dura` — `app/ai_context.py:1431`
-- `app.ai_context._hora` — `app/ai_context.py:1427`
-- `app.ai_context._round_number` — `app/ai_context.py:226`
-- `app.ai_context._sin_lado` — `app/ai_context.py:1325`
-- `app.ai_context.build_operator_read` — `app/ai_context.py:747`
-- `app.ai_context.campo_mesa` — `app/ai_context.py:1285`
-- `app.ai_context.compact_dict` — `app/ai_context.py:253`
-- `app.ai_context.compact_value` — `app/ai_context.py:237`
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:531`
-- `app.ai_context.frase_del_instante` — `app/ai_context.py:1439`
-- `app.ai_context.latest_snapshot` — `app/ai_context.py:298`
-- `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1216`
-- `app.ai_context.palabra_registrada` — `app/ai_context.py:1420`
-- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1446`
-- `app.ai_context.quality_score` — `app/ai_context.py:619`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
+- `app.ai_context._corte_unico` — `app/ai_context.py:859`
+- `app.ai_context._dura` — `app/ai_context.py:1435`
+- `app.ai_context._hora` — `app/ai_context.py:1431`
+- `app.ai_context._round_number` — `app/ai_context.py:227`
+- `app.ai_context._sin_lado` — `app/ai_context.py:1329`
+- `app.ai_context.build_operator_read` — `app/ai_context.py:751`
+- `app.ai_context.campo_mesa` — `app/ai_context.py:1289`
+- `app.ai_context.compact_dict` — `app/ai_context.py:254`
+- `app.ai_context.compact_value` — `app/ai_context.py:238`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:532`
+- `app.ai_context.frase_del_instante` — `app/ai_context.py:1443`
+- `app.ai_context.latest_snapshot` — `app/ai_context.py:299`
+- `app.ai_context.palabra_de_la_decision` — `app/ai_context.py:1220`
+- `app.ai_context.palabra_registrada` — `app/ai_context.py:1424`
+- `app.ai_context.palabra_sostenida` — `app/ai_context.py:1450`
+- `app.ai_context.quality_score` — `app/ai_context.py:623`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
@@ -150,7 +127,6 @@ Llamadas directas del handler:
 - `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
@@ -169,7 +145,6 @@ Llamadas directas del handler:
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
@@ -206,6 +181,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K102-decide-lo-primero.sh:83`, `harness/checks/K102-decide-lo-primero.sh:107`, `harness/checks/K102-decide-lo-primero.sh:109`, `harness/checks/K102-decide-lo-primero.sh:114` _(+10)_ | `harness/checks/K102-decide-lo-primero.sh:38`, `harness/checks/K102-mesa.py:667`, `harness/checks/K102-mesa.py:677`, `harness/checks/K102-mesa.py:881` _(+2)_ |
+| **readme** | — | `README.md:36` |
 | **tests** | `tests/js/mesa_decide.test.js:275`, `tests/js/mesa_remate.test.js:28`, `tests/test_bot.py:328` | `tests/js/mesa_decide.test.js:30` |
 
 **No la llama el panel**, pero si 17 linea(s) de codigo fuera de el.
@@ -247,10 +223,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.metrics.current_nyse_start` | 16 | **0** | 15 ↑ | **16** | [impacto](../impacto/app-metrics.md) |
-| `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.compute_scalp_summary` | 10 | **0** | 25 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_context` | 10 | **0** | 25 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.load_baselines` | 15 | **0** | 11 ↑ | **15** | [impacto](../impacto/app-scalp_logic.md) |
@@ -268,9 +243,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.setups.oi_price_reading` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-setups.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.spot_flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 36 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| `app.scalp_logic._as_utc_datetime` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._contiguous_measured_suffix` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.signal_ledger.classify_signal_observation` | 1 | **0** | 11 ↑ | **1** | [impacto](../impacto/app-signal_ledger.md) |
+| _… y 33 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

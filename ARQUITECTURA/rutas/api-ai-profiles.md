@@ -57,7 +57,6 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:65` | — |
-| **readme** | — | `README.md:420`, `README.md:524` |
 | **tests** | `tests/test_deploy_wrapper.py:219` | — |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.

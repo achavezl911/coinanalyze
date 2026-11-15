@@ -1,0 +1,17 @@
+# DIARIO DE ENTRADAS (fase 2) · cada 15 min (python -m app.diario cuarto): velas de 140 por harness/bin/api (solo
+# lectura) a /srv/coinanalyze/diario/velas; resuelve lo sellado; evalua D:imp1:v0:A y H:imp6:v1:D en la barra recien
+# cerrada; sella o rechaza el buzon de Fable (/srv/coinanalyze/diario/buzon). Escribe SOLO en /srv/coinanalyze/diario.
+# Como root: harness/bin/api usa su netrc. Corre el arbol de /srv/coinanalyze/repo (si alli hay una rama de campana,
+# corre esa: mejor un worktree de main). La instala el OPERADOR (deploy/143/LEEME-diario.txt).
+[Unit]
+Description=Coinalyze diario de entradas: resolver, reglas y buzon (cada 15 min)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/coinanalyze/repo
+Environment=HOME=/root
+Environment=DIARIO_DIR=/srv/coinanalyze/diario
+ExecStart=/srv/coinanalyze/repo/.venv/bin/python -m app.diario cuarto
+TimeoutStartSec=10min

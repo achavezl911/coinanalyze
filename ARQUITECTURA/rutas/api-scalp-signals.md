@@ -38,7 +38,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `scalp_signal_snapshot` — `sql/schema.sql:388`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1439`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1453`
 
 ## Funciones que la componen
 
@@ -79,7 +79,6 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K106-plantados.py:461`, `harness/checks/K106-plantados.py:462`, `harness/checks/K43-control.bash:29`, `harness/checks/K43-control.bash:74` _(+2)_ | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:422` | — |
-| **readme** | — | `README.md:492`, `README.md:502` |
 | **tests** | — | `tests/test_dashboard_layout.py:160` |
 
 **La llama el panel: es superficie de producto.**

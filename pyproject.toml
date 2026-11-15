@@ -26,6 +26,9 @@ dev = [
   "pytest-xdist==3.8.0",
   "execnet==2.1.2",
   "ruff>=0.12,<1",
+  # A8 (DATOS A): las pruebas de la anatomia (tests/test_anatomia*.py) se saltaban en la CI sin ellas
+  "numpy==2.5.4",
+  "scikit-learn==1.9.1",
 ]
 
 [tool.setuptools.packages.find]

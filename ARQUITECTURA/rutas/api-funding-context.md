@@ -18,16 +18,16 @@ Handler `funding_context_endpoint` · `app/api.py:1943` (cuerpo hasta la 1946) �
 
 | campo | de donde sale |
 |---|---|
-| `annualized_pct` | literal en app/scalp_logic.py:3710 |
-| `coverage` | literal en app/scalp_logic.py:3712 |
-| `current_pct` | literal en app/scalp_logic.py:3705 |
-| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3707 |
-| `history_avg_pct` | literal en app/scalp_logic.py:3711 |
-| `next_funding_time_utc` | literal en app/scalp_logic.py:3713 |
-| `note` | literal en app/scalp_logic.py:3721 |
-| `predicted_pct` | literal en app/scalp_logic.py:3706 |
-| `regime` | literal en app/scalp_logic.py:3714 |
-| `symbol` | literal en app/scalp_logic.py:3704 |
+| `annualized_pct` | literal en app/scalp_logic.py:3756 |
+| `coverage` | literal en app/scalp_logic.py:3758 |
+| `current_pct` | literal en app/scalp_logic.py:3751 |
+| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3753 |
+| `history_avg_pct` | literal en app/scalp_logic.py:3757 |
+| `next_funding_time_utc` | literal en app/scalp_logic.py:3759 |
+| `note` | literal en app/scalp_logic.py:3767 |
+| `predicted_pct` | literal en app/scalp_logic.py:3752 |
+| `regime` | literal en app/scalp_logic.py:3760 |
+| `symbol` | literal en app/scalp_logic.py:3750 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3652`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3698`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -128,9 +128,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.align_down` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic.funding_context` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |

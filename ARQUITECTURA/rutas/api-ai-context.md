@@ -20,58 +20,58 @@ Handler `ai_context` · `app/api.py:3566` (cuerpo hasta la 3579) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `absorption` | literal en app/ai_context.py:1023 |
-| `asset` | literal en app/ai_context.py:975 |
-| `basis` | literal en app/ai_context.py:1028 |
-| `build_finished_at` | asignado en app/ai_context.py:1074 |
-| `build_started_at` | asignado en app/ai_context.py:1073 |
-| `context_metadata` | literal en app/ai_context.py:1029 |
-| `cross_asset` | literal en app/ai_context.py:995 |
-| `cvd_matrix` | literal en app/ai_context.py:989 |
-| `cvd_swing_90d` | literal en app/ai_context.py:981 |
-| `daily_history` | asignado en app/ai_context.py:1059 |
-| `data_confidence` | literal en app/ai_context.py:976 |
-| `data_quality` | literal en app/ai_context.py:1030 |
-| `delta_matrix` | literal en app/ai_context.py:982 |
-| `divergences` | literal en app/ai_context.py:1042 |
-| `envelope_cut` | literal en app/ai_context.py:953 |
-| `external_macro_context` | literal en app/ai_context.py:1041 |
-| `feed_quality` | literal en app/ai_context.py:1037 |
-| `funding_context` | literal en app/ai_context.py:996 |
-| `generated_at` | literal en app/ai_context.py:972 |
-| `interpretation_prompt` | literal en app/ai_context.py:941 |
-| `liq_burst` | literal en app/ai_context.py:1045 |
-| `liquidation_levels` | literal en app/ai_context.py:1046 |
-| `liquidation_map` | literal en app/ai_context.py:997 |
-| `local_alerts` | literal en app/ai_context.py:980 |
-| `macro_context` | literal en app/ai_context.py:1040 |
-| `market_impact` | literal en app/ai_context.py:1007 |
-| `market_memory_2y` | literal en app/ai_context.py:1000 |
-| `market_structure` | literal en app/ai_context.py:986 |
-| `oi_context` | literal en app/ai_context.py:992 |
-| `operator_read` | literal en app/ai_context.py:979 |
-| `orderbook` | literal en app/ai_context.py:985 |
-| `passive_flow` | literal en app/ai_context.py:990 |
-| `positioning` | literal en app/ai_context.py:1012 |
-| `price_barriers` | literal en app/ai_context.py:999 |
-| `profile` | literal en app/ai_context.py:973 |
-| `recent_signals` | asignado en app/ai_context.py:1057 |
-| `reference_levels` | literal en app/ai_context.py:994 |
-| `rough_token_estimate` | asignado en app/ai_context.py:1075 |
-| `scalp` | literal en app/ai_context.py:978 |
-| `scalp_liquidations` | literal en app/ai_context.py:1027 |
-| `schema_version` | literal en app/ai_context.py:940 |
-| `setup` | asignado en app/ai_context.py:1055 |
-| `snapshot` | literal en app/ai_context.py:977 |
-| `structure_detail` | literal en app/ai_context.py:988 |
-| `structure_horizons` | literal en app/ai_context.py:987 |
-| `swing_score` | asignado en app/ai_context.py:1062 |
-| `symbol` | literal en app/ai_context.py:974 |
-| `trend_matrix` | literal en app/ai_context.py:991 |
-| `verdict_history` | asignado en app/ai_context.py:1061 |
-| `volatility` | literal en app/ai_context.py:993 |
-| `volume_profile` | literal en app/ai_context.py:998 |
-| `wyckoff` | literal en app/ai_context.py:1013 |
+| `absorption` | literal en app/ai_context.py:1027 |
+| `asset` | literal en app/ai_context.py:979 |
+| `basis` | literal en app/ai_context.py:1032 |
+| `build_finished_at` | asignado en app/ai_context.py:1078 |
+| `build_started_at` | asignado en app/ai_context.py:1077 |
+| `context_metadata` | literal en app/ai_context.py:1033 |
+| `cross_asset` | literal en app/ai_context.py:999 |
+| `cvd_matrix` | literal en app/ai_context.py:993 |
+| `cvd_swing_90d` | literal en app/ai_context.py:985 |
+| `daily_history` | asignado en app/ai_context.py:1063 |
+| `data_confidence` | literal en app/ai_context.py:980 |
+| `data_quality` | literal en app/ai_context.py:1034 |
+| `delta_matrix` | literal en app/ai_context.py:986 |
+| `divergences` | literal en app/ai_context.py:1046 |
+| `envelope_cut` | literal en app/ai_context.py:957 |
+| `external_macro_context` | literal en app/ai_context.py:1045 |
+| `feed_quality` | literal en app/ai_context.py:1041 |
+| `funding_context` | literal en app/ai_context.py:1000 |
+| `generated_at` | literal en app/ai_context.py:976 |
+| `interpretation_prompt` | literal en app/ai_context.py:945 |
+| `liq_burst` | literal en app/ai_context.py:1049 |
+| `liquidation_levels` | literal en app/ai_context.py:1050 |
+| `liquidation_map` | literal en app/ai_context.py:1001 |
+| `local_alerts` | literal en app/ai_context.py:984 |
+| `macro_context` | literal en app/ai_context.py:1044 |
+| `market_impact` | literal en app/ai_context.py:1011 |
+| `market_memory_2y` | literal en app/ai_context.py:1004 |
+| `market_structure` | literal en app/ai_context.py:990 |
+| `oi_context` | literal en app/ai_context.py:996 |
+| `operator_read` | literal en app/ai_context.py:983 |
+| `orderbook` | literal en app/ai_context.py:989 |
+| `passive_flow` | literal en app/ai_context.py:994 |
+| `positioning` | literal en app/ai_context.py:1016 |
+| `price_barriers` | literal en app/ai_context.py:1003 |
+| `profile` | literal en app/ai_context.py:977 |
+| `recent_signals` | asignado en app/ai_context.py:1061 |
+| `reference_levels` | literal en app/ai_context.py:998 |
+| `rough_token_estimate` | asignado en app/ai_context.py:1079 |
+| `scalp` | literal en app/ai_context.py:982 |
+| `scalp_liquidations` | literal en app/ai_context.py:1031 |
+| `schema_version` | literal en app/ai_context.py:944 |
+| `setup` | asignado en app/ai_context.py:1059 |
+| `snapshot` | literal en app/ai_context.py:981 |
+| `structure_detail` | literal en app/ai_context.py:992 |
+| `structure_horizons` | literal en app/ai_context.py:991 |
+| `swing_score` | asignado en app/ai_context.py:1066 |
+| `symbol` | literal en app/ai_context.py:978 |
+| `trend_matrix` | literal en app/ai_context.py:995 |
+| `verdict_history` | asignado en app/ai_context.py:1065 |
+| `volatility` | literal en app/ai_context.py:997 |
+| `volume_profile` | literal en app/ai_context.py:1002 |
+| `wyckoff` | literal en app/ai_context.py:1017 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -106,22 +106,22 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `external_macro_observation` — `sql/schema.sql:1241`, 5 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
 - `funding_rate` — `sql/schema.sql:146`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1571`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:823`
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:794`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
 - `liquidations` — `sql/schema.sql:174`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
 - `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
-  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
+  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
 - `long_short_ratio` — `sql/schema.sql:187`, 6 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:678`
   - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:358`
@@ -147,8 +147,8 @@ LEE:
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:866`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:922`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
 - `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
@@ -156,19 +156,20 @@ LEE:
 - `predicted_funding_rate` — `sql/schema.sql:160`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:672`
 - `scalp_signal_snapshot` — `sql/schema.sql:388`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1439`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1453`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 - `agg_span`
+- `c0.agg_hi`
 - `choice`
 - `edges`
 - `exchanges`
@@ -183,37 +184,37 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-171 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+172 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:891`
-- `app.ai_context.normalize_profile` — `app/ai_context.py:219`
+- `app.ai_context.build_ai_symbol_context` — `app/ai_context.py:895`
+- `app.ai_context.normalize_profile` — `app/ai_context.py:220`
 - `app.api.validate_symbol` — `app/api.py:254`
 
-<details><summary>Alcanzables de forma indirecta (168)</summary>
+<details><summary>Alcanzables de forma indirecta (169)</summary>
 
-- `app.ai_context._armar_sobre` — `app/ai_context.py:909`
-- `app.ai_context._corte_unico` — `app/ai_context.py:855`
-- `app.ai_context._round_number` — `app/ai_context.py:226`
-- `app.ai_context.build_operator_read` — `app/ai_context.py:747`
-- `app.ai_context.compact_dict` — `app/ai_context.py:253`
-- `app.ai_context.compact_value` — `app/ai_context.py:237`
-- `app.ai_context.daily_data` — `app/ai_context.py:305`
-- `app.ai_context.daily_history` — `app/ai_context.py:394`
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:531`
-- `app.ai_context.field_disambiguation` — `app/ai_context.py:74`
-- `app.ai_context.latest_orderbook` — `app/ai_context.py:680`
-- `app.ai_context.latest_snapshot` — `app/ai_context.py:298`
-- `app.ai_context.liquidation_levels` — `app/ai_context.py:708`
-- `app.ai_context.local_alerts` — `app/ai_context.py:797`
-- `app.ai_context.orderbook_freshness` — `app/ai_context.py:668`
-- `app.ai_context.quality_score` — `app/ai_context.py:619`
-- `app.ai_context.recent_signals` — `app/ai_context.py:692`
-- `app.ai_context.rough_token_estimate` — `app/ai_context.py:283`
-- `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:264`
-- `app.ai_context.verdict_history` — `app/ai_context.py:486`
+- `app.ai_context._armar_sobre` — `app/ai_context.py:913`
+- `app.ai_context._corte_unico` — `app/ai_context.py:859`
+- `app.ai_context._round_number` — `app/ai_context.py:227`
+- `app.ai_context.build_operator_read` — `app/ai_context.py:751`
+- `app.ai_context.compact_dict` — `app/ai_context.py:254`
+- `app.ai_context.compact_value` — `app/ai_context.py:238`
+- `app.ai_context.daily_data` — `app/ai_context.py:306`
+- `app.ai_context.daily_history` — `app/ai_context.py:395`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:532`
+- `app.ai_context.field_disambiguation` — `app/ai_context.py:75`
+- `app.ai_context.latest_orderbook` — `app/ai_context.py:684`
+- `app.ai_context.latest_snapshot` — `app/ai_context.py:299`
+- `app.ai_context.liquidation_levels` — `app/ai_context.py:712`
+- `app.ai_context.local_alerts` — `app/ai_context.py:801`
+- `app.ai_context.orderbook_freshness` — `app/ai_context.py:672`
+- `app.ai_context.quality_score` — `app/ai_context.py:623`
+- `app.ai_context.recent_signals` — `app/ai_context.py:696`
+- `app.ai_context.rough_token_estimate` — `app/ai_context.py:284`
+- `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:265`
+- `app.ai_context.verdict_history` — `app/ai_context.py:487`
 - `app.config.get_settings` — `app/config.py:308`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
@@ -244,54 +245,55 @@ Llamadas directas del handler:
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3194`
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3574`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3588`
-- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3246`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:6086`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3620`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3634`
+- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3292`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:6159`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
-- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3173`
+- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3219`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
 - `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1894`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
 - `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1021`
-- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2889`
+- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2935`
 - `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4155`
+- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4224`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
+- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2619`
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2604`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2612`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2644`
 - `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1884`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4376`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4346`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4358`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4445`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4415`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4427`
 - `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:2072`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4120`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4189`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4557`
-- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3258`
-- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3216`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4626`
+- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3304`
+- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3262`
 - `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3561`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3607`
 - `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:936`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3807`
-- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3202`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4473`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3876`
+- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3248`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4542`
 - `app.scalp_logic._regime` — `app/scalp_logic.py:1865`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
 - `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:2059`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3553`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3599`
 - `app.scalp_logic._sign_vote` — `app/scalp_logic.py:954`
 - `app.scalp_logic._slope_pct` — `app/scalp_logic.py:2027`
 - `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
 - `app.scalp_logic._structure_layer` — `app/scalp_logic.py:989`
 - `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3183`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3229`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1298`
@@ -299,46 +301,46 @@ Llamadas directas del handler:
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6421`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3904`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3609`
-- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2948`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4278`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4589`
+- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6494`
+- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3973`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3655`
+- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2994`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4347`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4658`
 - `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2200`
-- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:3995`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5567`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4721`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3652`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2868`
+- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:4064`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5640`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4794`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3698`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2914`
 - `app.scalp_logic.horizon_structure` — `app/scalp_logic.py:1753`
 - `app.scalp_logic.liquidation_burst` — `app/scalp_logic.py:1810`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3725`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3771`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
 - `app.scalp_logic.macro_context` — `app/scalp_logic.py:1934`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5804`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5877`
 - `app.scalp_logic.market_memory` — `app/scalp_logic.py:1734`
 - `app.scalp_logic.market_structure` — `app/scalp_logic.py:1041`
-- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4429`
-- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4184`
-- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3289`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6119`
-- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5909`
+- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4498`
+- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4253`
+- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3335`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6192`
+- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5982`
 - `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1304`
-- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3459`
+- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3505`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5610`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5766`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5683`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5839`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
-- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5705`
+- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5778`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
-- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2807`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2853`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2843`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6247`
-- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3409`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3844`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6320`
+- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3455`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3913`
 - `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1680`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
@@ -392,9 +394,8 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:672`, `harness/checks/K102-mesa.py:710` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-control.bash:914`, `harness/checks/K102-mesa.py:667`, `harness/checks/K31-eslabon5.sh:60` _(+10)_ |
-| **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:918` _(+8)_ | — |
+| **panel** | `static/js/02-canal.js:35`, `static/js/02-canal.js:49`, `static/js/02-canal.js:53`, `static/js/10-contexto-y-estructura.js:927` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
-| **readme** | — | `README.md:62`, `README.md:418`, `README.md:522` |
 | **tests** | `tests/test_bot.py:325` | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:115`, `tests/test_pr22_cvd_semantics.py:1198` |
 
 **La llama el panel: es superficie de producto.**
@@ -435,13 +436,13 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.config.get_settings` | 3 | **0** | 58 ↑ | **3** | [impacto](../impacto/app-config.md) |
 | `app.interpretation.evaluate_setups` | 4 | **0** | 56 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.metrics.current_nyse_start` | 16 | **0** | 15 ↑ | **16** | [impacto](../impacto/app-metrics.md) |
-| `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.compute_scalp_summary` | 10 | **0** | 25 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_context` | 10 | **0** | 25 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.load_baselines` | 15 | **0** | 11 ↑ | **15** | [impacto](../impacto/app-scalp_logic.md) |
@@ -456,7 +457,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.scalp_bias_label` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.score_component` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.setups.classify_oi` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-setups.md) |
-| _… y 147 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 148 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

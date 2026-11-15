@@ -1,0 +1,13 @@
+# DIARIO DE ENTRADAS · a las 00:07Z: el dia UTC ya cerro y su ultima vela de 4 h suele haber llegado; la rejilla se
+# sella con el precio de 5 min de ese momento (si un limite ya estuviera lleno, se rechaza con motivo).
+# Persistent: si 143 estaba apagado, corre al arrancar; la rejilla de un dia de hace mas de 24 h ya no se sella.
+[Unit]
+Description=Coinalyze diario de entradas: cada dia a las 00:07Z
+
+[Timer]
+OnCalendar=*-*-* 00:07:00 UTC
+Persistent=true
+Unit=coinalyze-diario-dia.service
+
+[Install]
+WantedBy=timers.target
