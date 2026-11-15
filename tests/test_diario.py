@@ -155,3 +155,136 @@ def test_resuelve_hueco_deja_pendiente_y_lo_dice():
     # una vela que aun no ha cerrado no cuenta
     r = rs.resuelve(_p(), _v((101, 101.5, 100.5, 101)), T0 + 400)
     assert r["estado"] == "pendiente" and r["hueco"] is None
+
+
+# ---------- fuentes ----------
+def _fable_be():
+    """El guion de claude/fable-be tal cual, como modulo (sin ejecutar su main)."""
+    import subprocess
+    import types
+    r = subprocess.run(["git", "-C", str(Path(__file__).resolve().parents[1]), "show",
+                        "claude/fable-be:scripts/fable_be_tendencia.py"], capture_output=True, text=True)
+    if r.returncode != 0:
+        pytest.skip("sin la rama claude/fable-be")
+    m = types.ModuleType("fable_be_tendencia")
+    exec(compile(r.stdout, "fable_be_tendencia.py", "exec"), m.__dict__)
+    return m, r.stdout
+
+
+def _bloque(texto: str) -> str:
+    return texto[texto.index("def indicadores("):texto.index("# ---------- fin de la copia") if "# ---------- fin" in
+                 texto else texto.index("def sim(")].strip()
+
+
+def test_paridad_copia_literal_y_sintetica():
+    import random
+
+    from app.diario import fuentes as fu
+    fb, src = _fable_be()
+    assert _bloque(Path(fu.__file__).read_text()) == _bloque(src)
+    az = random.Random(7)
+    bs, c = [], 100.0
+    for k in range(400):
+        o = c
+        c = o * (1 + az.gauss(0, 0.02) + (0.08 if k % 37 == 0 else 0))
+        bs.append((k * 86400, o, max(o, c) * (1 + az.random() * 0.01), min(o, c) * (1 - az.random() * 0.01), c, 86400))
+    rng, med, _ = fb.indicadores(bs, 20)
+    for celda in fu.REGLAS:
+        regla, v = fu.REGLAS[celda]["regla"], fu.REGLAS[celda]["filtro"]
+        st = [fb.estado(regla, bs, rng, i) if i >= fb.CALENTAMIENTO - 1 else 0 for i in range(len(bs))]
+        suyos = {i for i in range(fb.CALENTAMIENTO, len(bs))
+                 if st[i] and st[i] != st[i - 1] and not (v and rng[i] < med[i])}
+        mios = {i for i in range(fb.CALENTAMIENTO, len(bs)) if fu.aviso(celda, bs, i)}
+        assert suyos == mios and suyos
+        # en vivo solo hay `minimo_barras`: el aviso de la ultima barra es el mismo que con la serie entera
+        m = fu.minimo_barras(celda)
+        assert all(bool(fu.aviso(celda, bs[i - m + 1:i + 1], m - 1)) == (i in suyos)
+                   for i in range(fb.CALENTAMIENTO, len(bs)))
+
+
+def test_paridad_banco():
+    from app.diario import fuentes as fu
+    fb, _ = _fable_be()
+    if not Path(fb.BANCO).is_dir():
+        pytest.skip("sin el banco de fable-be")
+    for act in fb.ACTIVOS:
+        datos = fb.carga(act)
+        for celda, r in fu.REGLAS.items():
+            bs = datos[r["marco"]]
+            rng, med, _ = fb.indicadores(bs, fb.MARCOS[r["marco"]]["sma"])
+            st = [fb.estado(r["regla"], bs, rng, i) if i >= fb.CALENTAMIENTO - 1 else 0 for i in range(len(bs))]
+            suyos = {i for i in range(fb.CALENTAMIENTO, len(bs))
+                     if st[i] and st[i] != st[i - 1] and not (r["filtro"] and rng[i] < med[i])}
+            ind = fu.indicadores(bs, 1)
+            mios = {i for i in range(fb.CALENTAMIENTO, len(bs)) if fu.aviso(celda, bs, i, ind)}
+            assert suyos == mios, (act, celda)
+            m = fu.minimo_barras(celda)
+            assert all(bool(fu.aviso(celda, bs[i - m + 1:i + 1], m - 1)) == (i in suyos)
+                       for i in range(fb.CALENTAMIENTO, len(bs), 5)), (act, celda)
+
+
+def _v4(n: int, t0: int, sube_al_final: float = 0.0) -> dict:
+    """n velas de 4 h planas con un rango de 1 % y un salto en la ultima."""
+    v = {}
+    for k in range(n):
+        c = 100.0 * (1 + sube_al_final if k == n - 1 else 1)
+        v[t0 + k * 14400] = (100.0, max(100.5, c), 99.5, c)
+    return v
+
+
+def test_reglas_sellan_el_aviso_fresco_y_solo_el():
+    from app.diario import fuentes as fu
+    t0 = 1_700_006_400 - 1_700_006_400 % 86400
+    v = {"BTC": _v4(6 * 40, t0, 0.05)}
+    fin = t0 + 6 * 40 * 14400
+    props, notas = fu.reglas(v, fin + 320, set())
+    ids = {p["id"] for p in props}
+    assert ids == {f"regla:D:imp1:v0:A:BTC:{fin}", f"regla:H:imp6:v1:D:BTC:{fin}"}, (ids, notas)
+    p = next(p for p in props if p["fuente"] == "regla:D:imp1:v0:A")
+    assert p["lado"] == "largo" and p["orden"] == "mercado" and p["stop"] == pytest.approx(105 * 0.97)
+    assert p["objetivo"] == pytest.approx(105 * 1.06) and p["plazo_s"] == 10 * 86400
+    assert fu.reglas(v, fin + 2 * 3600, set())[0] == []          # aviso viejo: no se sella tarde
+    assert fu.reglas(v, fin + 320, {("D:imp1:v0:A", "BTC"), ("H:imp6:v1:D", "BTC")})[0] == []  # sin solape
+
+
+def test_rejilla_dieciocho_al_dia():
+    from app.diario import fuentes as fu
+    t0 = 1_700_006_400 - 1_700_006_400 % 86400
+    v = {a: _v4(12, t0) for a in ("BTC", "ETH", "SOL")}
+    ps = fu.rejilla(v, t0 + 2 * 86400 + 60)
+    assert len(ps) == 18
+    lc = next(p for p in ps if p["id"].startswith("rejilla:BTC:C:0.04"))
+    assert lc["entrada"] == pytest.approx(104) and lc["stop"] == pytest.approx(104 * 1.03)
+    assert lc["objetivo"] == pytest.approx(104 * 0.94) and lc["caduca"] == t0 + 7 * 86400 + 60
+    assert fu.rejilla(v, t0 + 4 * 86400) == []                    # dia viejo: no se sella tarde
+
+
+def test_buzon_sella_rechaza_y_mueve(tmp_path):
+    from app.diario import fuentes as fu
+    ahora = 1_800_000_000
+    bz = tmp_path / "buzon"
+    bz.mkdir()
+    base = {"activo": "BTC", "lado": "largo", "orden": "limite", "entrada": 95.0, "stop": 92.0, "objetivo": 101.0,
+            "caduca": "2027-01-20T08:00:00Z", "porque": "soporte"}
+    props = [dict(base, id="ok"),
+             dict(base, id="llena", entrada=100.5),                       # largo por encima del precio: ya llena
+             {k: x for k, x in dict(base, id="sin-stop").items() if k != "stop"},
+             {k: x for k, x in dict(base, id="sin-caduca").items() if k != "caduca"},
+             dict(base, id="ok"),                                          # repetida
+             dict(base, id="corto-mal", lado="corto"),                     # geometria al reves
+             dict(base, id="riesgo", riesgo_usd=6)]
+    (bz / "a.json").write_text(json.dumps({"formato": fu.FORMATO, "corrida": "prueba", "propuestas": props}))
+    (bz / "b.json").write_text("{no es json")
+    L = lb.Libro(str(tmp_path / "e.jsonl"))
+    precios = {"BTC": 100.0, "ETH": 3000.0, "SOL": 150.0}
+    assert fu.sella_buzon(L, str(bz), dict(precios, SOL=None), ahora, set())["ficheros"] == 0   # sin precio: espera
+    n = fu.sella_buzon(L, str(bz), precios, ahora, set())
+    assert n == {"selladas": 1, "rechazadas": 7, "ficheros": 2}
+    assert sorted(x.name for x in bz.iterdir()) == ["leidos"] and len(list((bz / "leidos").iterdir())) == 2
+    filas = L.lee()
+    assert [f["id"] for f in filas if f["tipo"] == "propuesta"] == ["fable:ok"]
+    mot = {f["id"]: f["motivo"] for f in filas if f["tipo"] == "rechazo"}
+    assert mot["fable:llena"].startswith("ya llena al sellar") and mot["fable:sin-stop"].startswith("falta stop")
+    assert mot["fable:sin-caduca"].startswith("falta caduca") and mot["fichero:b.json"].startswith("JSONDecodeError")
+    assert mot["fable:corto-mal"].startswith("geometria") and mot["fable:riesgo"].startswith("riesgo")
+    assert lb.verifica(str(tmp_path / "e.jsonl")) == []
