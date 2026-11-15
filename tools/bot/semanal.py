@@ -35,7 +35,7 @@ RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 sys.path.insert(0, RAIZ)
 from app.bot import calidad  # noqa: E402
 
-H = "/srv/coinanalyze/harness/bin"
+H = os.path.join(RAIZ, "harness", "bin")  # los de SU arbol: desde la copia congelada de 143, los congelados
 DESTINO = "/var/lib/coinalyze-bot/informes"
 TOPE_MAX = 0.40
 MODELO, EFFORT = "claude-opus-5-5", "xhigh"
