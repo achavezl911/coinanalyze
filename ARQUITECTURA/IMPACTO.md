@@ -790,6 +790,6 @@ generador en cada corrida, asi que K88 los compara sin que nadie se acuerde de n
 |---|---|---|
 | `compute_snapshot` | por_llamada vacio; por_tabla == las lectoras de metrics_snapshot | **si** |
 | `spot_trades_agg` | 2 INSERT en app/ws_collector.py y 1 DELETE en app/daily_agg.py | **si** |
-| `liquidations_realtime` | 1 escritor en app/scalp_collector.py:74 y 15 rutas lectoras | **NO** |
+| `liquidations_realtime` | 1 escritor en app/scalp_collector.py:75 y 15 rutas lectoras | **si** |
 
-Los tres cuadran: **False**.
+Los tres cuadran: **True**.

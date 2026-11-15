@@ -659,11 +659,11 @@
       ]
     },
     "liquidations_realtime": {
-      "cuadra": false,
+      "cuadra": true,
       "escritores": [
         "INSERT app/scalp_collector.py:75 [constante LIQUIDATION_INSERT_SQL]"
       ],
-      "esperado": "1 escritor en app/scalp_collector.py:74 y 15 rutas lectoras",
+      "esperado": "1 escritor en app/scalp_collector.py:75 y 15 rutas lectoras",
       "pregunta": "quien escribe liquidations_realtime y quien la lee",
       "rutas_lectoras": 15
     },
@@ -677,7 +677,7 @@
       "esperado": "2 INSERT en app/ws_collector.py y 1 DELETE en app/daily_agg.py",
       "pregunta": "quien escribe spot_trades_agg"
     },
-    "todos_cuadran": false,
+    "todos_cuadran": true,
     "write_minute_k0": {
       "cuadra": true,
       "esperado": "por_tabla_k0 == las 12 lectoras de spot_trades_agg, /api/cvd/spot dentro; y la cota k<=2 es MAYOR, no igual",
