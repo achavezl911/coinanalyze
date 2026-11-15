@@ -104,7 +104,6 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:151`, `harness/checks/K43-foto-unica.sh:208` | — |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:433` | — |
-| **readme** | — | `README.md:281` |
 
 **La llama el panel: es superficie de producto.**
 

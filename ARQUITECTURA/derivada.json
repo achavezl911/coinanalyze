@@ -32944,10 +32944,10 @@
     "rutas_con_campos": 84,
     "rutas_sin_campos": 9,
     "sin_clave_temporal": 26,
-    "sin_consumidor": 7,
+    "sin_consumidor": 8,
     "sin_declarar": 25,
     "sin_llamada": 18,
-    "solo_mencion": 11,
+    "solo_mencion": 10,
     "tablas_alcanzadas": 35,
     "tablas_catalogo": 62
   },
@@ -33506,14 +33506,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:62",
-            "README.md:418",
-            "README.md:522"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_bot.py:325"
@@ -33529,7 +33521,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 48,
-        "n_menciones": 21,
+        "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34024,19 +34016,12 @@
             "harness/checks/K31-eslabon5.sh:65"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:419",
-            "README.md:523"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 2,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34177,19 +34162,12 @@
             "harness/checks/K31-eslabon5.sh:65"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:420",
-            "README.md:524"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 2,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -34750,18 +34728,12 @@
             "harness/checks/K88-control.bash:438",
             "harness/checks/K88-control.bash:480"
           ]
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:407"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 2,
-        "n_menciones": 6,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35066,18 +35038,12 @@
             "static/js/07-decision-y-ciclos.js:317"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:409"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 2,
-        "n_menciones": 1,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35234,12 +35200,6 @@
             "harness/checks/K88-control.bash:480"
           ]
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:408"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_whale_delta_minutes_postgres.py:283"
@@ -35253,7 +35213,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 3,
-        "n_menciones": 7,
+        "n_menciones": 6,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35416,14 +35376,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:70",
-            "README.md:90",
-            "README.md:413"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_dashboard_presentation.py:87"
@@ -35436,7 +35388,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 9,
-        "n_menciones": 9,
+        "n_menciones": 6,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -35848,14 +35800,6 @@
             "static/js/07-decision-y-ciclos.js:235"
           ]
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:195",
-            "README.md:492",
-            "README.md:506"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_metrics_endpoint.py:253",
@@ -35868,7 +35812,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 28,
-        "n_menciones": 17,
+        "n_menciones": 14,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36011,19 +35955,13 @@
             "static/js/02-canal.js:66"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:505"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
-        "n_menciones": 1,
+        "n_menciones": 0,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -36188,12 +36126,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:111"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_dashboard_presentation.py:126"
@@ -36204,7 +36136,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 3,
-        "n_menciones": 1,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36524,12 +36456,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:34"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_v150_desk_snapshot.py:132"
@@ -36542,7 +36468,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 3,
-        "n_menciones": 2,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -36723,19 +36649,13 @@
             "static/js/07-decision-y-ciclos.js:433"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:281"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
-        "n_menciones": 1,
+        "n_menciones": 0,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -36957,6 +36877,12 @@
             "harness/checks/K43-foto-unica.sh:172"
           ]
         },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:59"
+          ]
+        },
         "tests": {
           "llamadas": [
             "tests/test_entradas_ruta.py:72"
@@ -36971,7 +36897,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 7,
-        "n_menciones": 10,
+        "n_menciones": 11,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -37669,13 +37595,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:417",
-            "README.md:440"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_bot_r3.py:337"
@@ -37693,7 +37612,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 14,
-        "n_menciones": 15,
+        "n_menciones": 13,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -39257,18 +39176,12 @@
           "menciones": [
             "harness/checks/K31-cubos.py:41"
           ]
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:411"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 2,
-        "n_menciones": 2,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -39405,19 +39318,13 @@
             "static/js/07-decision-y-ciclos.js:431"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:278"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
         "n_llamadas": 4,
-        "n_menciones": 1,
+        "n_menciones": 0,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -39634,18 +39541,12 @@
             "harness/checks/K76-la-ventana-que-pides.sh:161"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:171"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 1,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -39876,6 +39777,12 @@
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:8"
           ]
         },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:36"
+          ]
+        },
         "tests": {
           "llamadas": [
             "tests/js/mesa_decide.test.js:275",
@@ -39890,7 +39797,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 17,
-        "n_menciones": 7,
+        "n_menciones": 8,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -40347,12 +40254,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:406"
-          ]
-        },
         "tests": {
           "llamadas": [],
           "menciones": [
@@ -40363,7 +40264,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 12,
-        "n_menciones": 5,
+        "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -40536,18 +40437,12 @@
           "menciones": [
             "static/index.html:491"
           ]
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:410"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 8,
-        "n_menciones": 7,
+        "n_menciones": 6,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -41076,12 +40971,18 @@
             "harness/checks/K111-banco.py:23",
             "harness/checks/K111-banco.py:348"
           ]
+        },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:43"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 9,
-        "n_menciones": 3,
+        "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -42970,19 +42871,13 @@
             "static/js/07-decision-y-ciclos.js:406"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:32"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
         "n_llamadas": 3,
-        "n_menciones": 3,
+        "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -43918,13 +43813,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:492",
-            "README.md:503"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_v121_hardening.py:40"
@@ -43936,7 +43824,7 @@
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
         "n_llamadas": 4,
-        "n_menciones": 2,
+        "n_menciones": 0,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -44477,13 +44365,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:492",
-            "README.md:504"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_v121_hardening.py:36"
@@ -44494,7 +44375,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 10,
-        "n_menciones": 3,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -44853,13 +44734,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:492",
-            "README.md:502"
-          ]
-        },
         "tests": {
           "llamadas": [],
           "menciones": [
@@ -44870,7 +44744,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 7,
-        "n_menciones": 3,
+        "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -45206,18 +45080,12 @@
             "harness/checks/K88-control.bash:162",
             "harness/checks/K88-control.bash:479"
           ]
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:415"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 5,
+        "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": true
       },
@@ -46322,12 +46190,6 @@
             "harness/checks/K31-cubos.py:109"
           ]
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:405"
-          ]
-        },
         "tests": {
           "llamadas": [],
           "menciones": [
@@ -46338,7 +46200,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 3,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": true
       },
@@ -46432,18 +46294,12 @@
             "static/js/08-arranque.js:8"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:416"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 4,
-        "n_menciones": 3,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -47259,20 +47115,12 @@
             "static/js/07-decision-y-ciclos.js:417"
           ],
           "menciones": []
-        },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:72",
-            "README.md:276",
-            "README.md:414"
-          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 2,
-        "n_menciones": 3,
+        "n_menciones": 0,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -47511,20 +47359,13 @@
           "propio": false
         }
       ],
-      "consumidores": {
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:121"
-          ]
-        }
-      },
+      "consumidores": {},
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 0,
-        "n_menciones": 1,
-        "sin_ninguno": false,
-        "solo_mencion": true
+        "n_menciones": 0,
+        "sin_ninguno": true,
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -47642,12 +47483,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:412"
-          ]
-        },
         "tests": {
           "llamadas": [],
           "menciones": [
@@ -47660,7 +47495,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 5,
-        "n_menciones": 6,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -47836,12 +47671,6 @@
           ],
           "menciones": []
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:149"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_wyckoff.py:112"
@@ -47853,7 +47682,7 @@
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
         "n_llamadas": 16,
-        "n_menciones": 3,
+        "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48224,6 +48053,13 @@
           ],
           "menciones": []
         },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:42",
+            "README.md:52"
+          ]
+        },
         "tests": {
           "llamadas": [
             "tests/js/flujo_trazos.test.js:2"
@@ -48236,7 +48072,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 49,
-        "n_menciones": 30,
+        "n_menciones": 32,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48332,6 +48168,13 @@
             "harness/checks/K44-el-sobre-que-nadie-pide.sh:342"
           ]
         },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:47",
+            "README.md:52"
+          ]
+        },
         "tests": {
           "llamadas": [
             "tests/js/liq_precio.test.js:99",
@@ -48343,7 +48186,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 18,
-        "n_menciones": 22,
+        "n_menciones": 24,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48454,6 +48297,12 @@
             "harness/checks/K90-la-senal-no-dura-su-rotulo.sh:200"
           ]
         },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:32"
+          ]
+        },
         "tests": {
           "llamadas": [
             "tests/js/mesa_remate.test.js:84",
@@ -48468,7 +48317,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 42,
-        "n_menciones": 15,
+        "n_menciones": 16,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48529,15 +48378,6 @@
         }
       ],
       "consumidores": {
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:290",
-            "README.md:291",
-            "README.md:319",
-            "README.md:507"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/test_metrics_endpoint.py:252"
@@ -48551,7 +48391,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 1,
-        "n_menciones": 6,
+        "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48654,6 +48494,12 @@
             "static/index.html:89"
           ]
         },
+        "readme": {
+          "llamadas": [],
+          "menciones": [
+            "README.md:39"
+          ]
+        },
         "tests": {
           "llamadas": [
             "tests/js/harness.js:169",
@@ -48672,7 +48518,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 18,
-        "n_menciones": 9,
+        "n_menciones": 10,
         "sin_ninguno": false,
         "solo_mencion": false
       },
