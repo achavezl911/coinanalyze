@@ -29,6 +29,7 @@ from app.db import (
     mark_feed_shard_error,
     monitor_service_lock,
 )
+from app.escucha import Escucha, segundos_sin_oir
 from app.logging_setup import configure_logging
 from app.partitioning import apply_temporal_retention
 from app.scalp_logic import compute_scalp_summary, scalp_context
@@ -678,9 +679,13 @@ async def flush_trades(
 # colectores: futures, que drena desde el 08-26T00:24Z, da los mismos ratios que spot en
 # los mismos arranques. Se marca con los segundos realmente escuchados.
 PROCESO_INICIADO = time.time()
+# A2 · los cortes de cada venue a mitad de minuto (app/escucha.py)
+ESCUCHA: dict[str, Escucha] = {"binance": Escucha(), "bybit": Escucha()}
 
 
-def segundos_cubiertos(ts: int, inicio: float | None = None, fin: float | None = None) -> int:
+def segundos_cubiertos(
+    ts: int, inicio: float | None = None, fin: float | None = None, cortes=()
+) -> int:
     """Segundos del minuto que empieza en ts con el colector ya escuchando.
 
     `fin` es el instante en que el colector DEJO de escuchar. Sin el, esta funcion solo
@@ -690,12 +695,15 @@ def segundos_cubiertos(ts: int, inicio: float | None = None, fin: float | None =
     esta pata escribe `futures_trades_agg` y lo cometia igual.
 
     Con `fin=None` el resultado es identico al de antes: es una extension, no un cambio.
+
+    `cortes` son los intervalos [corte, vuelta) en que el venue no se oia por una reconexion
+    (app/escucha.py, DATOS A A2): caer del segundo 20 al 56 deja 24 s, no 60.
     """
 
     arranque = PROCESO_INICIADO if inicio is None else inicio
     desde = ts if ts >= arranque else arranque
     hasta = ts + 60 if fin is None else min(ts + 60, fin)
-    return max(0, min(60, int(round(hasta - desde))))
+    return max(0, min(60, int(round(hasta - desde - segundos_sin_oir(desde, hasta, cortes)))))
 
 
 async def drenar_minutos(
@@ -764,7 +772,7 @@ async def _write_trade_rows(
             (
                 datetime.fromtimestamp(ts, UTC), symbol, exchange, 1, "1min",
                 b.buy_vol_usd, b.sell_vol_usd, b.large_buy_usd, b.large_sell_usd, b.trade_count,
-                segundos_cubiertos(ts, fin=fin),
+                segundos_cubiertos(ts, fin=fin, cortes=ESCUCHA[exchange].cortes() if exchange in ESCUCHA else ()),
             )
             for (symbol, exchange, ts), b in snapshots
         ]
@@ -1030,7 +1038,9 @@ async def binance_loop() -> None:
                 url, open_timeout=30, ping_interval=20, ping_timeout=20, max_size=2_000_000
             ) as ws:
                 LOGGER.info("binance_futures_connected streams=%d", len(streams))
+                ESCUCHA["binance"].vuelta()
                 async for raw in ws:
+                    ESCUCHA["binance"].oido()
                     if time.monotonic() - started > SETTINGS.BINANCE_BOOK_FORCE_RECONNECT_SECONDS:
                         BINANCE_BOOK_RECONNECT_TOTAL += 1
                         await BOOK_STORE.drop_exchange("binance")
@@ -1057,6 +1067,7 @@ async def binance_loop() -> None:
         except Exception:
             LOGGER.exception("binance_futures_ws_error retry=%.1fs", backoff)
         await BOOK_STORE.drop_exchange("binance")
+        ESCUCHA["binance"].corte()
         mark_exchange_disconnected("binance")
         await asyncio.sleep(backoff)
         backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
@@ -1189,7 +1200,9 @@ async def bybit_loop(
             async with websockets.connect(BYBIT_LINEAR_WS, ping_interval=20, ping_timeout=20, max_size=2_000_000) as ws:
                 await ws.send(json.dumps({"op": "subscribe", "args": args}))
                 LOGGER.info("bybit_linear_connected topics=%d", len(args))
+                ESCUCHA["bybit"].vuelta()
                 async for raw in ws:
+                    ESCUCHA["bybit"].oido()
                     backoff = WS_RECONNECT_INITIAL_SECONDS
                     message = json.loads(raw)
                     if message.get("op") == "subscribe":
@@ -1240,6 +1253,7 @@ async def bybit_loop(
             ownership=ownership,
         )
         await BOOK_STORE.drop_exchange("bybit")
+        ESCUCHA["bybit"].corte()
         mark_exchange_disconnected("bybit")
         await asyncio.sleep(backoff)
         backoff = min(backoff * 2, WS_RECONNECT_MAX_SECONDS)
