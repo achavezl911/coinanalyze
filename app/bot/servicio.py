@@ -1294,6 +1294,16 @@ class Bot:
         except Exception as e:
             return f"SOMBRA: sin cuenta ({type(e).__name__} {str(e)[:160]})"
 
+    def texto_diario(self) -> str:
+        """El marcador del diario de entradas en sombra (app/diario), que la tarea diaria de 143 deja en
+        BOT_INFORMES/diario-entradas.txt por el mismo camino que el informe semanal. Solo se ENSENA: no avisa de nada."""
+        f = os.path.join(self.informes, "diario-entradas.txt")
+        try:
+            edad = (time.time() - os.path.getmtime(f)) / 3600
+            return pathlib.Path(f).read_text(encoding="utf-8").strip() + f"\n(marcador de hace {edad:.0f} h)"
+        except OSError:
+            return "DIARIO DE ENTRADAS: sin marcador todavia (lo deja la tarea diaria de 143)"
+
     async def texto_sesgo(self, corto: bool = False) -> str:
         """E2: el sesgo diario de cada activo (app/bot/sesgo.py), para /entrada y el parte. CONTEXTO, NO una entrada; un
         fallo de lectura no tumba ni la orden ni el parte."""
@@ -1332,7 +1342,8 @@ class Bot:
                     await self.evalua(p, "a peticion")
                 return "" if ps else "no hay posicion abierta que evaluar"
             if orden in ("/entrada", "/entradas", "entrada"):
-                return ENTRADAS + "\n" + await self.texto_sombra() + "\n" + await self.texto_sesgo()
+                return (ENTRADAS + "\n" + await self.texto_sombra() + "\n" + await self.texto_sesgo() + "\n"
+                        + self.texto_diario())
             if orden == "/estado":
                 return self.texto_salud(await self.salud(), "ESTADO")
             if orden == "/prueba":
