@@ -386,6 +386,32 @@ async def test_footprint_y_perfil_salen_de_las_celdas_en_texto_exacto(conn):
             await lec.footprint(conn, **kw)
 
 
+async def test_footprint_delta_de_la_vela_y_compra_venta_en_usd_no_se_cruzan(conn):
+    """A7 (DATOS A, mutantes F4-F7, F2 y F2b que sobrevivian): la prueba de arriba aserta de la vela compra,
+    venta, poc y operaciones pero nunca su delta, y en USD solo campos simetricos (nivel, poc, val, total).
+    Aqui compra y venta son distintas en base Y en USD, para que un signo o un cruce se vean."""
+    a, b = of._ts(M), of._ts(M + 60)
+    await _celdas(conn, [
+        (a, "binance_spot", D(81563), D("0.5"), D("0.25"), D("40781.5"), D("20390.75"), 1, 1),
+        (a, "okx_spot", D(81567), D("1"), D("0"), D("81567"), D(0), 2, 0),
+        (b, "binance_spot", D(81570), D("0"), D("2"), D(0), D("163140"), 0, 3),
+    ])
+    kw = {"symbol": "BTC", "desde": lec.iso(a), "hasta": lec.iso(of._ts(M + 120)), "marco": "1m", "paso": "5",
+          "venues": None}
+    base = await lec.footprint(conn, **kw, unidad="base")
+    assert [(v["compra"], v["venta"], v["delta"]) for v in base["velas"]] == [("1.5", "0.25", "1.25"),
+                                                                           ("0", "2", "-2")]
+    usd = await lec.footprint(conn, **kw, unidad="usd")
+    assert [(v["compra"], v["venta"], v["delta"], v["total"]) for v in usd["velas"]] == [
+        ("122348.5", "20390.75", "101957.75", "142739.25"), ("0", "163140", "-163140", "163140")]
+    assert [(n["nivel"], n["compra"], n["venta"]) for n in usd["velas"][0]["niveles"]] == [
+        ("81560", "40781.5", "20390.75"), ("81565", "81567", "0")]
+    pf = await lec.perfil(conn, symbol="BTC", desde=kw["desde"], hasta=kw["hasta"], paso=None,
+                          venues="binance_spot", unidad="usd")
+    assert [(n["nivel"], n["compra"], n["venta"]) for n in pf["niveles"]] == [
+        ("81563", "40781.5", "20390.75"), ("81570", "0", "163140")]
+
+
 async def test_apertura_y_cierre_de_cada_vela_salen_de_la_cinta_del_venue_de_referencia(conn):
     a, b, c = of._ts(M), of._ts(M + 60), of._ts(M + 120)
     await _celdas(conn, [(t, "binance_usdm", D(100), D(1), D(1), D(100), D(100), 1, 1) for t in (a, b, c)])
