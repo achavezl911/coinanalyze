@@ -45,6 +45,34 @@ jobs:
           . .venv/bin/activate
           python -m compileall -q app
 
+      # CI RAPIDA · C3. Un PR cuyo diff SOLO toca documentacion (README.md, docs/, entregas/,
+      # ARQUITECTURA/) no corre la base, pytest ni node: no hay codigo que puedan juzgar. El job
+      # SIGUE apareciendo y en verde (es la comprobacion requerida: un job saltado entero la
+      # dejaria pendiente), y ruff, compileall y K15 corren igual -K88 juzga ARQUITECTURA/-.
+      #
+      # FALLA HACIA CORRER: en push a main, si no se puede traer la base del PR, si el diff sale
+      # vacio o si UN solo fichero cae fuera de la lista, pruebas=si. Se compara con
+      # pull_request.base.sha; si main avanzo despues, el diff trae ficheros de mas y corre todo.
+      - name: Scope of the change (docs-only PR skips tests)
+        id: alcance
+        env:
+          EVENTO: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -u
+          pruebas=si
+          if [ "$EVENTO" = pull_request ] && [ -n "$BASE_SHA" ]; then
+            if git fetch --no-tags --depth=1 origin "$BASE_SHA" && cambios=$(git diff --name-only "$BASE_SHA" HEAD); then
+              printf '%s\n' "$cambios" | sed 's/^/  cambia: /'
+              fuera=$(printf '%s\n' "$cambios" | grep -Ev '^(README\.md|docs/.+|entregas/.+|ARQUITECTURA/.+)$' || true)
+              if [ -n "$cambios" ] && [ -z "$fuera" ]; then pruebas=no; fi
+            else
+              echo "::warning::no se pudo calcular el diff contra la base del PR: se corre todo"
+            fi
+          fi
+          echo "pruebas=$pruebas"
+          echo "pruebas=$pruebas" >> "$GITHUB_OUTPUT"
+
       # K07 · CABLEADO el 2026-08-27, y con las cifras que lo hicieron posible.
       #
       # LO QUE DECIA ESTE COMENTARIO ANTES ERA CORRECTO EN 08-25 Y HOY YA NO, y merece
@@ -76,6 +104,7 @@ jobs:
         run: bash harness/bin/barre-bases-ci "ci_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
 
       - name: Create disposable test database
+        if: steps.alcance.outputs.pruebas != 'no'
         id: testdb
         run: |
           set -eu
@@ -104,6 +133,7 @@ jobs:
       # --depth=1 SOLO AQUI: este checkout ya es superficial. En un clon completo ese mismo
       # mandato lo vuelve superficial y K93 sale NO MEDIDO (medido el 2026-10-03 en 143).
       - name: Fetch main for the reglamento history test
+        if: steps.alcance.outputs.pruebas != 'no'
         run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
 
       # CI RAPIDA · C2. EN PARALELO, un proceso por nucleo (pytest-xdist, version fija en
@@ -113,6 +143,7 @@ jobs:
       # CPU de tests/test_bot_simulador.py (de 44 a 167 s cada una) y, repartidas por lotes, un
       # proceso se quedo 25 min con la cola mientras los otros tres estaban parados.
       - name: Pytest
+        if: steps.alcance.outputs.pruebas != 'no'
         env:
           TEST_DATABASE_URL: "postgresql:///${{ steps.testdb.outputs.db }}?host=/var/run/postgresql"
         run: |
@@ -124,6 +155,7 @@ jobs:
         run: dropdb --host=/var/run/postgresql --if-exists "${{ steps.testdb.outputs.db }}"
 
       - name: JavaScript tests
+        if: steps.alcance.outputs.pruebas != 'no'
         run: node --test tests/js/
 
       # K15 · que un VERDE no vuelva a ROJO en silencio.
