@@ -95,8 +95,8 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:264`
-  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:285`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
+  - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
 
 ## Funciones que la componen
 
@@ -150,7 +150,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:168`, `harness/checks/K43-foto-unica.sh:462` | `harness/checks/K43-foto-unica.sh:98` |
-| **panel** | `static/js/07-decision-y-ciclos.js:226`, `static/js/10-contexto-y-estructura.js:705` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:226`, `static/js/10-contexto-y-estructura.js:714` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:13`, `tests/test_ventana_elegible.py:71` |
 
 **La llama el panel: es superficie de producto.**

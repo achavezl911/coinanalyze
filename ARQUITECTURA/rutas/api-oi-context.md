@@ -18,22 +18,22 @@ Handler `oi_context_endpoint` · `app/api.py:2148` (cuerpo hasta la 2151) · dec
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:3381 |
-| `by_venue` | literal en app/scalp_logic.py:3392 |
-| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3393 |
-| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3394 |
-| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3398 |
-| `by_venue.note` | literal en app/scalp_logic.py:3401 |
-| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3395 |
-| `coverage` | literal en app/scalp_logic.py:3389 |
-| `oi_latest_ts` | literal en app/scalp_logic.py:3386 |
-| `oi_total_usd` | literal en app/scalp_logic.py:3382 |
-| `percentile_1y` | literal en app/scalp_logic.py:3390 |
-| `price_latest_ts` | literal en app/scalp_logic.py:3387 |
-| `quadrant_note` | literal en app/scalp_logic.py:3405 |
-| `symbol` | literal en app/scalp_logic.py:3380 |
-| `windows` | literal en app/scalp_logic.py:3388 |
-| `zscore_1y` | literal en app/scalp_logic.py:3391 |
+| `available` | literal en app/scalp_logic.py:3427 |
+| `by_venue` | literal en app/scalp_logic.py:3438 |
+| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3439 |
+| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3440 |
+| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3444 |
+| `by_venue.note` | literal en app/scalp_logic.py:3447 |
+| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3441 |
+| `coverage` | literal en app/scalp_logic.py:3435 |
+| `oi_latest_ts` | literal en app/scalp_logic.py:3432 |
+| `oi_total_usd` | literal en app/scalp_logic.py:3428 |
+| `percentile_1y` | literal en app/scalp_logic.py:3436 |
+| `price_latest_ts` | literal en app/scalp_logic.py:3433 |
+| `quadrant_note` | literal en app/scalp_logic.py:3451 |
+| `symbol` | literal en app/scalp_logic.py:3426 |
+| `windows` | literal en app/scalp_logic.py:3434 |
+| `zscore_1y` | literal en app/scalp_logic.py:3437 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -64,7 +64,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3289`
+- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3335`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
@@ -73,9 +73,9 @@ Llamadas directas del handler:
 - `app.data_gaps.align_down` — `app/data_gaps.py:232`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
-- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3246`
-- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3258`
-- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3216`
+- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3292`
+- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3304`
+- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3262`
 - `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
@@ -142,9 +142,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic._pct_rank` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.align_down` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-data_gaps.md) |

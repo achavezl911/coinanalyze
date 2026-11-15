@@ -137,8 +137,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.metrics.session_bounds` | 2 | **0** | 56 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api._session_window` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-api.md) |
 | `app.api.verdicts` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

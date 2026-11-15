@@ -18,13 +18,13 @@ Handler `volatility_endpoint` · `app/api.py:2155` (cuerpo hasta la 2158) · dec
 
 | campo | de donde sale |
 |---|---|
-| `atr` | literal en app/scalp_logic.py:3446 |
-| `compression_score` | literal en app/scalp_logic.py:3449 |
-| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3448 |
-| `note` | literal en app/scalp_logic.py:3451 |
-| `range_expansion` | literal en app/scalp_logic.py:3450 |
-| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3447 |
-| `symbol` | literal en app/scalp_logic.py:3445 |
+| `atr` | literal en app/scalp_logic.py:3492 |
+| `compression_score` | literal en app/scalp_logic.py:3495 |
+| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3494 |
+| `note` | literal en app/scalp_logic.py:3497 |
+| `range_expansion` | literal en app/scalp_logic.py:3496 |
+| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3493 |
+| `symbol` | literal en app/scalp_logic.py:3491 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -51,16 +51,16 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3409`
+- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3455`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3194`
-- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3173`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
+- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3219`
 - `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3202`
+- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3248`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3183`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3229`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>

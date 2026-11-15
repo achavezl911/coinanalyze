@@ -18,12 +18,12 @@ Handler `market_impact_endpoint` · `app/api.py:1385` (cuerpo hasta la 1389) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5897 |
-| `definition` | literal en app/scalp_logic.py:5899 |
-| `limitations` | literal en app/scalp_logic.py:5901 |
-| `metric` | literal en app/scalp_logic.py:5898 |
-| `symbol` | literal en app/scalp_logic.py:5896 |
-| `windows` | literal en app/scalp_logic.py:5900 |
+| `as_of` | literal en app/scalp_logic.py:5970 |
+| `definition` | literal en app/scalp_logic.py:5972 |
+| `limitations` | literal en app/scalp_logic.py:5974 |
+| `metric` | literal en app/scalp_logic.py:5971 |
+| `symbol` | literal en app/scalp_logic.py:5969 |
+| `windows` | literal en app/scalp_logic.py:5973 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5804`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5877`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
@@ -130,8 +130,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.load_baselines` | 15 | **0** | 11 ↑ | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.baseline_band` | 14 | **0** | 11 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.market_impact` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-scalp_logic.md) |

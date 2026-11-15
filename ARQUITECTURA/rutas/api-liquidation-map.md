@@ -14,26 +14,29 @@ Handler `liquidation_map_endpoint` · `app/api.py:1950` (cuerpo hasta la 1953) �
 
 ## Campos que publica
 
-16 campos derivados. La procedencia dice de donde sale cada uno.
+19 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3787 |
-| `atr_1h` | literal en app/scalp_logic.py:3786 |
-| `available` | literal en app/scalp_logic.py:3783 |
-| `bucket_size` | literal en app/scalp_logic.py:3791 |
-| `buckets_total` | literal en app/scalp_logic.py:3796 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3800 |
-| `current_price` | literal en app/scalp_logic.py:3785 |
-| `levels` | literal en app/scalp_logic.py:3799 |
-| `levels_shown` | literal en app/scalp_logic.py:3797 |
-| `note` | literal en app/scalp_logic.py:3801 |
-| `symbol` | literal en app/scalp_logic.py:3782 |
-| `type` | literal en app/scalp_logic.py:3784 |
-| `window_end` | literal en app/scalp_logic.py:3789 |
-| `window_minutes` | literal en app/scalp_logic.py:3790 |
-| `window_notional` | literal en app/scalp_logic.py:3798 |
-| `window_start` | literal en app/scalp_logic.py:3788 |
+| `as_of` | literal en app/scalp_logic.py:3852 |
+| `atr_1h` | literal en app/scalp_logic.py:3851 |
+| `available` | literal en app/scalp_logic.py:3848 |
+| `bucket_size` | literal en app/scalp_logic.py:3856 |
+| `buckets_total` | literal en app/scalp_logic.py:3861 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3869 |
+| `current_price` | literal en app/scalp_logic.py:3850 |
+| `feed_alive` | literal en app/scalp_logic.py:3865 |
+| `feed_reason` | literal en app/scalp_logic.py:3867 |
+| `feed_status` | literal en app/scalp_logic.py:3866 |
+| `levels` | literal en app/scalp_logic.py:3868 |
+| `levels_shown` | literal en app/scalp_logic.py:3862 |
+| `note` | literal en app/scalp_logic.py:3870 |
+| `symbol` | literal en app/scalp_logic.py:3847 |
+| `type` | literal en app/scalp_logic.py:3849 |
+| `window_end` | literal en app/scalp_logic.py:3854 |
+| `window_minutes` | literal en app/scalp_logic.py:3855 |
+| `window_notional` | literal en app/scalp_logic.py:3863 |
+| `window_start` | literal en app/scalp_logic.py:3853 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -44,7 +47,11 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
-  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:74`
+  - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
+- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+  - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
+  - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
+  - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -53,19 +60,21 @@ LEE:
 
 ## Funciones que la componen
 
-6 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+8 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3725`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3771`
 
-<details><summary>Alcanzables de forma indirecta (4)</summary>
+<details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3194`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4189`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3183`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3229`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>
@@ -142,8 +151,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._as_utc_datetime` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._atr` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._tr_series` | 9 | **0** | 0 | **9** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._liquidation_feed_quality_status` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.liquidation_map` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.api.liquidation_map_endpoint` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

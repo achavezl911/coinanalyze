@@ -2,28 +2,29 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-12 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+13 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_write_minute`](#-write-minute) | 239 | 0 | **12** | 19 ↑ | **12** |
-| [`drain_closed_minutes`](#drain-closed-minutes) | 333 | 0 | **0** | 19 ↑ | **0** |
-| [`flush_minute`](#flush-minute) | 321 | 0 | **0** | 19 ↑ | **0** |
-| [`heartbeat_loop`](#heartbeat-loop) | 530 | 0 | **0** | 15 ↑ | **0** |
-| [`binance_consumer`](#binance-consumer) | 439 | 0 | **0** | 13 ↑ | **0** |
-| [`binance_url`](#binance-url) | 217 | 0 | **0** | 13 ↑ | **0** |
-| [`bybit_consumer`](#bybit-consumer) | 481 | 0 | **0** | 13 ↑ | **0** |
-| [`flush_realtime`](#flush-realtime) | 365 | 0 | **13** | 13 | **13** |
-| [`run`](#run) | 590 | 0 | **0** | 13 ↑ | **0** |
-| [`spot_pairs`](#spot-pairs) | 213 | 0 | **0** | 13 ↑ | **0** |
-| [`valid_trade`](#valid-trade) | 222 | 0 | **0** | 13 ↑ | **0** |
-| [`segundos_cubiertos`](#segundos-cubiertos) | 46 | 0 | **0** | 12 ↑ | **0** |
+| [`_write_minute`](#-write-minute) | 252 | 0 | **12** | 19 ↑ | **12** |
+| [`drain_closed_minutes`](#drain-closed-minutes) | 346 | 0 | **0** | 19 ↑ | **0** |
+| [`flush_minute`](#flush-minute) | 334 | 0 | **0** | 19 ↑ | **0** |
+| [`heartbeat_loop`](#heartbeat-loop) | 551 | 0 | **0** | 15 ↑ | **0** |
+| [`binance_consumer`](#binance-consumer) | 452 | 0 | **0** | 13 ↑ | **0** |
+| [`binance_url`](#binance-url) | 225 | 0 | **0** | 13 ↑ | **0** |
+| [`bybit_consumer`](#bybit-consumer) | 498 | 0 | **0** | 13 ↑ | **0** |
+| [`flush_realtime`](#flush-realtime) | 378 | 0 | **13** | 13 | **13** |
+| [`run`](#run) | 611 | 0 | **0** | 13 ↑ | **0** |
+| [`spot_pairs`](#spot-pairs) | 221 | 0 | **0** | 13 ↑ | **0** |
+| [`valid_trade`](#valid-trade) | 230 | 0 | **0** | 13 ↑ | **0** |
+| [`_cortes`](#-cortes) | 247 | 0 | **0** | 12 ↑ | **0** |
+| [`segundos_cubiertos`](#segundos-cubiertos) | 49 | 0 | **0** | 12 ↑ | **0** |
 
 ## _write_minute
 
-`app/ws_collector.py:239` · clave completa `app.ws_collector._write_minute`
+`app/ws_collector.py:252` · clave completa `app.ws_collector._write_minute`
 
 **Radio exacto: 12 rutas** de 93 · **cota superior: 19** (mas ancha)
 
@@ -113,7 +114,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## drain_closed_minutes
 
-`app/ws_collector.py:333` · clave completa `app.ws_collector.drain_closed_minutes`
+`app/ws_collector.py:346` · clave completa `app.ws_collector.drain_closed_minutes`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 19** (mas ancha)
 
@@ -189,7 +190,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## flush_minute
 
-`app/ws_collector.py:321` · clave completa `app.ws_collector.flush_minute`
+`app/ws_collector.py:334` · clave completa `app.ws_collector.flush_minute`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 19** (mas ancha)
 
@@ -265,7 +266,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## heartbeat_loop
 
-`app/ws_collector.py:530` · clave completa `app.ws_collector.heartbeat_loop`
+`app/ws_collector.py:551` · clave completa `app.ws_collector.heartbeat_loop`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 15** (mas ancha)
 
@@ -333,7 +334,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## binance_consumer
 
-`app/ws_collector.py:439` · clave completa `app.ws_collector.binance_consumer`
+`app/ws_collector.py:452` · clave completa `app.ws_collector.binance_consumer`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
 
@@ -396,7 +397,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## binance_url
 
-`app/ws_collector.py:217` · clave completa `app.ws_collector.binance_url`
+`app/ws_collector.py:225` · clave completa `app.ws_collector.binance_url`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
 
@@ -459,7 +460,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## bybit_consumer
 
-`app/ws_collector.py:481` · clave completa `app.ws_collector.bybit_consumer`
+`app/ws_collector.py:498` · clave completa `app.ws_collector.bybit_consumer`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
 
@@ -522,7 +523,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## flush_realtime
 
-`app/ws_collector.py:365` · clave completa `app.ws_collector.flush_realtime`
+`app/ws_collector.py:378` · clave completa `app.ws_collector.flush_realtime`
 
 **Radio exacto: 13 rutas** de 93 · **cota superior: 13** (igual al exacto)
 
@@ -596,7 +597,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## run
 
-`app/ws_collector.py:590` · clave completa `app.ws_collector.run`
+`app/ws_collector.py:611` · clave completa `app.ws_collector.run`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
 
@@ -659,7 +660,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## spot_pairs
 
-`app/ws_collector.py:213` · clave completa `app.ws_collector.spot_pairs`
+`app/ws_collector.py:221` · clave completa `app.ws_collector.spot_pairs`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
 
@@ -722,7 +723,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## valid_trade
 
-`app/ws_collector.py:222` · clave completa `app.ws_collector.valid_trade`
+`app/ws_collector.py:230` · clave completa `app.ws_collector.valid_trade`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
 
@@ -783,9 +784,69 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 <sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## _cortes
+
+`app/ws_collector.py:247` · clave completa `app.ws_collector._cortes`
+
+**Radio exacto: 0 rutas** de 93 · **cota superior: 12** (mas ancha)
+
+### Por llamada — 0 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+_ninguna ruta la ejecuta._
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 12 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (12 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `spot_trades_agg` — la escribe `app.ws_collector._write_minute`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/price-barriers`](../rutas/api-price-barriers.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+**12 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/divergences`](../rutas/api-divergences.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/price-barriers`](../rutas/api-price-barriers.md)
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## segundos_cubiertos
 
-`app/ws_collector.py:46` · clave completa `app.ws_collector.segundos_cubiertos`
+`app/ws_collector.py:49` · clave completa `app.ws_collector.segundos_cubiertos`
 
 **Radio exacto: 0 rutas** de 93 · **cota superior: 12** (mas ancha)
 
