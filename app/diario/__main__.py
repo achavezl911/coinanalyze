@@ -8,6 +8,7 @@
 El libro (<D>/entradas.jsonl) se VERIFICA antes de escribir: tocado, no se escribe nada y sale con rc 2. Lo que no se
 pudo hacer (canal caido, hueco de velas) va a <D>/estado.json y al marcador; un canal caido no es un dato.
 --ahora planta el reloj (s Unix): con --sin-red sirve para rehacer una corrida sobre la cache.
+python -m app.diario ciego plan|foto|corre ...: el SIMULADOR CIEGO sobre el pasado (ciego.py), en su propia carpeta.
 """
 from __future__ import annotations
 
@@ -122,6 +123,9 @@ def _corre(orden: str, carpeta: str, ahora: int, red: bool, entregar: bool) -> d
 
 
 def main(argv: list[str]) -> int:
+    if argv and argv[0] == "ciego":
+        from app.diario import ciego
+        return ciego.main(argv[1:])
     ap = argparse.ArgumentParser(prog="python -m app.diario")
     ap.add_argument("orden", choices=("cuarto", "diario"))
     ap.add_argument("--dir", default=DIR)

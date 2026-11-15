@@ -19,3 +19,14 @@ dia /var/lib/coinalyze-bot/informes/diario-entradas.txt en 140 (como el informe 
 harness/bin/api. Corre el arbol de /srv/coinanalyze/repo: hasta fusionar claude/diario-entradas en main, el modulo
 app/diario no existe en main y las unidades fallarian (rc 1 en el journal, nada escrito).
 Buzon de Fable: un JSON por corrida en /srv/coinanalyze/diario/buzon/ con el formato de app/diario/fuentes.py (c).
+
+SIMULADOR CIEGO (fase 2b) · a mano, como root (usa el plan Max de root: sin ANTHROPIC_API_KEY), sin unidad ni timer
+  cd /srv/coinanalyze/repo
+  .venv/bin/python -m app.diario ciego plan                    (80 instantes, semilla 20261115: no se cambia)
+  .venv/bin/python -m app.diario ciego foto --instante ETH-1785585600   (lo que ve el modelo, sin llamarlo)
+  nohup .venv/bin/python -m app.diario ciego corre --dir /srv/coinanalyze/diario-ciego --tope-usd 18 \
+        > /srv/coinanalyze/diario-ciego/corrida.log 2>&1 &
+--tope-usd es el gasto ACUMULADO de la carpeta (el humo ya cuenta); --max N para como mucho N llamadas; --effort
+low|medium|high (por defecto medium). Se puede cortar y relanzar: lo sellado no se repide. Resultado:
+/srv/coinanalyze/diario-ciego/marcador.txt y estado.json; el libro es diario-ciego.jsonl (aparte del diario vivo),
+las claves de anonimizado en claves/, lo que vio y contesto el modelo en fotos/ y respuestas/.
