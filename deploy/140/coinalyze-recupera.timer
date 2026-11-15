@@ -1,0 +1,17 @@
+# DATOS B (fable-f6 R2) · el recuperador a los 10 min de arrancar la maquina (tras un apagon, con la ingesta ya en
+# marcha) y luego cada 30 min. Con 24 h de horizonte en ohlcv 1min, cada hueco tiene ~48 oportunidades antes de perderse.
+[Unit]
+Description=Coinalyze recuperador: a los 10 min del arranque y cada 30 min
+
+[Timer]
+OnBootSec=10min
+# Y a los 10 min de (re)arrancar el temporizador: el despliegue lo para y lo arranca, y sin una primera activacion
+# OnUnitActiveSec no tiene de donde contar.
+OnActiveSec=10min
+OnUnitActiveSec=30min
+AccuracySec=1min
+Persistent=false
+Unit=coinalyze-recupera.service
+
+[Install]
+WantedBy=timers.target
