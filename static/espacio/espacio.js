@@ -100,6 +100,18 @@ function pintaBotonera() {
 }
 
 /* Los marcos de la disposicion: los que ya estaban se quedan como estan (no se recargan); los que sobran se van. */
+/* El lienzo de /flujo hace preventDefault en mousedown (flujo-dibujo.js, para que el arrastre no seleccione texto) y
+ * eso le quita al clic el paso del foco al marco: se le da aqui, en captura, antes que el lienzo. */
+function tomaFoco(f) {
+  try {
+    f.contentWindow.addEventListener('mousedown', () => {
+      if (document.activeElement !== f) f.contentWindow.focus();
+      ESP.foco = ESP.marcos.indexOf(f);
+      pintaFoco();
+    }, true);
+  } catch (e) { /* un marco de otro origen no es nuestro */ }
+}
+
 function montaMarcos() {
   const caja = document.getElementById('marcos');
   const n = DISPOSICIONES[ESP.e.disp];
@@ -111,6 +123,7 @@ function montaMarcos() {
     f.title = 'Grafico ' + (i + 1);
     f.dataset.marco = String(i);
     f.src = srcMarco(ESP.todas[i]);
+    f.addEventListener('load', () => tomaFoco(f));
     caja.appendChild(f);
     ESP.marcos.push(f);
   }
