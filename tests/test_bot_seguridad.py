@@ -350,3 +350,35 @@ def test_e2_entrada_y_el_parte_dicen_el_sesgo(monkeypatch):
 
 async def _salud():
     return dict(SALUD, datos=None)
+
+
+# ------------------------------------------------------------------------- B7
+def _evalua_if(expr: str, github: dict) -> bool:
+    """Evalua la expresion de GitHub del job (solo ||, &&, ==, != y github.* con cadenas) en python."""
+    import re
+
+    class Punto(dict):
+        __getattr__ = dict.get
+
+    def o(d):
+        return Punto({k: o(v) if isinstance(v, dict) else v for k, v in d.items()})
+    py = expr.replace("||", " or ").replace("&&", " and ")
+    assert re.fullmatch(r"[\w.' =!]+", py), py
+    return bool(eval(py, {"__builtins__": {}}, {"github": o(github)}))
+
+
+def test_b7_un_pr_desde_un_fork_no_corre_en_el_runner_de_143():
+    import pathlib
+
+    import yaml
+    ci = yaml.safe_load(pathlib.Path(__file__).resolve().parents[1].joinpath(".github/workflows/ci.yml").read_text())
+    assert ci["permissions"] == {"contents": "read"}
+    (job,) = ci["jobs"].values()
+    expr = job.get("if")
+    assert expr, "main: el job corre para cualquier pull_request, tambien desde un fork"
+    repo = "dueno/coinanalyze"
+    assert _evalua_if(expr, {"event_name": "push", "repository": repo, "event": {}})
+    assert _evalua_if(expr, {"event_name": "pull_request", "repository": repo,
+                             "event": {"pull_request": {"head": {"repo": {"full_name": repo}}}}})
+    assert not _evalua_if(expr, {"event_name": "pull_request", "repository": repo,
+                                 "event": {"pull_request": {"head": {"repo": {"full_name": "otro/coinanalyze"}}}}})
