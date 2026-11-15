@@ -3815,15 +3815,34 @@ async def liquidation_map(
                 "distance_atr": round((b - px) / atr, 2) if atr else None,
             }
         )
+    # A4 (DATOS A, F3-F6): una ventana sin filas es «sin liquidaciones» SOLO si el feed se estaba
+    # escuchando: los dos venues sanos, frescos y sin perdidas en TODA la ventana (la misma regla que
+    # data_quality, market_feed_health). Si no, un cero es «sin dato» y se dice por que.
+    salud = {
+        str(r["exchange"]): dict(r)
+        for r in await conn.fetch(
+            "SELECT exchange,status,healthy_since,last_loss_at,updated_at,detail "
+            "FROM market_feed_health WHERE feed='liquidations'"
+        )
+    }
+    feed_status, feed_reason = _liquidation_feed_quality_status(
+        salud, ("binance", "bybit"), _as_utc_datetime(window_end) or window_end, minutes * 60
+    )
+    feed_alive = feed_status == "OK"
+
+    def _medido(valor: float) -> float | None:
+        # con el feed caido un cero no es un cero: es que no se oyo
+        return valor if feed_alive or valor else None
+
     cumulative = {}
     for pct in (0.5, 1.0, 2.0):
         up, dn = px * (1 + pct / 100), px * (1 - pct / 100)
-        cumulative[f"long_liq_within_{pct}pct"] = round(
+        cumulative[f"long_liq_within_{pct}pct"] = _medido(round(
             sum(as_float(r["long_liq"]) or 0 for r in rows if dn <= as_float(r["bucket"]) <= up), 2
-        )
-        cumulative[f"short_liq_within_{pct}pct"] = round(
+        ))
+        cumulative[f"short_liq_within_{pct}pct"] = _medido(round(
             sum(as_float(r["short_liq"]) or 0 for r in rows if dn <= as_float(r["bucket"]) <= up), 2
-        )
+        ))
     return {
         "symbol": symbol,
         "available": True,
@@ -3841,7 +3860,11 @@ async def liquidation_map(
         # cuantos hay, cuantos se muestran y cuanto suma la ventana COMPLETA.
         "buckets_total": len(rows),
         "levels_shown": len(levels),
-        "window_notional": round(sum(as_float(r["total"]) or 0 for r in rows), 2),
+        "window_notional": _medido(round(sum(as_float(r["total"]) or 0 for r in rows), 2)),
+        # feed_alive=False: lo servido es lo que SE OYO (un minimo), y una ventana vacia es «sin dato»
+        "feed_alive": feed_alive,
+        "feed_status": feed_status,
+        "feed_reason": feed_reason,
         "levels": levels,
         "cumulative_within_band": cumulative,
         "note": "liquidaciones YA EJECUTADAS en 3h por precio (historico, no proyeccion). Un cluster "

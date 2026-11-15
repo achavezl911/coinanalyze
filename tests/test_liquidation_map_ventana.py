@@ -22,11 +22,21 @@ AHORA = datetime(2026, 8, 26, 2, 30, tzinfo=UTC)
 PRECIO = 80000.0
 
 
-class _Conexion:
-    """Despacha por el texto de la consulta, como hacen las cuatro que emite la funcion."""
+def _sano(**cambios) -> dict:
+    fila = {"status": "ok", "healthy_since": AHORA - timedelta(days=1), "last_loss_at": None,
+            "updated_at": AHORA - timedelta(seconds=5), "detail": None}
+    return {**fila, **cambios}
 
-    def __init__(self, buckets: list[dict]) -> None:
+
+class _Conexion:
+    """Despacha por el texto de la consulta, como hacen las que emite la funcion.
+
+    Desde A4 (DATOS A) tambien lee la salud del feed (market_feed_health): por omision, los dos
+    venues sanos toda la ventana, que es lo que las pruebas de K42 daban por supuesto."""
+
+    def __init__(self, buckets: list[dict], salud: dict | None = None) -> None:
         self.buckets = buckets
+        self.salud = {"binance": _sano(), "bybit": _sano()} if salud is None else salud
 
     async def fetchval(self, query: str, *_args: object):
         if "SELECT now()" in query:
@@ -39,6 +49,8 @@ class _Conexion:
         if "liquidations_realtime" in query:
             self.ventana = (args[1], args[2])
             return self.buckets
+        if "market_feed_health" in query:
+            return [{"exchange": ex, **fila} for ex, fila in self.salud.items()]
         return []  # _resample_highs_lows: sin velas, atr None
 
 
@@ -102,3 +114,55 @@ async def test_ventana_vacia_declara_cero_y_no_miente() -> None:
     assert d["levels_shown"] == 0
     assert d["window_notional"] == 0
     assert d["window_start"] and d["window_end"]
+
+
+# ---------------------------------------------------------------------------- A4 (DATOS A, F3-F6)
+# Una ventana sin filas era «0 liquidado» aunque el colector estuviera caido: el cero solo es cero
+# si el feed se escucho toda la ventana.
+
+
+@pytest.mark.asyncio
+async def test_ventana_vacia_con_el_feed_caido_es_sin_dato_y_no_cero() -> None:
+    caido = _sano(status="down", detail="bybit_liquidations_disconnected",
+                  updated_at=AHORA - timedelta(minutes=20))
+    d = await liquidation_map(_Conexion([], {"binance": _sano(), "bybit": caido}), SIM)
+
+    # lo primero, lo que main dice MAL: 0 liquidado con bybit caido
+    assert d["window_notional"] is None
+    assert d["feed_alive"] is False
+    assert d["feed_status"] == "DOWN"
+    assert d["feed_reason"] == "bybit_liquidations_disconnected"
+    assert set(d["cumulative_within_band"].values()) == {None}
+
+
+@pytest.mark.asyncio
+async def test_un_venue_reconectado_dentro_de_la_ventana_no_certifica_el_cero() -> None:
+    reconecto = _sano(healthy_since=AHORA - timedelta(minutes=30))
+    d = await liquidation_map(_Conexion([], {"binance": reconecto, "bybit": _sano()}), SIM)
+
+    assert (d["feed_alive"], d["feed_status"], d["window_notional"]) == (False, "PARTIAL", None)
+    assert "binance" in d["feed_reason"]
+
+
+@pytest.mark.asyncio
+async def test_sin_salud_del_feed_no_se_sabe() -> None:
+    d = await liquidation_map(_Conexion([], {}), SIM)
+    assert (d["feed_alive"], d["feed_status"], d["window_notional"]) == (False, "UNAVAILABLE", None)
+
+
+@pytest.mark.asyncio
+async def test_con_el_feed_caido_lo_oido_se_sirve_y_el_lado_vacio_no_es_cero() -> None:
+    caido = _sano(status="down", updated_at=AHORA - timedelta(minutes=20))
+    d = await liquidation_map(_Conexion([_bucket(80000.0, 10.0, 0.0)], {"binance": caido, "bybit": _sano()}), SIM)
+
+    assert d["feed_alive"] is False
+    assert d["window_notional"] == 10.0  # lo oido: un minimo
+    assert d["cumulative_within_band"]["long_liq_within_0.5pct"] == 10.0
+    assert d["cumulative_within_band"]["short_liq_within_0.5pct"] is None
+
+
+@pytest.mark.asyncio
+async def test_con_el_feed_vivo_el_cero_es_cero() -> None:
+    d = await liquidation_map(_Conexion([]), SIM)
+    assert (d["feed_alive"], d["feed_status"], d["feed_reason"]) == (True, "OK", None)
+    assert set(d["cumulative_within_band"].values()) == {0}

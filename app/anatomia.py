@@ -122,9 +122,14 @@ def es_decision(ts: int) -> bool:
 
 def suma_ventana(valores, cob: float = 0.8):
     """valores: los w minutos de la ventana (None = sin dato). La suma de los validos, o None si son menos de cob*w."""
-    w = len(valores)
+    return suma_ventana_n(valores, cob)[0]
+
+
+def suma_ventana_n(valores, cob: float = 0.8):
+    """(suma_ventana, validos): una suma de 48 de 60 minutos no es la de 60 (A5, F3-F3b). Quien la publique o la
+    compare con un umbral calibrado sobre ventanas enteras, publica tambien `validos`."""
     v = [x for x in valores if x is not None]
-    return sum(v) if len(v) >= cob * w - 1e-9 else None
+    return (sum(v) if len(v) >= cob * len(valores) - 1e-9 else None), len(v)
 
 
 def cumple(x, cola: str, u, estricto: bool = False) -> bool:
