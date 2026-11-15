@@ -139,7 +139,7 @@ jobs:
       # CI RAPIDA · C2. EN PARALELO, un proceso por nucleo (pytest-xdist, version fija en
       # pyproject.toml). Cada proceso gwK se copia la base de arriba con CREATE DATABASE ...
       # TEMPLATE (tests/conftest.py): base, candados consultivos y `public` propios.
-      # --dist worksteal Y NO el reparto por defecto: el 67 % del tiempo son las 91 pruebas de
+      # --dist worksteal Y NO el reparto por defecto: el 71 % del tiempo son las 91 pruebas de
       # CPU de tests/test_bot_simulador.py (de 44 a 167 s cada una) y, repartidas por lotes, un
       # proceso se quedo 25 min con la cola mientras los otros tres estaban parados.
       - name: Pytest
