@@ -340,3 +340,22 @@ def test_entradas_ensena_el_marcador(tmp_path):
     os.utime(tmp_path / "diario-entradas.txt", (0, os.path.getmtime(tmp_path / "diario-entradas.txt") - 7200))
     t = sv.Bot.texto_diario(b)
     assert t.startswith("DIARIO DE ENTRADAS en sombra (x)\nfable: 0") and t.endswith("(marcador de hace 2 h)")
+
+
+def test_corre_no_escribe_sobre_un_libro_tocado(tmp_path):
+    from app.diario import __main__ as cli
+
+    d = str(tmp_path)
+    e = cli.corre("diario", d, 1_800_000_000, False, False)  # sin red ni cache: marcador vacio, rc 0
+    assert e["rc"] == 0 and (tmp_path / "marcador.txt").exists()
+    r = tmp_path / "entradas.jsonl"
+    L = lb.Libro(str(r))
+    for k in range(2):
+        L.anade("propuesta", _prop(f"x:{k}"), ahora=1000 + k)
+    lineas = r.read_bytes().splitlines()
+    lineas[0] = lb.canon({**json.loads(lineas[0]), "stop": 1.0})
+    r.write_bytes(b"\n".join(lineas) + b"\n")
+    antes = r.read_bytes()
+    e = cli.corre("cuarto", d, 1_800_000_900, False, False)
+    assert e["rc"] == 2 and e["libro_tocado"]
+    assert r.read_bytes() == antes

@@ -1,0 +1,12 @@
+# DIARIO DE ENTRADAS · a los 20 s de cada cuarto de hora: la barra de 4 h (y la diaria) cierra en punto y su aviso se
+# sella en esta pasada o en la siguiente si la vela aun no ha llegado cerrada a la API (mas de 1 h tarde, no se sella).
+# Sin Persistent: una pasada perdida no se recupera tarde (el sello iria despues del precio que ya se vio).
+[Unit]
+Description=Coinalyze diario de entradas: cada 15 min
+
+[Timer]
+OnCalendar=*-*-* *:00/15:20 UTC
+Unit=coinalyze-diario-cuarto.service
+
+[Install]
+WantedBy=timers.target
