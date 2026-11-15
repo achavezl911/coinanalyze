@@ -29,6 +29,10 @@ PASOS_CONOCIDOS = {
     "Create venv and install dependencies": "ya montado en 143: .venv/",
     "Ruff (lint)": ".venv/bin/python -m ruff check .",
     "Compile all (syntax check)": ".venv/bin/python -m compileall -q app",
+    "Scope of the change (docs-only PR skips tests)": (
+        "no aplica en local: en 143 se corre todo; en CI un PR que solo toca README.md, docs/, "
+        "entregas/ o ARQUITECTURA/ salta base, pytest y node"
+    ),
     "Sweep leftover CI databases": "bash harness/checks/barre-bases-ci-control.bash (el barrido REAL lo hace CI en su corrida)",
     "Create disposable test database": "en 143 la base de test la levanta el propio pytest",
     # EN LOCAL, SIN --depth. El --depth=1 de ci.yml es inocuo alli porque el checkout YA es
@@ -39,7 +43,7 @@ PASOS_CONOCIDOS = {
         "git fetch --no-tags origin main (SIN --depth: en un clon completo lo deja superficial); "
         "sin origin/main, tests/test_entradas_reglamento.py se salta fuera de CI y falla dentro"
     ),
-    "Pytest": ".venv/bin/pytest -q",
+    "Pytest": ".venv/bin/pytest -q -n 4 (o -q a secas, en serie: las mismas pruebas)",
     "Drop disposable test database": "no aplica en local",
     "JavaScript tests": "node --test tests/js/",
     "Checks del arnes (K15)": "harness/bin/verify",
