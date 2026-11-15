@@ -18,7 +18,7 @@ Handler `scalp_basis` · `app/api.py:3075` (cuerpo hasta la 3078) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `symbol` | literal en app/scalp_logic.py:5798 |
+| `symbol` | literal en app/scalp_logic.py:5871 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -34,10 +34,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:794`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -52,7 +52,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5766`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5839`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 

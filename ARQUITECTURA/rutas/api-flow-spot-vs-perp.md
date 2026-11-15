@@ -22,18 +22,18 @@ Handler `flow_spot_vs_perp` · `app/api.py:1779` (cuerpo hasta la 1801) · decor
 
 | campo | de donde sale |
 |---|---|
-| `buckets` | literal en app/scalp_logic.py:6077 |
-| `buckets_with_both_legs` | literal en app/scalp_logic.py:6078 |
-| `coverage_pct` | literal en app/scalp_logic.py:6079 |
-| `interval` | literal en app/scalp_logic.py:6075 |
-| `reason` | literal en app/scalp_logic.py:6009 |
-| `rows` | literal en app/scalp_logic.py:6082 |
-| `spot_symbol` | literal en app/scalp_logic.py:6073 |
-| `state_counts` | literal en app/scalp_logic.py:6081 |
-| `status` | literal en app/scalp_logic.py:6080 |
-| `symbol` | literal en app/scalp_logic.py:6072 |
-| `unit` | literal en app/scalp_logic.py:6076 |
-| `venue` | literal en app/scalp_logic.py:6074 |
+| `buckets` | literal en app/scalp_logic.py:6150 |
+| `buckets_with_both_legs` | literal en app/scalp_logic.py:6151 |
+| `coverage_pct` | literal en app/scalp_logic.py:6152 |
+| `interval` | literal en app/scalp_logic.py:6148 |
+| `reason` | literal en app/scalp_logic.py:6082 |
+| `rows` | literal en app/scalp_logic.py:6155 |
+| `spot_symbol` | literal en app/scalp_logic.py:6146 |
+| `state_counts` | literal en app/scalp_logic.py:6154 |
+| `status` | literal en app/scalp_logic.py:6153 |
+| `symbol` | literal en app/scalp_logic.py:6145 |
+| `unit` | literal en app/scalp_logic.py:6149 |
+| `venue` | literal en app/scalp_logic.py:6147 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,12 +59,12 @@ Llamadas directas del handler:
 - `app.api.declara_ventana` — `app/api.py:1754`
 - `app.api.validate_symbol` — `app/api.py:254`
 - `app.api.ventana_pedida` — `app/api.py:1721`
-- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:5988`
+- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:6061`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4721`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4794`
 
 </details>
 

@@ -38,7 +38,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `scalp_signal_snapshot` — `sql/schema.sql:388`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1439`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1453`
 
 ## Funciones que la componen
 

@@ -2616,6 +2616,31 @@ def _flow_rate(net: object, seconds: int) -> float | None:
     return net_value / (seconds / 60.0)
 
 
+def _flow_coverage_reason(item: dict[str, Any], explicit_gap: bool) -> str:
+    """Por que una ventana de flujo NO es completa, en el orden en que se descarta.
+
+    Los minutos ausentes del agg se cuentan contra los que la ventana pide; un minuto sin
+    operaciones no tiene fila (ws_collector solo abre cubo con una operacion), asi que en un
+    activo sin liquidez cuenta como ausente: es la lectura conservadora, porque desde la fila
+    no se distingue «nadie opero» de «nadie escuchaba».
+    """
+    if explicit_gap:
+        return "data_gap"
+    if not int(item.get("source_rows") or 0):
+        return "no_rows"
+    if item.get("source") == "realtime" or item.get("agg_minutes_expected") is None:
+        return "span_incomplete"
+    expected = int(item.get("agg_minutes_expected") or 0)
+    minutes = int(item.get("agg_minutes") or 0)
+    if minutes < expected:
+        return "agg_minutes_missing"
+    if int(item.get("agg_minutes_unknown") or 0):
+        return "agg_coverage_unknown"
+    if int(item.get("agg_minutes_full") or 0) < minutes:
+        return "agg_minutes_short"
+    return "span_incomplete"
+
+
 async def _flow_windows(
     conn: asyncpg.Connection,
     symbol: str,
@@ -2661,7 +2686,7 @@ async def _flow_windows(
             AND (exchange <> 'combined' OR venue_count=2)
             AND ts <= $4::timestamptz
           GROUP BY exchange
-        ), choice AS (
+        ), choice0 AS (
           SELECT r.horizon,r.seconds,e.exchange,
                  $4::timestamptz-(r.seconds*interval '1 second') AS window_start,
                  rt.lo AS rt_lo,rt.hi AS rt_hi,agg.lo AS agg_lo,agg.hi AS agg_hi,
@@ -2672,11 +2697,20 @@ async def _flow_windows(
           FROM requested r CROSS JOIN exchanges e
           LEFT JOIN rt_span rt USING(exchange)
           LEFT JOIN agg_span agg USING(exchange)
+        ), choice AS (
+          -- minutos de 1 min que el agg DEBE tener: del primer minuto entero >= inicio a agg_hi
+          SELECT c0.*,
+                 CASE WHEN c0.agg_hi IS NULL THEN 0::bigint ELSE GREATEST(0,
+                   floor(EXTRACT(EPOCH FROM c0.agg_hi - (date_bin('1 minute',
+                     c0.window_start - interval '1 microsecond', timestamptz '2000-01-01 00:00:00+00')
+                     + interval '1 minute')) / 60)::bigint + 1) END AS agg_expected
+          FROM choice0 c0
         ), parts AS (
           SELECT c.horizon,c.exchange,
                  SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
                  SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
-                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
+                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
+                 0::bigint AS agg_minutes,0::bigint AS agg_full,0::bigint AS agg_unknown
           FROM choice c
           JOIN {realtime_table} t ON t.symbol=$1 AND t.exchange=c.exchange
           WHERE c.realtime_complete
@@ -2688,7 +2722,10 @@ async def _flow_windows(
           SELECT c.horizon,c.exchange,
                  SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
                  SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
-                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
+                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
+                 COUNT(*)::bigint AS agg_minutes,
+                 COUNT(*) FILTER (WHERE t.covered_seconds >= 60)::bigint AS agg_full,
+                 COUNT(*) FILTER (WHERE t.covered_seconds IS NULL)::bigint AS agg_unknown
           FROM choice c
           JOIN {agg_table} t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
           WHERE NOT c.realtime_complete
@@ -2700,7 +2737,8 @@ async def _flow_windows(
           SELECT c.horizon,c.exchange,
                  SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
                  SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
-                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows
+                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
+                 0::bigint AS agg_minutes,0::bigint AS agg_full,0::bigint AS agg_unknown
           FROM choice c
           JOIN {realtime_table} t ON t.symbol=$1 AND t.exchange=c.exchange
           WHERE NOT c.realtime_complete
@@ -2729,16 +2767,23 @@ async def _flow_windows(
                    c.agg_lo <= c.window_start
                    AND c.agg_hi IS NOT NULL
                    AND c.rt_hi >= $4-interval '30 seconds'
-                   AND c.rt_lo <= c.agg_hi+interval '1 minute',false
+                   AND c.rt_lo <= c.agg_hi+interval '1 minute'
+                   -- los extremos no bastan: cada minuto de DENTRO, presente y escuchado entero
+                   AND COALESCE(SUM(p.agg_minutes),0) = c.agg_expected
+                   AND COALESCE(SUM(p.agg_full),0) = COALESCE(SUM(p.agg_minutes),0),false
                  )
                END AS complete,
+               c.agg_expected AS agg_minutes_expected,
+               COALESCE(SUM(p.agg_minutes),0)::bigint AS agg_minutes,
+               COALESCE(SUM(p.agg_full),0)::bigint AS agg_minutes_full,
+               COALESCE(SUM(p.agg_unknown),0)::bigint AS agg_minutes_unknown,
                CASE WHEN c.rt_hi IS NOT NULL
                     THEN EXTRACT(EPOCH FROM $4-c.rt_hi)::float8 END AS end_gap_seconds,
                CASE WHEN c.realtime_complete THEN 1 ELSE 60 END AS precision_seconds
         FROM choice c
         LEFT JOIN parts p ON p.horizon=c.horizon AND p.exchange=c.exchange
         GROUP BY c.horizon,c.seconds,c.exchange,c.window_start,c.rt_lo,c.rt_hi,
-                 c.agg_lo,c.agg_hi,c.realtime_complete
+                 c.agg_lo,c.agg_hi,c.realtime_complete,c.agg_expected
         ORDER BY array_position($2::text[],c.horizon),c.exchange
         """,
         symbol,
@@ -2782,6 +2827,7 @@ async def _flow_windows(
             if complete
             else ("partial" if int(item.get("source_rows") or 0) else "unavailable")
         )
+        item["coverage_reason"] = None if complete else _flow_coverage_reason(item, explicit_gap)
         item["delta"] = as_float(item.get("delta"))
         item["volume"] = as_float(item.get("volume"))
         item["trades"] = int(item["trades"]) if item.get("trades") is not None else None
@@ -3769,15 +3815,34 @@ async def liquidation_map(
                 "distance_atr": round((b - px) / atr, 2) if atr else None,
             }
         )
+    # A4 (DATOS A, F3-F6): una ventana sin filas es «sin liquidaciones» SOLO si el feed se estaba
+    # escuchando: los dos venues sanos, frescos y sin perdidas en TODA la ventana (la misma regla que
+    # data_quality, market_feed_health). Si no, un cero es «sin dato» y se dice por que.
+    salud = {
+        str(r["exchange"]): dict(r)
+        for r in await conn.fetch(
+            "SELECT exchange,status,healthy_since,last_loss_at,updated_at,detail "
+            "FROM market_feed_health WHERE feed='liquidations'"
+        )
+    }
+    feed_status, feed_reason = _liquidation_feed_quality_status(
+        salud, ("binance", "bybit"), _as_utc_datetime(window_end) or window_end, minutes * 60
+    )
+    feed_alive = feed_status == "OK"
+
+    def _medido(valor: float) -> float | None:
+        # con el feed caido un cero no es un cero: es que no se oyo
+        return valor if feed_alive or valor else None
+
     cumulative = {}
     for pct in (0.5, 1.0, 2.0):
         up, dn = px * (1 + pct / 100), px * (1 - pct / 100)
-        cumulative[f"long_liq_within_{pct}pct"] = round(
+        cumulative[f"long_liq_within_{pct}pct"] = _medido(round(
             sum(as_float(r["long_liq"]) or 0 for r in rows if dn <= as_float(r["bucket"]) <= up), 2
-        )
-        cumulative[f"short_liq_within_{pct}pct"] = round(
+        ))
+        cumulative[f"short_liq_within_{pct}pct"] = _medido(round(
             sum(as_float(r["short_liq"]) or 0 for r in rows if dn <= as_float(r["bucket"]) <= up), 2
-        )
+        ))
     return {
         "symbol": symbol,
         "available": True,
@@ -3795,7 +3860,11 @@ async def liquidation_map(
         # cuantos hay, cuantos se muestran y cuanto suma la ventana COMPLETA.
         "buckets_total": len(rows),
         "levels_shown": len(levels),
-        "window_notional": round(sum(as_float(r["total"]) or 0 for r in rows), 2),
+        "window_notional": _medido(round(sum(as_float(r["total"]) or 0 for r in rows), 2)),
+        # feed_alive=False: lo servido es lo que SE OYO (un minimo), y una ventana vacia es «sin dato»
+        "feed_alive": feed_alive,
+        "feed_status": feed_status,
+        "feed_reason": feed_reason,
         "levels": levels,
         "cumulative_within_band": cumulative,
         "note": "liquidaciones YA EJECUTADAS en 3h por precio (historico, no proyeccion). Un cluster "
@@ -4685,6 +4754,10 @@ async def delta_matrix(
                     else spot.get("coverage_status", "unavailable")
                 ),
                 "futures_coverage_status": futures.get("coverage_status", "unavailable"),
+                # por que no es completa: minutos del agg ausentes o cortos DENTRO de la ventana
+                # (A1), hueco declarado, o extremos que no llegan
+                "spot_coverage_reason": spot.get("coverage_reason"),
+                "futures_coverage_reason": futures.get("coverage_reason"),
                 "spot_source": spot.get("source", "unavailable"),
                 # Sin esto, una fila servida por el empalme y otra por el realtime se leen
                 # igual teniendo precision distinta (1 min contra 5 s).

@@ -14,20 +14,16 @@ Handler `data_confidence` · `app/api.py:3142` (cuerpo hasta la 3146) · decorad
 
 ## Campos que publica
 
-10 campos derivados. La procedencia dice de donde sale cada uno.
+6 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
 | `rows` | literal en app/api.py:3146 |
-| `rows.collectors_stale` | asignado en app/ai_context.py:600 |
-| `rows.flow_8h_complete` | asignado en app/ai_context.py:569 |
-| `rows.flow_8h_futures_complete` | asignado en app/ai_context.py:568 |
-| `rows.flow_8h_spot_complete` | asignado en app/ai_context.py:565 |
-| `rows.flow_8h_spot_end_gap_seconds` | asignado en app/ai_context.py:567 |
-| `rows.flow_8h_spot_source` | asignado en app/ai_context.py:566 |
-| `rows.quality_score` | asignado en app/ai_context.py:612 |
-| `rows.quality_score_basis` | asignado en app/ai_context.py:613 |
-| `rows.status` | asignado en app/ai_context.py:603 |
+| `rows.collectors_stale` | asignado en app/ai_context.py:603 |
+| `rows.flow_8h_complete` | asignado en app/ai_context.py:572 |
+| `rows.quality_score` | asignado en app/ai_context.py:615 |
+| `rows.quality_score_basis` | asignado en app/ai_context.py:616 |
+| `rows.status` | asignado en app/ai_context.py:606 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -37,69 +33,42 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1092`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1243`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1262`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1311`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:322`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:584`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:663`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:687`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:764`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
-  - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:794`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
 - `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:866`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:922`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
 - `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 - `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:391`
-  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:408`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
+  - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
-- `agg_span`
-- `choice`
-- `exchanges`
 - `now`
-- `parts`
-- `requested`
-- `required`
-- `rt_span`
 
 ## Funciones que la componen
 
-10 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+5 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.data_confidence_row` — `app/ai_context.py:531`
+- `app.ai_context.data_confidence_row` — `app/ai_context.py:532`
 - `app.api.validate_symbol` — `app/api.py:254`
 
-<details><summary>Alcanzables de forma indirecta (8)</summary>
+<details><summary>Alcanzables de forma indirecta (3)</summary>
 
-- `app.ai_context.quality_score` — `app/ai_context.py:619`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
+- `app.ai_context.quality_score` — `app/ai_context.py:623`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2619`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2797`
 
 </details>
 
@@ -149,7 +118,6 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `rows.collectors_stale`
-- `rows.flow_8h_spot_end_gap_seconds`
 
 ## Capa DECLARADA
 
@@ -169,11 +137,6 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
-| `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.spot_flow_windows` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.db.required_heartbeat_failures` | 5 | **0** | 8 ↑ | **5** | [impacto](../impacto/app-db.md) |
 | `app.ai_context.data_confidence_row` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-ai_context.md) |
 | `app.ai_context.quality_score` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-ai_context.md) |

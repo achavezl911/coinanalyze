@@ -2,16 +2,16 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-112 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+113 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`swing_score`](#swing-score) | 6572 | 2 | **0** | 56 ↑ | **2** |
+| [`swing_score`](#swing-score) | 6645 | 2 | **0** | 56 ↑ | **2** |
 | [`as_float`](#as-float) | 920 | 38 | **0** | 11 ↑ | **38** |
-| [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2592 | 25 | **0** | 12 ↑ | **25** |
-| [`_explicit_as_of`](#-explicit-as-of) | 2586 | 26 | **0** | 0 | **26** |
+| [`resolve_matrix_as_of`](#resolve-matrix-as-of) | 2592 | 24 | **0** | 12 ↑ | **24** |
+| [`_explicit_as_of`](#-explicit-as-of) | 2586 | 25 | **0** | 0 | **25** |
 | [`compute_scalp_summary`](#compute-scalp-summary) | 628 | 10 | **0** | 25 ↑ | **10** |
 | [`scalp_context`](#scalp-context) | 325 | 10 | **0** | 25 ↑ | **10** |
 | [`load_baselines`](#load-baselines) | 158 | 15 | **0** | 11 ↑ | **15** |
@@ -26,104 +26,105 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`scalp_bias_label`](#scalp-bias-label) | 292 | 10 | **0** | 11 ↑ | **10** |
 | [`score_component`](#score-component) | 317 | 10 | **0** | 11 ↑ | **10** |
 | [`_resample_highs_lows`](#-resample-highs-lows) | 1227 | 15 | **0** | 0 | **15** |
-| [`_flow_windows`](#-flow-windows) | 2619 | 14 | **0** | 0 | **14** |
-| [`spot_flow_windows`](#spot-flow-windows) | 2797 | 14 | **0** | 0 | **14** |
-| [`_gap_and_baseline`](#-gap-and-baseline) | 4376 | 12 | **0** | 0 | **12** |
-| [`_gap_threshold_seconds`](#-gap-threshold-seconds) | 4346 | 12 | **0** | 0 | **12** |
-| [`_gap_too_large`](#-gap-too-large) | 4358 | 12 | **0** | 0 | **12** |
+| [`_flow_coverage_reason`](#-flow-coverage-reason) | 2619 | 12 | **0** | 0 | **12** |
+| [`_flow_windows`](#-flow-windows) | 2644 | 12 | **0** | 0 | **12** |
+| [`_gap_and_baseline`](#-gap-and-baseline) | 4445 | 12 | **0** | 0 | **12** |
+| [`_gap_threshold_seconds`](#-gap-threshold-seconds) | 4415 | 12 | **0** | 0 | **12** |
+| [`_gap_too_large`](#-gap-too-large) | 4427 | 12 | **0** | 0 | **12** |
+| [`spot_flow_windows`](#spot-flow-windows) | 2843 | 12 | **0** | 0 | **12** |
+| [`_as_utc_datetime`](#-as-utc-datetime) | 543 | 11 | **0** | 0 | **11** |
 | [`_contiguous_measured_suffix`](#-contiguous-measured-suffix) | 970 | 11 | **0** | 0 | **11** |
-| [`_oi_change_pct`](#-oi-change-pct) | 4557 | 11 | **0** | 0 | **11** |
-| [`_realtime_flow`](#-realtime-flow) | 4473 | 11 | **0** | 0 | **11** |
-| [`_as_utc_datetime`](#-as-utc-datetime) | 543 | 10 | **0** | 0 | **10** |
+| [`_oi_change_pct`](#-oi-change-pct) | 4626 | 11 | **0** | 0 | **11** |
+| [`_realtime_flow`](#-realtime-flow) | 4542 | 11 | **0** | 0 | **11** |
 | [`_complete_tail_values`](#-complete-tail-values) | 960 | 10 | **0** | 0 | **10** |
 | [`_coverage_status`](#-coverage-status) | 566 | 10 | **0** | 0 | **10** |
 | [`_structure_from_swings`](#-structure-from-swings) | 2372 | 10 | **0** | 0 | **10** |
 | [`_swings`](#-swings) | 2358 | 10 | **0** | 0 | **10** |
 | [`_utc_now`](#-utc-now) | 68 | 10 | **0** | 0 | **10** |
-| [`flow_confirmation`](#flow-confirmation) | 4721 | 10 | **0** | 0 | **10** |
-| [`_atr`](#-atr) | 3194 | 9 | **0** | 0 | **9** |
-| [`_tr_series`](#-tr-series) | 3183 | 9 | **0** | 0 | **9** |
+| [`flow_confirmation`](#flow-confirmation) | 4794 | 10 | **0** | 0 | **10** |
+| [`_atr`](#-atr) | 3240 | 9 | **0** | 0 | **9** |
+| [`_tr_series`](#-tr-series) | 3229 | 9 | **0** | 0 | **9** |
 | [`structure_detail`](#structure-detail) | 2429 | 8 | **0** | 3 ↑ | **8** |
-| [`trend_matrix`](#trend-matrix) | 6247 | 8 | **0** | 3 ↑ | **8** |
+| [`trend_matrix`](#trend-matrix) | 6320 | 8 | **0** | 3 ↑ | **8** |
 | [`_dsr`](#-dsr) | 2421 | 8 | **0** | 0 | **8** |
 | [`_flow_imbalance`](#-flow-imbalance) | 2604 | 8 | **0** | 0 | **8** |
 | [`_flow_rate`](#-flow-rate) | 2612 | 8 | **0** | 0 | **8** |
 | [`bars_incomplete_inside`](#bars-incomplete-inside) | 1298 | 8 | **0** | 0 | **8** |
-| [`futures_flow_windows`](#futures-flow-windows) | 2868 | 8 | **0** | 0 | **8** |
-| [`spot_con_guarda`](#spot-con-guarda) | 2807 | 8 | **0** | 0 | **8** |
+| [`futures_flow_windows`](#futures-flow-windows) | 2914 | 8 | **0** | 0 | **8** |
+| [`spot_con_guarda`](#spot-con-guarda) | 2853 | 8 | **0** | 0 | **8** |
 | [`_pct_rank`](#-pct-rank) | 1856 | 7 | **0** | 0 | **7** |
-| [`delta_matrix`](#delta-matrix) | 4589 | 7 | **0** | 0 | **7** |
+| [`delta_matrix`](#delta-matrix) | 4658 | 7 | **0** | 0 | **7** |
 | [`price_barriers`](#price-barriers) | 1304 | 7 | **0** | 0 | **7** |
-| [`_profile`](#-profile) | 3807 | 6 | **0** | 0 | **6** |
-| [`cross_asset`](#cross-asset) | 3609 | 5 | **0** | 3 ↑ | **5** |
+| [`_profile`](#-profile) | 3876 | 6 | **0** | 0 | **6** |
+| [`cross_asset`](#cross-asset) | 3655 | 5 | **0** | 3 ↑ | **5** |
 | [`macro_context`](#macro-context) | 1934 | 5 | **0** | 3 ↑ | **5** |
-| [`passive_flow`](#passive-flow) | 6119 | 5 | **0** | 3 ↑ | **5** |
-| [`volume_profile`](#volume-profile) | 3844 | 6 | **0** | 0 | **6** |
-| [`_beta`](#-beta) | 3574 | 5 | **0** | 0 | **5** |
-| [`_binned`](#-binned) | 3588 | 5 | **0** | 0 | **5** |
-| [`_classify_passive`](#-classify-passive) | 6086 | 5 | **0** | 0 | **5** |
+| [`passive_flow`](#passive-flow) | 6192 | 5 | **0** | 3 ↑ | **5** |
+| [`volume_profile`](#volume-profile) | 3913 | 6 | **0** | 0 | **6** |
+| [`_beta`](#-beta) | 3620 | 5 | **0** | 0 | **5** |
+| [`_binned`](#-binned) | 3634 | 5 | **0** | 0 | **5** |
+| [`_classify_passive`](#-classify-passive) | 6159 | 5 | **0** | 0 | **5** |
 | [`_conditional_outcome`](#-conditional-outcome) | 1894 | 5 | **0** | 0 | **5** |
 | [`_forward_returns`](#-forward-returns) | 1884 | 5 | **0** | 0 | **5** |
-| [`_pearson`](#-pearson) | 3561 | 5 | **0** | 0 | **5** |
+| [`_pearson`](#-pearson) | 3607 | 5 | **0** | 0 | **5** |
 | [`_regime`](#-regime) | 1865 | 5 | **0** | 0 | **5** |
-| [`_returns`](#-returns) | 3553 | 5 | **0** | 0 | **5** |
-| [`compute_swing_score`](#compute-swing-score) | 6421 | 4 | **0** | 3 ↑ | **4** |
-| [`data_quality`](#data-quality) | 4278 | 4 | **0** | 0 | **4** |
-| [`market_impact`](#market-impact) | 5804 | 4 | **0** | 0 | **4** |
+| [`_returns`](#-returns) | 3599 | 5 | **0** | 0 | **5** |
+| [`compute_swing_score`](#compute-swing-score) | 6494 | 4 | **0** | 3 ↑ | **4** |
+| [`_liquidation_feed_quality_status`](#-liquidation-feed-quality-status) | 4189 | 4 | **0** | 0 | **4** |
+| [`data_quality`](#data-quality) | 4347 | 4 | **0** | 0 | **4** |
+| [`market_impact`](#market-impact) | 5877 | 4 | **0** | 0 | **4** |
 | [`market_memory`](#market-memory) | 1734 | 4 | **0** | 0 | **4** |
-| [`reference_levels`](#reference-levels) | 3459 | 4 | **0** | 0 | **4** |
-| [`_banda`](#-banda) | 5332 | 3 | **0** | 0 | **3** |
-| [`_bps`](#-bps) | 5258 | 3 | **0** | 0 | **3** |
-| [`_buckets_observados`](#-buckets-observados) | 3246 | 3 | **0** | 0 | **3** |
-| [`_closes_1min`](#-closes-1min) | 3173 | 3 | **0** | 0 | **3** |
+| [`reference_levels`](#reference-levels) | 3505 | 4 | **0** | 0 | **4** |
+| [`_banda`](#-banda) | 5405 | 3 | **0** | 0 | **3** |
+| [`_bps`](#-bps) | 5331 | 3 | **0** | 0 | **3** |
+| [`_buckets_observados`](#-buckets-observados) | 3292 | 3 | **0** | 0 | **3** |
+| [`_closes_1min`](#-closes-1min) | 3219 | 3 | **0** | 0 | **3** |
 | [`_cvd_fut_window`](#-cvd-fut-window) | 1021 | 3 | **0** | 0 | **3** |
-| [`_cvd_src`](#-cvd-src) | 2889 | 3 | **0** | 0 | **3** |
-| [`_feed_status`](#-feed-status) | 4155 | 3 | **0** | 0 | **3** |
-| [`_flow_bias`](#-flow-bias) | 4787 | 3 | **0** | 0 | **3** |
+| [`_cvd_src`](#-cvd-src) | 2935 | 3 | **0** | 0 | **3** |
+| [`_feed_status`](#-feed-status) | 4224 | 3 | **0** | 0 | **3** |
+| [`_flow_bias`](#-flow-bias) | 4860 | 3 | **0** | 0 | **3** |
 | [`_intraday_divergences`](#-intraday-divergences) | 2072 | 3 | **0** | 0 | **3** |
-| [`_liquidation_feed_quality_status`](#-liquidation-feed-quality-status) | 4120 | 3 | **0** | 0 | **3** |
-| [`_oi_coverage`](#-oi-coverage) | 3258 | 3 | **0** | 0 | **3** |
-| [`_oi_quadrant`](#-oi-quadrant) | 3216 | 3 | **0** | 0 | **3** |
+| [`_oi_coverage`](#-oi-coverage) | 3304 | 3 | **0** | 0 | **3** |
+| [`_oi_quadrant`](#-oi-quadrant) | 3262 | 3 | **0** | 0 | **3** |
 | [`_pivot_structure`](#-pivot-structure) | 936 | 3 | **0** | 0 | **3** |
-| [`_realized_vol`](#-realized-vol) | 3202 | 3 | **0** | 0 | **3** |
+| [`_realized_vol`](#-realized-vol) | 3248 | 3 | **0** | 0 | **3** |
 | [`_return_stdev_pct`](#-return-stdev-pct) | 2059 | 3 | **0** | 0 | **3** |
 | [`_sign_vote`](#-sign-vote) | 954 | 3 | **0** | 0 | **3** |
 | [`_slope_pct`](#-slope-pct) | 2027 | 3 | **0** | 0 | **3** |
 | [`_structure_layer`](#-structure-layer) | 989 | 3 | **0** | 0 | **3** |
-| [`coherencia_del_plan`](#coherencia-del-plan) | 5265 | 3 | **0** | 0 | **3** |
-| [`context_metadata`](#context-metadata) | 3904 | 3 | **0** | 0 | **3** |
-| [`cvd_matrix`](#cvd-matrix) | 2948 | 3 | **0** | 0 | **3** |
+| [`coherencia_del_plan`](#coherencia-del-plan) | 5338 | 3 | **0** | 0 | **3** |
+| [`context_metadata`](#context-metadata) | 3973 | 3 | **0** | 0 | **3** |
+| [`cvd_matrix`](#cvd-matrix) | 2994 | 3 | **0** | 0 | **3** |
 | [`divergence_scan`](#divergence-scan) | 2200 | 3 | **0** | 0 | **3** |
-| [`execution_assessment`](#execution-assessment) | 5341 | 3 | **0** | 0 | **3** |
-| [`feed_quality`](#feed-quality) | 3995 | 3 | **0** | 0 | **3** |
-| [`feed_quality_view`](#feed-quality-view) | 5567 | 3 | **0** | 0 | **3** |
-| [`funding_context`](#funding-context) | 3652 | 3 | **0** | 0 | **3** |
-| [`liquidation_map`](#liquidation-map) | 3725 | 3 | **0** | 0 | **3** |
+| [`execution_assessment`](#execution-assessment) | 5414 | 3 | **0** | 0 | **3** |
+| [`feed_quality`](#feed-quality) | 4064 | 3 | **0** | 0 | **3** |
+| [`feed_quality_view`](#feed-quality-view) | 5640 | 3 | **0** | 0 | **3** |
+| [`funding_context`](#funding-context) | 3698 | 3 | **0** | 0 | **3** |
+| [`liquidation_map`](#liquidation-map) | 3771 | 3 | **0** | 0 | **3** |
 | [`market_structure`](#market-structure) | 1041 | 3 | **0** | 0 | **3** |
-| [`max_internal_gap`](#max-internal-gap) | 4429 | 3 | **0** | 0 | **3** |
-| [`metric_quality`](#metric-quality) | 4184 | 3 | **0** | 0 | **3** |
-| [`oi_context`](#oi-context) | 3289 | 3 | **0** | 0 | **3** |
-| [`positioning_context`](#positioning-context) | 5909 | 3 | **0** | 0 | **3** |
-| [`profile_view`](#profile-view) | 4800 | 3 | **0** | 0 | **3** |
-| [`scalp_absorption`](#scalp-absorption) | 5610 | 3 | **0** | 0 | **3** |
-| [`scalp_basis`](#scalp-basis) | 5766 | 3 | **0** | 0 | **3** |
-| [`scalp_liquidations`](#scalp-liquidations) | 5705 | 3 | **0** | 0 | **3** |
-| [`volatility_context`](#volatility-context) | 3409 | 3 | **0** | 0 | **3** |
+| [`max_internal_gap`](#max-internal-gap) | 4498 | 3 | **0** | 0 | **3** |
+| [`metric_quality`](#metric-quality) | 4253 | 3 | **0** | 0 | **3** |
+| [`oi_context`](#oi-context) | 3335 | 3 | **0** | 0 | **3** |
+| [`positioning_context`](#positioning-context) | 5982 | 3 | **0** | 0 | **3** |
+| [`profile_view`](#profile-view) | 4873 | 3 | **0** | 0 | **3** |
+| [`scalp_absorption`](#scalp-absorption) | 5683 | 3 | **0** | 0 | **3** |
+| [`scalp_basis`](#scalp-basis) | 5839 | 3 | **0** | 0 | **3** |
+| [`scalp_liquidations`](#scalp-liquidations) | 5778 | 3 | **0** | 0 | **3** |
+| [`volatility_context`](#volatility-context) | 3455 | 3 | **0** | 0 | **3** |
 | [`wyckoff_context`](#wyckoff-context) | 1680 | 3 | **0** | 0 | **3** |
 | [`horizon_structure`](#horizon-structure) | 1753 | 2 | **0** | 0 | **2** |
-| [`hypothesis_evidence`](#hypothesis-evidence) | 4992 | 2 | **0** | 0 | **2** |
+| [`hypothesis_evidence`](#hypothesis-evidence) | 5065 | 2 | **0** | 0 | **2** |
 | [`liquidation_burst`](#liquidation-burst) | 1810 | 2 | **0** | 0 | **2** |
 | [`setup_confirmation_bundle`](#setup-confirmation-bundle) | 2518 | 2 | **0** | 0 | **2** |
-| [`execution_cost`](#execution-cost) | 5484 | 1 | **0** | 0 | **1** |
+| [`execution_cost`](#execution-cost) | 5557 | 1 | **0** | 0 | **1** |
 | [`level_breakout`](#level-breakout) | 1706 | 1 | **0** | 0 | **1** |
 | [`range_validate`](#range-validate) | 1581 | 1 | **0** | 0 | **1** |
-| [`spot_perp_flow`](#spot-perp-flow) | 5988 | 1 | **0** | 0 | **1** |
-| [`walk_book`](#walk-book) | 5180 | 1 | **0** | 0 | **1** |
+| [`spot_perp_flow`](#spot-perp-flow) | 6061 | 1 | **0** | 0 | **1** |
+| [`walk_book`](#walk-book) | 5253 | 1 | **0** | 0 | **1** |
 | [`zone_analysis`](#zone-analysis) | 1433 | 1 | **0** | 0 | **1** |
 
 ## swing_score
 
-`app/scalp_logic.py:6572` · clave completa `app.scalp_logic.swing_score`
+`app/scalp_logic.py:6645` · clave completa `app.scalp_logic.swing_score`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 56** (mas ancha)
 
@@ -378,9 +379,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:2592` · clave completa `app.scalp_logic.resolve_matrix_as_of`
 
-**Radio exacto: 25 rutas** de 93 · **cota superior: 33** (mas ancha)
+**Radio exacto: 24 rutas** de 93 · **cota superior: 32** (mas ancha)
 
-### Por llamada — 25 rutas
+### Por llamada — 24 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -389,7 +390,6 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
@@ -461,9 +461,9 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:2586` · clave completa `app.scalp_logic._explicit_as_of`
 
-**Radio exacto: 26 rutas** de 93 · **cota superior: 26** (igual al exacto)
+**Radio exacto: 25 rutas** de 93 · **cota superior: 25** (igual al exacto)
 
-### Por llamada — 26 rutas
+### Por llamada — 25 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
@@ -473,7 +473,6 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
@@ -1435,24 +1434,56 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 21 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## _flow_coverage_reason
+
+`app/scalp_logic.py:2619` · clave completa `app.scalp_logic._flow_coverage_reason`
+
+**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+
+### Por llamada — 12 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## _flow_windows
 
-`app/scalp_logic.py:2619` · clave completa `app.scalp_logic._flow_windows`
+`app/scalp_logic.py:2644` · clave completa `app.scalp_logic._flow_windows`
 
-**Radio exacto: 14 rutas** de 93 · **cota superior: 14** (igual al exacto)
+**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
 
-### Por llamada — 14 rutas
+### Por llamada — 12 rutas
 
 La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
 - [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/external-macro`](../rutas/api-external-macro.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/profile`](../rutas/api-profile.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
@@ -1469,47 +1500,11 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## spot_flow_windows
-
-`app/scalp_logic.py:2797` · clave completa `app.scalp_logic.spot_flow_windows`
-
-**Radio exacto: 14 rutas** de 93 · **cota superior: 14** (igual al exacto)
-
-### Por llamada — 14 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/data-confidence`](../rutas/api-data-confidence.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/external-macro`](../rutas/api-external-macro.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
-- [`/api/passive-flow`](../rutas/api-passive-flow.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-- [`/api/swing-score`](../rutas/api-swing-score.md)
-- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 15 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _gap_and_baseline
 
-`app/scalp_logic.py:4376` · clave completa `app.scalp_logic._gap_and_baseline`
+`app/scalp_logic.py:4445` · clave completa `app.scalp_logic._gap_and_baseline`
 
 **Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
 
@@ -1543,7 +1538,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _gap_threshold_seconds
 
-`app/scalp_logic.py:4346` · clave completa `app.scalp_logic._gap_threshold_seconds`
+`app/scalp_logic.py:4415` · clave completa `app.scalp_logic._gap_threshold_seconds`
 
 **Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
 
@@ -1577,7 +1572,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _gap_too_large
 
-`app/scalp_logic.py:4358` · clave completa `app.scalp_logic._gap_too_large`
+`app/scalp_logic.py:4427` · clave completa `app.scalp_logic._gap_too_large`
 
 **Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
 
@@ -1608,6 +1603,73 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## spot_flow_windows
+
+`app/scalp_logic.py:2843` · clave completa `app.scalp_logic.spot_flow_windows`
+
+**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+
+### Por llamada — 12 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## _as_utc_datetime
+
+`app/scalp_logic.py:543` · clave completa `app.scalp_logic._as_utc_datetime`
+
+**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
+
+### Por llamada — 11 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _contiguous_measured_suffix
 
@@ -1644,7 +1706,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _oi_change_pct
 
-`app/scalp_logic.py:4557` · clave completa `app.scalp_logic._oi_change_pct`
+`app/scalp_logic.py:4626` · clave completa `app.scalp_logic._oi_change_pct`
 
 **Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
 
@@ -1677,7 +1739,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _realtime_flow
 
-`app/scalp_logic.py:4473` · clave completa `app.scalp_logic._realtime_flow`
+`app/scalp_logic.py:4542` · clave completa `app.scalp_logic._realtime_flow`
 
 **Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
 
@@ -1707,38 +1769,6 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 12 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## _as_utc_datetime
-
-`app/scalp_logic.py:543` · clave completa `app.scalp_logic._as_utc_datetime`
-
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
-
-### Por llamada — 10 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
-- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
-- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _complete_tail_values
 
@@ -1902,7 +1932,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## flow_confirmation
 
-`app/scalp_logic.py:4721` · clave completa `app.scalp_logic.flow_confirmation`
+`app/scalp_logic.py:4794` · clave completa `app.scalp_logic.flow_confirmation`
 
 **Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
 
@@ -1934,7 +1964,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _atr
 
-`app/scalp_logic.py:3194` · clave completa `app.scalp_logic._atr`
+`app/scalp_logic.py:3240` · clave completa `app.scalp_logic._atr`
 
 **Radio exacto: 9 rutas** de 93 · **cota superior: 9** (igual al exacto)
 
@@ -1965,7 +1995,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _tr_series
 
-`app/scalp_logic.py:3183` · clave completa `app.scalp_logic._tr_series`
+`app/scalp_logic.py:3229` · clave completa `app.scalp_logic._tr_series`
 
 **Radio exacto: 9 rutas** de 93 · **cota superior: 9** (igual al exacto)
 
@@ -2044,7 +2074,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## trend_matrix
 
-`app/scalp_logic.py:6247` · clave completa `app.scalp_logic.trend_matrix`
+`app/scalp_logic.py:6320` · clave completa `app.scalp_logic.trend_matrix`
 
 **Radio exacto: 8 rutas** de 93 · **cota superior: 9** (mas ancha)
 
@@ -2212,7 +2242,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## futures_flow_windows
 
-`app/scalp_logic.py:2868` · clave completa `app.scalp_logic.futures_flow_windows`
+`app/scalp_logic.py:2914` · clave completa `app.scalp_logic.futures_flow_windows`
 
 **Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
 
@@ -2242,7 +2272,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## spot_con_guarda
 
-`app/scalp_logic.py:2807` · clave completa `app.scalp_logic.spot_con_guarda`
+`app/scalp_logic.py:2853` · clave completa `app.scalp_logic.spot_con_guarda`
 
 **Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
 
@@ -2301,7 +2331,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## delta_matrix
 
-`app/scalp_logic.py:4589` · clave completa `app.scalp_logic.delta_matrix`
+`app/scalp_logic.py:4658` · clave completa `app.scalp_logic.delta_matrix`
 
 **Radio exacto: 7 rutas** de 93 · **cota superior: 7** (igual al exacto)
 
@@ -2359,7 +2389,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _profile
 
-`app/scalp_logic.py:3807` · clave completa `app.scalp_logic._profile`
+`app/scalp_logic.py:3876` · clave completa `app.scalp_logic._profile`
 
 **Radio exacto: 6 rutas** de 93 · **cota superior: 6** (igual al exacto)
 
@@ -2387,7 +2417,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## cross_asset
 
-`app/scalp_logic.py:3609` · clave completa `app.scalp_logic.cross_asset`
+`app/scalp_logic.py:3655` · clave completa `app.scalp_logic.cross_asset`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 6** (mas ancha)
 
@@ -2477,7 +2507,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## passive_flow
 
-`app/scalp_logic.py:6119` · clave completa `app.scalp_logic.passive_flow`
+`app/scalp_logic.py:6192` · clave completa `app.scalp_logic.passive_flow`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 6** (mas ancha)
 
@@ -2522,7 +2552,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## volume_profile
 
-`app/scalp_logic.py:3844` · clave completa `app.scalp_logic.volume_profile`
+`app/scalp_logic.py:3913` · clave completa `app.scalp_logic.volume_profile`
 
 **Radio exacto: 6 rutas** de 93 · **cota superior: 6** (igual al exacto)
 
@@ -2550,7 +2580,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _beta
 
-`app/scalp_logic.py:3574` · clave completa `app.scalp_logic._beta`
+`app/scalp_logic.py:3620` · clave completa `app.scalp_logic._beta`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
 
@@ -2577,7 +2607,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _binned
 
-`app/scalp_logic.py:3588` · clave completa `app.scalp_logic._binned`
+`app/scalp_logic.py:3634` · clave completa `app.scalp_logic._binned`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
 
@@ -2604,7 +2634,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _classify_passive
 
-`app/scalp_logic.py:6086` · clave completa `app.scalp_logic._classify_passive`
+`app/scalp_logic.py:6159` · clave completa `app.scalp_logic._classify_passive`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
 
@@ -2685,7 +2715,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _pearson
 
-`app/scalp_logic.py:3561` · clave completa `app.scalp_logic._pearson`
+`app/scalp_logic.py:3607` · clave completa `app.scalp_logic._pearson`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
 
@@ -2739,7 +2769,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _returns
 
-`app/scalp_logic.py:3553` · clave completa `app.scalp_logic._returns`
+`app/scalp_logic.py:3599` · clave completa `app.scalp_logic._returns`
 
 **Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
 
@@ -2766,7 +2796,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## compute_swing_score
 
-`app/scalp_logic.py:6421` · clave completa `app.scalp_logic.compute_swing_score`
+`app/scalp_logic.py:6494` · clave completa `app.scalp_logic.compute_swing_score`
 
 **Radio exacto: 4 rutas** de 93 · **cota superior: 5** (mas ancha)
 
@@ -2808,9 +2838,35 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 <sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## _liquidation_feed_quality_status
+
+`app/scalp_logic.py:4189` · clave completa `app.scalp_logic._liquidation_feed_quality_status`
+
+**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+
+### Por llamada — 4 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## data_quality
 
-`app/scalp_logic.py:4278` · clave completa `app.scalp_logic.data_quality`
+`app/scalp_logic.py:4347` · clave completa `app.scalp_logic.data_quality`
 
 **Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
 
@@ -2836,7 +2892,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## market_impact
 
-`app/scalp_logic.py:5804` · clave completa `app.scalp_logic.market_impact`
+`app/scalp_logic.py:5877` · clave completa `app.scalp_logic.market_impact`
 
 **Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
 
@@ -2888,7 +2944,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## reference_levels
 
-`app/scalp_logic.py:3459` · clave completa `app.scalp_logic.reference_levels`
+`app/scalp_logic.py:3505` · clave completa `app.scalp_logic.reference_levels`
 
 **Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
 
@@ -2914,7 +2970,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _banda
 
-`app/scalp_logic.py:5332` · clave completa `app.scalp_logic._banda`
+`app/scalp_logic.py:5405` · clave completa `app.scalp_logic._banda`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -2939,7 +2995,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _bps
 
-`app/scalp_logic.py:5258` · clave completa `app.scalp_logic._bps`
+`app/scalp_logic.py:5331` · clave completa `app.scalp_logic._bps`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -2964,7 +3020,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _buckets_observados
 
-`app/scalp_logic.py:3246` · clave completa `app.scalp_logic._buckets_observados`
+`app/scalp_logic.py:3292` · clave completa `app.scalp_logic._buckets_observados`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -2989,7 +3045,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _closes_1min
 
-`app/scalp_logic.py:3173` · clave completa `app.scalp_logic._closes_1min`
+`app/scalp_logic.py:3219` · clave completa `app.scalp_logic._closes_1min`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3039,7 +3095,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _cvd_src
 
-`app/scalp_logic.py:2889` · clave completa `app.scalp_logic._cvd_src`
+`app/scalp_logic.py:2935` · clave completa `app.scalp_logic._cvd_src`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3064,7 +3120,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _feed_status
 
-`app/scalp_logic.py:4155` · clave completa `app.scalp_logic._feed_status`
+`app/scalp_logic.py:4224` · clave completa `app.scalp_logic._feed_status`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3089,7 +3145,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _flow_bias
 
-`app/scalp_logic.py:4787` · clave completa `app.scalp_logic._flow_bias`
+`app/scalp_logic.py:4860` · clave completa `app.scalp_logic._flow_bias`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3137,34 +3193,9 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
-## _liquidation_feed_quality_status
-
-`app/scalp_logic.py:4120` · clave completa `app.scalp_logic._liquidation_feed_quality_status`
-
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
-
-### Por llamada — 3 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
 ## _oi_coverage
 
-`app/scalp_logic.py:3258` · clave completa `app.scalp_logic._oi_coverage`
+`app/scalp_logic.py:3304` · clave completa `app.scalp_logic._oi_coverage`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3189,7 +3220,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _oi_quadrant
 
-`app/scalp_logic.py:3216` · clave completa `app.scalp_logic._oi_quadrant`
+`app/scalp_logic.py:3262` · clave completa `app.scalp_logic._oi_quadrant`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3239,7 +3270,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _realized_vol
 
-`app/scalp_logic.py:3202` · clave completa `app.scalp_logic._realized_vol`
+`app/scalp_logic.py:3248` · clave completa `app.scalp_logic._realized_vol`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3364,7 +3395,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## coherencia_del_plan
 
-`app/scalp_logic.py:5265` · clave completa `app.scalp_logic.coherencia_del_plan`
+`app/scalp_logic.py:5338` · clave completa `app.scalp_logic.coherencia_del_plan`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3389,7 +3420,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## context_metadata
 
-`app/scalp_logic.py:3904` · clave completa `app.scalp_logic.context_metadata`
+`app/scalp_logic.py:3973` · clave completa `app.scalp_logic.context_metadata`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3414,7 +3445,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## cvd_matrix
 
-`app/scalp_logic.py:2948` · clave completa `app.scalp_logic.cvd_matrix`
+`app/scalp_logic.py:2994` · clave completa `app.scalp_logic.cvd_matrix`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3464,7 +3495,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## execution_assessment
 
-`app/scalp_logic.py:5341` · clave completa `app.scalp_logic.execution_assessment`
+`app/scalp_logic.py:5414` · clave completa `app.scalp_logic.execution_assessment`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3489,7 +3520,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## feed_quality
 
-`app/scalp_logic.py:3995` · clave completa `app.scalp_logic.feed_quality`
+`app/scalp_logic.py:4064` · clave completa `app.scalp_logic.feed_quality`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3514,7 +3545,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## feed_quality_view
 
-`app/scalp_logic.py:5567` · clave completa `app.scalp_logic.feed_quality_view`
+`app/scalp_logic.py:5640` · clave completa `app.scalp_logic.feed_quality_view`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3539,7 +3570,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## funding_context
 
-`app/scalp_logic.py:3652` · clave completa `app.scalp_logic.funding_context`
+`app/scalp_logic.py:3698` · clave completa `app.scalp_logic.funding_context`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3564,7 +3595,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## liquidation_map
 
-`app/scalp_logic.py:3725` · clave completa `app.scalp_logic.liquidation_map`
+`app/scalp_logic.py:3771` · clave completa `app.scalp_logic.liquidation_map`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3614,7 +3645,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## max_internal_gap
 
-`app/scalp_logic.py:4429` · clave completa `app.scalp_logic.max_internal_gap`
+`app/scalp_logic.py:4498` · clave completa `app.scalp_logic.max_internal_gap`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3639,7 +3670,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## metric_quality
 
-`app/scalp_logic.py:4184` · clave completa `app.scalp_logic.metric_quality`
+`app/scalp_logic.py:4253` · clave completa `app.scalp_logic.metric_quality`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3664,7 +3695,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## oi_context
 
-`app/scalp_logic.py:3289` · clave completa `app.scalp_logic.oi_context`
+`app/scalp_logic.py:3335` · clave completa `app.scalp_logic.oi_context`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3689,7 +3720,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## positioning_context
 
-`app/scalp_logic.py:5909` · clave completa `app.scalp_logic.positioning_context`
+`app/scalp_logic.py:5982` · clave completa `app.scalp_logic.positioning_context`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3714,7 +3745,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## profile_view
 
-`app/scalp_logic.py:4800` · clave completa `app.scalp_logic.profile_view`
+`app/scalp_logic.py:4873` · clave completa `app.scalp_logic.profile_view`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3739,7 +3770,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_absorption
 
-`app/scalp_logic.py:5610` · clave completa `app.scalp_logic.scalp_absorption`
+`app/scalp_logic.py:5683` · clave completa `app.scalp_logic.scalp_absorption`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3764,7 +3795,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_basis
 
-`app/scalp_logic.py:5766` · clave completa `app.scalp_logic.scalp_basis`
+`app/scalp_logic.py:5839` · clave completa `app.scalp_logic.scalp_basis`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3789,7 +3820,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## scalp_liquidations
 
-`app/scalp_logic.py:5705` · clave completa `app.scalp_logic.scalp_liquidations`
+`app/scalp_logic.py:5778` · clave completa `app.scalp_logic.scalp_liquidations`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3814,7 +3845,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## volatility_context
 
-`app/scalp_logic.py:3409` · clave completa `app.scalp_logic.volatility_context`
+`app/scalp_logic.py:3455` · clave completa `app.scalp_logic.volatility_context`
 
 **Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
 
@@ -3888,7 +3919,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## hypothesis_evidence
 
-`app/scalp_logic.py:4992` · clave completa `app.scalp_logic.hypothesis_evidence`
+`app/scalp_logic.py:5065` · clave completa `app.scalp_logic.hypothesis_evidence`
 
 **Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
 
@@ -3960,7 +3991,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## execution_cost
 
-`app/scalp_logic.py:5484` · clave completa `app.scalp_logic.execution_cost`
+`app/scalp_logic.py:5557` · clave completa `app.scalp_logic.execution_cost`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -4029,7 +4060,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## spot_perp_flow
 
-`app/scalp_logic.py:5988` · clave completa `app.scalp_logic.spot_perp_flow`
+`app/scalp_logic.py:6061` · clave completa `app.scalp_logic.spot_perp_flow`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 
@@ -4052,7 +4083,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## walk_book
 
-`app/scalp_logic.py:5180` · clave completa `app.scalp_logic.walk_book`
+`app/scalp_logic.py:5253` · clave completa `app.scalp_logic.walk_book`
 
 **Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
 

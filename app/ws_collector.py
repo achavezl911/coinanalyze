@@ -26,6 +26,7 @@ from app.db import (
     monitor_service_lock,
     wait_for_stop_or_lock_loss,
 )
+from app.escucha import Escucha, segundos_sin_oir
 from app.logging_setup import configure_logging
 from app.sharding import assigned_symbols
 
@@ -41,9 +42,13 @@ LATE_TRADE_GRACE_SECONDS = 125.0
 # con la linea base del dia en 0.923- pero es peor que una ausencia porque no se ve.
 # Se marca con los segundos que este proceso estuvo realmente escuchando.
 PROCESO_INICIADO = time.time()
+# A2 · los cortes de cada venue a mitad de minuto (app/escucha.py)
+ESCUCHA: dict[str, Escucha] = {"binance": Escucha(), "bybit": Escucha()}
 
 
-def segundos_cubiertos(ts: int, inicio: float | None = None, fin: float | None = None) -> int:
+def segundos_cubiertos(
+    ts: int, inicio: float | None = None, fin: float | None = None, cortes=()
+) -> int:
     """Segundos del minuto que empieza en ts con el colector ya escuchando.
 
     `fin` es el instante en que el colector DEJO de escuchar. Sin el, esta funcion solo
@@ -53,12 +58,15 @@ def segundos_cubiertos(ts: int, inicio: float | None = None, fin: float | None =
     K92 lo cazo; el `MIN` del combinado solo lo heredaba.
 
     Con `fin=None` el resultado es identico al de antes: es una extension, no un cambio.
+
+    `cortes` son los intervalos [corte, vuelta) en que el venue no se oia por una reconexion
+    (app/escucha.py, DATOS A A2): caer del segundo 20 al 56 deja 24 s, no 60.
     """
 
     arranque = PROCESO_INICIADO if inicio is None else inicio
     desde = ts if ts >= arranque else arranque
     hasta = ts + 60 if fin is None else min(ts + 60, fin)
-    return max(0, min(60, int(round(hasta - desde))))
+    return max(0, min(60, int(round(hasta - desde - segundos_sin_oir(desde, hasta, cortes)))))
 REALTIME_MAX_EVENT_AGE_SECONDS = 15.0
 
 
@@ -236,6 +244,11 @@ def valid_trade(price_raw: object, qty_raw: object, ts_raw: object) -> tuple[flo
     return price, qty, ts_ms
 
 
+def _cortes(exchange: str):
+    escucha = ESCUCHA.get(exchange)
+    return escucha.cortes() if escucha is not None else ()
+
+
 async def _write_minute(
     pool: asyncpg.Pool,
     ownership: ServiceOwnership | None,
@@ -253,7 +266,7 @@ async def _write_minute(
                     bucket.inst_buy_usd, bucket.inst_sell_usd,
                     bucket.mid_buy_usd, bucket.mid_sell_usd,
                     bucket.retail_buy_usd, bucket.retail_sell_usd, bucket.trade_count,
-                    segundos_cubiertos(ts, fin=fin),
+                    segundos_cubiertos(ts, fin=fin, cortes=_cortes(exchange)),
                 )
             )
         try:
@@ -440,6 +453,7 @@ async def binance_consumer(symbols: tuple[str, ...]) -> None:
     pairs = spot_pairs(symbols)
     pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
     url = binance_url(symbols)
+    escucha = ESCUCHA["binance"]
     backoff = 1.0
     while True:
         try:
@@ -448,9 +462,11 @@ async def binance_consumer(symbols: tuple[str, ...]) -> None:
                 ping_timeout=20, max_size=1_048_576, max_queue=64,
             ) as websocket:
                 LOGGER.info("binance_connected")
+                ESCUCHA["binance"].vuelta()
                 backoff = 1.0
                 while True:
                     raw = await asyncio.wait_for(websocket.recv(), timeout=60)
+                    escucha.oido()
                     message = json.loads(raw)
                     if not isinstance(message, dict):
                         continue
@@ -474,6 +490,7 @@ async def binance_consumer(symbols: tuple[str, ...]) -> None:
             LOGGER.warning("binance_disconnected retry=%.1fs", backoff)
         except Exception:
             LOGGER.exception("binance_consumer_failed retry=%.1fs", backoff)
+        ESCUCHA["binance"].corte()
         await asyncio.sleep(backoff)
         backoff = min(backoff * 2, 60.0)
 
@@ -483,6 +500,7 @@ async def bybit_consumer(symbols: tuple[str, ...]) -> None:
     pairs = spot_pairs(symbols)
     pair_symbol_map = {SPOT_PAIR_MAP[WS_SYMBOL_MAP[symbol]]: WS_SYMBOL_MAP[symbol] for symbol in symbols}
     args = [f"publicTrade.{pair}" for pair in pairs]
+    escucha = ESCUCHA["bybit"]
     while True:
         try:
             async with connect(
@@ -491,9 +509,11 @@ async def bybit_consumer(symbols: tuple[str, ...]) -> None:
             ) as websocket:
                 await websocket.send(json.dumps({"op": "subscribe", "args": args}))
                 LOGGER.info("bybit_connected")
+                ESCUCHA["bybit"].vuelta()
                 backoff = 1.0
                 while True:
                     raw = await asyncio.wait_for(websocket.recv(), timeout=60)
+                    escucha.oido()
                     message = json.loads(raw)
                     if not isinstance(message, dict):
                         continue
@@ -523,6 +543,7 @@ async def bybit_consumer(symbols: tuple[str, ...]) -> None:
             LOGGER.warning("bybit_disconnected retry=%.1fs", backoff)
         except Exception:
             LOGGER.exception("bybit_consumer_failed retry=%.1fs", backoff)
+        ESCUCHA["bybit"].corte()
         await asyncio.sleep(backoff)
         backoff = min(backoff * 2, 60.0)
 

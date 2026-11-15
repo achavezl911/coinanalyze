@@ -513,9 +513,16 @@ function renderLiqPrecio(mapa) {
   // falso por partida doble. Se rotula lo que llega.
   textoEn('heat-liq-sub', ventana ? `últimas ${ventana} min · precio ${money(asNumber(mapa.current_price), 0)}`
                                   : 'ventana declarada por la ruta');
+  // «Sin liquidaciones» SOLO con el feed escuchado toda la ventana (feed_alive, A4): con el
+  // colector caido o reconectado dentro, no haber filas es no saber, y se dice por que.
+  const vivo = mapa.feed_alive === true;
+  const motivo = mapa.feed_reason ? ` (${mapa.feed_reason})` : '';
   if (!filas.length) {
-    textoEn('heat-liq-note', 'Sin liquidaciones en la ventana servida. Es una lectura, no un hueco: '
-      + 'la ruta contestó y no hubo eventos.');
+    textoEn('heat-liq-note', vivo
+      ? 'Sin liquidaciones en la ventana servida. Es una lectura, no un hueco: '
+        + 'el feed se escuchó toda la ventana y no hubo eventos.'
+      : `SIN DATO: el feed de liquidaciones no se escuchó toda la ventana${motivo}. `
+        + 'No haber eventos aquí no es cero.');
     return;
   }
   const max = Math.max(...filas.map(f => Math.abs(asNumber(f.long_liq) || 0) + Math.abs(asNumber(f.short_liq) || 0)));
@@ -548,7 +555,9 @@ function renderLiqPrecio(mapa) {
   // La nota la escribe la RUTA. Reescribirla con mis palabras seria arriesgarme a decir
   // algo distinto de lo que mide.
   textoEn('heat-liq-note',
-    `${filas.length} de ${mapa.buckets_total} niveles con liquidaciones. ${mapa.note || ''}`);
+    `${filas.length} de ${mapa.buckets_total} niveles con liquidaciones. `
+    + (vivo ? '' : `INCOMPLETO: el feed no se escuchó toda la ventana${motivo}; es lo oído, un mínimo. `)
+    + (mapa.note || ''));
 }
 
 function renderPortada(res, matriz) {

@@ -18,28 +18,28 @@ Handler `reference_levels_endpoint` · `app/api.py:2134` (cuerpo hasta la 2137) 
 
 | campo | de donde sale |
 |---|---|
-| `current_day` | literal en app/scalp_logic.py:3530 |
-| `current_day.duracion_min` | literal en app/scalp_logic.py:3532 |
-| `current_day.en_curso` | literal en app/scalp_logic.py:3532 |
-| `current_day.high` | literal en app/scalp_logic.py:3530 |
-| `current_day.low` | literal en app/scalp_logic.py:3530 |
-| `current_day.open` | literal en app/scalp_logic.py:3530 |
-| `current_day.velas` | literal en app/scalp_logic.py:3531 |
-| `current_day.velas_posibles` | literal en app/scalp_logic.py:3531 |
-| `note` | literal en app/scalp_logic.py:3544 |
-| `opens` | literal en app/scalp_logic.py:3533 |
-| `opens.daily` | literal en app/scalp_logic.py:3534 |
-| `opens.monthly` | literal en app/scalp_logic.py:3536 |
-| `opens.weekly` | literal en app/scalp_logic.py:3535 |
-| `previous_day` | literal en app/scalp_logic.py:3528 |
-| `previous_day.close` | literal en app/scalp_logic.py:3528 |
-| `previous_day.en_curso` | literal en app/scalp_logic.py:3529 |
-| `previous_day.high` | literal en app/scalp_logic.py:3528 |
-| `previous_day.low` | literal en app/scalp_logic.py:3528 |
-| `previous_day.velas` | literal en app/scalp_logic.py:3529 |
-| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3529 |
-| `sessions_today_utc` | literal en app/scalp_logic.py:3538 |
-| `symbol` | literal en app/scalp_logic.py:3527 |
+| `current_day` | literal en app/scalp_logic.py:3576 |
+| `current_day.duracion_min` | literal en app/scalp_logic.py:3578 |
+| `current_day.en_curso` | literal en app/scalp_logic.py:3578 |
+| `current_day.high` | literal en app/scalp_logic.py:3576 |
+| `current_day.low` | literal en app/scalp_logic.py:3576 |
+| `current_day.open` | literal en app/scalp_logic.py:3576 |
+| `current_day.velas` | literal en app/scalp_logic.py:3577 |
+| `current_day.velas_posibles` | literal en app/scalp_logic.py:3577 |
+| `note` | literal en app/scalp_logic.py:3590 |
+| `opens` | literal en app/scalp_logic.py:3579 |
+| `opens.daily` | literal en app/scalp_logic.py:3580 |
+| `opens.monthly` | literal en app/scalp_logic.py:3582 |
+| `opens.weekly` | literal en app/scalp_logic.py:3581 |
+| `previous_day` | literal en app/scalp_logic.py:3574 |
+| `previous_day.close` | literal en app/scalp_logic.py:3574 |
+| `previous_day.en_curso` | literal en app/scalp_logic.py:3575 |
+| `previous_day.high` | literal en app/scalp_logic.py:3574 |
+| `previous_day.low` | literal en app/scalp_logic.py:3574 |
+| `previous_day.velas` | literal en app/scalp_logic.py:3575 |
+| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3575 |
+| `sessions_today_utc` | literal en app/scalp_logic.py:3584 |
+| `symbol` | literal en app/scalp_logic.py:3573 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -63,7 +63,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3459`
+- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3505`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 

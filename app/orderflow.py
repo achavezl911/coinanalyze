@@ -347,14 +347,18 @@ class Cobertura:
     def abierta(self) -> bool:
         return bool(self.tramos) and self.tramos[-1][1] is None
 
-    def segundos(self, minuto: int, ahora: float) -> int:
+    def segundos(self, minuto: int, ahora: float, menos: Any = ()) -> int:
+        """`menos`: tramos [desde, hasta) en que UN activo estuvo mudo con la conexion abierta (A3); se restan."""
         fin = minuto + 60
+        menos = [(a, b) for a, b in menos if b > minuto and a < fin]
         total = 0.0
         for desde, hasta in self.tramos:
             h = ahora if hasta is None else hasta
-            if desde <= minuto and h >= fin:  # type: ignore[operator]
+            if not menos and desde <= minuto and h >= fin:  # type: ignore[operator]
                 return 60
-            total += max(0.0, min(h, fin) - max(desde, minuto))  # type: ignore[type-var,arg-type]
+            a, b = max(desde, minuto), min(h, fin)  # type: ignore[type-var]
+            if b > a:  # type: ignore[operator]
+                total += b - a - sum(max(0.0, min(b, y) - max(a, x)) for x, y in menos)  # type: ignore[operator]
         return min(59, int(total))
 
     def reconexiones(self, minuto: int) -> int:
@@ -395,8 +399,61 @@ class Almacen:
         self.duplicadas = 0
         self.descartadas = 0
         self.perdidas_cinta = 0
+        # A3 (DATOS A, F3-F2): la cobertura de arriba es de la CONEXION. Si el venue deja de servir UN activo y
+        # los otros siguen, ese activo salia «60 s, 0 operaciones» para siempre. Un activo sin una operacion en
+        # SILENCIO_S con la conexion abierta -la misma regla que tumba la conexion entera- se da por mudo desde
+        # su ultima operacion (o desde que abrio la conexion) hasta la siguiente, y esos segundos no cuentan.
+        # Medido en produccion (api /api/orderflow/cobertura, 2026-11-14, sabado): el par mas lento, SOL en
+        # okx_spot, da 164276 operaciones al dia, 0.53 s de media entre ellas.
+        self.oido: dict[tuple[str, str], float] = {}
+        self.mudos: dict[tuple[str, str], list[tuple[float, float]]] = defaultdict(list)
+
+    def _desde(self, venue: str, activo: str) -> float | None:
+        """Desde cuando no se oye `activo` en la conexion abierta de `venue` (None si esta cerrada)."""
+        cob = self.coberturas[venue]
+        if not cob.abierta():
+            return None
+        apertura = cob.tramos[-1][0]
+        ultimo = self.oido.get((venue, activo))
+        return apertura if ultimo is None else max(ultimo, apertura)  # type: ignore[type-var,return-value]
+
+    def _oye(self, venue: str, activo: str, ahora: float) -> None:
+        desde = self._desde(venue, activo)
+        if desde is not None and ahora - desde > SILENCIO_S:
+            self.mudos[(venue, activo)].append((desde, ahora))
+        self.oido[(venue, activo)] = ahora
+
+    def cierra(self, venue: str, t: float) -> None:
+        """Cierra la conexion de `venue` y apunta el silencio final de cada activo que llevaba mudo."""
+        cob = self.coberturas[venue]
+        if cob.abierta():
+            fin = max(t, cob.tramos[-1][0])  # type: ignore[type-var]
+            for activo in ACTIVOS:
+                desde = self._desde(venue, activo)
+                if desde is not None and fin - desde > SILENCIO_S:
+                    self.mudos[(venue, activo)].append((desde, fin))
+        cob.cierra(t)
+
+    def mudos_de(self, venue: str, activo: str, ahora: float) -> list[tuple[float, float]]:
+        mudos = list(self.mudos.get((venue, activo), ()))
+        desde = self._desde(venue, activo)
+        if desde is not None and ahora - desde > SILENCIO_S:
+            mudos.append((desde, ahora))
+        return mudos
+
+    def segundos(self, venue: str, activo: str, minuto: int, ahora: float) -> int:
+        return self.coberturas[venue].segundos(minuto, ahora, self.mudos_de(venue, activo, ahora))
+
+    def poda_mudos(self, antes_de: float) -> None:
+        for clave in list(self.mudos):
+            self.mudos[clave] = [m for m in self.mudos[clave] if m[1] >= antes_de]
+            if not self.mudos[clave]:
+                del self.mudos[clave]
 
     def anade(self, venue: str, ops: list[Op], ahora: float) -> None:
+        for activo in {op.activo for op in ops}:
+            if activo in ACTIVOS:
+                self._oye(venue, activo, ahora)
         for op in ops:
             if op.precio <= 0 or op.base <= 0 or op.usd <= 0 or not op.precio.is_finite():
                 self.descartadas += 1
@@ -483,9 +540,9 @@ async def escribe_minutos(conn: asyncpg.Connection, alm: Almacen, minutos: list[
     borrar, celdas, cobertura, huecos = [], [], [], []
     for minuto in minutos:
         for venue, cob in alm.coberturas.items():
-            seg = cob.segundos(minuto, ahora)
             rec = cob.reconexiones(minuto)
             for activo in ACTIVOS:
+                seg = alm.segundos(venue, activo, minuto, ahora)
                 mi = alm.minutos.get((venue, activo, minuto))
                 ts = _ts(minuto)
                 if mi is not None and (not final or not mi.escrito or mi.sucio or mi.segundos != seg):
@@ -579,10 +636,10 @@ async def vuelca(pool: asyncpg.Pool, own: ServiceOwnership | None, alm: Almacen,
         if alm.fuera[clave] <= 0:
             del alm.fuera[clave]
     for minuto in primeras:
-        for (v, _a, m), mi in alm.minutos.items():
+        for (v, a, m), mi in alm.minutos.items():
             if m == minuto:
                 mi.escrito, mi.sucio = True, False
-                mi.segundos = alm.coberturas[v].segundos(m, ahora)
+                mi.segundos = alm.segundos(v, a, m, ahora)
     if primeras:
         alm.proximo_primera = primeras[-1] + 60
     if finales:
@@ -591,6 +648,7 @@ async def vuelca(pool: asyncpg.Pool, own: ServiceOwnership | None, alm: Almacen,
         alm.minutos = {k: v for k, v in alm.minutos.items() if k[2] not in cerrados}
         for cob in alm.coberturas.values():
             cob.poda(alm.proximo_final - 120)
+        alm.poda_mudos(alm.proximo_final - 120)
 
 
 async def declara_parada_anterior(pool: asyncpg.Pool, own: ServiceOwnership | None, inicio: float) -> int:
@@ -681,13 +739,13 @@ async def escucha(venue: str, alm: Almacen, salud: dict[str, Any]) -> None:
                     if pinger is not None:
                         pinger.cancel()
         except asyncio.CancelledError:
-            cob.cierra(time.time())
+            alm.cierra(venue, time.time())
             raise
         except Silencio as exc:
-            cob.cierra(ultimo)
+            alm.cierra(venue, ultimo)
             LOGGER.warning("orderflow_silencio venue=%s %s", venue, exc)
         except Exception as exc:  # noqa: BLE001
-            cob.cierra(time.time())
+            alm.cierra(venue, time.time())
             LOGGER.warning("orderflow_disconnected venue=%s error=%s code=%s", venue, type(exc).__name__,
                            getattr(exc, "code", None))
         salud["caidas"][venue] += 1
@@ -846,8 +904,8 @@ async def run() -> None:
     finally:
         # El instante en que se deja de escuchar, ANTES de cancelar nada: la cobertura acaba aqui.
         parando = time.time()
-        for cob in alm.coberturas.values():
-            cob.cierra(parando)
+        for venue in alm.coberturas:
+            alm.cierra(venue, parando)
         for tarea in tareas:
             tarea.cancel()
         lock_monitor.cancel()

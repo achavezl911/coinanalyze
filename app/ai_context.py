@@ -35,6 +35,7 @@ from app.scalp_logic import (
     divergence_scan,
     feed_quality_view,
     funding_context,
+    futures_flow_windows,
     horizon_structure,
     liquidation_burst,
     liquidation_map,
@@ -539,9 +540,6 @@ async def data_confidence_row(conn: asyncpg.Connection, symbol: str) -> dict[str
         ), fut AS (
           SELECT exchange,MAX(ts) AS ts FROM futures_trades_realtime
           WHERE symbol=$1 AND exchange IN ('binance','bybit') GROUP BY exchange
-        ), fut_flow AS (
-          SELECT MIN(ts) AS lo,MAX(ts) AS hi FROM futures_trades_realtime
-          WHERE symbol=$1 AND exchange='combined'
         ), book AS (
           SELECT exchange,MAX(ts) AS ts FROM orderbook_snapshot
           WHERE symbol=$1 AND exchange IN ('binance','bybit','combined') GROUP BY exchange
@@ -551,21 +549,26 @@ async def data_confidence_row(conn: asyncpg.Connection, symbol: str) -> dict[str
           (SELECT COUNT(*) FROM spot WHERE ts >= now()-interval '30 seconds') AS spot_venues_live,
           (SELECT COUNT(*) FROM fut WHERE ts >= now()-interval '30 seconds') AS futures_venues_live,
           (SELECT COUNT(*) FROM book WHERE exchange IN ('binance','bybit') AND ts >= now()-interval '30 seconds') AS book_venues_live,
-          EXTRACT(EPOCH FROM now()-(SELECT ts FROM book WHERE exchange='combined'))::float8 AS combined_book_lag_seconds,
-          COALESCE((SELECT lo <= now()-interval '8 hours' AND hi >= now()-interval '30 seconds' FROM fut_flow),false) AS flow_8h_futures_complete,
-          EXTRACT(EPOCH FROM now()-(SELECT hi FROM fut_flow))::float8 AS flow_8h_futures_end_gap_seconds
+          EXTRACT(EPOCH FROM now()-(SELECT ts FROM book WHERE exchange='combined'))::float8 AS combined_book_lag_seconds
         """,
         symbol,
         WS_SYMBOL_MAP[symbol],
     )
     item = dict(row) if row else {"symbol": symbol}
-    spot_8h = (
-        (await spot_flow_windows(conn, WS_SYMBOL_MAP[symbol], [("8h", 28800)])).get("8h") or {}
-    ).get("combined") or {}
-    item["flow_8h_spot_complete"] = bool(spot_8h.get("complete"))
-    item["flow_8h_spot_source"] = spot_8h.get("source", "unavailable")
-    item["flow_8h_spot_end_gap_seconds"] = spot_8h.get("end_gap_seconds")
-    item["flow_8h_futures_complete"] = bool(item.get("flow_8h_futures_complete"))
+    # Las dos patas por la MISMA ruta que la matriz: completa solo si cada minuto de las 8 h
+    # esta en el agg y se escucho entero, mas la cola realtime. El futuro miraba antes solo
+    # el MIN/MAX de su realtime: dos extremos, nada de lo de dentro (F3-F5).
+    for leg, flow_windows, leg_symbol in (
+        ("spot", spot_flow_windows, WS_SYMBOL_MAP[symbol]),
+        ("futures", futures_flow_windows, symbol),
+    ):
+        leg_8h = (
+            (await flow_windows(conn, leg_symbol, [("8h", 28800)])).get("8h") or {}
+        ).get("combined") or {}
+        item[f"flow_8h_{leg}_complete"] = bool(leg_8h.get("complete"))
+        item[f"flow_8h_{leg}_source"] = leg_8h.get("source", "unavailable")
+        item[f"flow_8h_{leg}_end_gap_seconds"] = leg_8h.get("end_gap_seconds")
+        item[f"flow_8h_{leg}_coverage_reason"] = leg_8h.get("coverage_reason")
     item["flow_8h_complete"] = item["flow_8h_spot_complete"] and item["flow_8h_futures_complete"]
     snapshot_lag = as_float(item.get("snapshot_lag_seconds"))
     book_lag = as_float(item.get("combined_book_lag_seconds"))
@@ -611,7 +614,8 @@ async def data_confidence_row(conn: asyncpg.Connection, symbol: str) -> dict[str
     )
     item["quality_score"] = quality_score(item)
     item["quality_score_basis"] = (
-        "conectividad por simbolo + lag de book/snapshot + cobertura continua spot/futures 8h"
+        "conectividad por simbolo + lag de book/snapshot + cobertura 8h spot/futures minuto a "
+        "minuto (agg de 1 min presente y escuchado entero, mas la cola realtime)"
     )
     return item
 

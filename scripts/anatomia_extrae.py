@@ -10,7 +10,11 @@ REANUDABLE: un dia con su .json marcado completo no se rehace; uno incompleto (l
 Memoria: un dia de acumuladores por minuto y, de la cinta, una linea cada vez (nunca el fichero entero).
 
 Una hora que falta se cuenta en huecos.json y se deja vacia: nunca se rellena. Dentro de una hora presente, un
-minuto sin filas es CERO para flujos y liquidaciones (la tabla publica lo que ocurre), y VACIO para precios y libro.
+minuto sin filas es CERO para liquidaciones (la tabla publica lo que ocurre), y VACIO para precios y libro. Para
+flujos (A5, DATOS A), un minuto sin filas de una clase (perp, spot, el venue de referencia) es CERO solo si
+orderflow_cobertura (dir COBERTURA, hora a hora como la cinta) certifica que TODOS sus venues se escucharon ese minuto
+entero (segundos = 60); si no, o si la hora de cobertura no esta archivada, VACIO: no se sabe. Con filas, lo oido se
+queda (es un minimo). Se cuentan en minutos_flujo_sin_certificar.
 Las 5 min de coinalyze (liquidaciones, oi, funding...) sin fila en una hora presente: cero en liquidaciones (coinalyze
 no publica cubos vacios; el latido que lo certifica no esta en el archivo: SUPUESTO), vacio en el resto.
 """
@@ -33,6 +37,13 @@ from app import anatomia as A  # noqa: E402  (anatomia_comun pone la raiz en sys
 PERP, SPOT = A.PERP, A.SPOT
 NCOL = len(C.COLUMNAS_BASE)
 COL = {n: i for i, n in enumerate(C.COLUMNAS_BASE)}
+# A5: la cobertura de la cinta por (minuto, venue, activo). No esta en C.TABLAS porque el archivador del nodo aun no la
+# copia: hasta que lo haga, ninguna hora la tiene y ningun minuto sin filas se da por cero.
+COBERTURA = ("cobertura-flujo", "orderflow_cobertura")
+# (venues que lo componen, columnas, si el minuto no tuvo filas de la clase)
+CLASES = ((PERP, ("vol_perp", "dp", "dp100k", "dp1m", "np"), lambda f: f[COL["np"]] == 0),
+          (SPOT, ("vol_spot", "ds", "ds100k", "ds1m", "ns"), lambda f: f[COL["ns"]] == 0),
+          (frozenset({A.VENUE_REF}), ("vol_ref",), lambda f: f[COL["fuente"]] != A.FUENTE_CINTA))
 
 
 def epoch(ts: str) -> float:
@@ -83,6 +94,7 @@ class Dia:
         self.ignorados: dict[str, list[str]] = {}
         self.fuera = 0
         self.oc = {}                 # (sim, minuto) -> [ts_o, ts_c]
+        self.sin_cert = {s: 0 for s in C.SIMBOLOS}
 
     def minuto(self, ts: str):
         if ts.endswith("+00") and ts[:10] == self.dia:
@@ -110,11 +122,37 @@ class Dia:
                     if f[COL[c]] is None:
                         f[COL[c]] = 0.0
 
+    def oidos(self, h: int):
+        """{(sim, minuto): venues escuchados el minuto ENTERO} de orderflow_cobertura, o {} si la hora no esta."""
+        d, tabla = COBERTURA
+        p = self.archivo / d / self.dia / f"{tabla}-{self.dia.replace('-', '')}T{h:02d}Z.tsv.gz"
+        oidos: dict = {}
+        if p.exists():
+            for x in lineas(p):          # ts, venue, symbol, segundos, ...
+                m = self.minuto(x[0])
+                if m is not None and x[3] != "\\N" and float(x[3]) >= 60:
+                    oidos.setdefault((x[2], m), set()).add(x[1])
+        return oidos
+
+    def sin_certificar(self, h: int):
+        """A5 (F3-F3): el cero de una clase sin filas se queda solo si todos sus venues se oyeron el minuto entero."""
+        oidos = self.oidos(h)
+        for s in C.SIMBOLOS:
+            for m in range(h * 60, h * 60 + 60):
+                f, oyo = self.m[s][m], oidos.get((s, m), set())
+                vacio = False
+                for venues, cols, sin_filas in CLASES:
+                    if sin_filas(f) and not venues <= oyo:
+                        vacio = True
+                        for c in cols:
+                            f[COL[c]] = None
+                self.sin_cert[s] += vacio
+
     # ---------------------------------------------------------------- cinta
     def cinta(self):
         # la fila, con la definicion que comparte la sombra del bot (app/anatomia.cinta_fila)
         for h, p in self.horas("cinta"):
-            self.ceros(h, A.FLUJO_CINTA)
+            self.ceros(h, A.FLUJO_CINTA)     # cinta_fila suma: el cero va antes; sin_certificar lo quita despues
             for x in lineas(p):
                 s = x[2]
                 if s not in self.m:
@@ -124,6 +162,7 @@ class Dia:
                     continue
                 A.cinta_fila(self.m[s][m], self.oc.setdefault((s, m), {}), x[0], x[1], float(x[3]), float(x[5]),
                              x[6] == "t")
+            self.sin_certificar(h)
         self.oc.clear()
 
     # ---------------------------------------------------------------- precio de respaldo (solo capa A)
@@ -397,7 +436,8 @@ def extrae(archivo: Path, salida: Path, desde: str = C.ARCHIVO_DESDE, log=print)
     dias = dias_del_archivo(archivo, desde)
     for dia in dias:
         meta = salida / "dias" / f"{dia}.json"
-        if meta.exists() and json.loads(meta.read_text())["completo"]:
+        # un dia de antes de A5 dio por cero minutos sin certificar: se rehace
+        if meta.exists() and (mt := json.loads(meta.read_text()))["completo"] and "minutos_flujo_sin_certificar" in mt:
             continue
         d = Dia(archivo, dia).corre()
         for s in C.SIMBOLOS:
@@ -408,17 +448,19 @@ def extrae(archivo: Path, salida: Path, desde: str = C.ARCHIVO_DESDE, log=print)
         tmp = meta.with_suffix(".tmp")
         tmp.write_text(json.dumps({"dia": dia, "completo": not d.huecos, "horas_faltantes": d.huecos,
                                    "minutos_sin_precio": sin, "minutos_sin_precio_cinta": sin_cinta,
+                                   "minutos_flujo_sin_certificar": d.sin_cert,
                                    "simbolos_ignorados": d.ignorados, "filas_fuera_de_dia": d.fuera}))
         os.replace(tmp, meta)
         log(f"{dia} hecho, horas faltantes: {sum(len(v) for v in d.huecos.values())}")
     huecos = {"dias": dias, "horas_faltantes": {}, "minutos_sin_precio": {s: 0 for s in C.SIMBOLOS},
               "minutos_sin_precio_cinta": {s: 0 for s in C.SIMBOLOS}, "simbolos_ignorados": {},
+              "minutos_flujo_sin_certificar": {s: 0 for s in C.SIMBOLOS},
               "filas_fuera_de_dia": 0}
     for dia in dias:
         mt = json.loads((salida / "dias" / f"{dia}.json").read_text())
         for k, v in mt["horas_faltantes"].items():
             huecos["horas_faltantes"].setdefault(k, []).extend(v)
-        for k in ("minutos_sin_precio", "minutos_sin_precio_cinta"):
+        for k in ("minutos_sin_precio", "minutos_sin_precio_cinta", "minutos_flujo_sin_certificar"):
             for s in C.SIMBOLOS:
                 huecos[k][s] += mt[k][s]
         for k, v in mt["simbolos_ignorados"].items():

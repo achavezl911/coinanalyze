@@ -130,7 +130,7 @@ esac
 # Por eso el generador mide en cada corrida tres preguntas de respuesta conocida:
 #   compute_snapshot      -> 0 rutas por llamada, 8 por tabla (las de metrics_snapshot)
 #   spot_trades_agg       -> 2 INSERT de ws_collector + 1 DELETE de daily_agg
-#   liquidations_realtime -> 1 escritor en scalp_collector.py:74 y 14 rutas lectoras
+#   liquidations_realtime -> 1 escritor en scalp_collector.py:75 y 15 rutas lectoras
 # Las tres tienen respuesta verificada FUERA de este programa -dos contra el codigo por el
 # operador, una contra la base de 140, 3241 filas el 2026-09-04-. La tercera es la que
 # nacio de un fallo real: en F1 daba CERO escritores porque el generador no resolvia SQL

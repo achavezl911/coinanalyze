@@ -1416,7 +1416,7 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
                            and e["verbo"] == "DELETE") == 1),
     }
 
-    # 3 · liquidations_realtime: UN escritor, en app/scalp_collector.py:74, y 14 lectoras.
+    # 3 · liquidations_realtime: UN escritor, en app/scalp_collector.py:75 (:74 hasta A2), y 15 lectoras.
     #     Es el control que en F1 salio mal -cero escritores- y que hizo falta resolver
     #     constantes de modulo para arreglar. Con la tabla viva en 140 (3241 filas,
     #     ultima 22:00:40Z el 2026-09-04) el cero era imposible.
@@ -1433,9 +1433,13 @@ def controles_de_respuesta_conocida(impacto: dict, tablas: dict, ey: dict) -> di
         # /api/mesa/decide y el escritor sigue siendo UNO en app/scalp_collector.py:74.
         # Lo que da poder al control no es el 15: es que el escritor siga siendo uno y en su
         # sitio. Eso se sigue exigiendo intacto.
-        "esperado": "1 escritor en app/scalp_collector.py:74 y 15 rutas lectoras",
+        # :74 -> :75 el 2026-11-15 (DATOS A, A2): el escritor es el MISMO -la constante
+        # LIQUIDATION_INSERT_SQL- y baja una linea porque A2 anade `from app.escucha import`
+        # en la cabecera de scalp_collector.py. Las 15 lectoras son el mismo conjunto que en
+        # main (426e502); ni A1 ni A4 meten ni sacan ninguna ruta.
+        "esperado": "1 escritor en app/scalp_collector.py:75 y 15 rutas lectoras",
         "cuadra": (len(esc) == 1
-                   and esc[0]["sitio"] == "app/scalp_collector.py:74"
+                   and esc[0]["sitio"] == "app/scalp_collector.py:75"
                    and len(lect) == 15),
     }
 

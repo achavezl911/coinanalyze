@@ -21,13 +21,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`sync_market_catalog`](#sync-market-catalog) | 235 | 0 | **0** | 22 ↑ | **0** |
 | [`mark_feed_shard_degraded`](#mark-feed-shard-degraded) | 792 | 0 | **0** | 21 ↑ | **0** |
 | [`wait_for_stop_or_lock_loss`](#wait-for-stop-or-lock-loss) | 374 | 0 | **0** | 15 ↑ | **0** |
-| [`mark_feed_shard_connected`](#mark-feed-shard-connected) | 768 | 0 | **0** | 13 ↑ | **0** |
-| [`_mark_feed_shard_health`](#-mark-feed-shard-health) | 649 | 0 | **10** | 10 | **10** |
-| [`_mark_feed_unhealthy`](#-mark-feed-unhealthy) | 599 | 0 | **10** | 10 | **10** |
-| [`mark_feed_connected`](#mark-feed-connected) | 571 | 0 | **10** | 10 | **10** |
-| [`mark_feed_degraded`](#mark-feed-degraded) | 629 | 0 | **0** | 10 ↑ | **0** |
-| [`mark_feed_error`](#mark-feed-error) | 639 | 0 | **0** | 10 ↑ | **0** |
-| [`mark_feed_shard_error`](#mark-feed-shard-error) | 817 | 0 | **0** | 10 ↑ | **0** |
+| [`mark_feed_shard_connected`](#mark-feed-shard-connected) | 768 | 0 | **0** | 14 ↑ | **0** |
+| [`_mark_feed_shard_health`](#-mark-feed-shard-health) | 649 | 0 | **11** | 11 | **11** |
+| [`_mark_feed_unhealthy`](#-mark-feed-unhealthy) | 599 | 0 | **11** | 11 | **11** |
+| [`mark_feed_connected`](#mark-feed-connected) | 571 | 0 | **11** | 11 | **11** |
+| [`mark_feed_degraded`](#mark-feed-degraded) | 629 | 0 | **0** | 11 ↑ | **0** |
+| [`mark_feed_error`](#mark-feed-error) | 639 | 0 | **0** | 11 ↑ | **0** |
+| [`mark_feed_shard_error`](#mark-feed-shard-error) | 817 | 0 | **0** | 11 ↑ | **0** |
 | [`db_identity`](#db-identity) | 64 | 1 | **0** | 8 ↑ | **1** |
 | [`heartbeat_max_age`](#heartbeat-max-age) | 95 | 1 | **0** | 8 ↑ | **1** |
 | [`required_heartbeat_failures`](#required-heartbeat-failures) | 110 | 5 | **0** | 8 ↑ | **5** |
@@ -1670,7 +1670,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:768` · clave completa `app.db.mark_feed_shard_connected`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 14** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1683,9 +1683,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 13 rutas · **cota superior**
+### Por tabla · k<=2 — 14 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (13 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (14 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1704,6 +1704,7 @@ Y esas tablas las leen:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -1711,7 +1712,7 @@ Y esas tablas las leen:
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**13 rutas se enteran SOLO por el dato**, sin
+**14 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1721,6 +1722,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -1734,7 +1736,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:649` · clave completa `app.db._mark_feed_shard_health`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1742,7 +1744,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 10 rutas · **exacto**
+### Por tabla · k=0 — 11 rutas · **exacto**
 
 Escribe **ella misma**: `market_feed_health`, `market_feed_health_shard`
 
@@ -1753,13 +1755,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
@@ -1773,13 +1776,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1787,6 +1791,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -1799,7 +1804,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:599` · clave completa `app.db._mark_feed_unhealthy`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1807,7 +1812,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 10 rutas · **exacto**
+### Por tabla · k=0 — 11 rutas · **exacto**
 
 Escribe **ella misma**: `market_feed_health`
 
@@ -1818,13 +1823,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
@@ -1837,13 +1843,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1851,6 +1858,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -1863,7 +1871,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:571` · clave completa `app.db.mark_feed_connected`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1871,7 +1879,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 10 rutas · **exacto**
+### Por tabla · k=0 — 11 rutas · **exacto**
 
 Escribe **ella misma**: `market_feed_health`
 
@@ -1882,13 +1890,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
@@ -1901,13 +1910,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1915,6 +1925,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -1927,7 +1938,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:629` · clave completa `app.db.mark_feed_degraded`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1940,9 +1951,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1957,13 +1968,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1971,6 +1983,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -1983,7 +1996,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:639` · clave completa `app.db.mark_feed_error`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1996,9 +2009,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -2013,13 +2026,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -2027,6 +2041,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -2039,7 +2054,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/db.py:817` · clave completa `app.db.mark_feed_shard_error`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 10** (mas ancha)
+**Radio exacto: 0 rutas** de 93 · **cota superior: 11** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -2052,9 +2067,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 10 rutas · **cota superior**
+### Por tabla · k<=2 — 11 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (10 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (11 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -2070,13 +2085,14 @@ Y esas tablas las leen:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
 - [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 
-**10 rutas se enteran SOLO por el dato**, sin
+**11 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -2084,6 +2100,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)

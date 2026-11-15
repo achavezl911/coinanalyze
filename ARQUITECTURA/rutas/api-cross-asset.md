@@ -18,14 +18,14 @@ Handler `cross_asset_endpoint` · `app/api.py:2141` (cuerpo hasta la 2144) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3641 |
-| `available` | literal en app/scalp_logic.py:3643 |
-| `base` | literal en app/scalp_logic.py:3642 |
-| `beta_vs_base` | literal en app/scalp_logic.py:3645 |
-| `correlation` | literal en app/scalp_logic.py:3644 |
-| `note` | literal en app/scalp_logic.py:3647 |
-| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3646 |
-| `symbol` | literal en app/scalp_logic.py:3640 |
+| `as_of` | literal en app/scalp_logic.py:3687 |
+| `available` | literal en app/scalp_logic.py:3689 |
+| `base` | literal en app/scalp_logic.py:3688 |
+| `beta_vs_base` | literal en app/scalp_logic.py:3691 |
+| `correlation` | literal en app/scalp_logic.py:3690 |
+| `note` | literal en app/scalp_logic.py:3693 |
+| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3692 |
+| `symbol` | literal en app/scalp_logic.py:3686 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -49,15 +49,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:254`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3609`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3655`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3574`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3588`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3620`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3634`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3561`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3553`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3607`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3599`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
@@ -122,8 +122,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.resolve_matrix_as_of` | 25 | **0** | 12 ↑ | **25** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic._explicit_as_of` | 26 | **0** | 0 | **26** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.cross_asset` | 5 | **0** | 3 ↑ | **5** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._beta` | 5 | **0** | 0 | **5** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._binned` | 5 | **0** | 0 | **5** | [impacto](../impacto/app-scalp_logic.md) |

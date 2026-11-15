@@ -59,7 +59,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:862`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
-  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:451`
+  - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `open_interest` — `sql/schema.sql:83`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
@@ -157,11 +157,11 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps.blocking_requirement_keys` | 21 | **0** | 15 ↑ | **21** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 24 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 24 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |

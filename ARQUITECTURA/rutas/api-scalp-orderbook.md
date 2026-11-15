@@ -19,10 +19,10 @@ Handler `scalp_orderbook` · `app/api.py:1805` (cuerpo hasta la 1817) · decorad
 | campo | de donde sale |
 |---|---|
 | `freshness` | literal en app/api.py:1816 |
-| `freshness.age_seconds` | literal en app/ai_context.py:675 |
-| `freshness.as_of` | literal en app/ai_context.py:674 |
-| `freshness.max_age_seconds` | literal en app/ai_context.py:676 |
-| `freshness.status` | literal en app/ai_context.py:673 |
+| `freshness.age_seconds` | literal en app/ai_context.py:679 |
+| `freshness.as_of` | literal en app/ai_context.py:678 |
+| `freshness.max_age_seconds` | literal en app/ai_context.py:680 |
+| `freshness.status` | literal en app/ai_context.py:677 |
 | `rows` | literal en app/api.py:1815 |
 | `symbol` | literal en app/api.py:1814 |
 
@@ -35,8 +35,8 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:866`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:922`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
 
 ## Funciones que la componen
 
@@ -45,7 +45,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.ai_context.orderbook_freshness` — `app/ai_context.py:668`
+- `app.ai_context.orderbook_freshness` — `app/ai_context.py:672`
 - `app.api.records` — `app/api.py:267`
 - `app.api.validate_symbol` — `app/api.py:254`
 
