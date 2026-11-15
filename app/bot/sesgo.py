@@ -94,5 +94,5 @@ def texto(filas: list, latido: int | None, ahora: int, activos=("BTCUSDT", "ETHU
     for a in activos:
         mias = [f for f in filas if f[0] == a]
         ln = linea(a, sesgo(cerradas(mias, "daily", latido, ahora), ahora), cerradas(mias, "4hour", latido, ahora))
-        out.append(ln.split(" · rompio")[0].split(" · dentro")[0] if corto else ln)
+        out.append(ln.split(" · 4 h:")[0] if corto else ln)  # el parte, sin la 4 h: el rango y la invalidacion se quedan
     return "\n".join(out)

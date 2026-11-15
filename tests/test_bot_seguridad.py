@@ -345,7 +345,9 @@ def test_e2_entrada_y_el_parte_dicen_el_sesgo(monkeypatch):
     monkeypatch.setattr(sv, "PARTE_HORA_UTC", 0)
     monkeypatch.setattr(b, "salud", lambda: _salud())
     asyncio.run(b.tic_parte())
-    assert any(m.startswith("PARTE ") and "SESGO (contexto, NO es una entrada" in m for m in b.mandados)
+    (p,) = [m for m in b.mandados if m.startswith("PARTE ")]
+    assert "SESGO (contexto, NO es una entrada" in p and "rompio el maximo de 20 d (158)" in p
+    assert "invalidacion: un cierre diario por debajo de la media" in p and "ultima cerrada" not in p  # corto: sin la 4 h
 
 
 async def _salud():
