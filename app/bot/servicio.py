@@ -36,6 +36,7 @@ import httpx
 from app.bot import bybit as bb
 from app.bot import calc, calidad, historial, llm, vidas
 from app.bot import centinela as cen
+from app.bot import sesgo as ses
 from app.bot import sombra as sb
 
 log = logging.getLogger("app.bot")
@@ -45,6 +46,8 @@ PARTE_HORA_UTC = calidad.PARTE_HORA_UTC  # 13: 07:00 en Ciudad de Mexico; vive e
 # lo de bot_estado que solo el bot sabe y carga() recupera: sin cargar no se escribe encima (remate 9)
 GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avisada")
 UMBRALES_CLAVE = (14, 7, 3, 1)  # dias que le quedan a la clave de Bybit: Telegram avisa una vez al cruzar cada uno (R10)
+RETRASO_AVISO = 10  # min de retraso de las velas de un activo a partir de los que se avisa (BOT-SEGURIDAD B2)
+CLAVE_VALE_S = 7200  # sin una lectura buena de query-api en 2 h, «solo lectura» deja de valer (BOT-SEGURIDAD B4)
 RUTAS = {"escala": "low", "pregunta": "medium", "evalua": "high"}  # de partida (Alejandro, 2026-10-24); se cambia por entorno
 ESTABLE = """Eres el asistente de mesa de Alejandro para perpetuos lineales USDT de BTC, ETH y SOL en Bybit. Trabajas dentro
 de un bot de Telegram que vive en su laboratorio (Coinalyze). En cada mensaje te llegan DATOS servidos por el laboratorio
@@ -99,11 +102,13 @@ ESTABLE_SHA = hashlib.sha256(ESTABLE.encode()).hexdigest()[:12]
 ENTRADAS = ("Entradas APAGADAS. La regla acordada el 10-20: el bot no da entradas mientras no haya una ventaja MEDIDA."
             " Las encenderia una frecuencia de acierto medida con n >= 30 por encima del equilibrio, con comision."
             " Hoy: ninguna (BOT-1: ninguna fila de BTC/ETH/SOL con ventaja medida tras una rafaga).")
-AYUDA = ("/calc [btc|eth|sol] entrada [stop] [objetivo] [10$] [50x] [largo|corto] · /evalua [btc|eth|sol] · /entrada ·"
-         " /estado · /gasto · /informe · o pregunta lo que quieras (como esta BTC, quien compra, hay muros cerca).")
+AYUDA = (f"/calc [btc|eth|sol] entrada stop [objetivo] [10x] [{calc.PERDIDA_MAX:g}$ de riesgo como mucho] [largo|corto] · /evalua"
+         " [btc|eth|sol] · /entrada · /estado · /gasto · /informe · /prueba (un aviso de muestra) · o pregunta lo que"
+         " quieras (como esta BTC, quien compra, hay muros cerca).")
 
 
-SIN_OPUS = {"/calc", "calc", "/entrada", "/entradas", "entrada", "/estado", "/gasto", "/informe", "/start", "/ayuda", "/help"}
+SIN_OPUS = {"/calc", "calc", "/entrada", "/entradas", "entrada", "/estado", "/gasto", "/informe", "/prueba", "/start",
+            "/ayuda", "/help"}
 
 
 def a_opus(texto: str) -> bool:
@@ -182,7 +187,8 @@ def activo_de(texto: str, defecto: str = "BTCUSDT") -> str:
 
 
 def args_calc(texto: str) -> dict:
-    """«/calc sol 150 149.1 153 20$ 25x corto» -> argumentos de calc.calcula (sin tramos ni paso)."""
+    """«/calc sol 150 149.1 153 2$ 25x corto» -> argumentos de calc.calcula (sin tramos ni paso). B5: «N$» es el riesgo
+    al stop (como mucho calc.PERDIDA_MAX), ya no el margen: el tamano sale del riesgo."""
     a: dict = {"activo": activo_de(texto), "numeros": []}
     for t in texto.lower().split()[1:]:
         if t in ("btc", "eth", "sol"):
@@ -194,7 +200,7 @@ def args_calc(texto: str) -> dict:
         elif re.fullmatch(r"\d+(\.\d+)?x", t):
             a["apalancamiento"] = float(t[:-1])
         elif re.fullmatch(r"\d+(\.\d+)?\$", t):
-            a["margen"] = float(t[:-1])
+            a["riesgo"] = float(t[:-1])
         elif re.fullmatch(r"\d+(\.\d+)?", t):
             a["numeros"].append(float(t))
         else:
@@ -339,6 +345,12 @@ class Bot:
         self.intentos: dict = {}  # id -> evaluaciones intentadas; proxima_eval: id -> cuando se puede volver a intentar
         self.proxima_eval: dict = {}
         self.avisados: set = set()  # (symbol:side:updatedTime, tipo) de cada aviso de seguridad (remate 7: sin la identidad)
+        self.fallidos: set = set()  # los que Telegram no entrego: se reintentan, y van al registro una sola vez (B1)
+        self.vigia_retraso: dict = {}  # activo -> clave del retraso en curso (B2); avisados_vigia: las entregadas
+        self.avisados_vigia: set = set()
+        self.bybit_ultima = None  # la ultima lista buena de position/list: la seguridad sigue con ella si falla (B4)
+        self.clave_buena = None  # cuando se leyo bien query-api por ultima vez; clave_sin_verificar: de cual se aviso (B4)
+        self.clave_sin_verificar = None
         self.suspensas: set = set()  # claves en suspenso por una excepcion de la identidad (nada pagado sobre ellas)
         self.cierres_pendientes: dict = {}  # id -> resultado que la base aun no apunto (remate 7: CERRADA una vez)
         self.correcciones_pendientes: dict = {}  # id|orden -> la CORRECCION de una cifra que la base aun no apunto (remate 8)
@@ -348,6 +360,7 @@ class Bot:
         self.crudo_visto: dict = {}  # clave -> lo ultimo guardado en bot_crudo
         self.crudo_podado = 0.0
         self.validadas: set = set()
+        self.validaciones: dict = {}  # B5: la ultima validacion de CADA simbolo (la tolerancia solo vale para el mismo)
         self.tareas: set = set()  # lo que va fuera de los bucles (Opus): que el latido y las alertas no esperen
         self.turno = None  # la tarea de la ultima respuesta: la siguiente sale despues (en orden)
         self.clave_proxima = self.ops_leidas = 0.0
@@ -440,7 +453,7 @@ class Bot:
         self.avisados = {(i, t) for i, t in await self.db.fetch(
             "SELECT coalesce(detalle->>'visto', (detalle->'entradas'->'posicion'->>'clave') || ':'"
             " || (detalle->'entradas'->'posicion'->>'actualizada')), tipo FROM bot_evento"
-            " WHERE tipo IN ('stop', 'liquidacion', 'sin_stop') AND ts >= now() - interval '30 days'") if i}
+            " WHERE tipo IN ('stop', 'liquidacion', 'sin_stop') AND enviada AND ts >= now() - interval '30 days'") if i}
         e = await self.db.fetchrow("SELECT extract(epoch FROM ts)::bigint t, estado FROM bot_estado WHERE clave = 'bot'")
         self.desde_minuto = int(e["t"]) // 60 if e else None
         try:
@@ -482,10 +495,13 @@ class Bot:
         self.parte_hoy = await self.db.fetchval("SELECT max((ts AT TIME ZONE 'UTC')::date) FROM bot_evento WHERE tipo = 'parte'")
         self.informes_enviados = {r[0] for r in await self.db.fetch(
             "SELECT detalle->>'semana' FROM bot_evento WHERE tipo = 'informe' AND ts >= now() - interval '60 days'")}
-        v = await self.db.fetchrow("SELECT detalle, (ts AT TIME ZONE 'UTC')::date d FROM bot_evento WHERE tipo = 'validacion' ORDER BY ts DESC LIMIT 1")
-        if v:
+        for v in await self.db.fetch("SELECT DISTINCT ON (detalle->>'symbol') detalle, (ts AT TIME ZONE 'UTC')::date d"
+                                     " FROM bot_evento WHERE tipo = 'validacion' ORDER BY detalle->>'symbol', ts DESC"):
             d = json.loads(v["detalle"])
-            self.estado["validacion"] = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"]}
+            x = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"], "dif_dist_pct": d.get("dif_dist_pct")}
+            self.validaciones[d["symbol"]] = x
+            if not self.estado["validacion"] or x["dia"] >= self.estado["validacion"]["dia"]:
+                self.estado["validacion"] = x
         self.validadas = {r[0] for r in await self.db.fetch("SELECT detalle->>'posicion' FROM bot_evento WHERE tipo = 'validacion'")}
 
     async def recarga(self) -> bool:
@@ -607,17 +623,40 @@ class Bot:
         filas: dict = {a: {} for a in cen.ACTIVOS}
         for a, m, *x in await self.db.fetch(cen.SQL_VELAS, list(cen.SIMBOLO.values()), dias[0] - cen.CALIENTA, ahora):
             filas[a][m] = tuple(x)
-        if not all(filas.values()):
-            self.estado["datos"] = f"sin velas de 1 min de {[a for a in cen.ACTIVOS if not filas[a]]}"
+        if not any(filas.values()):
+            self.estado["datos"] = f"sin velas de 1 min de {list(cen.ACTIVOS)}"
             return self.anota("DATOS", self.estado["datos"], "velas")
-        hasta = min(max(f) for f in filas.values()) + 1
-        self.estado["datos"] = {"ultima_vela": datetime.fromtimestamp((hasta - 1) * 60, UTC).strftime("%H:%MZ"),
-                                "retraso_min": ahora - hasta}
+        if not all(filas.values()):  # el que falta no deja ciegos a los otros dos (B2)
+            self.anota("DATOS", f"sin velas de 1 min de {[a for a in cen.ACTIVOS if not filas[a]]}", "velas")
+        # BOT-SEGURIDAD B2: cada activo con SU «hasta» (antes, el del mas atrasado para los tres)
+        hasta = {a: (max(f) + 1 if f else dias[0] - cen.CALIENTA) for a, f in filas.items()}
+        hhmm = lambda m: datetime.fromtimestamp(m * 60, UTC).strftime("%H:%MZ")  # noqa: E731
+        peor = min(hasta.values())
+        self.estado["datos"] = {"ultima_vela": hhmm(peor - 1), "retraso_min": ahora - peor,
+                                "activos": {a: {"ultima_vela": hhmm(h - 1), "retraso_min": ahora - h} for a, h in hasta.items()}}
+        await self.vigila_retraso(hasta, ahora)
         for dia in dias:
             for r in cen.rafagas_del_dia(filas, dia, hasta):
                 await self.rafaga(r, ahora, filas)
         self.desde_minuto = ahora - 15
-        self.bien("velas")
+        if all(filas.values()):
+            self.bien("velas")
+
+    async def vigila_retraso(self, hasta: dict, ahora: int):
+        """(B2) Un aviso UNICO por activo cuando el retraso de sus velas pasa de RETRASO_AVISO min: su clave es el activo y
+        la ultima vela que tenia al pasarse; no se repite hasta que vuelva a ir al dia. Solo cuenta como dado si se entrega."""
+        for a, h in hasta.items():
+            if ahora - h <= RETRASO_AVISO:
+                self.vigia_retraso.pop(a, None)
+                continue
+            clave = self.vigia_retraso.setdefault(a, f"retraso:{a}:{h - 1}")
+            if clave in self.avisados_vigia:
+                continue
+            txt = (f"{a[:-4]}: velas de 1 min con {ahora - h} min de retraso (la ultima, "
+                   f"{datetime.fromtimestamp((h - 1) * 60, UTC).strftime('%H:%MZ')}): sin ellas no veo sus rafagas")
+            if await self.manda(txt):
+                self.avisados_vigia.add(clave)
+                await self.evento("vigia", a, h - 1, True, detalle={"clave": clave, "texto": txt, "retraso_min": ahora - h})
 
     async def rafaga(self, r: dict, ahora: int, filas: dict):
         a, m, u = r["activo"], r["minuto"], cen.UMBRALES
@@ -655,7 +694,7 @@ class Bot:
         espera corta y creciente (30 s, 60 s... hasta 15 min), sin tocar el ultimo veredicto (remate 3, bug 2)."""
         antes = self.estado["bybit"].get("activo")
         try:
-            d = await self.bybit.get("/v5/user/query-api")
+            d = bb.objeto(await self.bybit.get("/v5/user/query-api"))
         except httpx.HTTPError as e:
             d = {"retCode": -1, "retMsg": f"red: {type(e).__name__}"}
         if bb.transitorio(d):
@@ -667,6 +706,8 @@ class Bot:
         self.clave_proxima, self.clave_espera = time.time() + 3600, 30.0
         tic = self.estado["bybit"].get("tic")  # (remate 8, R2: releer la clave borraba el ultimo tic y el interruptor lo daba por sano)
         b = self.estado["bybit"] = bb.juzga_clave(d) | {"leida": ahora_iso()} | ({"tic": tic} if tic else {})
+        if d.get("retCode") == 0:
+            self.clave_buena, self.clave_sin_verificar = time.time(), None
         if b["activo"]:
             self.bien("query-api")
         else:
@@ -705,20 +746,27 @@ class Bot:
         if time.time() >= self.clave_proxima:
             await self.lee_clave()
         await self.avisa_caducidad()
+        await self.caduca_veredicto()
         if not self.estado["bybit"]["activo"]:
             return
         try:
-            d = await self.bybit.get("/v5/position/list", category="linear", settleCoin="USDT")
+            d = bb.objeto(await self.bybit.get("/v5/position/list", category="linear", settleCoin="USDT"))
         except httpx.HTTPError as e:
-            return self.anota("BYBIT", f"position/list no contesta: {type(e).__name__}", "position/list")
+            self.anota("BYBIT", f"position/list no contesta: {type(e).__name__}", "position/list")
+            return await self.seguridad_ultima()
         if bb.error(d):
             self.estado["bybit"]["error"] = bb.error(d)
             self.anota("BYBIT_IP" if d.get("retCode") == 10010 else "BYBIT", f"position/list: {bb.error(d)}", "position/list")
             if d.get("retCode") in (10003, 10010, 33004):
                 self.clave_proxima = 0.0  # se vuelve a juzgar la clave en el proximo tic, y si cae se avisa
-            return
+            return await self.seguridad_ultima()
+        try:
+            lista, ahora_ms = bb.posiciones(d), int(time.time() * 1000)
+        except (ValueError, KeyError, TypeError) as e:  # (B4) una forma rara es una lectura fallida, no un tic caido
+            self.anota("BYBIT", f"position/list ilegible: {type(e).__name__} {str(e)[:120]}", "position/list")
+            return await self.seguridad_ultima()
         self.bien("position/list")
-        lista, ahora_ms = bb.posiciones(d), int(time.time() * 1000)
+        self.bybit_ultima = lista
         # 1 LA SEGURIDAD PRIMERO (remate 7, I3/I8): los avisos de sin stop, stop y liquidacion, sobre la lectura CRUDA y en su
         # propio try: no dependen de la identidad ni de sus excepciones
         disparados: list = []
@@ -798,6 +846,32 @@ class Bot:
                 self.anota(causa(e), f"correccion de {c.get('id')}: {type(e).__name__} {str(e)[:120]}", "registro correccion")
         self.estado["bybit"]["tic"] = ahora_iso()  # el ultimo tic de Bybit COMPLETO: el interruptor avisa si se para (remate 7)
 
+    async def seguridad_ultima(self):
+        """(B4) Si position/list falla, los avisos de seguridad siguen con lo ultimo leido (los que Telegram no entrego
+        se reintentan; los entregados no se repiten)."""
+        if self.bybit_ultima:
+            try:
+                await self.seguridad(self.bybit_ultima)
+            except Exception as e:
+                self.anota(causa(e), f"seguridad: {type(e).__name__} {str(e)[:120]}", "seguridad")
+
+    async def caduca_veredicto(self):
+        """(B4) «Solo lectura» vale CLAVE_VALE_S desde la ultima lectura buena de query-api: despues, el estado dice «clave
+        sin verificar desde HH:MMZ» y se avisa UNA vez (si Telegram no lo entrega, se reintenta). Las posiciones se siguen
+        leyendo: los avisos de seguridad no se apagan por no poder releer la clave."""
+        b = self.estado["bybit"]
+        if not b.get("activo") or self.clave_buena is None or time.time() - self.clave_buena <= CLAVE_VALE_S:
+            return
+        desde = datetime.fromtimestamp(self.clave_buena, UTC).strftime("%H:%MZ")
+        b["solo_lectura"], b["sin_verificar"] = None, desde
+        if self.clave_sin_verificar == self.clave_buena:
+            return
+        txt = (f"Bybit: clave sin verificar desde {desde} (mas de {CLAVE_VALE_S // 3600} h sin leer sus permisos):"
+               " no puedo asegurar que siga siendo de solo lectura. Sigo leyendo posiciones.")
+        if await self.manda(txt):
+            self.clave_sin_verificar = self.clave_buena
+            await self.evento("bybit", None, None, True, detalle={"sin_verificar": desde, "texto": txt})
+
     def clave_aviso(self, p: dict, tipo: str = "sin_stop") -> str:
         """De que va un aviso de seguridad, sin la identidad. sin_stop: symbol:side:updatedTime (una vida nueva siempre trae
         otro; repetirlo con cada updatedTime nuevo es un recordatorio aceptable). stop y liquidacion, por su CONDICION (remate
@@ -822,12 +896,21 @@ class Bot:
                     visto = self.clave_aviso(p, tipo)
                     if (visto, tipo) in self.avisados:
                         continue
-                    self.avisados.add((visto, tipo))
                     if tipo == "sin_stop":
                         txt = f"{p['symbol']} {'LARGO' if p['lado'] > 0 else 'CORTO'} sin stop puesto"
-                    await self.evento(tipo, p["symbol"], int(time.time() // 60), await self.manda(f"{cen.LEYENDA.split(' · ')[0]} · {txt}"),
+                    # BOT-SEGURIDAD B1: dado SOLO si Telegram lo entrega; si no, se reintenta en el tic siguiente. El fallo
+                    # va al registro una vez (enviada = false), y carga() solo da por avisados los entregados
+                    ok = await self.manda(f"{cen.LEYENDA.split(' · ')[0]} · {txt}")
+                    if ok:
+                        self.avisados.add((visto, tipo))
+                    elif (visto, tipo) in self.fallidos:
+                        continue
+                    else:
+                        self.fallidos.add((visto, tipo))
+                    await self.evento(tipo, p["symbol"], int(time.time() // 60), ok,
                                       detalle={"visto": visto, "texto": txt, "entradas": {"posicion": p, "leida": ahora_iso()}})
-                    disparados.append((p["clave"], tipo, txt))
+                    if ok:
+                        disparados.append((p["clave"], tipo, txt))
             except Exception as e:
                 self.anota(causa(e), f"seguridad de {p.get('clave')}: {type(e).__name__} {str(e)[:120]}", "seguridad")
         return disparados
@@ -913,11 +996,16 @@ class Bot:
             return self.anota("BYBIT", f"risk-limit para validar la liquidacion: {type(e).__name__}", "risk-limit")
         self.bien("risk-limit")
         dif = abs(f - p["liquidacion"]) / p["entrada"] * 100
-        self.estado["validacion"] = {"symbol": p["symbol"], "dia": datetime.now(UTC).strftime("%Y-%m-%d"), "dif_pct": round(dif, 4)}
+        # B5: en DISTANCIA a la liquidacion de Bybit (con 0 de distancia no se puede juzgar: None)
+        dist = abs(p["entrada"] - p["liquidacion"])
+        dd = round(abs(f - p["liquidacion"]) / dist * 100, 4) if dist else None
+        self.estado["validacion"] = {"symbol": p["symbol"], "dia": datetime.now(UTC).strftime("%Y-%m-%d"), "dif_pct": round(dif, 4),
+                                     "dif_dist_pct": dd}
+        self.validaciones[p["symbol"]] = self.estado["validacion"]
         self.validadas.add(p["id"])
         await self.evento("validacion", p["symbol"], int(time.time() // 60), False,
                           detalle={"posicion": p["id"], "symbol": p["symbol"], "bybit": p["liquidacion"], "formula": f,
-                                   "mmr": mmr, "dif_pct": round(dif, 4)})
+                                   "mmr": mmr, "dif_pct": round(dif, 4), "dif_dist_pct": dd})
 
     async def evalua(self, p: dict, motivo: str):
         v_dec, dec, texto, liq, horas, llamada = "NO EVALUABLE", {}, None, "", {"posicion": ahora_iso()}, None
@@ -933,7 +1021,7 @@ class Bot:
         if v is None:
             v, fuente = "NO EVALUABLE", "opus sin veredicto legible"
         if p.get("liquidacion"):
-            liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.estado['validacion'])}"
+            liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.validaciones.get(p['symbol']), p['symbol'])}"
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
         # PRIMER veredicto: es el que se puntua (un /evalua a mano se registra, pero no lo pisa: bug 5)
         if motivo.startswith("posicion nueva"):  # solo la automatica se puntua: un /evalua a mano puede caer en una lectura
@@ -1035,11 +1123,21 @@ class Bot:
         t = (await pub.get("/v5/market/risk-limit", category="linear", symbol=s))["result"]["list"]
         ins = (await pub.get("/v5/market/instruments-info", category="linear", symbol=s))["result"]["list"][0]
         tk = (await pub.get("/v5/market/tickers", category="linear", symbol=s))["result"]["list"][0]
-        entrada = n[0] if n else float(tk["markPrice"])
-        r = calc.calcula(entrada, *n[1:3], paso=ins["lotSizeFilter"]["qtyStep"], tramos=t,
+        if len(n) < 2:  # B5: por riesgo; sin entrada y stop no hay tamano (se fueron los 10 USD x 50 y el stop a -0.6 %)
+            raise ValueError(f"el tamano sale del riesgo al stop: {AYUDA.split(' · ')[0]}")
+        r = calc.calcula(n[0], *n[1:3], paso=ins["lotSizeFilter"]["qtyStep"], tramos=t,
                          funding=float(tk["fundingRate"]) if tk.get("fundingRate") else None,
                          funding_h=float(ins.get("fundingInterval") or 480) / 60, **a)
-        return calc.texto(r, s, self.estado["validacion"]) + ("" if n else f"\n(entrada = marca actual {entrada:g})")
+        return calc.texto(r, s, self.validaciones.get(s) or self.estado["validacion"])
+
+    async def prueba(self) -> str:
+        """B6: un aviso de MUESTRA con el formato de un «stop cerca» (el texto de cen.alertas_posicion sobre una posicion
+        inventada), marcado PRUEBA. No toca avisados, fallidos ni bot_evento: el estado de los avisos reales no cambia."""
+        p = {"clave": "PRUEBA", "symbol": "SOLUSDT", "lado": 1, "entrada": 100.0, "marca": 99.5, "stop": 99.4,
+             "liquidacion": 90.0, "actualizada": 0}
+        txt = next(t for tipo, t in cen.alertas_posicion(p) if tipo == "stop")
+        ok = await self.manda(f"PRUEBA · {cen.LEYENDA.split(' · ')[0]} · {txt} · (MUESTRA: no es una posicion tuya)")
+        return "" if ok else "PRUEBA: Telegram no entrego la muestra"
 
     async def pregunta(self, texto: str) -> str:
         activo = activo_de(texto, next((p["symbol"] for p in self.pos.values()), "BTCUSDT"))
@@ -1091,9 +1189,13 @@ class Bot:
         fuentes = ", ".join(f"{k} {edad(x)}" for k, x in f.items()) if isinstance(f, dict) else f
         datos = s["datos"]
         velas = f"velas 1 min: la ultima {datos['ultima_vela']} ({datos['retraso_min']} min de retraso)" if isinstance(datos, dict) else f"velas 1 min: {datos}"
+        atras = {a[:-4]: x for a, x in (datos.get("activos") or {}).items() if x["retraso_min"] > RETRASO_AVISO} if isinstance(datos, dict) else {}
+        if atras:  # (B2) cada activo atrasado, con su ultima vela
+            velas += " · ATRASADAS: " + ", ".join(f"{a} {x['ultima_vela']} ({x['retraso_min']} min)" for a, x in atras.items())
         dias = b.get("dias_clave")
         caduca = f"la clave caduca en {dias} dias ({b['expira']})" if dias is not None and b.get("expira") else "caducidad de la clave: sin dato"
-        bybit = (f"solo lectura (leida {str(b.get('leida', '?'))[11:16]}Z) · {caduca}" if b["activo"] else f"APAGADO: {b['error']} · {caduca}")
+        bybit = (f"clave sin verificar desde {b['sin_verificar']} · {caduca}" if b["activo"] and b.get("sin_verificar") else
+                 f"solo lectura (leida {str(b.get('leida', '?'))[11:16]}Z) · {caduca}" if b["activo"] else f"APAGADO: {b['error']} · {caduca}")
         if b.get("activo") and b.get("tic"):  # el ultimo tic de Bybit completo (remate 7: si se para, se dice)
             parado = (datetime.now(UTC) - datetime.fromisoformat(b["tic"].replace("Z", "+00:00"))).total_seconds()
             bybit += f" · ultima lectura completa {b['tic'][11:16]}Z" + (f" (SIN LEER BYBIT DESDE HACE {int(parado // 60)} MIN)" if parado > 300 else "")
@@ -1154,6 +1256,7 @@ class Bot:
             return
         s = await self.salud()
         texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}") + "\n" + await self.texto_sombra(corto=True)
+        texto += "\n" + await self.texto_sesgo(corto=True)
         enviada = await self.manda(texto)
         if not enviada and self.tg:
             return  # se reintenta al minuto siguiente; el interruptor avisa si a las 13:30Z no ha salido
@@ -1191,6 +1294,17 @@ class Bot:
         except Exception as e:
             return f"SOMBRA: sin cuenta ({type(e).__name__} {str(e)[:160]})"
 
+    async def texto_sesgo(self, corto: bool = False) -> str:
+        """E2: el sesgo diario de cada activo (app/bot/sesgo.py), para /entrada y el parte. CONTEXTO, NO una entrada; un
+        fallo de lectura no tumba ni la orden ni el parte."""
+        try:
+            ahora = int(time.time())
+            lat = await self.db.fetchval(ses.LATIDO_SQL)
+            filas = await self.db.fetch(ses.SQL, [cen.SIMBOLO[a] for a in cen.ACTIVOS], ahora - 90 * 86400, ahora - 3 * 86400)
+            return ses.texto([tuple(f) for f in filas], lat, ahora, cen.ACTIVOS, corto)
+        except Exception as e:
+            return f"SESGO: sin leer ({type(e).__name__} {str(e)[:160]}) · {ses.AVISO}"
+
     async def tic_informe(self):
         """El informe semanal que redacta Claude Max en 143 (tools/bot/semanal.py) y deja en BOT_INFORMES/<semana>.txt."""
         sem = semana_iso(datetime.now(UTC))
@@ -1218,9 +1332,11 @@ class Bot:
                     await self.evalua(p, "a peticion")
                 return "" if ps else "no hay posicion abierta que evaluar"
             if orden in ("/entrada", "/entradas", "entrada"):
-                return ENTRADAS + "\n" + await self.texto_sombra()
+                return ENTRADAS + "\n" + await self.texto_sombra() + "\n" + await self.texto_sesgo()
             if orden == "/estado":
                 return self.texto_salud(await self.salud(), "ESTADO")
+            if orden == "/prueba":
+                return await self.prueba()
             if orden == "/gasto":
                 return await self.gasto()
             if orden == "/informe":

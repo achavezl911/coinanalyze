@@ -1,5 +1,4 @@
 """BOT-5: la candidata en sombra (app/bot/sombra.py). La base, con TEST_DATABASE_URL (si no, se salta)."""
-import hashlib
 import json
 import os
 import pathlib
@@ -26,7 +25,7 @@ def test_la_candidata_congelada_se_carga_y_un_byte_cambiado_no(tmp_path):
     assert (c.simbolo, c.lado, c.w, c.esquema, c.umbral, c.estricto) == ("SOL", -1, 60, "E1", -479834.70166359004, False)
     assert c.columna == A.COL["ds100k"] and c.venues == A.VENUES_SPOT and c.minimo == A.GRANDE_100K
     b = sb.CANDIDATAS.read_bytes()
-    assert hashlib.sha256(b).hexdigest() == sb.CANDIDATAS_SHA
+    assert sb.huella(json.loads(b)) == sb.CANDIDATAS_SHA  # B3: la huella es la de «congeladas» (el fichero trae «retiradas»)
     otra = tmp_path / "c.json"
     otra.write_bytes(b.replace(b"-479834.70166359004", b"-479834.7"))
     with pytest.raises(ValueError, match="sha256"):
@@ -35,7 +34,7 @@ def test_la_candidata_congelada_se_carga_y_un_byte_cambiado_no(tmp_path):
     d["congeladas"][0]["comision_salida"] = 0.0
     otra.write_text(json.dumps(d))
     with pytest.raises(ValueError, match="comision"):
-        sb.carga(otra, sha=hashlib.sha256(otra.read_bytes()).hexdigest())
+        sb.carga(otra, sha=sb.huella(d))
 
 
 def test_wilson_y_el_texto_de_la_cuenta():
@@ -51,14 +50,15 @@ def test_wilson_y_el_texto_de_la_cuenta():
         assert not re.search(r"\b(compra|vende|entra)\b", x, re.I), x
     # 1 USD al stop con la comision: margen x apalancamiento x (0.6 % + 2 x 5.5 bps) = 1
     o = sb.orden_calc(c, {"entrada": 100.0})
-    assert o == "/calc sol 100 100.6 99 14.08$ 10x corto"
+    assert o == "/calc sol 100 100.6 99 1$ 10x corto"
 
 
 # ------------------------------------------------------------------------- el escenario
 def escenario():
     """Precio de SOL plano a 100 en binance_usdm, una venta de contado de 500k en el minuto 70 (decision 74), el
     precio toca el objetivo (-1 %) en el 100 y se queda en 99; falta el minuto 330 de precio. Un perpetuo de -900k en
-    el 20 y un 99999 de contado no cuentan."""
+    el 20 y un 99999 de contado no cuentan. Un impreso pequeno de contado (okx_spot, 500 USD) en cada minuto con precio:
+    desde BOT-SEGURIDAD B3, un minuto sin filas de contado de SOL es un minuto SIN DATO, no 0."""
     filas = []
     for m in range(0, 420):
         if m == 330:
@@ -67,6 +67,7 @@ def escenario():
         lo = 98.9 if m == 100 else p
         for k, (pr, s) in enumerate(((p, 1), (lo, 2), (p, 3))):
             filas.append((T0 + m * MIN + s, "binance_usdm", "SOL", pr, 1000.0, k % 2 == 0, f"u{m}-{k}"))
+        filas.append((T0 + m * MIN + 40, "okx_spot", "SOL", p, 500.0, m % 2 == 0, f"o{m}"))
     filas.append((T0 + 70 * MIN + 30, "binance_spot", "SOL", 100.0, 500000.0, False, "s70"))
     filas.append((T0 + 20 * MIN + 30, "bybit_linear", "SOL", 100.0, 900000.0, False, "p20"))
     filas.append((T0 + 72 * MIN + 30, "okx_spot", "SOL", 100.0, 99999.0, False, "s72"))
@@ -182,9 +183,10 @@ async def test_entrada_el_parte_y_el_interruptor(base, monkeypatch, avisa):
         await bot.tic_sombra()
     if avisa:
         assert len(mandados) == 1 and sb.NO_MEDIDA in mandados[0]
-        assert "CALC /calc sol 100 100.6 99 14.08$ 10x corto" in mandados[0]
+        assert "CALC /calc sol 100 100.6 99 1$ 10x corto" in mandados[0]
     else:
         assert mandados == []
     e = await bot.atiende("/entrada")
-    assert e.startswith(sv.ENTRADAS) and "En sombra" in e and "1 disparos" in e and "SIN CALIBRAR" in e
-    assert (await bot.texto_sombra(corto=True)).startswith("SOMBRA SOL corto si ds100k_60 <= -479834.70")
+    # B3: retirada el 2026-11-14; lo contado (el disparo del 10-21) se queda y se dice
+    assert e.startswith(sv.ENTRADAS) and "RETIRADA el 2026-11-14" in e and "1 disparos" in e and "SIN CALIBRAR" in e
+    assert (await bot.texto_sombra(corto=True)).startswith("SOMBRA RETIRADA el 2026-11-14 · SOL corto si ds100k_60 <= -479834.70")

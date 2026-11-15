@@ -110,8 +110,10 @@ planta sin_dato_como_fracaso "^ROJO: K119 banco: disparo 10-21 16:44Z \(fracaso\
   app/bot/sombra.py 'estado="sin_dato", exito=None, neto=None' 'estado="fracaso", exito=0, neto=-0.0071' 1
 planta comision_de_un_lado "^ROJO: K119 banco: 10-21 01:14Z bot \(entrada 105.6929, exito 0, neto -0.002604064180280868," "una comision" -- \
   app/anatomia.py "- 2 * COMISION" "- COMISION" 5
-NUEVA=$("$PY" -S -c 'import hashlib,sys; t=open(sys.argv[1]).read(); n=t.count("-479834.70166359004")
-assert n == 1, n; print(hashlib.sha256(t.replace("-479834.70166359004", "-479834.7").encode()).hexdigest())' \
+# la huella es la de «congeladas» (sombra.huella, BOT-SEGURIDAD B3: el fichero lleva ademas «retiradas»)
+NUEVA=$("$PY" -S -c 'import hashlib,json,sys; t=open(sys.argv[1]).read(); n=t.count("-479834.70166359004")
+assert n == 1, n; d=json.loads(t.replace("-479834.70166359004", "-479834.7"))
+print(hashlib.sha256(json.dumps({"congeladas": d["congeladas"]}, indent=1).encode()).hexdigest())' \
   "$REPO/config/anatomia/congeladas-20261103.json" 2>&1)
 planta candidata_reescrita "^  banco: disparo 10-21 08:34Z \(" "umbral -479834.7, sha ${NUEVA:0:12}" -- \
   config/anatomia/congeladas-20261103.json "-479834.70166359004" "-479834.7" 1 \

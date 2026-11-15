@@ -34,32 +34,33 @@ TRAMOS = {
 
 
 # --------------------------------------------------------------------------------------------- C3 la calculadora
-def test_la_forma_de_alejandro_en_btc_pasa_de_su_maximo_por_la_comision():
-    r = calc.calcula(110000, tramos=TRAMOS["BTCUSDT"], paso="0.001")
+def test_la_forma_de_alejandro_en_btc_con_stop_y_50x():
+    # B5: el tamano sale del riesgo (5 USD con comision), no de 10 USD x 50: 5 / (660 + 219340 x 0.00055) = 0.0064
+    r = calc.calcula(110000, 109340, 112200, apalancamiento=50, tramos=TRAMOS["BTCUSDT"], paso="0.001")
     assert r["lado"] == "LARGO" and r["stop"] == pytest.approx(109340) and r["objetivo"] == pytest.approx(112200)
-    assert r["cantidad"] == pytest.approx(0.004) and r["valor_usd"] == pytest.approx(440)  # 0.004545 al paso 0.001
-    assert r["liquidacion"] == pytest.approx(110000 - (2200 - 363))  # IM/q = 440/50/0.004, MM/q = 440*0.0033/0.004
-    assert r["perdida_stop_usd"] == pytest.approx(2.64 + 0.242 + 0.004 * 109340 * 0.00055)
-    assert r["comision_come_pct"] == pytest.approx((0.242 + 0.004 * 112200 * 0.00055) / 8.8 * 100)
-    assert any("pasa de tu maximo" in a for a in r["avisos"])
+    assert r["cantidad"] == pytest.approx(0.006) and r["valor_usd"] == pytest.approx(660)  # 0.006405 al paso 0.001
+    assert r["liquidacion"] == pytest.approx(110000 - (2200 - 363))  # IM/q = 660/50/0.006, MM/q = 660*0.0033/0.006
+    assert r["perdida_stop_usd"] == pytest.approx(3.96 + 0.363 + 0.006 * 109340 * 0.00055)
+    assert r["comision_come_pct"] == pytest.approx((0.363 + 0.006 * 112200 * 0.00055) / 13.2 * 100)
+    assert r["perdida_stop_usd"] <= calc.PERDIDA_MAX and not r["avisos"]  # liq a 2.78 veces la distancia al stop
 
 
 def test_el_paso_se_redondea_en_decimal_y_sol_usa_su_tramo():
-    assert calc.calcula(1000, margen=3, apalancamiento=100, paso="0.1", tramos=TRAMOS["SOLUSDT"])["cantidad"] == pytest.approx(0.3)
-    r = calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1")
-    assert r["cantidad"] == pytest.approx(3.3) and r["mmr"] == 0.005
+    assert calc.calcula(1000, 990, paso="0.1", tramos=TRAMOS["SOLUSDT"])["cantidad"] == pytest.approx(0.4)  # 0.4507 (con 3.6: 0.3245)
+    r = calc.calcula(150, 149, apalancamiento=50, tramos=TRAMOS["SOLUSDT"], paso="0.1")
+    assert r["cantidad"] == pytest.approx(4.2) and r["mmr"] == 0.005
     assert r["liquidacion"] == pytest.approx(150 * (1 - 0.02 + 0.005))
 
 
 def test_corto_stop_tras_la_liquidacion_y_funding():
-    r = calc.calcula(100, corto=True, apalancamiento=100, margen=10, paso="0.1", tramos=TRAMOS["SOLUSDT"], funding=0.0001)
-    assert r["lado"] == "CORTO" and r["stop"] > 100 > r["objetivo"] and r["liquidacion"] > 100
+    r = calc.calcula(100, 101, corto=True, apalancamiento=100, paso="0.1", tramos=TRAMOS["SOLUSDT"], funding=0.0001)
+    assert r["lado"] == "CORTO" and r["stop"] > 100 and r["objetivo"] is None and r["liquidacion"] > 100
     assert r["funding_usd"] == pytest.approx(r["valor_usd"] * 0.0001)  # el corto cobra con funding positivo
     r = calc.calcula(100, 98.5, 103, apalancamiento=100, paso="0.1", tramos=TRAMOS["SOLUSDT"])
-    assert any("mas alla de la liquidacion" in a for a in r["avisos"])
+    assert any("ANTES del stop" in a for a in r["avisos"])
     with pytest.raises(ValueError):
         calc.calcula(100, 99, 98, paso="0.1", tramos=TRAMOS["SOLUSDT"])
-    assert "funding: sin dato" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT")
+    assert "funding: sin dato" in calc.texto(calc.calcula(150, 149, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT")
 
 
 # --------------------------------------------------------------------------------------------- Bybit solo lectura
@@ -235,7 +236,7 @@ def test_veredicto_de_decide_y_lectura_del_de_opus():
 
 def test_ordenes_de_texto():
     assert sv.args_calc("/calc sol 150 149.1 153 20$ 25x corto") == {
-        "activo": "SOLUSDT", "numeros": [150.0, 149.1, 153.0], "margen": 20.0, "apalancamiento": 25.0, "corto": True}
+        "activo": "SOLUSDT", "numeros": [150.0, 149.1, 153.0], "riesgo": 20.0, "apalancamiento": 25.0, "corto": True}
     with pytest.raises(ValueError):
         sv.args_calc("/calc btc mil")
     assert sv.activo_de("como esta eth?") == "ETHUSDT" and sv.activo_de("quien compra") == "BTCUSDT"
@@ -395,11 +396,14 @@ async def test_c2_registra_el_veredicto_antes_y_lo_puntua_al_cerrar(base, monkey
     monkeypatch.undo()
     c = await base.fetchrow("SELECT veredicto, pnl_usd, acierto FROM bot_evaluacion WHERE tipo = 'cierre'")
     assert tuple(c) == ("A FAVOR", 1.5, True) and bot.evaluadas == {}
-    assert "AVISO: la perdida al stop" in await otro.calcula("/calc btc")
-    assert "validada contra Bybit: 0.00 % en BTCUSDT" in await otro.calcula("/calc btc 110000")  # carga() la recupero
-    assert "sin validar contra Bybit" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT")
-    lejos = {"symbol": "SOLUSDT", "dia": "2026-10-25", "dif_pct": 0.8}
-    assert "OJO: se separo de Bybit 0.80 % (> 0.5 %)" in calc.texto(calc.calcula(150, tramos=TRAMOS["SOLUSDT"], paso="0.1"), "SOLUSDT", lejos)
+    with pytest.raises(ValueError, match="el tamano sale del riesgo"):  # B5: sin stop no hay tamano
+        await otro.calcula("/calc btc")
+    t = await otro.calcula("/calc btc 110000 109340")  # carga() la recupero, en distancia a la liquidacion
+    assert "validada contra Bybit: 0.00 % de la distancia a la liquidacion en BTCUSDT" in t
+    sol = calc.calcula(150, 149, tramos=TRAMOS["SOLUSDT"], paso="0.1")
+    assert "sin validar contra Bybit" in calc.texto(sol, "SOLUSDT")
+    lejos = {"symbol": "SOLUSDT", "dia": "2026-10-25", "dif_pct": 0.3, "dif_dist_pct": 8.0}
+    assert "OJO: se separo de Bybit 8.00 % de la distancia" in calc.texto(sol, "SOLUSDT", lejos)
 
 
 # --------------------------------------------------------------------------------------------- el interruptor (banco)

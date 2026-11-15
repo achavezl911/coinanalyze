@@ -31,10 +31,10 @@ LIQ_CERCA_PCT = 0.5
 LEYENDA = "ALERTA, no entrada · sin ventaja medida tras una rafaga (BOT-1)"
 
 
-def series(filas: dict, t0: int, t1: int) -> dict[str, rf.Serie] | None:
+def series(filas: dict, t0: int, t1: int, activos=ACTIVOS) -> dict[str, rf.Serie] | None:
     """filas: {activo: {minuto: (hi, lo, c, buy, sell)}} -> una Serie por activo en [t0, t1), o None si falta uno."""
     out = {}
-    for a in ACTIVOS:
+    for a in activos:
         f = filas.get(a) or {}
         dentro = [m for m in f if t0 <= m < t1]
         if not dentro:
@@ -50,21 +50,28 @@ def series(filas: dict, t0: int, t1: int) -> dict[str, rf.Serie] | None:
     return out
 
 
-def rafagas_del_dia(filas: dict, dia: int, hasta: int, u: rf.Umbrales = UMBRALES) -> list[dict]:
+def rafagas_del_dia(filas: dict, dia: int, hasta: int | dict, u: rf.Umbrales = UMBRALES) -> list[dict]:
     """Las rafagas con minuto en [dia, min(dia + 1440, hasta)), con su clase si ya hay DECIDE velas detras (si no,
-    clase None). dia: minuto de las 00:00Z; hasta: el primer minuto que no tienen cerrado los tres activos."""
-    t0, t1 = dia - CALIENTA, min(hasta, dia + 1440 + u.DECIDE)
-    se = series(filas, t0, t1)
-    if se is None:
-        return []
-    rasgos = {a: rf.rasgos(se[a], u.W, u.BASE) for a in ACTIVOS}
+    clase None). dia: minuto de las 00:00Z; hasta: el primer minuto sin cerrar, uno por activo ({activo: minuto}; un
+    entero vale para los tres). BOT-SEGURIDAD B2: la rafaga de cada activo se busca hasta SU minuto (antes, el del mas
+    atrasado: un activo parado dejaba ciegos a los tres). La deteccion solo mira hacia atras, asi que lo de antes del
+    minuto comun sale igual. La clase usa los z de los OTROS: se decide solo con velas que tienen los tres (si no, None)."""
+    h = hasta if isinstance(hasta, dict) else dict.fromkeys(ACTIVOS, hasta)
+    t0 = dia - CALIENTA
+    fin = {a: min(h.get(a, t0), dia + 1440 + u.DECIDE) for a in ACTIVOS}
+    se = {a: x[a] for a in ACTIVOS if (x := series(filas, t0, fin[a], (a,)))}
+    comun = min(fin.values()) if len(se) == len(ACTIVOS) else t0  # sin un activo, ninguna clase
+    rasgos = {a: rf.rasgos(se[a], u.W, u.BASE) for a in se}
     out = []
-    for a in ACTIVOS:
+    for a in se:
         z, v, imb = rasgos[a]
         for i, s in rf.detecta_rasgos(z, v, imb, u.Z, u.M, u.D, u.CALLA):
             if not dia <= t0 + i < dia + 1440:
                 continue
-            cl = rf.clasifica(se[a], i, s, u, [rasgos[o][0] for o in ACTIVOS if o != a])
+            n = comun - t0  # la serie de a cortada al minuto comun: lo que la clase puede mirar
+            cl = None if i + 1 >= n else rf.clasifica(
+                rf.Serie(t0, se[a].c[:n], se[a].hi[:n], se[a].lo[:n], se[a].buy[:n], se[a].sell[:n]), i, s, u,
+                [rasgos[o][0] for o in ACTIVOS if o != a])
             out.append({"activo": a, "minuto": t0 + i, "lado": s, "z": z[i], "v": v[i], "imb": imb[i],
                         "precio": se[a].c[i], "clase": cl[0] if cl else None, "clase_min": cl[1] if cl else None})
     return out

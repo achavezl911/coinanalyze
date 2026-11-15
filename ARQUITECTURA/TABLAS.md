@@ -937,14 +937,14 @@ necesariamente un fallo -puede ser estado interno-, pero es exactamente la forma
 del patron que en esta casa se ha repetido nueve veces: algo que existe, parece
 completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
-- `bot_crudo` — la escriben 2: `app/bot/servicio.py:851`, `app/bot/servicio.py:859`
-- `bot_estado` — la escriben 2: `app/bot/servicio.py:526`, `app/bot/vigia.py:300`
-- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1014`, `app/bot/servicio.py:944`, `app/bot/servicio.py:979`
-- `bot_evento` — la escriben 2: `app/bot/servicio.py:411`, `app/bot/vigia.py:293`
-- `bot_llamada` — la escriben 1: `app/bot/servicio.py:581`
-- `bot_operacion` — la escriben 1: `app/bot/servicio.py:886`
-- `bot_sombra` — la escriben 3: `app/bot/sombra.py:283`, `app/bot/sombra.py:289`, `app/bot/sombra.py:289`
-- `bot_sombra_candidata` — la escriben 2: `app/bot/sombra.py:240`, `app/bot/sombra.py:292`
+- `bot_crudo` — la escriben 2: `app/bot/servicio.py:934`, `app/bot/servicio.py:942`
+- `bot_estado` — la escriben 2: `app/bot/servicio.py:542`, `app/bot/vigia.py:300`
+- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1032`, `app/bot/servicio.py:1067`, `app/bot/servicio.py:1102`
+- `bot_evento` — la escriben 2: `app/bot/servicio.py:424`, `app/bot/vigia.py:293`
+- `bot_llamada` — la escriben 1: `app/bot/servicio.py:597`
+- `bot_operacion` — la escriben 1: `app/bot/servicio.py:969`
+- `bot_sombra` — la escriben 3: `app/bot/sombra.py:316`, `app/bot/sombra.py:322`, `app/bot/sombra.py:322`
+- `bot_sombra_candidata` — la escriben 2: `app/bot/sombra.py:271`, `app/bot/sombra.py:325`
 - `daily_verdict` — la escriben 2: `app/daily_agg.py:477`, `app/daily_agg.py:692`
 - `external_api_rate_event` — la escriben 2: `app/coinalyze.py:68`, `app/coinalyze.py:87`
 - `libro_cobertura` — la escriben 2: `app/libro.py:1031`, `app/libro.py:810`

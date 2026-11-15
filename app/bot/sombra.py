@@ -13,8 +13,11 @@ Cada tic de minuto (Bot.tic_sombra), sobre la cinta de 140 (orderflow_cinta, 48 
   - la tabla manda: el cursor (bot_sombra_candidata.hasta) y las filas se escriben en la MISMA transaccion; un
     reinicio sigue desde el cursor, sin duplicar (clave primaria) ni perder abiertas.
 
-Una hora de la cinta sin ninguna fila es una hora que FALTA (sus minutos no cuentan en la ventana), como en el
-archivo, donde esa hora no tendria fichero. Una diferencia conocida con el estudio: una fila que acaba SIN DATO ocupo
+Un minuto sin ninguna fila del SIMBOLO en los venues de la candidata es un minuto que FALTA (no cuenta en la ventana;
+remate BOT-SEGURIDAD B3: antes bastaba una fila de cualquier simbolo en la HORA y el minuto vacio valia 0). En el
+archivo del estudio la unidad era la hora; un minuto entero sin ninguna operacion de contado de SOL solo se da con un
+colector caido, y ahi el estudio contaba 0. Una candidata RETIRADA (clave «retiradas» del fichero) no decide nada desde
+las 00:00Z de su fecha; sus filas vivas se resuelven y nada se borra. Una diferencia conocida con el estudio: una fila que acaba SIN DATO ocupo
 su hueco hasta su salida; en el estudio esa decision no existe y no bloquea a nadie.
 """
 from __future__ import annotations
@@ -61,17 +64,39 @@ class Candidata:
         if abs(A.empate(self.esquema) - d["empate"]) > 1e-12:
             raise ValueError(f"candidata {indice}: empate {d['empate']} no es el de {self.esquema}")
 
+        self.retirada = None  # (fecha, motivo) si el fichero la retira; ver carga()
+
     def nombre(self) -> str:
         return f"{self.simbolo} {self.d['lado']} si {self.d['nombre']} {'<' if self.estricto else '<='} {self.umbral:.2f}"
 
 
+def huella(d: dict) -> str:
+    """La identidad de las candidatas: el sha256 de SOLO «congeladas» (json.dumps con indent=1, la forma del fichero de
+    origen). Con el fichero tal como se congelo es el sha del fichero entero (be13350c...); la retirada (B3) se anade al
+    lado sin cambiarla, asi las filas de bot_sombra siguen siendo de la misma candidata."""
+    return hashlib.sha256(json.dumps({"congeladas": d["congeladas"]}, indent=1).encode()).hexdigest()
+
+
 def carga(ruta=None, sha=CANDIDATAS_SHA) -> list[Candidata]:
-    """Las candidatas del fichero congelado; ValueError si su sha256 no es el congelado (no se reescribe a mano)."""
-    b = pathlib.Path(ruta or CANDIDATAS).read_bytes()
-    h = hashlib.sha256(b).hexdigest()
+    """Las candidatas del fichero congelado; ValueError si la huella de «congeladas» no es la congelada (no se reescribe
+    a mano). «retiradas»: [{"indice", "fecha" (AAAA-MM-DD), "motivo"}], con los tres campos o ValueError."""
+    d = json.loads(pathlib.Path(ruta or CANDIDATAS).read_bytes())
+    h = huella(d)
     if h != sha:
         raise ValueError(f"candidatas: sha256 {h[:20]} no es el congelado {sha[:20]}")
-    return [Candidata(h, i, d) for i, d in enumerate(json.loads(b)["congeladas"])]
+    cs = [Candidata(h, i, x) for i, x in enumerate(d["congeladas"])]
+    for r in d.get("retiradas") or []:
+        i, fecha, motivo = r.get("indice"), str(r.get("fecha") or ""), str(r.get("motivo") or "").strip()
+        if not isinstance(i, int) or not 0 <= i < len(cs) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", fecha) or not motivo:
+            raise ValueError(f"candidatas: retirada mal formada {r}")
+        datetime.fromisoformat(fecha)
+        cs[i].retirada = (fecha, motivo)
+    return cs
+
+
+def corte(c: Candidata) -> float:
+    """El primer minuto que una candidata retirada ya no decide: las 00:00Z de su fecha (inf si no esta retirada)."""
+    return A._ts(c.retirada[0]) if c.retirada else math.inf
 
 
 def ultimo_cerrado(ahora: float) -> int:
@@ -131,7 +156,7 @@ def paso(c: Candidata, filas: list, hasta: int, ultimo: int, flujo, barra, lote:
     t = hasta + MIN
     tope = min(ultimo - MIN, hasta + lote)
     while t <= tope:
-        if A.es_decision(t):
+        if A.es_decision(t) and t < corte(c):  # B3: una retirada no decide nada nuevo
             ok, s = decide(c, t, flujo)
             if ok and t >= libre:
                 f = fila_nueva(c, t, s)
@@ -188,7 +213,9 @@ FLUJO_SQL = ("SELECT ts, venue, precio, usd, compra FROM orderflow_cinta WHERE s
              " AND venue = ANY($4::text[]) AND usd >= $5 ORDER BY ts, id COLLATE \"C\"")
 PRECIO_SQL = ("SELECT ts, venue, precio, usd, compra FROM orderflow_cinta WHERE symbol = $1 AND ts >= $2 AND ts < $3"
               " AND venue = $4 ORDER BY ts, id COLLATE \"C\"")
-HORA_SQL = "SELECT EXISTS (SELECT 1 FROM orderflow_cinta WHERE ts >= $1 AND ts < $2)"
+# B3: los minutos con alguna fila del simbolo en los venues de la candidata (antes: ¿hay ALGUNA fila en la hora?)
+HORA_SQL = ("SELECT DISTINCT extract(epoch FROM ts)::bigint / 60 * 60 FROM orderflow_cinta WHERE symbol = $1"
+            " AND venue = ANY($2::text[]) AND ts >= $3 AND ts < $4")
 COLUMNAS = ("candidata", "indice", "minuto", "simbolo", "lado", "valor", "umbral", "entrada", "estado", "exito", "neto",
             "salida", "motivo")
 
@@ -199,15 +226,19 @@ class Sombra:
     def __init__(self, db, entorno: dict):
         self.db = db
         self.candidatas = carga(entorno.get("BOT_SOMBRA_CANDIDATAS") or None)
-        self.horas: set = set()       # horas con filas (solo se recuerda el si)
+        self.horas: dict = {}         # (simbolo, venues) -> {hora: minutos con filas} (solo horas enteras cerradas)
         self.minutos: dict = {}       # (simbolo, venues, minimo) | (simbolo, REF) -> {minuto: fila de la base}
         self.cargado: dict = {}       # la misma clave -> hasta donde esta cargado (exclusivo)
 
-    async def hora(self, m: int) -> bool:
-        h = m // 3600 * 3600
-        if h not in self.horas and await self.db.fetchval(HORA_SQL, _dt(h), _dt(h + 3600)):
-            self.horas.add(h)
-        return h in self.horas
+    async def con_dato(self, c: Candidata, h: int, ultimo: int) -> set:
+        """Los minutos (epoch) de la hora h con alguna fila de la cinta del simbolo y los venues de la candidata."""
+        cache = self.horas.setdefault((c.simbolo, c.venues), {})
+        if h in cache:
+            return cache[h]
+        mm = {int(x[0]) for x in await self.db.fetch(HORA_SQL, c.simbolo, list(c.venues), _dt(h), _dt(h + 3600))}
+        if h + 3600 <= ultimo + MIN:
+            cache[h] = mm
+        return mm
 
     async def carga_minutos(self, clave, sql, args, a: int, b: int) -> dict:
         """Los minutos [a, b] de una consulta, con cache de lo ya cargado (todo cerrado)."""
@@ -255,17 +286,19 @@ class Sombra:
             previas.append({"minuto": int(ult["minuto"].timestamp()), "estado": ult["estado"],
                             "salida": int(ult["salida"].timestamp())})
         tope = min(ultimo - MIN, hasta + LOTE_S)
-        if tope <= hasta and not vivas:
+        if (tope <= hasta or hasta + MIN >= corte(c)) and not vivas:
             return []
         a = min([hasta - c.w * MIN] + [f["minuto"] for f in vivas])
         b = min(ultimo, tope + (A.HORIZONTE + 1) * MIN)
         flu = await self.carga_minutos((c.simbolo, c.venues, c.minimo), FLUJO_SQL, (list(c.venues), c.minimo),
                                        a, b)
         pre = await self.carga_minutos((c.simbolo, A.VENUE_REF), PRECIO_SQL, (A.VENUE_REF,), a, b)
-        horas = {m: await self.hora(m) for m in range(a // 3600 * 3600, b + 1, 3600)}
+        con_dato = set()
+        for h in range(a // 3600 * 3600, b + 1, 3600):
+            con_dato |= await self.con_dato(c, h, ultimo)
 
         def flujo(m):
-            if not horas.get(m // 3600 * 3600):
+            if m not in con_dato:
                 return None
             f = flu.get(m)
             return f[c.columna] if f is not None else 0.0
@@ -322,6 +355,9 @@ def texto_cuenta(c: Candidata, k: dict, corto: bool = False) -> str:
     cal = " · SIN CALIBRAR (resueltas < 30)" if n < 30 else ""
     t = (f"{c.nombre()} · desde {desde}: {k['disparos']} disparos, {n} resueltas, {e} exitos, tasa {tasa},"
          f" sin dato {k['sin_dato']} · equilibrio {A.empate(c.esquema):.1%} · azar {A.azar(c.esquema):.1%}{cal}")
+    if c.retirada:  # B3: lo contado se queda; desde la fecha no se cuenta nada nuevo
+        return (f"SOMBRA RETIRADA el {c.retirada[0]} · " if corto else f"RETIRADA el {c.retirada[0]} ({c.retirada[1]}); lo"
+                " contado hasta entonces: ") + t
     return ("SOMBRA " + t) if corto else ("En sombra (se cuenta, no se avisa ni se opera): " + t)
 
 
@@ -332,11 +368,9 @@ APALANCAMIENTO = 10
 
 def orden_calc(c: Candidata, f: dict) -> str:
     """El /calc del disparo: el precio de referencia (apertura del minuto siguiente), el stop y el objetivo de la
-    candidata, y el margen que arriesga 1 USD al stop con la comision de los dos lados."""
-    stop_pct = A.ESQUEMAS[c.esquema][1]
+    candidata, y 1 USD de riesgo al stop con la comision de los dos lados (B5: /calc saca el tamano de ese riesgo)."""
     obj, stop = A.niveles(f["entrada"], c.lado, c.esquema)
-    margen = 1 / (stop_pct + 2 * A.COMISION) / APALANCAMIENTO
-    return (f"/calc {c.simbolo.lower()} {f['entrada']:.6g} {stop:.6g} {obj:.6g} {margen:.2f}$ {APALANCAMIENTO}x"
+    return (f"/calc {c.simbolo.lower()} {f['entrada']:.6g} {stop:.6g} {obj:.6g} 1$ {APALANCAMIENTO}x"
             f" {'largo' if c.lado > 0 else 'corto'}")
 
 

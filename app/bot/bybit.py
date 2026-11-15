@@ -39,8 +39,16 @@ ERRORES = {
 TRANSITORIOS = {10002, 10006, 10016}
 
 
+def objeto(d) -> dict:
+    """(BOT-SEGURIDAD B4) Una respuesta que no es un objeto JSON (null, una lista, un numero) es una LECTURA FALLIDA y
+    pasajera, no una excepcion que tumbe el tic: se vuelve un retCode negativo, como un HTTP sin JSON."""
+    if isinstance(d, dict):
+        return d
+    return {"retCode": -2, "retMsg": f"respuesta que no es un objeto JSON ({type(d).__name__})"}
+
+
 def transitorio(d: dict) -> bool:
-    c = d.get("retCode")
+    c = objeto(d).get("retCode")
     return c in TRANSITORIOS or (isinstance(c, int) and c < 0)
 
 
@@ -49,6 +57,7 @@ def firma(secreto: str, ts: str, clave: str, query: str) -> str:
 
 
 def error(d: dict) -> str | None:
+    d = objeto(d)
     if d.get("retCode") == 0:
         return None
     return ERRORES.get(d.get("retCode"), f"Bybit retCode={d.get('retCode')}: {str(d.get('retMsg'))[:80]}")
@@ -77,11 +86,12 @@ def juzga_clave(d: dict, ahora: datetime | None = None) -> dict:
     clave va sin IP atada, porque la salida de 140 cambia (CGNAT: 2026-10-27, 10010 durante 5 dias). La IP ya no la
     condiciona: ips ["*"], [] o sin el campo valen igual. ip_ok = Bybit contesto, o sea que acepto la IP de salida (K117 lo
     lee). La guarda de seguridad es readOnly: una clave que puede operar se apaga, este o no atada."""
+    d = objeto(d)
     e = error(d)
     if e:
         return {"activo": False, "solo_lectura": None, "ip_ok": False if d.get("retCode") == 10010 else None, "ips": None,
                 "dias_clave": None, "expira": None, "error": e}
-    r = d.get("result") or {}
+    r = d.get("result") if isinstance(d.get("result"), dict) else {}
     solo = r.get("readOnly") == 1
     ips = r.get("ips") if isinstance(r.get("ips"), list) else []
     c = caducidad(r, ahora)
@@ -96,8 +106,10 @@ def posiciones(d: dict) -> list[dict]:
     todas las posiciones del simbolo- y que lo unico unico es seq + symbol, que cambia con cada actualizacion. El bot
     pone el id de cada VIDA (servicio.Bot.tic_bybit, remate 4) con la apertura que VE: updatedTime la primera vez que la
     encuentra abierta, o la hora del cierre de la vida anterior si closed-pnl dice que se reabrio sin verla a 0."""
-    out = []
-    for p in (d.get("result") or {}).get("list") or []:
+    out, r = [], objeto(d).get("result")
+    if not isinstance(r, dict) or not isinstance(r.get("list") or [], list):
+        raise ValueError("position/list sin result.list")  # (B4) lectura fallida: quien llama sigue con la ultima buena
+    for p in r.get("list") or []:
         if float(p.get("size") or 0) <= 0:
             continue
         num = lambda k, p=p: float(p[k]) if p.get(k) not in (None, "") else None  # noqa: E731
@@ -141,6 +153,6 @@ class Bybit:
                    "X-BAPI-SIGN": firma(self.secreto, ts, self.clave, query), "X-BAPI-SIGN-TYPE": "2"}
         r = await self.http.get(f"{BASE}{ruta}?{query}", headers=cab, timeout=15)
         try:
-            return r.json()
+            return objeto(r.json())
         except ValueError:
             return {"retCode": -r.status_code, "retMsg": f"HTTP {r.status_code} sin JSON"}
