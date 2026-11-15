@@ -368,11 +368,9 @@ APALANCAMIENTO = 10
 
 def orden_calc(c: Candidata, f: dict) -> str:
     """El /calc del disparo: el precio de referencia (apertura del minuto siguiente), el stop y el objetivo de la
-    candidata, y el margen que arriesga 1 USD al stop con la comision de los dos lados."""
-    stop_pct = A.ESQUEMAS[c.esquema][1]
+    candidata, y 1 USD de riesgo al stop con la comision de los dos lados (B5: /calc saca el tamano de ese riesgo)."""
     obj, stop = A.niveles(f["entrada"], c.lado, c.esquema)
-    margen = 1 / (stop_pct + 2 * A.COMISION) / APALANCAMIENTO
-    return (f"/calc {c.simbolo.lower()} {f['entrada']:.6g} {stop:.6g} {obj:.6g} {margen:.2f}$ {APALANCAMIENTO}x"
+    return (f"/calc {c.simbolo.lower()} {f['entrada']:.6g} {stop:.6g} {obj:.6g} 1$ {APALANCAMIENTO}x"
             f" {'largo' if c.lado > 0 else 'corto'}")
 
 

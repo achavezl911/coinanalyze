@@ -50,7 +50,7 @@ def test_wilson_y_el_texto_de_la_cuenta():
         assert not re.search(r"\b(compra|vende|entra)\b", x, re.I), x
     # 1 USD al stop con la comision: margen x apalancamiento x (0.6 % + 2 x 5.5 bps) = 1
     o = sb.orden_calc(c, {"entrada": 100.0})
-    assert o == "/calc sol 100 100.6 99 14.08$ 10x corto"
+    assert o == "/calc sol 100 100.6 99 1$ 10x corto"
 
 
 # ------------------------------------------------------------------------- el escenario
@@ -183,7 +183,7 @@ async def test_entrada_el_parte_y_el_interruptor(base, monkeypatch, avisa):
         await bot.tic_sombra()
     if avisa:
         assert len(mandados) == 1 and sb.NO_MEDIDA in mandados[0]
-        assert "CALC /calc sol 100 100.6 99 14.08$ 10x corto" in mandados[0]
+        assert "CALC /calc sol 100 100.6 99 1$ 10x corto" in mandados[0]
     else:
         assert mandados == []
     e = await bot.atiende("/entrada")

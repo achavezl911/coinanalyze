@@ -101,11 +101,13 @@ ESTABLE_SHA = hashlib.sha256(ESTABLE.encode()).hexdigest()[:12]
 ENTRADAS = ("Entradas APAGADAS. La regla acordada el 10-20: el bot no da entradas mientras no haya una ventaja MEDIDA."
             " Las encenderia una frecuencia de acierto medida con n >= 30 por encima del equilibrio, con comision."
             " Hoy: ninguna (BOT-1: ninguna fila de BTC/ETH/SOL con ventaja medida tras una rafaga).")
-AYUDA = ("/calc [btc|eth|sol] entrada [stop] [objetivo] [10$] [50x] [largo|corto] · /evalua [btc|eth|sol] · /entrada ·"
-         " /estado · /gasto · /informe · o pregunta lo que quieras (como esta BTC, quien compra, hay muros cerca).")
+AYUDA = ("/calc [btc|eth|sol] entrada stop [objetivo] [10x] [3.6$ de riesgo como mucho] [largo|corto] · /evalua"
+         " [btc|eth|sol] · /entrada · /estado · /gasto · /informe · /prueba (un aviso de muestra) · o pregunta lo que"
+         " quieras (como esta BTC, quien compra, hay muros cerca).")
 
 
-SIN_OPUS = {"/calc", "calc", "/entrada", "/entradas", "entrada", "/estado", "/gasto", "/informe", "/start", "/ayuda", "/help"}
+SIN_OPUS = {"/calc", "calc", "/entrada", "/entradas", "entrada", "/estado", "/gasto", "/informe", "/prueba", "/start",
+            "/ayuda", "/help"}
 
 
 def a_opus(texto: str) -> bool:
@@ -184,7 +186,8 @@ def activo_de(texto: str, defecto: str = "BTCUSDT") -> str:
 
 
 def args_calc(texto: str) -> dict:
-    """«/calc sol 150 149.1 153 20$ 25x corto» -> argumentos de calc.calcula (sin tramos ni paso)."""
+    """«/calc sol 150 149.1 153 2$ 25x corto» -> argumentos de calc.calcula (sin tramos ni paso). B5: «N$» es el riesgo
+    al stop (como mucho calc.PERDIDA_MAX), ya no el margen: el tamano sale del riesgo."""
     a: dict = {"activo": activo_de(texto), "numeros": []}
     for t in texto.lower().split()[1:]:
         if t in ("btc", "eth", "sol"):
@@ -196,7 +199,7 @@ def args_calc(texto: str) -> dict:
         elif re.fullmatch(r"\d+(\.\d+)?x", t):
             a["apalancamiento"] = float(t[:-1])
         elif re.fullmatch(r"\d+(\.\d+)?\$", t):
-            a["margen"] = float(t[:-1])
+            a["riesgo"] = float(t[:-1])
         elif re.fullmatch(r"\d+(\.\d+)?", t):
             a["numeros"].append(float(t))
         else:
@@ -356,6 +359,7 @@ class Bot:
         self.crudo_visto: dict = {}  # clave -> lo ultimo guardado en bot_crudo
         self.crudo_podado = 0.0
         self.validadas: set = set()
+        self.validaciones: dict = {}  # B5: la ultima validacion de CADA simbolo (la tolerancia solo vale para el mismo)
         self.tareas: set = set()  # lo que va fuera de los bucles (Opus): que el latido y las alertas no esperen
         self.turno = None  # la tarea de la ultima respuesta: la siguiente sale despues (en orden)
         self.clave_proxima = self.ops_leidas = 0.0
@@ -490,10 +494,13 @@ class Bot:
         self.parte_hoy = await self.db.fetchval("SELECT max((ts AT TIME ZONE 'UTC')::date) FROM bot_evento WHERE tipo = 'parte'")
         self.informes_enviados = {r[0] for r in await self.db.fetch(
             "SELECT detalle->>'semana' FROM bot_evento WHERE tipo = 'informe' AND ts >= now() - interval '60 days'")}
-        v = await self.db.fetchrow("SELECT detalle, (ts AT TIME ZONE 'UTC')::date d FROM bot_evento WHERE tipo = 'validacion' ORDER BY ts DESC LIMIT 1")
-        if v:
+        for v in await self.db.fetch("SELECT DISTINCT ON (detalle->>'symbol') detalle, (ts AT TIME ZONE 'UTC')::date d"
+                                     " FROM bot_evento WHERE tipo = 'validacion' ORDER BY detalle->>'symbol', ts DESC"):
             d = json.loads(v["detalle"])
-            self.estado["validacion"] = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"]}
+            x = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"], "dif_dist_pct": d.get("dif_dist_pct")}
+            self.validaciones[d["symbol"]] = x
+            if not self.estado["validacion"] or x["dia"] >= self.estado["validacion"]["dia"]:
+                self.estado["validacion"] = x
         self.validadas = {r[0] for r in await self.db.fetch("SELECT detalle->>'posicion' FROM bot_evento WHERE tipo = 'validacion'")}
 
     async def recarga(self) -> bool:
@@ -988,11 +995,16 @@ class Bot:
             return self.anota("BYBIT", f"risk-limit para validar la liquidacion: {type(e).__name__}", "risk-limit")
         self.bien("risk-limit")
         dif = abs(f - p["liquidacion"]) / p["entrada"] * 100
-        self.estado["validacion"] = {"symbol": p["symbol"], "dia": datetime.now(UTC).strftime("%Y-%m-%d"), "dif_pct": round(dif, 4)}
+        # B5: en DISTANCIA a la liquidacion de Bybit (con 0 de distancia no se puede juzgar: None)
+        dist = abs(p["entrada"] - p["liquidacion"])
+        dd = round(abs(f - p["liquidacion"]) / dist * 100, 4) if dist else None
+        self.estado["validacion"] = {"symbol": p["symbol"], "dia": datetime.now(UTC).strftime("%Y-%m-%d"), "dif_pct": round(dif, 4),
+                                     "dif_dist_pct": dd}
+        self.validaciones[p["symbol"]] = self.estado["validacion"]
         self.validadas.add(p["id"])
         await self.evento("validacion", p["symbol"], int(time.time() // 60), False,
                           detalle={"posicion": p["id"], "symbol": p["symbol"], "bybit": p["liquidacion"], "formula": f,
-                                   "mmr": mmr, "dif_pct": round(dif, 4)})
+                                   "mmr": mmr, "dif_pct": round(dif, 4), "dif_dist_pct": dd})
 
     async def evalua(self, p: dict, motivo: str):
         v_dec, dec, texto, liq, horas, llamada = "NO EVALUABLE", {}, None, "", {"posicion": ahora_iso()}, None
@@ -1008,7 +1020,7 @@ class Bot:
         if v is None:
             v, fuente = "NO EVALUABLE", "opus sin veredicto legible"
         if p.get("liquidacion"):
-            liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.estado['validacion'])}"
+            liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.validaciones.get(p['symbol']), p['symbol'])}"
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
         # PRIMER veredicto: es el que se puntua (un /evalua a mano se registra, pero no lo pisa: bug 5)
         if motivo.startswith("posicion nueva"):  # solo la automatica se puntua: un /evalua a mano puede caer en una lectura
@@ -1110,11 +1122,21 @@ class Bot:
         t = (await pub.get("/v5/market/risk-limit", category="linear", symbol=s))["result"]["list"]
         ins = (await pub.get("/v5/market/instruments-info", category="linear", symbol=s))["result"]["list"][0]
         tk = (await pub.get("/v5/market/tickers", category="linear", symbol=s))["result"]["list"][0]
-        entrada = n[0] if n else float(tk["markPrice"])
-        r = calc.calcula(entrada, *n[1:3], paso=ins["lotSizeFilter"]["qtyStep"], tramos=t,
+        if len(n) < 2:  # B5: por riesgo; sin entrada y stop no hay tamano (se fueron los 10 USD x 50 y el stop a -0.6 %)
+            raise ValueError(f"el tamano sale del riesgo al stop: {AYUDA.split(' · ')[0]}")
+        r = calc.calcula(n[0], *n[1:3], paso=ins["lotSizeFilter"]["qtyStep"], tramos=t,
                          funding=float(tk["fundingRate"]) if tk.get("fundingRate") else None,
                          funding_h=float(ins.get("fundingInterval") or 480) / 60, **a)
-        return calc.texto(r, s, self.estado["validacion"]) + ("" if n else f"\n(entrada = marca actual {entrada:g})")
+        return calc.texto(r, s, self.validaciones.get(s) or self.estado["validacion"])
+
+    async def prueba(self) -> str:
+        """B6: un aviso de MUESTRA con el formato de un «stop cerca» (el texto de cen.alertas_posicion sobre una posicion
+        inventada), marcado PRUEBA. No toca avisados, fallidos ni bot_evento: el estado de los avisos reales no cambia."""
+        p = {"clave": "PRUEBA", "symbol": "SOLUSDT", "lado": 1, "entrada": 100.0, "marca": 99.5, "stop": 99.4,
+             "liquidacion": 90.0, "actualizada": 0}
+        txt = next(t for tipo, t in cen.alertas_posicion(p) if tipo == "stop")
+        ok = await self.manda(f"PRUEBA · {cen.LEYENDA.split(' · ')[0]} · {txt} · (MUESTRA: no es una posicion tuya)")
+        return "" if ok else "PRUEBA: Telegram no entrego la muestra"
 
     async def pregunta(self, texto: str) -> str:
         activo = activo_de(texto, next((p["symbol"] for p in self.pos.values()), "BTCUSDT"))
@@ -1300,6 +1322,8 @@ class Bot:
                 return ENTRADAS + "\n" + await self.texto_sombra()
             if orden == "/estado":
                 return self.texto_salud(await self.salud(), "ESTADO")
+            if orden == "/prueba":
+                return await self.prueba()
             if orden == "/gasto":
                 return await self.gasto()
             if orden == "/informe":

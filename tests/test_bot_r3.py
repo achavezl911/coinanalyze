@@ -315,7 +315,7 @@ def test_bug13_la_direccion_dicha_manda():
     with pytest.raises(ValueError, match="pediste CORTO pero el stop 109000 esta por debajo"):  # antes: LARGO sin aviso
         calc.calcula(110000, 109000, corto=True, paso="0.001", tramos=TRAMOS["BTCUSDT"])
     r = calc.calcula(100, 101, paso="0.1", tramos=TRAMOS["SOLUSDT"])  # un corto solo por su stop: antes, error falso
-    assert r["lado"] == "CORTO" and r["objetivo"] == pytest.approx(98)
+    assert r["lado"] == "CORTO" and r["objetivo"] is None  # B5: sin objetivo por omision (antes, +2 %: 98)
     with pytest.raises(ValueError, match="objetivo 103 esta del lado del stop para un CORTO"):
         calc.calcula(100, 101, 103, paso="0.1", tramos=TRAMOS["SOLUSDT"])
     assert sv.args_calc("/calc sol 150 largo")["corto"] is False

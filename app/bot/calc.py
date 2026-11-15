@@ -1,13 +1,15 @@
 """C3 · la calculadora de una operacion lineal USDT de Bybit en margen AISLADO. Pura: los tramos, el paso y el funding
 entran como argumentos (bybit.py los lee de las rutas publicas).
 
-Por omision, la forma de Alejandro: 10 USD de margen a 50x, stop a -0.6 % y objetivo a +2 %, con su perdida maxima
-de 3 USD. Comision taker 5.5 bps por lado (entrada y salida).
+POR RIESGO (BOT-SEGURIDAD B5): el tamano sale de lo que se pierde hasta el stop, PERDIDA_MAX = 3.6 USD con la comision
+taker de 5.5 bps por lado (entrada y salida), redondeando el paso de Bybit hacia abajo. Entrada y stop son obligatorios;
+objetivo opcional; apalancamiento por omision 10x (solo decide el margen y la liquidacion, no el riesgo). Se fueron los
+valores por omision de antes (10 USD x 50, stop a -0.6 %, objetivo a +2 %).
 
 Liquidacion (aislada): MM = valor x MMR - mmDeduction del tramo cuyo riskLimitValue cubre el valor de la posicion;
 largo: entrada - (IM - MM) / cantidad; corto: entrada + (IM - MM) / cantidad, con IM = valor / apalancamiento.
 ponytail: formula de memoria, NO contrastada con la doc publica en BOT-2 (WebFetch sin permiso para su dominio); la
-primera posicion real la mide: evaluar() pone al lado la liqPrice que da Bybit y la diferencia en bps.
+primera posicion real la mide: valida() pone al lado la liqPrice que da Bybit y la diferencia.
 """
 
 from __future__ import annotations
@@ -15,7 +17,8 @@ from __future__ import annotations
 from decimal import ROUND_DOWN, Decimal
 
 TAKER = 0.00055
-MARGEN, APALANCAMIENTO, STOP_PCT, OBJETIVO_PCT, PERDIDA_MAX = 10.0, 50.0, 0.6, 2.0, 3.0
+PERDIDA_MAX, APALANCAMIENTO = 3.6, 10.0
+LIQ_VECES = 2.0  # la liquidacion a menos de esto veces la distancia al stop se avisa
 
 
 def tramo(tramos: list[dict], valor: float) -> dict:
@@ -37,7 +40,7 @@ def calcula(
     stop: float | None = None,
     objetivo: float | None = None,
     *,
-    margen: float = MARGEN,
+    riesgo: float = PERDIDA_MAX,
     apalancamiento: float = APALANCAMIENTO,
     corto: bool | None = None,
     paso: str = "0.001",
@@ -45,73 +48,100 @@ def calcula(
     funding: float | None = None,
     funding_h: float = 8.0,
 ) -> dict:
-    """corto: True CORTO, False LARGO, None (sin decir) el que diga el stop, y si no hay stop, LARGO. La direccion que se
-    DICE manda y una incoherencia se dice (remate 3, bug 13: «corto» con el stop debajo salia LARGO sin aviso, y un corto
-    dado solo por el stop daba «el objetivo esta del lado del stop» sin haber dado objetivo)."""
+    """corto: True CORTO, False LARGO, None (sin decir) el que diga el stop. La direccion que se DICE manda y una
+    incoherencia se dice (remate 3, bug 13). riesgo: lo que se pierde al stop con comision, como mucho PERDIDA_MAX."""
+    if stop is None:
+        raise ValueError("falta el stop: el tamano sale de lo que se pierde hasta el (/calc activo entrada stop)")
     if stop == entrada:
         raise ValueError("el stop es la entrada")
-    lado = (-1 if stop is not None and stop > entrada else 1) if corto is None else (-1 if corto else 1)
+    if not 0 < riesgo <= PERDIDA_MAX:
+        raise ValueError(f"el riesgo va de 0 a {PERDIDA_MAX:g} USD (pediste {riesgo:g})")
+    if apalancamiento <= 0:
+        raise ValueError("el apalancamiento tiene que ser positivo")
+    lado = (-1 if stop > entrada else 1) if corto is None else (-1 if corto else 1)
     nombre = "CORTO" if lado < 0 else "LARGO"
-    if stop is not None and (entrada - stop) * lado <= 0:
+    if (entrada - stop) * lado <= 0:
         raise ValueError(f"pediste {nombre} pero el stop {stop:g} esta {'por debajo' if stop < entrada else 'por encima'} de la"
                          f" entrada {entrada:g}: en un {nombre} va {'por encima' if lado < 0 else 'por debajo'}")
-    if stop is None:
-        stop = entrada * (1 - lado * STOP_PCT / 100)
-    if objetivo is None:
-        objetivo = entrada * (1 + lado * OBJETIVO_PCT / 100)
-    if (objetivo - entrada) * lado <= 0:
+    if objetivo is not None and (objetivo - entrada) * lado <= 0:
         raise ValueError(f"el objetivo {objetivo:g} esta del lado del stop para un {nombre}")
+    # lo que pierde UNA unidad al stop: la distancia y la comision de los dos lados (entrada y stop)
+    por_unidad = abs(entrada - stop) + (entrada + stop) * TAKER
     # el tamano se redondea HACIA ABAJO al paso de Bybit, en decimal (en float 0.3/0.1 no da 3)
     p = Decimal(paso)
-    cantidad = float((Decimal(str(margen * apalancamiento)) / Decimal(str(entrada)) / p).to_integral_value(ROUND_DOWN) * p)
-    if cantidad <= 0:
-        raise ValueError(f"el tamano no llega a un paso de {paso}")
+    pasos = (Decimal(str(riesgo)) / Decimal(str(por_unidad)) / p).to_integral_value(ROUND_DOWN)
+    avisos = []
+    if pasos < 1:
+        pasos = Decimal(1)
+        avisos.append(f"NO CABE: el paso minimo ({paso}) ya pierde {float(p) * por_unidad:.2f} USD al stop, mas que tu"
+                      f" riesgo de {riesgo:.2f} USD; el tamano de abajo es ese paso, NO el riesgo pedido")
+    cantidad = float(pasos * p)
     valor = cantidad * entrada
     im = valor / apalancamiento
     liq, mmr = liquidacion(entrada, cantidad, apalancamiento, lado, tramos)
-    com_in, com_stop, com_obj = valor * TAKER, cantidad * stop * TAKER, cantidad * objetivo * TAKER
+    com_in, com_stop = valor * TAKER, cantidad * stop * TAKER
     perdida = cantidad * abs(entrada - stop) + com_in + com_stop
-    bruto = cantidad * abs(objetivo - entrada)
-    ganancia = bruto - com_in - com_obj
-    avisos = []
-    if perdida > PERDIDA_MAX:
-        avisos.append(f"la perdida al stop ({perdida:.2f} USD con comision) pasa de tu maximo ({PERDIDA_MAX:.0f} USD)")
+    dist_stop, dist_liq = abs(entrada - stop), (entrada - liq) * lado
     if (stop - liq) * lado <= 0:
-        avisos.append(f"el stop esta mas alla de la liquidacion ({liq:.6g}): te liquidan antes")
-    return {
-        "lado": "LARGO" if lado > 0 else "CORTO",
+        avisos.append(f"la liquidacion ({liq:.6g}) queda ANTES del stop: te liquidan antes; baja el apalancamiento")
+    elif dist_liq < LIQ_VECES * dist_stop:
+        avisos.append(f"la liquidacion ({liq:.6g}) queda a {dist_liq / dist_stop:.2f} veces la distancia al stop (menos de"
+                      f" {LIQ_VECES:g}): poco colchon; baja el apalancamiento")
+    r = {
+        "lado": nombre,
         "entrada": entrada, "stop": stop, "objetivo": objetivo,
         "cantidad": cantidad, "valor_usd": valor, "margen_usd": im, "apalancamiento": apalancamiento,
-        "mmr": mmr, "liquidacion": liq, "liq_pct": (liq / entrada - 1) * 100,
-        "comision_usd": com_in + com_obj, "perdida_stop_usd": perdida, "ganancia_obj_usd": ganancia,
-        "rr_bruto": abs(objetivo - entrada) / abs(entrada - stop), "rr_neto": ganancia / perdida,
-        "comision_come_pct": (com_in + com_obj) / bruto * 100,
+        "riesgo_pedido_usd": riesgo, "perdida_stop_usd": perdida,
+        "mmr": mmr, "liquidacion": liq, "liq_pct": (liq / entrada - 1) * 100, "liq_veces_stop": dist_liq / dist_stop,
+        "comision_usd": None, "ganancia_obj_usd": None, "rr_bruto": None, "rr_neto": None, "comision_come_pct": None,
         "funding_usd": None if funding is None else -lado * valor * funding, "funding_h": funding_h,
         "avisos": avisos,
     }
+    if objetivo is not None:
+        com_obj = cantidad * objetivo * TAKER
+        bruto = cantidad * abs(objetivo - entrada)
+        ganancia = bruto - com_in - com_obj
+        r.update(comision_usd=com_in + com_obj, ganancia_obj_usd=ganancia, rr_bruto=abs(objetivo - entrada) / dist_stop,
+                 rr_neto=ganancia / perdida, comision_come_pct=(com_in + com_obj) / bruto * 100)
+    return r
 
 
-VALIDA_PCT = 0.5  # una formula que se separa de Bybit mas que esto (en % del precio) se dice junto a su cifra
+# B5: la tolerancia va en DISTANCIA a la liquidacion (|formula - Bybit| / |entrada - Bybit|), no en % del precio: a 50x
+# la liquidacion esta a ~2 % y 0.5 % del precio era un cuarto de esa distancia. Y solo vale para el MISMO simbolo.
+VALIDA_DIST_PCT = 2.0
 
 
-def nota_validacion(v: dict | None) -> str:
-    """v: la ultima validacion contra una posicion real {symbol, dia, dif_pct} (None: todavia ninguna)."""
+def nota_validacion(v: dict | None, simbolo: str | None = None) -> str:
+    """v: la ultima validacion contra una posicion real {symbol, dia, dif_pct, dif_dist_pct} (None: todavia ninguna);
+    simbolo: el de la cuenta (None: no se compara)."""
     if not v:
         return "sin validar contra Bybit"
-    base = f"validada contra Bybit: {v['dif_pct']:.2f} % en {v['symbol']} {v['dia']}"
-    return base if v["dif_pct"] <= VALIDA_PCT else f"OJO: se separo de Bybit {v['dif_pct']:.2f} % (> {VALIDA_PCT} %) en {v['symbol']} {v['dia']}: no fiable"
+    if simbolo and v["symbol"] != simbolo:
+        return f"sin validar contra Bybit en {simbolo} (la ultima validacion, en {v['symbol']} {v['dia']}, no vale aqui)"
+    d = v.get("dif_dist_pct")
+    if d is None:
+        return f"sin validar en distancia (la de {v['symbol']} {v['dia']} se midio en % del precio)"
+    base = f"validada contra Bybit: {d:.2f} % de la distancia a la liquidacion en {v['symbol']} {v['dia']}"
+    return base if d <= VALIDA_DIST_PCT else (f"OJO: se separo de Bybit {d:.2f} % de la distancia a la liquidacion (>"
+                                              f" {VALIDA_DIST_PCT:g} %) en {v['symbol']} {v['dia']}: no fiable")
 
 
 def texto(r: dict, simbolo: str, validacion: dict | None = None) -> str:
     f = r["funding_usd"]
+    obj = "objetivo: sin dar" if r["objetivo"] is None else f"objetivo {r['objetivo']:.6g}"
     lineas = [
-        f"{simbolo} {r['lado']} · entrada {r['entrada']:.6g} · stop {r['stop']:.6g} · objetivo {r['objetivo']:.6g}",
-        f"tamano {r['cantidad']:g} ({r['valor_usd']:.2f} USD) · margen {r['margen_usd']:.2f} USD a {r['apalancamiento']:g}x",
-        f"liquidacion {r['liquidacion']:.6g} ({r['liq_pct']:+.2f} %, MMR {r['mmr'] * 100:g} %; {nota_validacion(validacion)})",
-        f"perdida al stop {r['perdida_stop_usd']:.2f} USD · ganancia al objetivo {r['ganancia_obj_usd']:.2f} USD (con comision)",
-        f"R:R {r['rr_bruto']:.2f} bruto / {r['rr_neto']:.2f} neto · la comision ({r['comision_usd']:.2f} USD) se come el"
-        f" {r['comision_come_pct']:.1f} % del objetivo",
-        "funding: sin dato" if f is None else f"funding: {'cobras' if f >= 0 else 'pagas'} {abs(f):.3f} USD cada {r['funding_h']:g} h",
+        f"{simbolo} {r['lado']} · entrada {r['entrada']:.6g} · stop {r['stop']:.6g} · {obj}",
+        f"tamano {r['cantidad']:g} · riesgo real {r['perdida_stop_usd']:.2f} USD al stop con comision (pedido"
+        f" {r['riesgo_pedido_usd']:.2f})",
+        f"nominal {r['valor_usd']:.2f} USD · margen {r['margen_usd']:.2f} USD a {r['apalancamiento']:g}x",
+        f"liquidacion {r['liquidacion']:.6g} ({r['liq_pct']:+.2f} %, {r['liq_veces_stop']:.1f} veces la distancia al stop,"
+        f" MMR {r['mmr'] * 100:g} %; {nota_validacion(validacion, simbolo)})",
     ]
+    if r["objetivo"] is not None:
+        lineas += [f"ganancia al objetivo {r['ganancia_obj_usd']:.2f} USD (con comision) · R:R {r['rr_bruto']:.2f} bruto /"
+                   f" {r['rr_neto']:.2f} neto · la comision ({r['comision_usd']:.2f} USD) se come el"
+                   f" {r['comision_come_pct']:.1f} % del objetivo"]
+    lineas.append("funding: sin dato" if f is None else f"funding: {'cobras' if f >= 0 else 'pagas'} {abs(f):.3f} USD cada"
+                  f" {r['funding_h']:g} h")
     lineas += [f"AVISO: {a}" for a in r["avisos"]]
     return "\n".join(lineas)

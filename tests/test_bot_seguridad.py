@@ -205,3 +205,75 @@ def test_b4_el_solo_lectura_caduca_a_las_2_h(monkeypatch):
     s = b.texto_salud(dict(SALUD, bybit=b.estado["bybit"], datos=None), "ESTADO")
     assert f"Bybit: clave sin verificar desde {hm}" in s
     json.dumps(b.estado)  # el estado sigue siendo publicable
+
+
+# ------------------------------------------------------------------------- B5
+from app.bot import calc  # noqa: E402
+
+TRAMOS = {  # grabado de GET /v5/market/risk-limit (2026-10-24 16:13Z), dos tramos (el mismo que tests/test_bot.py)
+    "BTCUSDT": [{"riskLimitValue": "300000", "maintenanceMargin": "0.0033", "mmDeduction": ""},
+                {"riskLimitValue": "2000000", "maintenanceMargin": "0.005", "mmDeduction": "510"}],
+    "SOLUSDT": [{"riskLimitValue": "50000", "maintenanceMargin": "0.005", "mmDeduction": ""},
+                {"riskLimitValue": "100000", "maintenanceMargin": "0.0056", "mmDeduction": "30"}],
+}
+
+
+def test_b5_el_tamano_sale_del_riesgo_con_comision_y_el_paso_hacia_abajo():
+    r = calc.calcula(150, 149, tramos=TRAMOS["SOLUSDT"], paso="0.1")
+    assert r["cantidad"] == pytest.approx(3.0)  # main: 10 USD x 50 / 150 = 3.3, sin mirar el stop
+    por_unidad = 1 + (150 + 149) * 0.00055  # 3.6 / 1.16445 = 3.09 -> 3.0 al paso 0.1
+    assert r["perdida_stop_usd"] == pytest.approx(3.0 * por_unidad) and r["perdida_stop_usd"] <= calc.PERDIDA_MAX == 3.6
+    assert r["apalancamiento"] == 10 and r["valor_usd"] == pytest.approx(450) and r["margen_usd"] == pytest.approx(45)
+    assert r["objetivo"] is None and r["rr_bruto"] is None and not r["avisos"]
+    t = calc.texto(r, "SOLUSDT")
+    assert "riesgo real 3.49 USD" in t and "nominal 450.00 USD" in t and "margen 45.00 USD a 10x" in t
+    assert calc.calcula(150, 149, 153, riesgo=2, tramos=TRAMOS["SOLUSDT"], paso="0.1")["cantidad"] == pytest.approx(1.7)
+    for mal in ({}, {"riesgo": 4}):  # sin stop no hay tamano; el riesgo no pasa de 3.6
+        with pytest.raises(ValueError):
+            calc.calcula(150, *([] if not mal else [149]), tramos=TRAMOS["SOLUSDT"], paso="0.1", **mal)
+    assert sv.args_calc("/calc sol 150 149 2$ corto")["riesgo"] == 2.0
+
+
+def test_b5_avisa_la_liquidacion_cerca_y_el_paso_que_no_cabe():
+    r = calc.calcula(100, 99, apalancamiento=50, tramos=TRAMOS["SOLUSDT"], paso="0.1")
+    assert r["liquidacion"] == pytest.approx(98.5) and any("1.50 veces la distancia al stop" in a for a in r["avisos"])
+    r = calc.calcula(100, 99, apalancamiento=100, tramos=TRAMOS["SOLUSDT"], paso="0.1")
+    assert any("ANTES del stop" in a for a in r["avisos"])
+    r = calc.calcula(110000, 100000, tramos=TRAMOS["BTCUSDT"], paso="0.001")
+    assert r["cantidad"] == pytest.approx(0.001) and any(a.startswith("NO CABE") for a in r["avisos"])
+
+
+def test_b5_la_validacion_va_en_distancia_y_solo_para_su_simbolo():
+    r = calc.calcula(150, 149, tramos=TRAMOS["SOLUSDT"], paso="0.1")
+    btc = {"symbol": "BTCUSDT", "dia": "2026-11-01", "dif_pct": 0.01, "dif_dist_pct": 0.5}
+    assert "sin validar contra Bybit en SOLUSDT" in calc.texto(r, "SOLUSDT", btc)  # main: «validada» con la de BTC
+    lejos = {"symbol": "SOLUSDT", "dia": "2026-11-01", "dif_pct": 0.3, "dif_dist_pct": 15.0}  # 0.3 % del precio pasaba
+    assert "OJO: se separo de Bybit 15.00 % de la distancia" in calc.texto(r, "SOLUSDT", lejos)
+    assert "validada contra Bybit: 0.50 % de la distancia" in calc.texto(r, "BTCUSDT", btc)
+
+
+def test_b5_el_bot_pide_entrada_y_stop(monkeypatch):
+    b = bot(monkeypatch, [True])
+    rutas = {"/v5/market/risk-limit": {"retCode": 0, "result": {"list": TRAMOS["BTCUSDT"]}},
+             "/v5/market/instruments-info": {"retCode": 0, "result": {"list": [{"lotSizeFilter": {"qtyStep": "0.001"},
+                                                                                  "fundingInterval": 480}]}},
+             "/v5/market/tickers": {"retCode": 0, "result": {"list": [{"markPrice": "110000", "fundingRate": ""}]}}}
+
+    async def get(self, ruta, **k):
+        return rutas[ruta]
+    monkeypatch.setattr(bb.Bybit, "get", get)
+    assert asyncio.run(b.atiende("/calc btc 110000")).startswith("no evaluable: el tamano sale del riesgo")
+    t = asyncio.run(b.atiende("/calc btc 110000 109340"))
+    assert "tamano 0.004 · riesgo real 3.12 USD" in t and "a 10x" in t
+
+
+# ------------------------------------------------------------------------- B6
+def test_b6_prueba_manda_una_muestra_del_stop_cerca_sin_tocar_los_avisos(monkeypatch):
+    b = bot(monkeypatch, [True])
+    assert not sv.a_opus("/prueba") and "/prueba" in sv.AYUDA
+    assert asyncio.run(b.atiende("/prueba")) == ""
+    (m,) = b.mandados
+    assert m.startswith("PRUEBA · ") and "MUESTRA" in m
+    assert b.avisados == set() and b.fallidos == set() and b.eventos == []
+    asyncio.run(b.seguridad([POS]))  # el aviso real de esa misma posicion sale igual, con el mismo formato
+    assert len(b.mandados) == 2 and m[len("PRUEBA · "):].split(" · (MUESTRA")[0] == b.mandados[1]
