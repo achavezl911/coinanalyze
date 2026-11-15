@@ -23,6 +23,8 @@ dependencies = [
 dev = [
   "pytest==9.1.1",
   "pytest-asyncio==1.4.0",
+  "pytest-xdist==3.8.0",
+  "execnet==2.1.2",
   "ruff>=0.12,<1",
 ]
 

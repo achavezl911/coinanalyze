@@ -39,7 +39,7 @@ PASOS_CONOCIDOS = {
         "git fetch --no-tags origin main (SIN --depth: en un clon completo lo deja superficial); "
         "sin origin/main, tests/test_entradas_reglamento.py se salta fuera de CI y falla dentro"
     ),
-    "Pytest": ".venv/bin/pytest -q",
+    "Pytest": ".venv/bin/pytest -q -n 4 (o -q a secas, en serie: las mismas pruebas)",
     "Drop disposable test database": "no aplica en local",
     "JavaScript tests": "node --test tests/js/",
     "Checks del arnes (K15)": "harness/bin/verify",

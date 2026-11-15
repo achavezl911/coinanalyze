@@ -106,12 +106,18 @@ jobs:
       - name: Fetch main for the reglamento history test
         run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
 
+      # CI RAPIDA · C2. EN PARALELO, un proceso por nucleo (pytest-xdist, version fija en
+      # pyproject.toml). Cada proceso gwK se copia la base de arriba con CREATE DATABASE ...
+      # TEMPLATE (tests/conftest.py): base, candados consultivos y `public` propios.
+      # --dist worksteal Y NO el reparto por defecto: el 67 % del tiempo son las 91 pruebas de
+      # CPU de tests/test_bot_simulador.py (de 44 a 167 s cada una) y, repartidas por lotes, un
+      # proceso se quedo 25 min con la cola mientras los otros tres estaban parados.
       - name: Pytest
         env:
           TEST_DATABASE_URL: "postgresql:///${{ steps.testdb.outputs.db }}?host=/var/run/postgresql"
         run: |
           . .venv/bin/activate
-          pytest -q
+          pytest -q -n "$(nproc)" --dist worksteal
 
       - name: Drop disposable test database
         if: always() && steps.testdb.outputs.db != ''
