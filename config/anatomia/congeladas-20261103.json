@@ -23,5 +23,12 @@
     "q": 0.03234135683572841
    }
   }
+ ],
+ "retiradas": [
+  {
+   "indice": 0,
+   "fecha": "2026-11-14",
+   "motivo": "elegida como maximo de una rejilla en la misma muestra; bajo el empate con la entrada real; 3 de 11 en sombra"
+  }
  ]
 }

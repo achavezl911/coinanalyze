@@ -110,11 +110,12 @@ def recalcula(sql, c: sb.Candidata, desde: int, hasta: int, previas: list[dict])
     de `desde` (para el solape). sql(q) -> filas de str."""
     a, b = desde - c.w * MIN, hasta + (A.HORIZONTE + 1) * MIN
     rng = f"ts >= to_timestamp({a}) AND ts < to_timestamp({b + MIN})"
-    hora = {int(float(r[0])): r[1] == "t" for r in sql(
-        f"SELECT extract(epoch FROM h), EXISTS (SELECT 1 FROM orderflow_cinta WHERE ts >= h AND ts < h + interval '1 hour')"
-        f" FROM generate_series(to_timestamp({a // 3600 * 3600}), to_timestamp({b}), interval '1 hour') h")}
-    mm: dict = {}
     venues = ",".join(f"'{v}'" for v in c.venues)
+    # los minutos con alguna fila del simbolo en sus venues, como el bot (BOT-SEGURIDAD B3: antes, la hora con alguna fila)
+    con_dato = {int(float(r[0])) for r in sql(
+        f"SELECT DISTINCT extract(epoch FROM ts)::bigint / 60 * 60 FROM orderflow_cinta WHERE symbol = '{c.simbolo}'"
+        f" AND venue IN ({venues}) AND ts >= to_timestamp({a // 3600 * 3600}) AND ts < to_timestamp({b // 3600 * 3600 + 3600})")}
+    mm: dict = {}
     sb.pliega([(r[0], r[1], r[2], r[3], r[4] == "t") for r in sql(
         f"SELECT ts, venue, precio, usd, compra FROM orderflow_cinta WHERE symbol = '{c.simbolo}' AND {rng} AND venue IN"
         f" ({venues}) AND usd >= {c.minimo} ORDER BY ts, id COLLATE \"C\"")], mm)
@@ -124,7 +125,7 @@ def recalcula(sql, c: sb.Candidata, desde: int, hasta: int, previas: list[dict])
         f" WHERE symbol = '{c.simbolo}' AND venue = '{A.VENUE_REF}' AND {rng} GROUP BY 1")}
 
     def flujo(m):
-        if not hora.get(m // 3600 * 3600):
+        if m not in con_dato:
             return None
         return mm[m][c.columna] if m in mm else 0.0
 
