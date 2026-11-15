@@ -622,3 +622,21 @@ dialog.ayuda .cerrar {
   color: var(--vendedor-fuerte);
   font-weight: 700;
 }
+
+/* OF-6b: dentro de un marco de /espacio (flujo-app.js pone `en-marco` en <html>) el grafico cabe en su celda, sin barra
+ * de desplazamiento: el footprint baja de sus 420 / 260 px hasta lo que deje la cabecera. */
+html.en-marco body {
+  overflow: hidden;
+}
+html.en-marco .cabecera {
+  padding: 2px 6px;
+  gap: 2px 6px;
+}
+html.en-marco .graficos {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+html.en-marco .grafico,
+html.en-marco body.con-ind .grafico {
+  min-height: 80px;
+}
