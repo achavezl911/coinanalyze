@@ -23,6 +23,11 @@ ENV_FILE=/etc/coinalyze/coinalyze.env
 INCOMING=/home/coinalyze-deploy/incoming
 BACKUPDIR=/var/backups/coinalyze
 LOCKFILE=/run/lock/deploy-coinalyze.lock
+# Solo se despliega lo que es origin/main en GitHub en ese momento (API publica, solo lectura, sin credenciales).
+GITHUB_API=https://api.github.com
+GITHUB_REPO=achavezl911/coinanalyze
+# El venv del release lo construye el usuario del servicio, no root: pip ejecuta codigo de los paquetes al instalar.
+SERVICE_USER=coinalyze
 
 SERVICES=(coinalyze-api coinalyze-ingest coinalyze-ws coinalyze-scalp coinalyze-daily)
 UNIT_DIR=/etc/systemd/system
@@ -127,6 +132,18 @@ smoke(){
     fi
     sleep "$SMOKE_SLEEP"
   done
+}
+
+github_main_sha(){
+  local sha
+  sha="$(curl -fsS --proto '=https' -m 20 -H 'Accept: application/vnd.github.sha' \
+    "$GITHUB_API/repos/$GITHUB_REPO/commits/main" | tr -d '[:space:]')" || return 1
+  printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$' || return 1
+  printf '%s\n' "$sha"
+}
+
+as_service(){
+  runuser -u "$SERVICE_USER" -- env HOME=/nonexistent PIP_NO_CACHE_DIR=1 "$@"
 }
 
 installed_units(){
@@ -387,16 +404,23 @@ cmd_deploy(){
   esac
 
   [ -f "$artifact" ] || die "artifact not found: $artifact" 2
-  echo "$commit" | grep -Eq '^[0-9a-f]{7,40}$' || die "bad commit sha: $commit" 2
+  echo "$commit" | grep -Eq '^[0-9a-f]{40}$' || die "bad commit sha (want the full 40-hex sha): $commit" 2
 
   local got
   got="$(sha256sum "$artifact" | awk '{print $1}')"
   [ "$got" = "$expsha" ] || die "sha256 mismatch (got $got want $expsha)" 3
   log "checksum OK ($commit)"
 
+  # Falla cerrado: GitHub que no contesta o un main que ya se movio niegan el despliegue (se relanza).
+  local main_sha=""
+  main_sha="$(github_main_sha)" || main_sha=""
+  [ "$main_sha" = "$commit" ] \
+    || die "commit $commit is not origin/main on GitHub (main=${main_sha:-unreachable})" 16
+  log "commit is origin/main on GitHub"
+
   local stage
   stage="$(mktemp -d "$RELEASES/.stage.XXXXXX")"
-  tar xzf "$artifact" -C "$stage"
+  tar --no-same-owner --no-same-permissions -xzf "$artifact" -C "$stage"
 
   local src="$stage"
   if [ ! -f "$stage/pyproject.toml" ]; then
@@ -420,13 +444,14 @@ cmd_deploy(){
   cp -a "$src/." "$rel/"
   rm -rf "$stage"
 
-  python3 -m venv "$rel/.venv"
-  "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q \
+  # Construido por SERVICE_USER, sin cache ni HOME de root; despues, el release pasa a root:coinalyze de solo lectura.
+  chown -R "$SERVICE_USER:$SERVICE_USER" "$rel"
+  as_service python3 -m venv "$rel/.venv" || die "venv creation failed" 7
+  as_service "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q \
     -r "$rel/requirements.lock" || die "pip requirements failed" 7
-  "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q --no-deps \
+  as_service "$rel/.venv/bin/pip" install --disable-pip-version-check --no-cache-dir -q --no-deps \
     "$rel" || die "pip package install failed" 7
 
-  # Harden the candidate before it can ever become current.
   chown -R root:coinalyze "$rel"
   find "$rel" -path "$rel/.venv" -prune -o -type d -exec chmod 0750 {} + 2>/dev/null || true
   find "$rel" -path "$rel/.venv" -prune -o -type f -exec chmod 0640 {} + 2>/dev/null || true

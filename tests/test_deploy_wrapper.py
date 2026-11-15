@@ -1,6 +1,7 @@
-"""DATOS B (fable-f4 H1): el despliegue que se defiende. deploy/140/deploy-coinalyze corrido ENTERO contra dobles:
-sus rutas reescritas a un tmp, y systemctl, curl, pg_dump, psql y chown en el PATH. El curl doble sirve un healthz
-por guion y apunta su argv: asi se ve que el token no viaja en el argv. Sin base ni red.
+"""DATOS B (fable-f4 H1 y fable-f8 F1): el despliegue que se defiende. deploy/140/deploy-coinalyze corrido ENTERO
+contra dobles: sus rutas reescritas a un tmp, y systemctl, curl, runuser, pg_dump, psql y chown en el PATH. El curl
+doble sirve un healthz por guion y el sha de main de GitHub, y apunta su argv: asi se ve que el token no viaja en el
+argv. Sin base ni red.
 """
 
 from __future__ import annotations
@@ -42,6 +43,9 @@ printf '%s\\n' "$*" >> "$SB/curl.argv"
 url=${!#}
 ahora=$(date -u +%FT%TZ)
 case "$url" in
+  https://api.github.com/repos/achavezl911/coinanalyze/commits/main)
+    [ -z "${GH_FALLA:-}" ] || exit 22
+    printf '%s' "$GH_MAIN" ;;
   */api/healthz)
     n=$(cat "$SB/healthz.n" 2>/dev/null || echo 0); n=$((n+1)); echo "$n" > "$SB/healthz.n"
     estado=ok; ingest_ts=$ahora; ingest_st=ok
@@ -69,6 +73,15 @@ exec {sys.executable} "$@"
 """
 
 
+# runuser -u USUARIO -- CMD...: apunta quien y que, y lo corre (aqui no hay usuario coinalyze).
+RUNUSER = """#!/usr/bin/env bash
+echo "$*" >> "$SB/runuser.log"
+[ "$1" = -u ] && [ "$3" = -- ] || exit 64
+shift 3
+exec "$@"
+"""
+
+
 def _x(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
     path.chmod(0o755)
@@ -92,7 +105,8 @@ def _banco(tmp_path: Path, *, recupera: bool = False, smoke_max: int = 3) -> dic
     _x(bin_ / "python3", PYTHON3)
     _x(bin_ / "pg_dump", "#!/bin/sh\necho volcado\n")
     _x(bin_ / "psql", "#!/bin/sh\necho 0\n")
-    _x(bin_ / "chown", "#!/bin/sh\nexit 0\n")
+    _x(bin_ / "chown", "#!/bin/sh\necho \"$*\" >> \"$SB/chown.log\"\n")
+    _x(bin_ / "runuser", RUNUSER)
     app = sb / "opt"
     (app / "releases").mkdir(parents=True)
     _release(app / "releases" / VIEJO)
@@ -111,8 +125,12 @@ def _banco(tmp_path: Path, *, recupera: bool = False, smoke_max: int = 3) -> dic
     fuente = sb / "fuente"
     _release(fuente)
     art = incoming / "art.tar.gz"
+    def ajeno(ti: tarfile.TarInfo) -> tarfile.TarInfo:
+        ti.uid, ti.gid, ti.uname, ti.gname = 4242, 4242, "", ""  # el paquete dice de quien son sus ficheros
+        return ti
+
     with tarfile.open(art, "w:gz") as t:
-        t.add(fuente, arcname=".")
+        t.add(fuente, arcname=".", filter=ajeno)
     rutas = {
         "APP_ROOT": app, "STATE": sb / "deployment.json", "LOGDIR": sb / "log", "ENV_FILE": env_file,
         "INCOMING": incoming, "BACKUPDIR": sb / "backups", "LOCKFILE": sb / "lock", "UNIT_DIR": units,
@@ -125,14 +143,14 @@ def _banco(tmp_path: Path, *, recupera: bool = False, smoke_max: int = 3) -> dic
     texto = texto.replace('[ "$(id -u)" -eq 0 ] ||', "true ||", 1)
     wrapper = sb / "deploy-coinalyze"
     _x(wrapper, texto)
-    env = {**os.environ, "PATH": f"{bin_}:{os.environ['PATH']}", "SB": str(sb), "ESCENA": "arranca:0"}
+    env = {**os.environ, "PATH": f"{bin_}:{os.environ['PATH']}", "SB": str(sb), "ESCENA": "arranca:0", "GH_MAIN": NUEVO}
     env.pop("FAILED_UNIT", None)
     return {"sb": sb, "app": app, "wrapper": wrapper, "art": art, "env": env,
             "sha": hashlib.sha256(art.read_bytes()).hexdigest()}
 
 
-def _despliega(b: dict, **env: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["bash", str(b["wrapper"]), "deploy", str(b["art"]), b["sha"], NUEVO],
+def _despliega(b: dict, commit: str = NUEVO, **env: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["bash", str(b["wrapper"]), "deploy", str(b["art"]), b["sha"], commit],
                           env={**b["env"], **env}, text=True, capture_output=True, timeout=120, check=False)
 
 
@@ -224,3 +242,32 @@ def test_un_release_sin_el_contrato_de_smoke_no_pasa(tmp_path):
                        timeout=60, check=False)
     assert r.returncode == 1 and "smoke: FAILED" in r.stdout
     assert "no smoke_test.sh with smoke-contract 2" in r.stderr
+
+
+def test_solo_se_despliega_lo_que_es_main_en_github(tmp_path):
+    for i, (env, motivo) in enumerate(((dict(GH_MAIN="c" * 40), "main=" + "c" * 40), (dict(GH_FALLA="1"), "main=unreachable"))):
+        b = _banco(tmp_path / str(i))
+        r = _despliega(b, **env)
+        assert r.returncode == 16, r.stderr[-2000:]
+        assert f"is not origin/main on GitHub ({motivo})" in r.stderr
+        assert _current(b) == VIEJO and not (b["app"] / "releases" / NUEVO).exists()
+        assert _log(b, "systemctl.log") == "" and not (b["sb"] / "backups").exists()  # ni para ni respalda
+
+
+def test_un_sha_corto_no_se_acepta(tmp_path):
+    b = _banco(tmp_path)
+    r = _despliega(b, commit=NUEVO[:12], GH_MAIN=NUEVO[:12])
+    assert r.returncode == 2 and "bad commit sha" in r.stderr
+
+
+def test_el_venv_lo_construye_el_usuario_del_servicio(tmp_path):
+    b = _banco(tmp_path)
+    r = _despliega(b)
+    assert r.returncode == 0, r.stderr[-2000:]
+    rel = b["app"] / "releases" / NUEVO
+    lineas = _log(b, "runuser.log").splitlines()
+    assert any(x.startswith("-u coinalyze -- env HOME=/nonexistent PIP_NO_CACHE_DIR=1 python3 -m venv") for x in lineas)
+    assert sum(f"{rel}/.venv/bin/pip install" in x for x in lineas) == 2 and all("-u coinalyze --" in x for x in lineas)
+    chown = _log(b, "chown.log").splitlines()
+    assert chown == [f"-R coinalyze:coinalyze {rel}", f"-R root:coinalyze {rel}"]  # lo construye el, lo sirve root
+    assert (rel / "pyproject.toml").stat().st_uid != 4242  # tar no hace caso del dueno que trae el paquete
