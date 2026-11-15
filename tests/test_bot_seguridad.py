@@ -220,18 +220,20 @@ TRAMOS = {  # grabado de GET /v5/market/risk-limit (2026-10-24 16:13Z), dos tram
 
 def test_b5_el_tamano_sale_del_riesgo_con_comision_y_el_paso_hacia_abajo():
     r = calc.calcula(150, 149, tramos=TRAMOS["SOLUSDT"], paso="0.1")
-    assert r["cantidad"] == pytest.approx(3.0)  # main: 10 USD x 50 / 150 = 3.3, sin mirar el stop
-    por_unidad = 1 + (150 + 149) * 0.00055  # 3.6 / 1.16445 = 3.09 -> 3.0 al paso 0.1
-    assert r["perdida_stop_usd"] == pytest.approx(3.0 * por_unidad) and r["perdida_stop_usd"] <= calc.PERDIDA_MAX == 3.6
-    assert r["apalancamiento"] == 10 and r["valor_usd"] == pytest.approx(450) and r["margen_usd"] == pytest.approx(45)
+    assert r["cantidad"] == pytest.approx(4.2)  # main: 10 USD x 50 / 150 = 3.3, sin mirar el stop
+    por_unidad = 1 + (150 + 149) * 0.00055  # 5 / 1.16445 = 4.29 -> 4.2 al paso 0.1 (con 3.6 eran 3.0)
+    assert r["perdida_stop_usd"] == pytest.approx(4.2 * por_unidad) and r["perdida_stop_usd"] <= calc.PERDIDA_MAX == 5.0
+    assert r["apalancamiento"] == 10 and r["valor_usd"] == pytest.approx(630) and r["margen_usd"] == pytest.approx(63)
     assert r["objetivo"] is None and r["rr_bruto"] is None and not r["avisos"]
     t = calc.texto(r, "SOLUSDT")
-    assert "riesgo real 3.49 USD" in t and "nominal 450.00 USD" in t and "margen 45.00 USD a 10x" in t
+    assert "riesgo real 4.89 USD" in t and "nominal 630.00 USD" in t and "margen 63.00 USD a 10x" in t
     assert calc.calcula(150, 149, 153, riesgo=2, tramos=TRAMOS["SOLUSDT"], paso="0.1")["cantidad"] == pytest.approx(1.7)
-    for mal in ({}, {"riesgo": 4}):  # sin stop no hay tamano; el riesgo no pasa de 3.6
+    assert calc.calcula(150, 149, riesgo=5, tramos=TRAMOS["SOLUSDT"], paso="0.1")["cantidad"] == pytest.approx(4.2)
+    for mal in ({}, {"riesgo": 5.01}):  # sin stop no hay tamano; el riesgo no pasa de 5 (antes 3.6)
         with pytest.raises(ValueError):
             calc.calcula(150, *([] if not mal else [149]), tramos=TRAMOS["SOLUSDT"], paso="0.1", **mal)
     assert sv.args_calc("/calc sol 150 149 2$ corto")["riesgo"] == 2.0
+    assert "[5$ de riesgo como mucho]" in sv.AYUDA  # la ayuda sale de calc.PERDIDA_MAX
 
 
 def test_b5_avisa_la_liquidacion_cerca_y_el_paso_que_no_cabe():
@@ -264,7 +266,7 @@ def test_b5_el_bot_pide_entrada_y_stop(monkeypatch):
     monkeypatch.setattr(bb.Bybit, "get", get)
     assert asyncio.run(b.atiende("/calc btc 110000")).startswith("no evaluable: el tamano sale del riesgo")
     t = asyncio.run(b.atiende("/calc btc 110000 109340"))
-    assert "tamano 0.004 · riesgo real 3.12 USD" in t and "a 10x" in t
+    assert "tamano 0.006 · riesgo real 4.68 USD" in t and "a 10x" in t
 
 
 # ------------------------------------------------------------------------- B6
@@ -371,13 +373,30 @@ def _evalua_if(expr: str, github: dict) -> bool:
 
 def test_b7_un_pr_desde_un_fork_no_corre_en_el_runner_de_143():
     import pathlib
+    import re
 
-    import yaml
-    ci = yaml.safe_load(pathlib.Path(__file__).resolve().parents[1].joinpath(".github/workflows/ci.yml").read_text())
-    assert ci["permissions"] == {"contents": "read"}
-    (job,) = ci["jobs"].values()
-    expr = job.get("if")
-    assert expr, "main: el job corre para cualquier pull_request, tambien desde un fork"
+    # Como TEXTO: la CI instala solo requirements.lock y ahi no hay PyYAML (remate 1).
+    lineas = pathlib.Path(__file__).resolve().parents[1].joinpath(".github/workflows/ci.yml").read_text().splitlines()
+
+    def bloque(clave):  # hijos de una clave de nivel raiz, sin comentarios ni vacias
+        i = lineas.index(clave + ":")
+        out = []
+        for ln in lineas[i + 1:]:
+            if ln and not ln[0].isspace():
+                break
+            if ln.strip() and not ln.strip().startswith("#"):
+                out.append(ln)
+        return out
+
+    assert [ln.strip() for ln in bloque("permissions")] == ["contents: read"]
+    assert "  push:" in bloque("on")
+    jobs = bloque("jobs")
+    assert len([ln for ln in jobs if re.fullmatch(r"  [\w-]+:\s*", ln)]) == 1
+    ifs = [m.group(1).strip() for ln in jobs if (m := re.fullmatch(r" {4}if:(.*)", ln))]
+    assert ifs, "main: el job corre para cualquier pull_request, tambien desde un fork"
+    (expr,) = ifs
+    expr = re.sub(r"^\$\{\{(.*)\}\}$", r"\1", expr.strip("\"")).strip()
+    assert "github.event.pull_request.head.repo.full_name == github.repository" in expr
     repo = "dueno/coinanalyze"
     assert _evalua_if(expr, {"event_name": "push", "repository": repo, "event": {}})
     assert _evalua_if(expr, {"event_name": "pull_request", "repository": repo,

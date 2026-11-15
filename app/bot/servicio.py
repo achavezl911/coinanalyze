@@ -102,7 +102,7 @@ ESTABLE_SHA = hashlib.sha256(ESTABLE.encode()).hexdigest()[:12]
 ENTRADAS = ("Entradas APAGADAS. La regla acordada el 10-20: el bot no da entradas mientras no haya una ventaja MEDIDA."
             " Las encenderia una frecuencia de acierto medida con n >= 30 por encima del equilibrio, con comision."
             " Hoy: ninguna (BOT-1: ninguna fila de BTC/ETH/SOL con ventaja medida tras una rafaga).")
-AYUDA = ("/calc [btc|eth|sol] entrada stop [objetivo] [10x] [3.6$ de riesgo como mucho] [largo|corto] · /evalua"
+AYUDA = (f"/calc [btc|eth|sol] entrada stop [objetivo] [10x] [{calc.PERDIDA_MAX:g}$ de riesgo como mucho] [largo|corto] · /evalua"
          " [btc|eth|sol] · /entrada · /estado · /gasto · /informe · /prueba (un aviso de muestra) · o pregunta lo que"
          " quieras (como esta BTC, quien compra, hay muros cerca).")
 

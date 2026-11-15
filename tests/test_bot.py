@@ -35,20 +35,20 @@ TRAMOS = {
 
 # --------------------------------------------------------------------------------------------- C3 la calculadora
 def test_la_forma_de_alejandro_en_btc_con_stop_y_50x():
-    # B5: el tamano sale del riesgo (3.6 USD con comision), no de 10 USD x 50: 3.6 / (660 + 219340 x 0.00055) = 0.0046
+    # B5: el tamano sale del riesgo (5 USD con comision), no de 10 USD x 50: 5 / (660 + 219340 x 0.00055) = 0.0064
     r = calc.calcula(110000, 109340, 112200, apalancamiento=50, tramos=TRAMOS["BTCUSDT"], paso="0.001")
     assert r["lado"] == "LARGO" and r["stop"] == pytest.approx(109340) and r["objetivo"] == pytest.approx(112200)
-    assert r["cantidad"] == pytest.approx(0.004) and r["valor_usd"] == pytest.approx(440)  # 0.004545 al paso 0.001
-    assert r["liquidacion"] == pytest.approx(110000 - (2200 - 363))  # IM/q = 440/50/0.004, MM/q = 440*0.0033/0.004
-    assert r["perdida_stop_usd"] == pytest.approx(2.64 + 0.242 + 0.004 * 109340 * 0.00055)
-    assert r["comision_come_pct"] == pytest.approx((0.242 + 0.004 * 112200 * 0.00055) / 8.8 * 100)
+    assert r["cantidad"] == pytest.approx(0.006) and r["valor_usd"] == pytest.approx(660)  # 0.006405 al paso 0.001
+    assert r["liquidacion"] == pytest.approx(110000 - (2200 - 363))  # IM/q = 660/50/0.006, MM/q = 660*0.0033/0.006
+    assert r["perdida_stop_usd"] == pytest.approx(3.96 + 0.363 + 0.006 * 109340 * 0.00055)
+    assert r["comision_come_pct"] == pytest.approx((0.363 + 0.006 * 112200 * 0.00055) / 13.2 * 100)
     assert r["perdida_stop_usd"] <= calc.PERDIDA_MAX and not r["avisos"]  # liq a 2.78 veces la distancia al stop
 
 
 def test_el_paso_se_redondea_en_decimal_y_sol_usa_su_tramo():
-    assert calc.calcula(1000, 990, paso="0.1", tramos=TRAMOS["SOLUSDT"])["cantidad"] == pytest.approx(0.3)  # 0.3245
+    assert calc.calcula(1000, 990, paso="0.1", tramos=TRAMOS["SOLUSDT"])["cantidad"] == pytest.approx(0.4)  # 0.4507 (con 3.6: 0.3245)
     r = calc.calcula(150, 149, apalancamiento=50, tramos=TRAMOS["SOLUSDT"], paso="0.1")
-    assert r["cantidad"] == pytest.approx(3.0) and r["mmr"] == 0.005
+    assert r["cantidad"] == pytest.approx(4.2) and r["mmr"] == 0.005
     assert r["liquidacion"] == pytest.approx(150 * (1 - 0.02 + 0.005))
 
 

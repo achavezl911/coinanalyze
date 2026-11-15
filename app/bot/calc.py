@@ -1,7 +1,7 @@
 """C3 · la calculadora de una operacion lineal USDT de Bybit en margen AISLADO. Pura: los tramos, el paso y el funding
 entran como argumentos (bybit.py los lee de las rutas publicas).
 
-POR RIESGO (BOT-SEGURIDAD B5): el tamano sale de lo que se pierde hasta el stop, PERDIDA_MAX = 3.6 USD con la comision
+POR RIESGO (BOT-SEGURIDAD B5): el tamano sale de lo que se pierde hasta el stop, PERDIDA_MAX = 5 USD (el dueno lo subio de 3.6 el 2026-11-15) con la comision
 taker de 5.5 bps por lado (entrada y salida), redondeando el paso de Bybit hacia abajo. Entrada y stop son obligatorios;
 objetivo opcional; apalancamiento por omision 10x (solo decide el margen y la liquidacion, no el riesgo). Se fueron los
 valores por omision de antes (10 USD x 50, stop a -0.6 %, objetivo a +2 %).
@@ -17,7 +17,7 @@ from __future__ import annotations
 from decimal import ROUND_DOWN, Decimal
 
 TAKER = 0.00055
-PERDIDA_MAX, APALANCAMIENTO = 3.6, 10.0
+PERDIDA_MAX, APALANCAMIENTO = 5.0, 10.0
 LIQ_VECES = 2.0  # la liquidacion a menos de esto veces la distancia al stop se avisa
 
 
