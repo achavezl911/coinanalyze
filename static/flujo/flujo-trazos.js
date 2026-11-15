@@ -262,7 +262,7 @@ function escribeGuardado(previo, activo, trazos, ahora) {
 const r2 = (v) => Math.round(v * 100) / 100;
 
 const TRZ = {
-  herramienta: null, trazos: [], activo: null, pendiente: null, cursor: null, sel: null, arrastre: null,
+  herramienta: null, trazos: [], lapidas: {}, activo: null, pendiente: null, cursor: null, sel: null, arrastre: null,
   geo: null, ctl: null, siguiente: 1,
 };
 
@@ -279,29 +279,66 @@ function cargaTrazos(activo) {
   TRZ.sel = null;
   TRZ.pendiente = null;
   TRZ.trazos = [];
+  TRZ.lapidas = {};
   const s = almacen();
   if (!s) return;
   try {
-    TRZ.trazos = leeGuardado(s.getItem(GUARDADO), activo);
+    const e = leeEstado(s.getItem(GUARDADO), activo);
+    TRZ.trazos = e.trazos;
+    TRZ.lapidas = e.lapidas;
   } catch (e) {
     TRZ.trazos = [];
   }
 }
 
+/* La pagina se queda con la fusion (lo suyo y lo de los demas /flujo); el elegido o el arrastrado que otro borro dejan
+ * de estarlo. */
+function adoptaEstado(e) {
+  TRZ.trazos = e.trazos;
+  TRZ.lapidas = e.lapidas;
+  if (TRZ.sel && !TRZ.trazos.some((x) => x.id === TRZ.sel)) TRZ.sel = null;
+  if (TRZ.arrastre && !TRZ.trazos.some((x) => x.id === TRZ.arrastre.id)) TRZ.arrastre = null;
+}
+
+const leePrevio = (s) => {
+  try {
+    return s.getItem(GUARDADO);
+  } catch (e) {
+    return null;
+  }
+};
+
+/* Guardar es FUSIONAR con lo guardado (lo que otro /flujo puso entre medias no se pisa) y quedarse con el resultado. */
 function guardaTrazos() {
   const s = almacen();
   if (!s || !TRZ.activo) return;
+  const r = guardaEstado(leePrevio(s), TRZ.activo, { trazos: TRZ.trazos, lapidas: TRZ.lapidas }, Date.now());
+  adoptaEstado(r.estado);
   try {
-    let previo = null;
-    try {
-      previo = s.getItem(GUARDADO);
-    } catch (e) {
-      previo = null;
-    }
-    s.setItem(GUARDADO, escribeGuardado(previo, TRZ.activo, TRZ.trazos));
+    s.setItem(GUARDADO, r.texto);
   } catch (e) {
     /* sin sitio o sin permiso: los trazos siguen en la pantalla y no se guardan */
   }
+}
+
+/* Otro /flujo (otra pestana u otro marco de /espacio) guardo: se fusiona y se repinta, sin volver a escribir. */
+function oyeGuardado(ev) {
+  if (ev.key !== GUARDADO && ev.key !== null) return;
+  const s = almacen();
+  if (!s || !TRZ.activo || (ev.storageArea && ev.storageArea !== s)) return;
+  adoptaEstado(fusiona(leeEstado(leePrevio(s), TRZ.activo), { trazos: TRZ.trazos, lapidas: TRZ.lapidas }, Date.now()));
+  pideTrazos();
+}
+
+/* El instante de un cambio: el reloj, y nunca antes del ultimo cambio que ya tiene (que gane en la fusion). */
+const instanteCambio = (z) => Math.max(Date.now(), z ? z.m + 1 : 0);
+
+function borraTrazos(ids) {
+  ids.forEach((id) => {
+    const z = TRZ.trazos.find((x) => x.id === id);
+    TRZ.lapidas[id] = Math.max(Date.now(), z ? z.m : 0);
+  });
+  TRZ.trazos = TRZ.trazos.filter((x) => !ids.includes(x.id));
 }
 
 function nuevoId() {
@@ -514,6 +551,7 @@ function trazosRaton(tipo, p, ev) {
       const dp = G.p(p.y) - G.p(a.y);
       z.puntos = a.puntos.map((q, k) => (a.punto === -1 || a.punto === k
         ? { t: z.tipo === 'nivel' ? q.t : G.t(G.x(q.t) + dx), p: q.p + dp } : { t: q.t, p: q.p }));
+      z.m = instanteCambio(z);
       pideTrazos();
       return true;
     }
@@ -529,7 +567,8 @@ function trazosRaton(tipo, p, ev) {
   if (TRZ.herramienta) {
     const h = TRZ.herramienta;
     if (TRAZOS_TIPOS[h] === 1 || TRZ.pendiente) {
-      const z = { tipo: h, id: nuevoId(), puntos: TRAZOS_TIPOS[h] === 1 ? [punto] : [TRZ.pendiente, punto] };
+      const z = { tipo: h, id: nuevoId(), puntos: TRAZOS_TIPOS[h] === 1 ? [punto] : [TRZ.pendiente, punto],
+                  m: instanteCambio(null) };
       TRZ.trazos.push(z);
       TRZ.sel = z.id;
       TRZ.pendiente = null;
@@ -562,7 +601,7 @@ function trazosTecla(ev) {
     eligeHerramienta(null);
   } else if ((ev.key === 'Delete' || ev.key === 'Supr') && TRZ.sel) {
     if (ev.target && ev.target.closest && ev.target.closest('input, select, textarea, dialog')) return;
-    TRZ.trazos = TRZ.trazos.filter((x) => x.id !== TRZ.sel);
+    borraTrazos([TRZ.sel]);
     TRZ.sel = null;
     guardaTrazos();
     pideTrazos();
@@ -573,7 +612,7 @@ function trazosTecla(ev) {
 function borraTodos() {
   if (!TRZ.trazos.length) return;
   if (!window.confirm('¿Borrar los ' + TRZ.trazos.length + ' trazos de ' + TRZ.activo + '?')) return;
-  TRZ.trazos = [];
+  borraTrazos(TRZ.trazos.map((x) => x.id));
   TRZ.sel = null;
   guardaTrazos();
   pideTrazos();
@@ -594,6 +633,7 @@ function conectaTrazos(ctl) {
     });
   }
   window.addEventListener('keydown', trazosTecla);
+  window.addEventListener('storage', oyeGuardado);
   publicaEstado();
 }
 
