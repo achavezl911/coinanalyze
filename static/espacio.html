@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <!--
+    EL ESPACIO (campana OF-6b, OF-6 segunda parte): 1, 2 o 4 marcos de /flujo a la vez. Cada marco es un /flujo
+    entero (su activo, su marco temporal, su raton y su teclado); esta pagina pone la disposicion, dice que marco
+    tiene el foco y lleva en su hash la vista de cada uno (static/espacio/espacio.js). La CSP de `app/api.py` no
+    admite `<script>` ni `<style>` en linea: todo va en static/espacio/. /flujo es la unica ruta que se deja
+    enmarcar, y solo por el mismo origen.
+  -->
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coinalyze · espacio</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/static/espacio/espacio.css" />
+  </head>
+  <body>
+    <header class="barra">
+      <span class="marca">COINALYZE</span>
+      <span class="nombre">Espacio</span>
+      <div class="seg" id="sel-disp" role="group" aria-label="Disposicion">
+        <button type="button" data-disp="1" title="Un grafico">1</button>
+        <button type="button" data-disp="2h" title="Dos, lado a lado">2 ◫</button>
+        <button type="button" data-disp="2v" title="Dos, uno encima de otro">2 ⊟</button>
+        <button type="button" data-disp="4" title="Cuatro (2 x 2)">4 ⊞</button>
+      </div>
+      <span class="ayuda">Cada grafico elige su activo y su marco arriba; el raton y el teclado van al que tiene el borde.</span>
+      <a class="enlace" href="/flujo">/flujo</a>
+    </header>
+    <main id="marcos" class="d-1"></main>
+    <script src="/static/espacio/espacio.js"></script>
+  </body>
+</html>
