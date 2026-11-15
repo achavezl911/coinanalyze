@@ -87,7 +87,6 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K76-la-ventana-que-pides.sh:161` | — |
-| **readme** | — | `README.md:171` |
 
 **No la llama el panel**, pero si 1 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
