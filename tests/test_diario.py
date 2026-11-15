@@ -288,3 +288,55 @@ def test_buzon_sella_rechaza_y_mueve(tmp_path):
     assert mot["fable:sin-caduca"].startswith("falta caduca") and mot["fichero:b.json"].startswith("JSONDecodeError")
     assert mot["fable:corto-mal"].startswith("geometria") and mot["fable:riesgo"].startswith("riesgo")
     assert lb.verifica(str(tmp_path / "e.jsonl")) == []
+
+
+# ---------- marcador ----------
+def _op(L, fuente: str, i: str, dia: int, r: float | None, act: str = "BTC"):
+    """Una propuesta sellada el dia `dia` y su resultado con R neto `r` (None: caducada sin llenar)."""
+    t = 1_800_000_000 - 1_800_000_000 % 86400 + dia * 86400 + 3600
+    L.anade("propuesta", _prop(i, fuente=fuente, activo=act, sello=t), ahora=t)
+    if r is None:
+        res = {"id": i, "llenada": False, "px_llenado": None, "t_llenado": None, "salida": "caducada",
+               "px_salida": None, "t_salida": t + 5 * 86400, "r_neto": 0.0, "usd_neto": 0.0, "coste": {}}
+    else:
+        res = {"id": i, "llenada": True, "px_llenado": 98.0, "t_llenado": t + 600, "salida": "stop" if r < 0 else "objetivo",
+               "px_salida": 99.0, "t_salida": t + 7200, "r_neto": r, "usd_neto": 5.0 * r, "coste": {}}
+    L.anade("resultado", res, ahora=t + 7200)
+
+
+def test_marcador_con_r_conocido(tmp_path):
+    from app.diario import marcador as mc
+    L = lb.Libro(str(tmp_path / "e.jsonl"))
+    for d, r in enumerate((2.0, -1.0, -1.0)):
+        _op(L, "fable", f"fable:{d}", d, r, act="ETH" if d else "BTC")
+        _op(L, "rejilla", f"rejilla:{d}", d, -1.0)
+    _op(L, "rejilla", "rejilla:fuera", 9, 5.0)       # fuera del periodo de la fuente: no entra en la diferencia
+    _op(L, "rejilla", "rejilla:sin", 1, None)        # caducada: cuenta para el llenado, no para el R
+    L.anade("propuesta", _prop("fable:abierta", fuente="fable", sello=1_800_100_000), ahora=1_800_100_000)
+    m = mc.calcula(L.lee())
+    f, g = m["fable"], m["rejilla"]
+    assert (f["propuestas"], f["resueltas"], f["llenadas"], f["pendientes"]) == (4, 3, 3, 1)
+    assert f["r_medio"] == 0.0 and f["usd_medio"] == 0.0 and f["peor_racha"] == 2 and f["caida_r"] == 2.0
+    assert f["caida_usd"] == 10.0 and f["sin_n"] and f["por_activo_lado"] == {"BTC largo": (1, 2.0), "ETH largo": (2, -1.0)}
+    c = f["contra_rejilla"]
+    assert c["dif"] == 1.0 and c["n_rejilla"] == 3 and c["dias"] == 3 and c["ic"][0] <= 1.0 <= c["ic"][1]
+    assert g["llenadas"] == 4 and g["resueltas"] == 5 and g["tasa_llenado"] == 0.8 and g["r_medio"] == 0.5
+    t = mc.texto(L.lee(), L.cabeza(), 1_800_200_000)
+    assert "fable: 4 propuestas, 3 resueltas, 3 llenadas (llenado 100%) · SIN N (3/30)" in t
+    assert "contra la rejilla +1.00 R" in t and f"n={L.cabeza()['n']}" in t and "NO da entradas" in t
+    for k in range(30):
+        _op(L, "regla:D:imp1:v0:A", f"regla:{k}", k, 0.5)
+    assert not mc.calcula(L.lee())["regla:D:imp1:v0:A"]["sin_n"]
+
+
+def test_entradas_ensena_el_marcador(tmp_path):
+    import os
+    import types
+
+    from app.bot import servicio as sv
+    b = types.SimpleNamespace(informes=str(tmp_path))
+    assert sv.Bot.texto_diario(b).startswith("DIARIO DE ENTRADAS: sin marcador")
+    (tmp_path / "diario-entradas.txt").write_text("DIARIO DE ENTRADAS en sombra (x)\nfable: 0 propuestas\n")
+    os.utime(tmp_path / "diario-entradas.txt", (0, os.path.getmtime(tmp_path / "diario-entradas.txt") - 7200))
+    t = sv.Bot.texto_diario(b)
+    assert t.startswith("DIARIO DE ENTRADAS en sombra (x)\nfable: 0") and t.endswith("(marcador de hace 2 h)")
