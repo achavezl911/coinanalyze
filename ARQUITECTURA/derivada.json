@@ -34196,7 +34196,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:219"
+            "tests/test_deploy_wrapper.py:244"
           ],
           "menciones": []
         }
@@ -35842,7 +35842,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:219",
+            "tests/test_deploy_wrapper.py:244",
             "tests/test_metrics_endpoint.py:253",
             "tests/test_v121_hardening.py:35",
             "tests/test_v150_desk_snapshot.py:130"
@@ -37170,7 +37170,7 @@
         "tests": {
           "llamadas": [
             "tests/test_dashboard_layout.py:134",
-            "tests/test_deploy_wrapper.py:219"
+            "tests/test_deploy_wrapper.py:244"
           ],
           "menciones": [
             "tests/test_dashboard_layout.py:130"
@@ -37623,7 +37623,8 @@
         "tests": {
           "llamadas": [
             "tests/test_bot_r3.py:337",
-            "tests/test_deploy_wrapper.py:211"
+            "tests/test_deploy_wrapper.py:236",
+            "tests/test_smoke_arranque.py:39"
           ],
           "menciones": [
             "tests/test_bot_r3.py:336",
@@ -37631,15 +37632,16 @@
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
             "tests/test_deploy_health_gate.py:154",
-            "tests/test_deploy_wrapper.py:49",
-            "tests/test_ingest_health.py:236"
+            "tests/test_deploy_wrapper.py:50",
+            "tests/test_ingest_health.py:236",
+            "tests/test_smoke_arranque.py:1"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 15,
-        "n_menciones": 14,
+        "n_llamadas": 16,
+        "n_menciones": 15,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -46891,18 +46893,19 @@
         "tests": {
           "llamadas": [
             "tests/test_deploy_health_gate.py:180",
-            "tests/test_deploy_wrapper.py:219"
+            "tests/test_deploy_wrapper.py:244",
+            "tests/test_smoke_arranque.py:40"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
             "tests/test_deploy_health_gate.py:158",
-            "tests/test_deploy_wrapper.py:62"
+            "tests/test_deploy_wrapper.py:68"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 6,
+        "n_llamadas": 7,
         "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48220,7 +48223,9 @@
             "tests/js/espacio.test.js:36",
             "tests/js/espacio.test.js:37",
             "tests/js/flujo_trazos.test.js:2",
-            "tests/test_espacio_cabeceras.py:53"
+            "tests/test_espacio_cabeceras.py:53",
+            "tests/test_nginx_allowlist.py:43",
+            "tests/test_nginx_allowlist.py:59"
           ],
           "menciones": [
             "tests/js/flujo_trazos.test.js:4",
@@ -48233,7 +48238,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 57,
+        "n_llamadas": 59,
         "n_menciones": 41,
         "sin_ninguno": false,
         "solo_mencion": false
