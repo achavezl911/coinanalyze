@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-93 rutas descubiertas en el arbol. Para trabajar sobre una,
+94 rutas descubiertas en el arbol. Para trabajar sobre una,
 **abre solo su fichero**: no hace falta leer nada mas.
 
 | ruta | metodo | campos | tablas | funciones | ficha |
@@ -95,6 +95,7 @@
 | `/api/whale/delta` | GET | 5 | 2 | 11 | [ficha](rutas/api-whale-delta.md) |
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
 | `/api/zone/analysis` | GET | 1 | 2 | 16 | [ficha](rutas/api-zone-analysis.md) |
+| `/espacio` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/espacio.md) |
 | `/flujo` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/flujo.md) |
 | `/libro` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/libro.md) |
 | `/mesa` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/mesa.md) |
@@ -103,12 +104,13 @@
 
 ## Rutas cuyos campos NO se han podido derivar
 
-9 de 93. Cada una con su motivo en la ficha.
+10 de 94. Cada una con su motivo en la ficha.
 
 - `/` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/api/scalp/absorption` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/scalp/delta-matrix` — lista vacia en el literal: no se puede derivar el elemento
 - `/api/stream` — la respuesta pasa por StreamingResponse(), que no se puede seguir
+- `/espacio` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/flujo` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/libro` — la respuesta pasa por FileResponse(), que no se puede seguir
 - `/mesa` — la respuesta pasa por FileResponse(), que no se puede seguir

@@ -126,7 +126,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/scalp_logic.py:6645` · clave completa `app.scalp_logic.swing_score`
 
-**Radio exacto: 2 rutas** de 93 · **cota superior: 56** (mas ancha)
+**Radio exacto: 2 rutas** de 94 · **cota superior: 56** (mas ancha)
 
 ### Por llamada — 2 rutas
 
@@ -287,7 +287,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:920` · clave completa `app.scalp_logic.as_float`
 
-**Radio exacto: 38 rutas** de 93 · **cota superior: 45** (mas ancha)
+**Radio exacto: 38 rutas** de 94 · **cota superior: 45** (mas ancha)
 
 ### Por llamada — 38 rutas
 
@@ -379,7 +379,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:2592` · clave completa `app.scalp_logic.resolve_matrix_as_of`
 
-**Radio exacto: 24 rutas** de 93 · **cota superior: 32** (mas ancha)
+**Radio exacto: 24 rutas** de 94 · **cota superior: 32** (mas ancha)
 
 ### Por llamada — 24 rutas
 
@@ -461,7 +461,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:2586` · clave completa `app.scalp_logic._explicit_as_of`
 
-**Radio exacto: 25 rutas** de 93 · **cota superior: 25** (igual al exacto)
+**Radio exacto: 25 rutas** de 94 · **cota superior: 25** (igual al exacto)
 
 ### Por llamada — 25 rutas
 
@@ -508,7 +508,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:628` · clave completa `app.scalp_logic.compute_scalp_summary`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 25** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -597,7 +597,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:325` · clave completa `app.scalp_logic.scalp_context`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 25** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -686,7 +686,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:158` · clave completa `app.scalp_logic.load_baselines`
 
-**Radio exacto: 15 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 15 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 15 rutas
 
@@ -755,7 +755,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:134` · clave completa `app.scalp_logic.baseline_band`
 
-**Radio exacto: 14 rutas** de 93 · **cota superior: 21** (mas ancha)
+**Radio exacto: 14 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 14 rutas
 
@@ -823,7 +823,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:231` · clave completa `app.scalp_logic.basis_quality`
 
-**Radio exacto: 11 rutas** de 93 · **cota superior: 18** (mas ancha)
+**Radio exacto: 11 rutas** de 94 · **cota superior: 18** (mas ancha)
 
 ### Por llamada — 11 rutas
 
@@ -888,7 +888,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:193` · clave completa `app.scalp_logic.classify_absorption`
 
-**Radio exacto: 11 rutas** de 93 · **cota superior: 18** (mas ancha)
+**Radio exacto: 11 rutas** de 94 · **cota superior: 18** (mas ancha)
 
 ### Por llamada — 11 rutas
 
@@ -953,7 +953,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:94` · clave completa `app.scalp_logic._closed_5m_oi_bounds`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1017,7 +1017,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:590` · clave completa `app.scalp_logic._closed_window_move_pct`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1081,7 +1081,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:502` · clave completa `app.scalp_logic._first_present`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1145,7 +1145,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:514` · clave completa `app.scalp_logic._liquidation_window_measured`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1209,7 +1209,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:558` · clave completa `app.scalp_logic._measured_event_sum`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1273,7 +1273,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:292` · clave completa `app.scalp_logic.scalp_bias_label`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1337,7 +1337,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:317` · clave completa `app.scalp_logic.score_component`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 17** (mas ancha)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 17** (mas ancha)
 
 ### Por llamada — 10 rutas
 
@@ -1401,7 +1401,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:1227` · clave completa `app.scalp_logic._resample_highs_lows`
 
-**Radio exacto: 15 rutas** de 93 · **cota superior: 15** (igual al exacto)
+**Radio exacto: 15 rutas** de 94 · **cota superior: 15** (igual al exacto)
 
 ### Por llamada — 15 rutas
 
@@ -1438,7 +1438,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2619` · clave completa `app.scalp_logic._flow_coverage_reason`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1472,7 +1472,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2644` · clave completa `app.scalp_logic._flow_windows`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1506,7 +1506,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4445` · clave completa `app.scalp_logic._gap_and_baseline`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1540,7 +1540,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4415` · clave completa `app.scalp_logic._gap_threshold_seconds`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1574,7 +1574,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4427` · clave completa `app.scalp_logic._gap_too_large`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1608,7 +1608,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2843` · clave completa `app.scalp_logic.spot_flow_windows`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 12** (igual al exacto)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 12** (igual al exacto)
 
 ### Por llamada — 12 rutas
 
@@ -1642,7 +1642,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:543` · clave completa `app.scalp_logic._as_utc_datetime`
 
-**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
+**Radio exacto: 11 rutas** de 94 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 11 rutas
 
@@ -1675,7 +1675,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:970` · clave completa `app.scalp_logic._contiguous_measured_suffix`
 
-**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
+**Radio exacto: 11 rutas** de 94 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 11 rutas
 
@@ -1708,7 +1708,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4626` · clave completa `app.scalp_logic._oi_change_pct`
 
-**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
+**Radio exacto: 11 rutas** de 94 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 11 rutas
 
@@ -1741,7 +1741,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4542` · clave completa `app.scalp_logic._realtime_flow`
 
-**Radio exacto: 11 rutas** de 93 · **cota superior: 11** (igual al exacto)
+**Radio exacto: 11 rutas** de 94 · **cota superior: 11** (igual al exacto)
 
 ### Por llamada — 11 rutas
 
@@ -1774,7 +1774,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:960` · clave completa `app.scalp_logic._complete_tail_values`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1806,7 +1806,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:566` · clave completa `app.scalp_logic._coverage_status`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1838,7 +1838,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2372` · clave completa `app.scalp_logic._structure_from_swings`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1870,7 +1870,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2358` · clave completa `app.scalp_logic._swings`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1902,7 +1902,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:68` · clave completa `app.scalp_logic._utc_now`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1934,7 +1934,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4794` · clave completa `app.scalp_logic.flow_confirmation`
 
-**Radio exacto: 10 rutas** de 93 · **cota superior: 10** (igual al exacto)
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
 ### Por llamada — 10 rutas
 
@@ -1966,7 +1966,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3240` · clave completa `app.scalp_logic._atr`
 
-**Radio exacto: 9 rutas** de 93 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 94 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 9 rutas
 
@@ -1997,7 +1997,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3229` · clave completa `app.scalp_logic._tr_series`
 
-**Radio exacto: 9 rutas** de 93 · **cota superior: 9** (igual al exacto)
+**Radio exacto: 9 rutas** de 94 · **cota superior: 9** (igual al exacto)
 
 ### Por llamada — 9 rutas
 
@@ -2028,7 +2028,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2429` · clave completa `app.scalp_logic.structure_detail`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 9** (mas ancha)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 8 rutas
 
@@ -2076,7 +2076,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:6320` · clave completa `app.scalp_logic.trend_matrix`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 9** (mas ancha)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 9** (mas ancha)
 
 ### Por llamada — 8 rutas
 
@@ -2124,7 +2124,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:2421` · clave completa `app.scalp_logic._dsr`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 8** (igual al exacto)
 
 ### Por llamada — 8 rutas
 
@@ -2154,7 +2154,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2604` · clave completa `app.scalp_logic._flow_imbalance`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 8** (igual al exacto)
 
 ### Por llamada — 8 rutas
 
@@ -2184,7 +2184,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2612` · clave completa `app.scalp_logic._flow_rate`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 8** (igual al exacto)
 
 ### Por llamada — 8 rutas
 
@@ -2214,7 +2214,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1298` · clave completa `app.scalp_logic.bars_incomplete_inside`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 8** (igual al exacto)
 
 ### Por llamada — 8 rutas
 
@@ -2244,7 +2244,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2914` · clave completa `app.scalp_logic.futures_flow_windows`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 8** (igual al exacto)
 
 ### Por llamada — 8 rutas
 
@@ -2274,7 +2274,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2853` · clave completa `app.scalp_logic.spot_con_guarda`
 
-**Radio exacto: 8 rutas** de 93 · **cota superior: 8** (igual al exacto)
+**Radio exacto: 8 rutas** de 94 · **cota superior: 8** (igual al exacto)
 
 ### Por llamada — 8 rutas
 
@@ -2304,7 +2304,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1856` · clave completa `app.scalp_logic._pct_rank`
 
-**Radio exacto: 7 rutas** de 93 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 94 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -2333,7 +2333,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4658` · clave completa `app.scalp_logic.delta_matrix`
 
-**Radio exacto: 7 rutas** de 93 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 94 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -2362,7 +2362,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1304` · clave completa `app.scalp_logic.price_barriers`
 
-**Radio exacto: 7 rutas** de 93 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 94 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -2391,7 +2391,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3876` · clave completa `app.scalp_logic._profile`
 
-**Radio exacto: 6 rutas** de 93 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 94 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -2419,7 +2419,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3655` · clave completa `app.scalp_logic.cross_asset`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 6** (mas ancha)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 5 rutas
 
@@ -2464,7 +2464,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:1934` · clave completa `app.scalp_logic.macro_context`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 6** (mas ancha)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 5 rutas
 
@@ -2509,7 +2509,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:6192` · clave completa `app.scalp_logic.passive_flow`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 6** (mas ancha)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 6** (mas ancha)
 
 ### Por llamada — 5 rutas
 
@@ -2554,7 +2554,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:3913` · clave completa `app.scalp_logic.volume_profile`
 
-**Radio exacto: 6 rutas** de 93 · **cota superior: 6** (igual al exacto)
+**Radio exacto: 6 rutas** de 94 · **cota superior: 6** (igual al exacto)
 
 ### Por llamada — 6 rutas
 
@@ -2582,7 +2582,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3620` · clave completa `app.scalp_logic._beta`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2609,7 +2609,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3634` · clave completa `app.scalp_logic._binned`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2636,7 +2636,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:6159` · clave completa `app.scalp_logic._classify_passive`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2663,7 +2663,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1894` · clave completa `app.scalp_logic._conditional_outcome`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2690,7 +2690,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1884` · clave completa `app.scalp_logic._forward_returns`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2717,7 +2717,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3607` · clave completa `app.scalp_logic._pearson`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2744,7 +2744,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1865` · clave completa `app.scalp_logic._regime`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2771,7 +2771,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3599` · clave completa `app.scalp_logic._returns`
 
-**Radio exacto: 5 rutas** de 93 · **cota superior: 5** (igual al exacto)
+**Radio exacto: 5 rutas** de 94 · **cota superior: 5** (igual al exacto)
 
 ### Por llamada — 5 rutas
 
@@ -2798,7 +2798,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:6494` · clave completa `app.scalp_logic.compute_swing_score`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 5** (mas ancha)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 5** (mas ancha)
 
 ### Por llamada — 4 rutas
 
@@ -2842,7 +2842,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/scalp_logic.py:4189` · clave completa `app.scalp_logic._liquidation_feed_quality_status`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2868,7 +2868,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4347` · clave completa `app.scalp_logic.data_quality`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2894,7 +2894,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5877` · clave completa `app.scalp_logic.market_impact`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2920,7 +2920,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1734` · clave completa `app.scalp_logic.market_memory`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2946,7 +2946,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3505` · clave completa `app.scalp_logic.reference_levels`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 
@@ -2972,7 +2972,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5405` · clave completa `app.scalp_logic._banda`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -2997,7 +2997,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5331` · clave completa `app.scalp_logic._bps`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3022,7 +3022,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3292` · clave completa `app.scalp_logic._buckets_observados`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3047,7 +3047,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3219` · clave completa `app.scalp_logic._closes_1min`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3072,7 +3072,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1021` · clave completa `app.scalp_logic._cvd_fut_window`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3097,7 +3097,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2935` · clave completa `app.scalp_logic._cvd_src`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3122,7 +3122,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4224` · clave completa `app.scalp_logic._feed_status`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3147,7 +3147,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4860` · clave completa `app.scalp_logic._flow_bias`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3172,7 +3172,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2072` · clave completa `app.scalp_logic._intraday_divergences`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3197,7 +3197,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3304` · clave completa `app.scalp_logic._oi_coverage`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3222,7 +3222,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3262` · clave completa `app.scalp_logic._oi_quadrant`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3247,7 +3247,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:936` · clave completa `app.scalp_logic._pivot_structure`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3272,7 +3272,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3248` · clave completa `app.scalp_logic._realized_vol`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3297,7 +3297,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2059` · clave completa `app.scalp_logic._return_stdev_pct`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3322,7 +3322,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:954` · clave completa `app.scalp_logic._sign_vote`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3347,7 +3347,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2027` · clave completa `app.scalp_logic._slope_pct`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3372,7 +3372,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:989` · clave completa `app.scalp_logic._structure_layer`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3397,7 +3397,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5338` · clave completa `app.scalp_logic.coherencia_del_plan`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3422,7 +3422,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3973` · clave completa `app.scalp_logic.context_metadata`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3447,7 +3447,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2994` · clave completa `app.scalp_logic.cvd_matrix`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3472,7 +3472,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2200` · clave completa `app.scalp_logic.divergence_scan`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3497,7 +3497,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5414` · clave completa `app.scalp_logic.execution_assessment`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3522,7 +3522,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4064` · clave completa `app.scalp_logic.feed_quality`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3547,7 +3547,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5640` · clave completa `app.scalp_logic.feed_quality_view`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3572,7 +3572,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3698` · clave completa `app.scalp_logic.funding_context`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3597,7 +3597,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3771` · clave completa `app.scalp_logic.liquidation_map`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3622,7 +3622,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1041` · clave completa `app.scalp_logic.market_structure`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3647,7 +3647,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4498` · clave completa `app.scalp_logic.max_internal_gap`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3672,7 +3672,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4253` · clave completa `app.scalp_logic.metric_quality`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3697,7 +3697,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3335` · clave completa `app.scalp_logic.oi_context`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3722,7 +3722,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5982` · clave completa `app.scalp_logic.positioning_context`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3747,7 +3747,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:4873` · clave completa `app.scalp_logic.profile_view`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3772,7 +3772,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5683` · clave completa `app.scalp_logic.scalp_absorption`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3797,7 +3797,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5839` · clave completa `app.scalp_logic.scalp_basis`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3822,7 +3822,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5778` · clave completa `app.scalp_logic.scalp_liquidations`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3847,7 +3847,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:3455` · clave completa `app.scalp_logic.volatility_context`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3872,7 +3872,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1680` · clave completa `app.scalp_logic.wyckoff_context`
 
-**Radio exacto: 3 rutas** de 93 · **cota superior: 3** (igual al exacto)
+**Radio exacto: 3 rutas** de 94 · **cota superior: 3** (igual al exacto)
 
 ### Por llamada — 3 rutas
 
@@ -3897,7 +3897,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1753` · clave completa `app.scalp_logic.horizon_structure`
 
-**Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3921,7 +3921,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5065` · clave completa `app.scalp_logic.hypothesis_evidence`
 
-**Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3945,7 +3945,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1810` · clave completa `app.scalp_logic.liquidation_burst`
 
-**Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3969,7 +3969,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:2518` · clave completa `app.scalp_logic.setup_confirmation_bundle`
 
-**Radio exacto: 2 rutas** de 93 · **cota superior: 2** (igual al exacto)
+**Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
 ### Por llamada — 2 rutas
 
@@ -3993,7 +3993,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5557` · clave completa `app.scalp_logic.execution_cost`
 
-**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4016,7 +4016,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1706` · clave completa `app.scalp_logic.level_breakout`
 
-**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4039,7 +4039,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1581` · clave completa `app.scalp_logic.range_validate`
 
-**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4062,7 +4062,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:6061` · clave completa `app.scalp_logic.spot_perp_flow`
 
-**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4085,7 +4085,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:5253` · clave completa `app.scalp_logic.walk_book`
 
-**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 
@@ -4108,7 +4108,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/scalp_logic.py:1433` · clave completa `app.scalp_logic.zone_analysis`
 
-**Radio exacto: 1 rutas** de 93 · **cota superior: 1** (igual al exacto)
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
 ### Por llamada — 1 rutas
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_signals` · `app/api.py:2426` (cuerpo hasta la 2464) · decorador en la linea 2425.
+Handler `scalp_signals` · `app/api.py:2430` (cuerpo hasta la 2468) · decorador en la linea 2429.
 
 ## Parametros de entrada
 
@@ -19,15 +19,15 @@ Handler `scalp_signals` · `app/api.py:2426` (cuerpo hasta la 2464) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2462 |
-| `count` | literal en app/api.py:2457 |
-| `limit` | literal en app/api.py:2456 |
-| `rows` | literal en app/api.py:2463 |
-| `servida_desde` | literal en app/api.py:2459 |
-| `servida_hasta` | literal en app/api.py:2460 |
-| `symbol` | literal en app/api.py:2455 |
-| `truncated` | literal en app/api.py:2458 |
-| `ventana_maxima_h` | literal en app/api.py:2461 |
+| `as_of` | literal en app/api.py:2466 |
+| `count` | literal en app/api.py:2461 |
+| `limit` | literal en app/api.py:2460 |
+| `rows` | literal en app/api.py:2467 |
+| `servida_desde` | literal en app/api.py:2463 |
+| `servida_hasta` | literal en app/api.py:2464 |
+| `symbol` | literal en app/api.py:2459 |
+| `truncated` | literal en app/api.py:2462 |
+| `ventana_maxima_h` | literal en app/api.py:2465 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -47,9 +47,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2467`
-- `app.api.records` — `app/api.py:267`
-- `app.api.validate_symbol` — `app/api.py:254`
+- `app.api._utc_iso` — `app/api.py:2471`
+- `app.api.records` — `app/api.py:271`
+- `app.api.validate_symbol` — `app/api.py:258`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (5)</summary>
 
@@ -67,7 +67,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

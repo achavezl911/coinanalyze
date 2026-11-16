@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa` · `app/api.py:4191` (cuerpo hasta la 4197) · decorador en la linea 4190.
+Handler `mesa` · `app/api.py:4195` (cuerpo hasta la 4201) · decorador en la linea 4194.
 
 ## Parametros de entrada
 
@@ -50,11 +50,11 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K102-control.bash:275`, `harness/checks/K102-control.bash:286`, `harness/checks/K102-control.bash:288`, `harness/checks/K102-control.bash:567` _(+35)_ | `harness/checks/K102-control.bash:270`, `harness/checks/K102-control.bash:272`, `harness/checks/K102-control.bash:1063`, `harness/checks/K102-decide-lo-primero.sh:121` _(+10)_ |
+| **checks** | `harness/checks/K102-control.bash:275`, `harness/checks/K102-control.bash:286`, `harness/checks/K102-control.bash:288`, `harness/checks/K102-control.bash:567` _(+39)_ | `harness/checks/K102-control.bash:270`, `harness/checks/K102-control.bash:272`, `harness/checks/K102-control.bash:1063`, `harness/checks/K102-decide-lo-primero.sh:121` _(+14)_ |
 | **readme** | — | `README.md:32` |
-| **tests** | `tests/js/mesa_remate.test.js:84`, `tests/test_la_puerta.py:39`, `tests/test_la_puerta.py:126` | `tests/test_la_puerta.py:3` |
+| **tests** | `tests/js/mesa_remate.test.js:84`, `tests/test_espacio_cabeceras.py:62`, `tests/test_la_puerta.py:39`, `tests/test_la_puerta.py:126` | `tests/test_la_puerta.py:3` |
 
-**No la llama el panel**, pero si 42 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 47 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

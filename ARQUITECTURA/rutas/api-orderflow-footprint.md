@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `orderflow_footprint` · `app/api.py:3745` (cuerpo hasta la 3763) · decorador en la linea 3744.
+Handler `orderflow_footprint` · `app/api.py:3749` (cuerpo hasta la 3767) · decorador en la linea 3748.
 
 ## Parametros de entrada
 
@@ -25,7 +25,7 @@ Handler `orderflow_footprint` · `app/api.py:3745` (cuerpo hasta la 3763) · dec
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3733 |
+| `as_of` | literal en app/api.py:3737 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -46,12 +46,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._orderflow` — `app/api.py:3724`
+- `app.api._orderflow` — `app/api.py:3728`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2467`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2587`
+- `app.api._utc_iso` — `app/api.py:2471`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2591`
 
 </details>
 
@@ -67,9 +67,9 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2596` | una funcion de su cierre |
-| 422 | — | `app/api.py:3732` | una funcion de su cierre |
-| 503 | — | `app/api.py:3763` | el propio handler |
+| 422 | — | `app/api.py:2600` | una funcion de su cierre |
+| 422 | — | `app/api.py:3736` | una funcion de su cierre |
+| 503 | — | `app/api.py:3767` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -79,10 +79,11 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:881`, `harness/checks/K108-orderflow.py:883`, `harness/checks/K108-orderflow.py:919`, `harness/checks/K108-orderflow.py:921` _(+5)_ | `harness/checks/K109-banco.py:12`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:348` |
+| **checks** | `harness/checks/K108-orderflow.py:881`, `harness/checks/K108-orderflow.py:883`, `harness/checks/K108-orderflow.py:919`, `harness/checks/K108-orderflow.py:921` _(+6)_ | `harness/checks/K109-banco.py:12`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:348` |
 | **readme** | — | `README.md:43` |
+| **tests** | `tests/test_espacio_cabeceras.py:62` | — |
 
-**No la llama el panel**, pero si 9 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 11 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

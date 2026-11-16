@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `external_macro_endpoint` · `app/api.py:2205` (cuerpo hasta la 2211) · decorador en la linea 2204.
+Handler `external_macro_endpoint` · `app/api.py:2209` (cuerpo hasta la 2215) · decorador en la linea 2208.
 
 ## Parametros de entrada
 
@@ -85,7 +85,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:254`
+- `app.api.validate_symbol` — `app/api.py:258`
 - `app.external_macro.align_with_internal` — `app/external_macro.py:415`
 - `app.external_macro.external_macro_context` — `app/external_macro.py:437`
 - `app.scalp_logic.swing_score` — `app/scalp_logic.py:6645`
@@ -154,7 +154,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

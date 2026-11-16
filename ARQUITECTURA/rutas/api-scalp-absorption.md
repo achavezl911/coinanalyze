@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_absorption` · `app/api.py:1821` (cuerpo hasta la 1826) · decorador en la linea 1820.
+Handler `scalp_absorption` · `app/api.py:1825` (cuerpo hasta la 1830) · decorador en la linea 1824.
 
 ## Parametros de entrada
 
@@ -45,7 +45,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:254`
+- `app.api.validate_symbol` — `app/api.py:258`
 - `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5683`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -71,7 +71,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

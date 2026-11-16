@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_replay` · `app/api.py:2908` (cuerpo hasta la 2980) · decorador en la linea 2907.
+Handler `signals_replay` · `app/api.py:2912` (cuerpo hasta la 2984) · decorador en la linea 2911.
 
 ## Parametros de entrada
 
@@ -22,15 +22,15 @@ Handler `signals_replay` · `app/api.py:2908` (cuerpo hasta la 2980) · decorado
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2975 |
-| `count` | literal en app/api.py:2977 |
-| `frames` | literal en app/api.py:2979 |
-| `limit` | literal en app/api.py:2976 |
-| `since` | literal en app/api.py:2972 |
-| `symbol` | literal en app/api.py:2971 |
-| `truncated` | literal en app/api.py:2978 |
-| `until` | literal en app/api.py:2973 |
-| `ventana_maxima_h` | literal en app/api.py:2974 |
+| `as_of` | literal en app/api.py:2979 |
+| `count` | literal en app/api.py:2981 |
+| `frames` | literal en app/api.py:2983 |
+| `limit` | literal en app/api.py:2980 |
+| `since` | literal en app/api.py:2976 |
+| `symbol` | literal en app/api.py:2975 |
+| `truncated` | literal en app/api.py:2982 |
+| `until` | literal en app/api.py:2977 |
+| `ventana_maxima_h` | literal en app/api.py:2978 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -52,10 +52,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2467`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2587`
-- `app.api.records` — `app/api.py:267`
-- `app.api.validate_symbol` — `app/api.py:254`
+- `app.api._utc_iso` — `app/api.py:2471`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2591`
+- `app.api.records` — `app/api.py:271`
+- `app.api.validate_symbol` — `app/api.py:258`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (12)</summary>
 
@@ -80,12 +80,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
-| 422 | — | `app/api.py:2596` | una funcion de su cierre |
-| 422 | — | `app/api.py:2932` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2934` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2936` | el propio handler |
-| 422 | — | `app/api.py:2938` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
+| 422 | — | `app/api.py:2600` | una funcion de su cierre |
+| 422 | — | `app/api.py:2936` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2938` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2940` | el propio handler |
+| 422 | — | `app/api.py:2942` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
