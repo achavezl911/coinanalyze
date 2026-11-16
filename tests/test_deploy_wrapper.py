@@ -37,7 +37,8 @@ esac
 
 # healthz por guion: ESCENA=arranca:N da N respuestas «degraded» con el latido de ingest de antes del reinicio y luego
 # «ok»; ESCENA=muerto, siempre «degraded» (el colector no vuelve); ESCENA=error, el latido de ingest en error DESPUES
-# del reinicio.
+# del reinicio; ESCENA=marca:N da N respuestas con el latido de ingest DESPUES del reinicio en «degraded» y su compuesto
+# de ARRANQUE (el de la foto de 11df0b4), y luego «ok»; ESCENA=marca-sigue, ese arranque siempre.
 CURL = """#!/usr/bin/env bash
 printf '%s\\n' "$*" >> "$SB/curl.argv"
 url=${!#}
@@ -48,15 +49,20 @@ case "$url" in
     printf '%s' "$GH_MAIN" ;;
   */api/healthz)
     n=$(cat "$SB/healthz.n" 2>/dev/null || echo 0); n=$((n+1)); echo "$n" > "$SB/healthz.n"
-    estado=ok; ingest_ts=$ahora; ingest_st=ok
+    estado=ok; ingest_ts=$ahora; ingest_st=ok; ingest_det=x
+    marca='collector starting; awaiting successful cycle'
     case "$ESCENA" in
       arranca:*) [ "$n" -le "${ESCENA#arranca:}" ] && { estado=degraded; ingest_ts=1970-01-01T00:00:00Z; } ;;
       muerto) estado=degraded; ingest_ts=1970-01-01T00:00:00Z ;;
       error) estado=degraded; ingest_st=error ;;
+      marca:*|marca-sigue)
+        if [ "$ESCENA" = marca-sigue ] || [ "$n" -le "${ESCENA#marca:}" ]; then
+          estado=degraded; ingest_st=degraded; ingest_det="metrics_5m=degraded:$marca;ohlcv_1m=degraded:$marca"
+        fi ;;
     esac
     printf '{"status":"%s","missing_services":[],"missing_symbols":[],"informative_services":[],"symbols":[],' "$estado"
     printf '"services":[{"service":"api","status":"ok","updated_at":"%s"},' "$ahora"
-    printf '{"service":"ingest","status":"%s","updated_at":"%s","detail":"x"},' "$ingest_st" "$ingest_ts"
+    printf '{"service":"ingest","status":"%s","updated_at":"%s","detail":"%s"},' "$ingest_st" "$ingest_ts" "$ingest_det"
     printf '{"service":"ws","status":"ok","updated_at":"%s"},{"service":"scalp","status":"ok","updated_at":"%s"}]}' "$ahora" "$ahora"
     ;;
   */api/symbols) printf '[{"symbol":"BTCUSDT_PERP.A"}]' ;;
@@ -181,6 +187,25 @@ def test_un_colector_que_no_vuelve_da_degraded_y_revierte(tmp_path):
     assert _current(b) == VIEJO
     assert "restart coinalyze-api" in _log(b, "systemctl.log")
     assert not (b["sb"] / "deployment.json").exists()
+
+
+def test_un_arranque_de_colector_tras_el_reinicio_que_pasa_a_ok_no_revierte(tmp_path):
+    # Despliegue R1: el latido de ingest ya es POSTERIOR al reinicio y dice solo que el colector arranca.
+    b = _banco(tmp_path, smoke_max=30)
+    r = _despliega(b, ESCENA="marca:2")
+    assert r.returncode == 0, r.stderr[-2000:]
+    assert f"DEPLOY_OK {NUEVO}" in r.stdout and "definitive" not in r.stderr
+    assert _current(b) == NUEVO
+    assert int(_log(b, "healthz.n")) == 3
+
+
+def test_un_arranque_de_colector_que_no_pasa_a_ok_en_el_plazo_revierte(tmp_path):
+    b = _banco(tmp_path, smoke_max=3)
+    r = _despliega(b, ESCENA="marca-sigue")
+    assert r.returncode == 10, r.stderr[-2000:]
+    assert "smoke FAILED after 3s (rc=75)" in r.stderr and "definitive" not in r.stderr
+    assert "restoring previous release" in r.stderr
+    assert _current(b) == VIEJO
 
 
 def test_un_latido_en_error_tras_el_reinicio_revierte_sin_esperar(tmp_path):
