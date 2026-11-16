@@ -50,9 +50,19 @@ curl --fail --silent --show-error "${CURL_HEADERS[@]}" "$BASE_URL/api/healthz" >
 python3 - "$HEALTH_JSON" "$DEPLOY_RESTART_EPOCH" "$REQUIRED_HEARTBEATS" <<'PY_HEALTH'
 import datetime
 import json
+import re
 import sys
 
 STARTING, DEFINITIVE = 75, 86
+# Marcadores de ARRANQUE: el texto EXACTO que un colector escribe en su latido al arrancar, antes de su
+# primer ciclo bueno. Si cambia en app/, cambia aqui: tests/test_smoke_arranque.py lo busca en el fuente.
+STARTUP_MARKERS = frozenset({
+    "collector starting; awaiting successful cycle",  # app/ingest.py:1078
+    "scalp collector starting; awaiting stream confirmation",  # app/scalp_collector.py:630
+})
+# Un compuesto es «comp=estado:detalle» unido por «;» (app/db.py:490-494). El marcador tambien lleva «;»,
+# asi que se parte por «;comp=estado:», no por «;».
+COMPOSITE_PART = re.compile(r"(?:^|;)([A-Za-z0-9_]+)=(ok|degraded|error|missing):")
 
 
 def fail(code: int, message: str) -> None:
@@ -62,6 +72,25 @@ def fail(code: int, message: str) -> None:
 
 def parse_ts(value: object) -> datetime.datetime:
     return datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
+def startup_only(detail: str) -> bool:
+    """El detalle es SOLO arranque: un marcador exacto, o un compuesto cuyas partes son todas «degraded» con un
+    marcador exacto u «ok», con al menos una de arranque. Las partes «ok» se admiten porque ohlcv_1m late cada
+    minuto y metrics_5m cada 300 s (app/ingest.py:1103-1126): durante minutos uno ya esta ok y el otro arranca."""
+    if detail in STARTUP_MARKERS:
+        return True
+    parts = list(COMPOSITE_PART.finditer(detail))
+    if not parts or parts[0].start() != 0:
+        return False
+    starting = False
+    for index, part in enumerate(parts):
+        end = parts[index + 1].start() if index + 1 < len(parts) else len(detail)
+        if part.group(2) == "degraded" and detail[part.end():end] in STARTUP_MARKERS:
+            starting = True
+        elif part.group(2) != "ok":
+            return False
+    return starting
 
 
 path, restart_epoch, required_raw = sys.argv[1:]
@@ -80,8 +109,9 @@ services = {str(row.get("service")): row for row in health.get("services") or []
 status = health.get("status")
 if status != "ok":
     # «degraded» solo se tolera por un motivo de ARRANQUE conocido: un latido gobernado que aun no ha
-    # llegado (falta, o es de antes del reinicio) o la ingesta que aun no ha alcanzado a los simbolos.
-    # Un latido gobernado que, DESPUES del reinicio, dice algo distinto de ok es un fallo, no un arranque.
+    # llegado (falta, o es de antes del reinicio), un colector que DESPUES del reinicio solo dice que arranca
+    # («degraded» con un marcador de STARTUP_MARKERS, solo o en cada parte de arranque de un compuesto) o la
+    # ingesta que aun no ha alcanzado a los simbolos. Cualquier otro no-ok posterior al reinicio es un fallo.
     informative = {str(r.get("service")) for r in health.get("informative_services") or []}
     starting: list[str] = [f"missing heartbeat: {s}" for s in health.get("missing_services") or []]
     for name, row in sorted(services.items()):
@@ -94,6 +124,8 @@ if status != "ok":
         if deployed_at is None or updated_at < deployed_at:
             if deployed_at is not None or row.get("status") != "ok":
                 starting.append(f"awaiting first heartbeat since restart: {name}")
+        elif row.get("status") == "degraded" and startup_only(str(row.get("detail") or "")):
+            starting.append(f"collector starting since restart: {name}")
         elif row.get("status") != "ok":
             detail = str(row.get("detail") or "")[:200]
             fail(DEFINITIVE, f"healthz is {status!r}: {name} reported {row.get('status')!r} after the restart: {detail}")

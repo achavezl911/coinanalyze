@@ -1,0 +1,24 @@
+{
+  "_origen": "Foto de /api/healthz de 140 tomada por el operador ~50 s tras el reinicio del despliegue de 11df0b4 (2026-11-16 04:47Z), que el humo de main dio por fallo definitivo (rc=86). Solo nombres de servicio, estados, detalles y horas RELATIVAS: updated_at_s son segundos desde el reinicio. Los tres no-ok (estado, detalle y que son posteriores al reinicio) son los de la foto; los nombres de los ok son los de healthz de 140 a las 04:52Z, con detalle vacio y horas ilustrativas posteriores al reinicio.",
+  "status": "degraded",
+  "missing_services": [],
+  "missing_symbols": [],
+  "symbols": [],
+  "informative_services": [{"service": "libro"}, {"service": "orderflow"}],
+  "services": [
+    {"service": "api", "status": "ok", "updated_at_s": 4, "detail": ""},
+    {"service": "daily", "status": "ok", "updated_at_s": 6, "detail": ""},
+    {"service": "ingest", "status": "degraded", "updated_at_s": 3, "detail": "metrics_5m=degraded:collector starting; awaiting successful cycle;ohlcv_1m=degraded:collector starting; awaiting successful cycle"},
+    {"service": "ingest:liquidations_history", "status": "ok", "updated_at_s": 5, "detail": ""},
+    {"service": "ingest:metrics_5m", "status": "degraded", "updated_at_s": 3, "detail": "collector starting; awaiting successful cycle"},
+    {"service": "ingest:ohlcv_1m", "status": "degraded", "updated_at_s": 3, "detail": "collector starting; awaiting successful cycle"},
+    {"service": "libro", "status": "ok", "updated_at_s": 8, "detail": ""},
+    {"service": "orderflow", "status": "ok", "updated_at_s": 8, "detail": ""},
+    {"service": "scalp", "status": "ok", "updated_at_s": 7, "detail": ""},
+    {"service": "scalp:0/1", "status": "ok", "updated_at_s": 7, "detail": ""},
+    {"service": "ws", "status": "ok", "updated_at_s": 5, "detail": ""},
+    {"service": "ws-binance:0/1", "status": "ok", "updated_at_s": 5, "detail": ""},
+    {"service": "ws-bybit:0/1", "status": "ok", "updated_at_s": 5, "detail": ""},
+    {"service": "ws:0/1", "status": "ok", "updated_at_s": 5, "detail": ""}
+  ]
+}
