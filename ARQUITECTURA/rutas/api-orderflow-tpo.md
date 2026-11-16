@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `orderflow_tpo` · `app/api.py:3846` (cuerpo hasta la 3858) · decorador en la linea 3845.
+Handler `orderflow_tpo` · `app/api.py:3850` (cuerpo hasta la 3862) · decorador en la linea 3849.
 
 ## Parametros de entrada
 
@@ -24,7 +24,7 @@ Handler `orderflow_tpo` · `app/api.py:3846` (cuerpo hasta la 3858) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3733 |
+| `as_of` | literal en app/api.py:3737 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -45,12 +45,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._orderflow` — `app/api.py:3724`
+- `app.api._orderflow` — `app/api.py:3728`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2467`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2587`
+- `app.api._utc_iso` — `app/api.py:2471`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2591`
 
 </details>
 
@@ -58,8 +58,8 @@ Llamadas directas del handler:
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2596` | una funcion de su cierre |
-| 422 | — | `app/api.py:3732` | una funcion de su cierre |
+| 422 | — | `app/api.py:2600` | una funcion de su cierre |
+| 422 | — | `app/api.py:3736` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

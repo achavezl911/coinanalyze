@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:4135` (cuerpo hasta la 4170) · decorador en la linea 4134.
+Handler `mesa_decide` · `app/api.py:4139` (cuerpo hasta la 4174) · decorador en la linea 4138.
 
 ## Parametros de entrada
 
@@ -92,8 +92,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.build_mesa_decide` — `app/ai_context.py:1575`
-- `app.api.scalp_persistence` — `app/api.py:3195`
-- `app.api.validate_symbol` — `app/api.py:254`
+- `app.api.scalp_persistence` — `app/api.py:3199`
+- `app.api.validate_symbol` — `app/api.py:258`
 
 <details><summary>Alcanzables de forma indirecta (54)</summary>
 
@@ -169,8 +169,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:256` | una funcion de su cierre |
-| 422 | — | `app/api.py:4146` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
+| 422 | — | `app/api.py:4150` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

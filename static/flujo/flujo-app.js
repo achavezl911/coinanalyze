@@ -807,6 +807,8 @@ function aplicaHash() {
 }
 
 function arranca() {
+  // OF-6b: dentro de un marco de /espacio el grafico cabe en su celda (flujo.css, `html.en-marco`)
+  if (window.top !== window.self) document.documentElement.classList.add('en-marco');
   LIENZO = creaLienzo(document.getElementById('lienzo'), {
     alLeer: lectura, alCambiar: vistaCambiada, alMenu: abreMenu, cruz: document.getElementById('cruz'),
     ficha: document.getElementById('ficha') });

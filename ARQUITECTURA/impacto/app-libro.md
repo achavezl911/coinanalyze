@@ -20,7 +20,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/libro.py:834` · clave completa `app.libro._evidencia`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -102,7 +102,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:864` · clave completa `app.libro._olvida`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -185,7 +185,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:823` · clave completa `app.libro._ts`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -268,7 +268,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:827` · clave completa `app.libro.declara_hueco`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -371,7 +371,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:907` · clave completa `app.libro.declara_parada_anterior`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -453,7 +453,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:843` · clave completa `app.libro.escribe_minuto`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -539,7 +539,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:875` · clave completa `app.libro.vuelca`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 

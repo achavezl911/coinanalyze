@@ -230,14 +230,18 @@ async def response_headers(request: Request, call_next):
         if not valid_internal_token(request):
             return JSONResponse(status_code=403, content={"error": "Forbidden"})
     response = await call_next(request)
+    # OF-6b: SOLO /flujo se deja enmarcar, y solo por el mismo origen (los marcos de /espacio); todo lo demas, nadie
+    enmarcable = request.url.path == "/flujo"
+    ancestros = "'self'" if enmarcable else "'none'"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self'; "
         "style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; "
-        "font-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
+        "font-src 'self'; object-src 'none'; base-uri 'none'; "
+        f"frame-ancestors {ancestros}; "
         "form-action 'none'"
     )
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN" if enmarcable else "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Cache-Control"] = (
@@ -4208,6 +4212,14 @@ async def flujo() -> FileResponse:
     """EL FOOTPRINT (campana 142, OF-2): por vela y nivel de precio, el volumen del agresor vendedor y comprador, el
     delta, los desequilibrios, el POC y la value area. La pinta static/flujo.html desde /api/orderflow/footprint."""
     return FileResponse(STATIC_DIR / "flujo.html")
+
+
+@app.get("/espacio")
+async def espacio() -> FileResponse:
+    """EL ESPACIO (campana OF-6b, OF-6 segunda parte): 1, 2 o 4 marcos de /flujo a la vez, cada uno con su activo, su
+    marco temporal y su raton y teclado; la disposicion y la vista de cada marco, en el hash. La pinta
+    static/espacio.html con static/espacio/; /flujo es la unica ruta que se deja enmarcar (y solo por el mismo origen)."""
+    return FileResponse(STATIC_DIR / "espacio.html")
 
 
 @app.get("/libro")

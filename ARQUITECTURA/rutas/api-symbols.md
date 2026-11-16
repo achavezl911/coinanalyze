@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `symbols` · `app/api.py:685` (cuerpo hasta la 686) · decorador en la linea 684.
+Handler `symbols` · `app/api.py:689` (cuerpo hasta la 690) · decorador en la linea 688.
 
 ## Parametros de entrada
 
@@ -16,8 +16,8 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `asset` | literal en app/api.py:686 |
-| `symbol` | literal en app/api.py:686 |
+| `asset` | literal en app/api.py:690 |
+| `symbol` | literal en app/api.py:690 |
 
 Forma de la respuesta segun el AST: lista, lista de objetos.
 

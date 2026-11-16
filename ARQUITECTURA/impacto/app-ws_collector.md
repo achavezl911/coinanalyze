@@ -26,7 +26,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/ws_collector.py:252` · clave completa `app.ws_collector._write_minute`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 19** (mas ancha)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 19** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -116,7 +116,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:346` · clave completa `app.ws_collector.drain_closed_minutes`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 19** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 19** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -192,7 +192,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:334` · clave completa `app.ws_collector.flush_minute`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 19** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 19** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -268,7 +268,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:551` · clave completa `app.ws_collector.heartbeat_loop`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 15** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 15** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -336,7 +336,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:452` · clave completa `app.ws_collector.binance_consumer`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -399,7 +399,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:225` · clave completa `app.ws_collector.binance_url`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -462,7 +462,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:498` · clave completa `app.ws_collector.bybit_consumer`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -525,7 +525,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:378` · clave completa `app.ws_collector.flush_realtime`
 
-**Radio exacto: 13 rutas** de 93 · **cota superior: 13** (igual al exacto)
+**Radio exacto: 13 rutas** de 94 · **cota superior: 13** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -599,7 +599,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:611` · clave completa `app.ws_collector.run`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -662,7 +662,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:221` · clave completa `app.ws_collector.spot_pairs`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -725,7 +725,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:230` · clave completa `app.ws_collector.valid_trade`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 13** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 13** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -788,7 +788,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:247` · clave completa `app.ws_collector._cortes`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -848,7 +848,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ws_collector.py:49` · clave completa `app.ws_collector.segundos_cubiertos`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 12** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 12** (mas ancha)
 
 ### Por llamada — 0 rutas
 

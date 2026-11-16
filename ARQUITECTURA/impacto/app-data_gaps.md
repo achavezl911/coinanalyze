@@ -37,7 +37,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 `app/data_gaps.py:474` · clave completa `app.data_gaps.reconcile_cadence_coverage`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 51** (mas ancha)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 51** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -205,7 +205,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:108` · clave completa `app.data_gaps.blocking_requirement_keys`
 
-**Radio exacto: 19 rutas** de 93 · **cota superior: 32** (mas ancha)
+**Radio exacto: 19 rutas** de 94 · **cota superior: 32** (mas ancha)
 
 ### Por llamada — 19 rutas
 
@@ -290,7 +290,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:67` · clave completa `app.data_gaps._aware_utc`
 
-**Radio exacto: 15 rutas** de 93 · **cota superior: 27** (mas ancha)
+**Radio exacto: 15 rutas** de 94 · **cota superior: 27** (mas ancha)
 
 ### Por llamada — 15 rutas
 
@@ -374,7 +374,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:73` · clave completa `app.data_gaps._validated_window`
 
-**Radio exacto: 15 rutas** de 93 · **cota superior: 27** (mas ancha)
+**Radio exacto: 15 rutas** de 94 · **cota superior: 27** (mas ancha)
 
 ### Por llamada — 15 rutas
 
@@ -458,7 +458,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:245` · clave completa `app.data_gaps.expected_buckets`
 
-**Radio exacto: 12 rutas** de 93 · **cota superior: 25** (mas ancha)
+**Radio exacto: 12 rutas** de 94 · **cota superior: 25** (mas ancha)
 
 ### Por llamada — 12 rutas
 
@@ -540,7 +540,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1140` · clave completa `app.data_gaps.DataGap.from_record`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -620,7 +620,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:439` · clave completa `app.data_gaps._cubierto_por_otro_detector`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -700,7 +700,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1220` · clave completa `app.data_gaps._load_gap`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -780,7 +780,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1230` · clave completa `app.data_gaps._mark_unrecoverable`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -880,7 +880,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1255` · clave completa `app.data_gaps._record_recovery_failure`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -980,7 +980,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:722` · clave completa `app.data_gaps.archive_beyond_source_horizon`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1080,7 +1080,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:792` · clave completa `app.data_gaps.archive_source_response_absence`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1180,7 +1180,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1045` · clave completa `app.data_gaps.close_partitioned_gap`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1280,7 +1280,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:378` · clave completa `app.data_gaps.missing_cadence_windows`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1360,7 +1360,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:967` · clave completa `app.data_gaps.partition_gap_by_source_coverage`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1440,7 +1440,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:922` · clave completa `app.data_gaps.partition_runs`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1520,7 +1520,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:287` · clave completa `app.data_gaps.record_data_gap`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1620,7 +1620,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:348` · clave completa `app.data_gaps.record_event_stream_loss`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1700,7 +1700,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1272` · clave completa `app.data_gaps.recover_gap`
 
-**Radio exacto: 22 rutas** de 93 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -1800,7 +1800,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1333` · clave completa `app.data_gaps.recover_unresolved_gaps`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1880,7 +1880,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:1176` · clave completa `app.data_gaps.validate_recovery`
 
-**Radio exacto: 0 rutas** de 93 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1960,7 +1960,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/data_gaps.py:253` · clave completa `app.data_gaps.coverage_entry`
 
-**Radio exacto: 14 rutas** de 93 · **cota superior: 14** (igual al exacto)
+**Radio exacto: 14 rutas** de 94 · **cota superior: 14** (igual al exacto)
 
 ### Por llamada — 14 rutas
 
@@ -1996,7 +1996,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/data_gaps.py:197` · clave completa `app.data_gaps.declared_gap_windows`
 
-**Radio exacto: 7 rutas** de 93 · **cota superior: 7** (igual al exacto)
+**Radio exacto: 7 rutas** de 94 · **cota superior: 7** (igual al exacto)
 
 ### Por llamada — 7 rutas
 
@@ -2025,7 +2025,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 `app/data_gaps.py:232` · clave completa `app.data_gaps.align_down`
 
-**Radio exacto: 4 rutas** de 93 · **cota superior: 4** (igual al exacto)
+**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
 ### Por llamada — 4 rutas
 

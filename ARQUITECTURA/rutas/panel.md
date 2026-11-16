@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `panel` · `app/api.py:4201` (cuerpo hasta la 4203) · decorador en la linea 4200.
+Handler `panel` · `app/api.py:4205` (cuerpo hasta la 4207) · decorador en la linea 4204.
 
 ## Parametros de entrada
 
@@ -53,9 +53,9 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K102-sobre-plantado.py:262`, `harness/checks/K43-control.bash:179`, `harness/checks/K44-control.bash:918`, `harness/checks/K44-control.bash:919` _(+9)_ | `harness/checks/K102-sobre-plantado.py:258`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:48`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:50`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:248` _(+1)_ |
 | **panel-html** | — | `static/index.html:89` |
 | **readme** | — | `README.md:39` |
-| **tests** | `tests/js/harness.js:169`, `tests/test_la_puerta.py:43`, `tests/test_la_puerta.py:110`, `tests/test_la_puerta.py:129` _(+1)_ | `tests/js/harness.js:168`, `tests/test_la_puerta.py:3`, `tests/test_la_puerta.py:124` |
+| **tests** | `tests/js/harness.js:169`, `tests/test_espacio_cabeceras.py:62`, `tests/test_la_puerta.py:43`, `tests/test_la_puerta.py:110` _(+2)_ | `tests/js/harness.js:168`, `tests/test_la_puerta.py:3`, `tests/test_la_puerta.py:124` |
 
-**No la llama el panel**, pero si 18 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 19 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

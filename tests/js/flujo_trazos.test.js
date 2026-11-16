@@ -1,7 +1,7 @@
 'use strict';
 /* Lo puro del dibujo de /flujo (campana 146-D, static/flujo/flujo-trazos.js): la regresion del canal, las siete
  * lineas de Fibonacci, la distancia de un clic a un segmento, la x de un instante (con un hueco en las velas y fuera
- * de ellas) y la lectura de lo guardado. Se llama a las funciones de verdad, como flujo_pro.test.js. */
+ * de ellas), la lectura de lo guardado (version 1 y 2) y la fusion de dos /flujo (OF-6b). Se llama a las funciones de verdad, como flujo_pro.test.js. */
 const test = require('node:test');
 const assert = require('node:assert');
 const T = require('../../static/flujo/flujo-trazos.js');
@@ -101,8 +101,8 @@ test('leeGuardado: basura, otra version y nada dan []; el trazo malo cae y los b
   assert.deepStrictEqual(T.leeGuardado(null, 'BTC'), []);
   assert.deepStrictEqual(T.leeGuardado('42', 'BTC'), []);
   assert.deepStrictEqual(T.leeGuardado('[]', 'BTC'), []);
-  const nivel = { tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }] };
-  const linea = { tipo: 'linea', id: 'c', puntos: [{ t: 1000, p: 1 }, { t: 2000, p: 2 }] };
+  const nivel = { tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }], m: 7 };
+  const linea = { tipo: 'linea', id: 'c', puntos: [{ t: 1000, p: 1 }, { t: 2000, p: 2 }], m: 9 };
   const ajena = JSON.stringify({ version: 99, activos: { BTC: [nivel] } });
   assert.deepStrictEqual(T.leeGuardado(ajena, 'BTC'), []);
   const sinPuntos = { tipo: 'fib', id: 'b' };
@@ -114,20 +114,101 @@ test('leeGuardado: basura, otra version y nada dan []; el trazo malo cae y los b
     { tipo: 'nivel', puntos: [{ t: 1, p: 2 }] },
     null,
   ];
-  const texto = JSON.stringify({ version: T.VERSION, activos: { BTC: [nivel, sinPuntos, ...malos, linea], ETH: 'x' } });
+  const texto = JSON.stringify({ version: T.VERSION, activos: { BTC: [nivel, sinPuntos, ...malos, linea], ETH: 'x' },
+                                 lapidas: { BTC: { z: 5, mala: 'x', neg: -1 }, ETH: 3 } });
   assert.deepStrictEqual(T.leeGuardado(texto, 'BTC'), [nivel, linea]);
-  assert.deepStrictEqual(T.leeGuardado(texto, 'ETH'), []);
+  assert.deepStrictEqual(T.leeEstado(texto, 'BTC').lapidas, { z: 5 }); // la lapida mala cae, la buena se queda
+  assert.deepStrictEqual(T.leeEstado(texto, 'ETH'), { trazos: [], lapidas: {} });
   assert.deepStrictEqual(T.leeGuardado(texto, 'SOL'), []);
+  // un m que no es un numero >= 0 es 0 (el trazo se queda)
+  const raro = JSON.stringify({ version: 2, activos: { BTC: [Object.assign({}, nivel, { m: 'x' })] } });
+  assert.strictEqual(T.leeGuardado(raro, 'BTC')[0].m, 0);
 });
 
-test('escribeGuardado: por ACTIVO (no por marco); lo de los otros activos se queda; basura previa se rehace', () => {
-  const nivel = { tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }], sel: true };
+test('VERSION 1: se lee entera (m = 0, sin lapidas) y al guardar se conserva en la 2 con todos sus activos', () => {
+  assert.strictEqual(T.VERSION, 2);
+  const n1 = { tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }] };
+  const f1 = { tipo: 'fib', id: 'b', puntos: [{ t: 1000, p: 1 }, { t: 2000, p: 2 }] };
+  const e1 = { tipo: 'nivel', id: 'q', puntos: [{ t: 5, p: 3000 }] };
+  const v1 = JSON.stringify({ version: 1, activos: { BTC: [n1, f1, { tipo: 'nivel' }], ETH: [e1] } });
+  assert.deepStrictEqual(T.leeGuardado(v1, 'BTC'), [Object.assign({}, n1, { m: 0 }), Object.assign({}, f1, { m: 0 })]);
+  const nuevo = { tipo: 'nivel', id: 'n', puntos: [{ t: 9, p: 9 }], m: 100 };
+  const { texto, estado } = T.guardaEstado(v1, 'BTC', { trazos: [nuevo], lapidas: {} }, 200);
+  assert.strictEqual(JSON.parse(texto).version, 2);
+  assert.deepStrictEqual(estado.trazos.map((z) => z.id), ['a', 'b', 'n']); // lo de la v1 no se tira
+  assert.deepStrictEqual(T.leeGuardado(texto, 'ETH'), [Object.assign({}, e1, { m: 0 })]); // el otro activo, tal cual
+  // y un borrado de algo de la v1 (m = 0) si se lo lleva
+  const r = T.guardaEstado(texto, 'BTC', { trazos: [], lapidas: { a: 300 } }, 300);
+  assert.deepStrictEqual(r.estado.trazos.map((z) => z.id), ['b', 'n']);
+});
+
+test('escribeGuardado: por ACTIVO (no por marco); FUSIONA con lo previo; basura previa se rehace', () => {
+  const nivel = { tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }], m: 1, sel: true };
   let s = T.escribeGuardado(null, 'BTC', [nivel]);
-  s = T.escribeGuardado(s, 'ETH', [{ tipo: 'nivel', id: 'z', puntos: [{ t: 5, p: 3000 }] }]);
-  assert.deepStrictEqual(T.leeGuardado(s, 'BTC'), [{ tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }] }]);
+  s = T.escribeGuardado(s, 'ETH', [{ tipo: 'nivel', id: 'z', puntos: [{ t: 5, p: 3000 }], m: 2 }]);
+  assert.deepStrictEqual(T.leeGuardado(s, 'BTC'), [{ tipo: 'nivel', id: 'a', puntos: [{ t: 1000, p: 50000 }], m: 1 }]);
   assert.strictEqual(T.leeGuardado(s, 'ETH').length, 1);
   assert.deepStrictEqual(Object.keys(JSON.parse(s).activos).sort(), ['BTC', 'ETH']);
   assert.strictEqual(JSON.parse(s).version, T.VERSION);
+  // guardar una lista vacia NO borra lo de otro /flujo: borrar es una lapida
+  assert.strictEqual(T.leeGuardado(T.escribeGuardado(s, 'BTC', []), 'BTC').length, 1);
   const r = T.escribeGuardado('basura', 'BTC', []);
-  assert.deepStrictEqual(JSON.parse(r), { version: T.VERSION, activos: { BTC: [] } });
+  assert.deepStrictEqual(JSON.parse(r), { version: T.VERSION, activos: { BTC: [] }, lapidas: {} });
+});
+
+/* ------------------------------------------------------------------ la fusion (OF-6b) */
+const Z = (id, m, p = 100, tipo = 'nivel') => ({ tipo, id, puntos: tipo === 'nivel' ? [{ t: 1, p }] : [{ t: 1, p }, { t: 2, p }], m });
+const E = (trazos, lapidas = {}) => ({ trazos, lapidas });
+const ids = (e) => e.trazos.map((z) => z.id + '@' + z.m + ':' + z.puntos[0].p);
+
+test('fusiona: A pone uno y B otro: salen los dos, en cualquier orden; idempotente', () => {
+  const a = E([Z('a1', 10)]);
+  const b = E([Z('b1', 11)]);
+  assert.deepStrictEqual(ids(T.fusiona(a, b)), ['a1@10:100', 'b1@11:100']);
+  assert.deepStrictEqual(T.fusiona(a, b), T.fusiona(b, a));
+  const ab = T.fusiona(a, b);
+  assert.deepStrictEqual(T.fusiona(ab, ab), ab);
+  assert.deepStrictEqual(T.fusiona(ab, a), ab);
+  assert.deepStrictEqual(T.fusiona(null, ab), ab);
+});
+
+test('fusiona: el cambio mas reciente gana (A mueve un punto: B lo ve movido), y el empate no depende del orden', () => {
+  const viejo = E([Z('x', 10, 100)]);
+  const movido = E([Z('x', 20, 105)]);
+  assert.deepStrictEqual(ids(T.fusiona(viejo, movido)), ['x@20:105']);
+  assert.deepStrictEqual(ids(T.fusiona(movido, viejo)), ['x@20:105']);
+  const e1 = E([Z('x', 30, 1)]);
+  const e2 = E([Z('x', 30, 2)]);
+  assert.deepStrictEqual(T.fusiona(e1, e2), T.fusiona(e2, e1));
+});
+
+test('fusiona: el borrado no resucita (A borra; B, que aun lo tenia, guarda otro cambio)', () => {
+  const guardado = E([Z('x', 10)], { x: 15 }); // A lo borro a las 15
+  const deB = E([Z('x', 10), Z('y', 20)]); // B aun tenia x y pone y
+  const r = T.fusiona(guardado, deB);
+  assert.deepStrictEqual(ids(r), ['y@20:100']);
+  assert.deepStrictEqual(r.lapidas, { x: 15 });
+  assert.deepStrictEqual(T.fusiona(deB, guardado), r);
+  // la lapida del mismo instante que el ultimo cambio tambien lo quita; un cambio POSTERIOR al borrado gana
+  assert.deepStrictEqual(ids(T.fusiona(E([Z('x', 15)]), E([], { x: 15 }))), []);
+  assert.deepStrictEqual(ids(T.fusiona(E([Z('x', 16)]), E([], { x: 15 }))), ['x@16:100']);
+  // de dos lapidas del mismo id queda la mas reciente
+  assert.deepStrictEqual(T.fusiona(E([], { x: 3 }), E([], { x: 9 })).lapidas, { x: 9 });
+});
+
+test('fusiona: la lapida caducada (mas de LAPIDA_DIAS) se va; el tope deja las LAPIDA_TOPE mas recientes', () => {
+  const dia = 86400000;
+  const ahora = 100 * dia;
+  const r = T.fusiona(E([], { vieja: ahora - T.LAPIDA_DIAS * dia - 1, justa: ahora - T.LAPIDA_DIAS * dia }), E([]), ahora);
+  assert.deepStrictEqual(r.lapidas, { justa: ahora - T.LAPIDA_DIAS * dia });
+  assert.deepStrictEqual(Object.keys(T.fusiona(E([], { vieja: 1 }), E([])).lapidas), ['vieja']); // sin ahora no caduca
+  const muchas = {};
+  for (let i = 0; i < T.LAPIDA_TOPE + 20; i++) muchas['l' + String(i).padStart(4, '0')] = ahora - i;
+  const t = T.fusiona(E([], muchas), E([]), ahora);
+  assert.strictEqual(Object.keys(t.lapidas).length, T.LAPIDA_TOPE);
+  assert.ok('l0000' in t.lapidas && !('l' + String(T.LAPIDA_TOPE).padStart(4, '0') in t.lapidas));
+  // guardar caduca tambien lo que ya estaba guardado
+  const txt = JSON.stringify({ version: 2, activos: { BTC: [] }, lapidas: { BTC: { vieja: 1 } } });
+  assert.strictEqual(T.guardaEstado(txt, 'BTC', E([]), ahora).texto,
+                     JSON.stringify({ version: 2, activos: { BTC: [] }, lapidas: {} }));
 });
