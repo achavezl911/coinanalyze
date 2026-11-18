@@ -365,6 +365,7 @@ class Bot:
         self.turno = None  # la tarea de la ultima respuesta: la siguiente sale despues (en orden)
         self.clave_proxima = self.ops_leidas = 0.0
         self.clave_espera, self.clave_juzgada, self.tg_espera = 30.0, False, 0.0
+        self.bybit_aviso: dict | None = None  # (R1 H1) el ACTIVO/APAGADO que Telegram aun no entrego
         self.sin_registrar: dict = {}  # dia -> USD pagados que la base no apunto: cuentan igual para el tope
         self.desde_minuto = None  # el ultimo minuto que el centinela tenia visto (un apagon que cruza la medianoche)
         self.parte_hoy = None
@@ -715,7 +716,22 @@ class Bot:
         if b["activo"] != antes or (primera and not b["activo"]):
             txt = "Bybit ACTIVO: clave de solo lectura" if b["activo"] else \
                 f"Bybit APAGADO en el bot: {b['error']}. No leo posiciones hasta que se arregle."
-            await self.evento("bybit", None, None, await self.manda(txt), detalle=b)
+            self.bybit_aviso = {"txt": txt, "detalle": b, "fallado": False}  # un cambio nuevo sustituye al pendiente
+            await self.avisa_bybit()
+
+    async def avisa_bybit(self):
+        """(R1 H1) El aviso de ACTIVO/APAGADO se reintenta en cada tic hasta que Telegram lo entrega, como la caducidad:
+        antes se mandaba una vez y, si no llegaba, el siguiente juicio ya no veia el cambio y Alejandro no se enteraba.
+        Al registro van el primer fallo y la entrega, no una fila por tic."""
+        p = self.bybit_aviso
+        if not p:
+            return
+        if await self.manda(p["txt"]):
+            self.bybit_aviso = None
+            return await self.evento("bybit", None, None, True, detalle=p["detalle"])
+        if not p["fallado"]:
+            p["fallado"] = True
+            await self.evento("bybit", None, None, False, detalle=p["detalle"])
 
     async def avisa_caducidad(self):
         """(R10) La clave sin IP caduca (Bybit: 3 meses). Con dato de caducidad, Telegram avisa UNA vez por umbral de
@@ -745,6 +761,8 @@ class Bot:
             return
         if time.time() >= self.clave_proxima:
             await self.lee_clave()
+        else:
+            await self.avisa_bybit()
         await self.avisa_caducidad()
         await self.caduca_veredicto()
         if not self.estado["bybit"]["activo"]:
@@ -1256,7 +1274,7 @@ class Bot:
             return
         s = await self.salud()
         texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}") + "\n" + await self.texto_sombra(corto=True)
-        texto += "\n" + await self.texto_sesgo(corto=True)
+        texto += "\n" + await self.texto_sesgo(corto=True) + "\n" + self.cabeza_diario()
         enviada = await self.manda(texto)
         if not enviada and self.tg:
             return  # se reintenta al minuto siguiente; el interruptor avisa si a las 13:30Z no ha salido
@@ -1303,6 +1321,19 @@ class Bot:
             return pathlib.Path(f).read_text(encoding="utf-8").strip() + f"\n(marcador de hace {edad:.0f} h)"
         except OSError:
             return "DIARIO DE ENTRADAS: sin marcador todavia (lo deja la tarea diaria de 143)"
+
+    def cabeza_diario(self) -> str:
+        """D6 (diario R1): la cabeza del libro del diario (n y sha256 enteros) que trae el marcador de 143, para el parte
+        diario. Lo que sale por Telegram no lo reescribe quien reescriba el libro y su historial en 143."""
+        f = os.path.join(self.informes, "diario-entradas.txt")
+        try:
+            m = re.search(r"libro n=(-?\d+) sha256 ([0-9a-f]{64})", pathlib.Path(f).read_text(encoding="utf-8"))
+            edad = (time.time() - os.path.getmtime(f)) / 3600
+        except OSError:
+            m = None
+        if not m:
+            return "DIARIO: sin cabeza del libro (no hay marcador de 143, o no trae n y sha256)"
+        return f"DIARIO libro n={m.group(1)} sha256 {m.group(2)} (marcador de hace {edad:.0f} h)"
 
     async def texto_sesgo(self, corto: bool = False) -> str:
         """E2: el sesgo diario de cada activo (app/bot/sesgo.py), para /entrada y el parte. CONTEXTO, NO una entrada; un

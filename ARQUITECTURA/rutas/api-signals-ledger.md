@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_ledger` · `app/api.py:2607` (cuerpo hasta la 2714) · decorador en la linea 2606.
+Handler `signals_ledger` · `app/api.py:2630` (cuerpo hasta la 2737) · decorador en la linea 2629.
 
 ## Parametros de entrada
 
@@ -22,17 +22,17 @@ Handler `signals_ledger` · `app/api.py:2607` (cuerpo hasta la 2714) · decorado
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:2705 |
-| `count` | literal en app/api.py:2711 |
-| `limit` | literal en app/api.py:2706 |
-| `observations` | literal en app/api.py:2713 |
-| `since` | literal en app/api.py:2702 |
-| `symbol` | literal en app/api.py:2701 |
-| `transition_types` | literal en app/api.py:2709 |
-| `transition_types_nota` | literal en app/api.py:2710 |
-| `truncated` | literal en app/api.py:2712 |
-| `until` | literal en app/api.py:2703 |
-| `ventana_maxima_h` | literal en app/api.py:2704 |
+| `as_of` | literal en app/api.py:2728 |
+| `count` | literal en app/api.py:2734 |
+| `limit` | literal en app/api.py:2729 |
+| `observations` | literal en app/api.py:2736 |
+| `since` | literal en app/api.py:2725 |
+| `symbol` | literal en app/api.py:2724 |
+| `transition_types` | literal en app/api.py:2732 |
+| `transition_types_nota` | literal en app/api.py:2733 |
+| `truncated` | literal en app/api.py:2735 |
+| `until` | literal en app/api.py:2726 |
+| `ventana_maxima_h` | literal en app/api.py:2727 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -52,10 +52,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2471`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2591`
-- `app.api.records` — `app/api.py:271`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api._utc_iso` — `app/api.py:2494`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
+- `app.api.records` — `app/api.py:272`
+- `app.api.validate_symbol` — `app/api.py:259`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (10)</summary>
 
@@ -78,12 +78,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
-| 422 | — | `app/api.py:2600` | una funcion de su cierre |
-| 422 | — | `app/api.py:2628` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2630` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2632` | el propio handler |
-| 422 | — | `app/api.py:2634` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 422 | — | `app/api.py:2623` | una funcion de su cierre |
+| 422 | — | `app/api.py:2651` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:2653` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:2655` | el propio handler |
+| 422 | — | `app/api.py:2657` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:3146` (cuerpo hasta la 3150) · decorador en la linea 3145.
+Handler `data_confidence` · `app/api.py:3169` (cuerpo hasta la 3173) · decorador en la linea 3168.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:3146` (cuerpo hasta la 3150) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:3150 |
+| `rows` | literal en app/api.py:3173 |
 | `rows.collectors_stale` | asignado en app/ai_context.py:603 |
 | `rows.flow_8h_complete` | asignado en app/ai_context.py:572 |
 | `rows.quality_score` | asignado en app/ai_context.py:615 |
@@ -62,7 +62,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.data_confidence_row` — `app/ai_context.py:532`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.validate_symbol` — `app/api.py:259`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
 
@@ -85,7 +85,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

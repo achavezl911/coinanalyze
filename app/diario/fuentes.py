@@ -41,6 +41,7 @@ REGLAS = {
     "D:imp1:v0:A": {"marco": "D", "dur": DIA, "regla": "imp1", "filtro": 0, "stop": 0.03, "plazo_d": 10},
     "H:imp6:v1:D": {"marco": "H", "dur": H4, "regla": "imp6", "filtro": 1, "stop": 0.03, "plazo_d": 6},
 }
+STOP_MIN = 0.005  # el stop mas cerca que se sella: con 0.1 % un salto de apertura daba +0.48 R (R3b H6)
 REJILLA_PCT, REJILLA_STOP, REJILLA_OBJ, REJILLA_CADUCA_D, REJILLA_PLAZO_D = (0.02, 0.04, 0.06), 0.03, 0.06, 5, 10
 FRESCO_S = 3600
 FORMATO = "diario-entradas/1"
@@ -156,6 +157,8 @@ def valida(p: dict, px: float | None, ahora: int, vistos: set) -> str | None:
     s = 1 if p["lado"] == "largo" else -1
     if not (s * p["stop"] < s * p["entrada"] < s * p["objetivo"]):
         return "geometria al reves (largo: stop < entrada < objetivo; corto al reves)"
+    if abs(p["entrada"] - p["stop"]) / p["entrada"] < STOP_MIN:
+        return f"stop a {abs(p['entrada'] - p['stop']) / p['entrada']:.2%} de la entrada, minimo {STOP_MIN:.1%}"
     if px is None:
         return "sin precio de 140 al sellar (vela de 5 min de hace mas de 15 min)"
     if p["orden"] == "limite" and s * p["entrada"] >= s * px:
@@ -196,15 +199,20 @@ def reglas(velas4h: dict[str, dict], ahora: int, bloqueadas: set) -> tuple[list[
     return props, notas
 
 
-def rejilla(velas4h: dict[str, dict], ahora: int) -> list[dict]:
-    """La rejilla del ULTIMO dia cerrado, si cerro hace menos de 24 h."""
-    out = []
+def rejilla(velas4h: dict[str, dict], ahora: int, errores: list | None = None) -> list[dict]:
+    """La rejilla del ULTIMO dia cerrado, si cerro hace menos de 24 h. Un activo sin ese dia (faltan velas de 4 h)
+    va a `errores`: el dia sin control se ve en el estado y en el marcador, no calla (R3b H3)."""
+    out, errores = [], [] if errores is None else errores
+    ayer = datetime.fromtimestamp(ahora - ahora % DIA - DIA, UTC).strftime("%Y-%m-%d")
     for act, v4 in velas4h.items():
         dd = diarias({t: x for t, x in v4.items() if t + H4 <= ahora})
         if not dd:
+            errores.append(f"rejilla {act}: sin ningun dia con sus seis velas de 4 h; el {ayer} queda sin rejilla")
             continue
         d = max(dd)
         if ahora - (d + DIA) > DIA or d + DIA > ahora:
+            ult = datetime.fromtimestamp(d, UTC).strftime("%Y-%m-%d")
+            errores.append(f"rejilla {act}: el ultimo dia con sus seis velas de 4 h es el {ult}; el {ayer} queda sin rejilla")
             continue
         c = dd[d][3]
         dia = datetime.fromtimestamp(d, UTC).strftime("%Y-%m-%d")

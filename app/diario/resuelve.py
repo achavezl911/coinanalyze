@@ -15,11 +15,14 @@
   R neto = neto / d, con d = |entrada - stop| / entrada (1 R bruto = el stop, como en fable-be). USD neto = neto x
     nominal, nominal = riesgo / (d + 10 pb + com. entrada + 5.5 pb): un stop limpio pierde ~ el riesgo con todo.
   HUECO: si falta una vela del camino y hay velas posteriores, la propuesta queda PENDIENTE y se dice desde que vela.
-    Nunca se resuelve con datos que faltan; si las velas no han llegado aun, PENDIENTE sin hueco.
+    Nunca se resuelve con datos que faltan; si las velas no han llegado aun, PENDIENTE sin hueco. El hueco se rellena,
+    si se puede, del volcado publico (publico.py); si a los INDECIDIBLE_S del fin de la vela que falta sigue sin
+    precio, la propuesta se cierra «indecidible» (sin R ni llenado: el marcador la cuenta aparte).
 """
 from __future__ import annotations
 
 PASO, SELLO_FUNDING = 300, 28800
+INDECIDIBLE_S = 3 * 86400
 COM_MAKER, COM_TAKER, SLIP_STOP, FUNDING = 0.0002, 0.00055, 0.0010, 0.0001
 
 
@@ -27,15 +30,16 @@ def primera_vela(sello: int) -> int:
     return (sello // PASO + 1) * PASO
 
 
-def resuelve(p: dict, velas: dict, ahora: int) -> dict:
+def resuelve(p: dict, velas: dict, ahora: int, publicas: frozenset | set = frozenset()) -> dict:
     """velas: {inicio: (apertura, maximo, minimo, cierre)} de 5 min. Devuelve {'estado': 'resuelta', 'resultado': {...}}
-    o {'estado': 'pendiente', 'hueco': inicio de la vela que falta o None, 'hasta': ultima vela mirada o None}."""
+    o {'estado': 'pendiente', 'hueco': inicio de la vela que falta o None, 'hasta': ultima vela mirada o None}.
+    publicas: los inicios de las velas que vienen del volcado publico; el resultado dice cuantas uso."""
     s = 1 if p["lado"] == "largo" else -1
     e, st, ob = float(p["entrada"]), float(p["stop"]), float(p["objetivo"])
     mercado = p["orden"] == "mercado"
     ultima = max((t for t in velas if t + PASO <= ahora), default=None)
     t = primera_vela(int(p["sello"]))
-    t_ll = None
+    t_ll, n_pub = None, 0
     while True:
         if ultima is None or t > ultima:
             return {"estado": "pendiente", "hueco": None, "hasta": ultima}
@@ -43,6 +47,7 @@ def resuelve(p: dict, velas: dict, ahora: int) -> dict:
         if v is None:
             return {"estado": "pendiente", "hueco": t, "hasta": ultima}
         o, hi, lo, c = v
+        n_pub += t in publicas
         if t_ll is None:
             if not mercado and t >= int(p["caduca"]):
                 return {"estado": "resuelta", "resultado": _sin_llenar(p, t)}
@@ -55,10 +60,12 @@ def resuelve(p: dict, velas: dict, ahora: int) -> dict:
                 continue
         else:
             misma = False
-        d = abs(e - st) / e
+        # d: la distancia al stop desde el llenado; si la apertura del llenado ya esta mas alla del stop (mercado),
+        # la declarada: si no, d sale del reves (o cero) y el R no tiene escala.
+        d = abs(e - st) / e if s * (e - st) > 0 else abs(float(p["entrada"]) - st) / float(p["entrada"])
         toca_stop = (lo <= st) if s > 0 else (hi >= st)
         toca_obj = (hi >= ob) if s > 0 else (lo <= ob)
-        if not misma and t > t_ll and s * (o - st) <= 0:
+        if s * (o - st) <= 0:  # abre mas alla del stop, tambien en la vela del llenado: sale a la apertura (R3b H6)
             px, como = o * (1 - s * SLIP_STOP), "stop"
         elif toca_stop:
             px, como = st * (1 - s * SLIP_STOP), "stop"
@@ -69,7 +76,18 @@ def resuelve(p: dict, velas: dict, ahora: int) -> dict:
         else:
             t += PASO
             continue
-        return {"estado": "resuelta", "resultado": _cuenta(p, s, e, d, t_ll, t + PASO, px, como, mercado)}
+        r = _cuenta(p, s, e, d, t_ll, t + PASO, px, como, mercado)
+        if n_pub:
+            r["velas_publicas"] = n_pub
+        return {"estado": "resuelta", "resultado": r}
+
+
+def indecidible(p: dict, hueco: int, ahora: int) -> dict | None:
+    """El resultado «indecidible» si la vela `hueco` lleva INDECIDIBLE_S cerrada sin precio; si no, None."""
+    if ahora < hueco + PASO + INDECIDIBLE_S:
+        return None
+    return {"id": p["id"], "llenada": None, "px_llenado": None, "t_llenado": None, "salida": "indecidible",
+            "px_salida": None, "t_salida": None, "r_neto": None, "usd_neto": None, "coste": {}, "hueco": hueco}
 
 
 def _sin_llenar(p: dict, t: int) -> dict:

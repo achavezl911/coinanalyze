@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:4010` (cuerpo hasta la 4079) · decorador en la linea 4009.
+Handler `health` · `app/api.py:4033` (cuerpo hasta la 4102) · decorador en la linea 4032.
 
 ## Parametros de entrada
 
@@ -16,19 +16,19 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:4063 |
-| `governed_services` | literal en app/api.py:4066 |
-| `informative_services` | literal en app/api.py:4067 |
-| `informative_services.failing` | literal en app/api.py:4073 |
-| `informative_services.lag_seconds` | literal en app/api.py:4071 |
-| `informative_services.max_age_seconds` | literal en app/api.py:4072 |
-| `informative_services.service` | literal en app/api.py:4069 |
-| `informative_services.status` | literal en app/api.py:4070 |
-| `missing_services` | literal en app/api.py:4064 |
-| `missing_symbols` | literal en app/api.py:4065 |
-| `services` | literal en app/api.py:4077 |
-| `status` | literal en app/api.py:4058 |
-| `symbols` | literal en app/api.py:4078 |
+| `database` | literal en app/api.py:4086 |
+| `governed_services` | literal en app/api.py:4089 |
+| `informative_services` | literal en app/api.py:4090 |
+| `informative_services.failing` | literal en app/api.py:4096 |
+| `informative_services.lag_seconds` | literal en app/api.py:4094 |
+| `informative_services.max_age_seconds` | literal en app/api.py:4095 |
+| `informative_services.service` | literal en app/api.py:4092 |
+| `informative_services.status` | literal en app/api.py:4093 |
+| `missing_services` | literal en app/api.py:4087 |
+| `missing_symbols` | literal en app/api.py:4088 |
+| `services` | literal en app/api.py:4100 |
+| `status` | literal en app/api.py:4081 |
+| `symbols` | literal en app/api.py:4101 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -63,7 +63,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:271`
+- `app.api.records` — `app/api.py:272`
 - `app.db.db_identity` — `app/db.py:64`
 - `app.db.heartbeat` — `app/db.py:409`
 - `app.db.heartbeat_max_age` — `app/db.py:95`

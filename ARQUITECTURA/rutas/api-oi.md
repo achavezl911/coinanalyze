@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `oi` · `app/api.py:1058` (cuerpo hasta la 1103) · decorador en la linea 1057.
+Handler `oi` · `app/api.py:1081` (cuerpo hasta la 1126) · decorador en la linea 1080.
 
 ## Parametros de entrada
 
@@ -20,22 +20,22 @@ Handler `oi` · `app/api.py:1058` (cuerpo hasta la 1103) · decorador en la line
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:507 |
-| `coverage.served_window` | literal en app/api.py:508 |
-| `coverage.unit` | literal en app/api.py:453 |
-| `data_gaps` | literal en app/api.py:513 |
-| `data_gaps.declared` | literal en app/api.py:521 |
-| `data_gaps.exchanges` | literal en app/api.py:515 |
-| `data_gaps.feed` | literal en app/api.py:514 |
-| `data_gaps.market` | literal en app/api.py:516 |
-| `data_gaps.status` | literal en app/api.py:520 |
-| `data_gaps.symbol` | literal en app/api.py:517 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:522 |
-| `data_gaps.window_end` | literal en app/api.py:519 |
-| `data_gaps.window_start` | literal en app/api.py:518 |
-| `interval` | literal en app/api.py:505 |
-| `rows` | literal en app/api.py:506 |
-| `symbol` | literal en app/api.py:504 |
+| `coverage` | literal en app/api.py:527 |
+| `coverage.served_window` | literal en app/api.py:528 |
+| `coverage.unit` | literal en app/api.py:473 |
+| `data_gaps` | literal en app/api.py:533 |
+| `data_gaps.declared` | literal en app/api.py:541 |
+| `data_gaps.exchanges` | literal en app/api.py:535 |
+| `data_gaps.feed` | literal en app/api.py:534 |
+| `data_gaps.market` | literal en app/api.py:536 |
+| `data_gaps.status` | literal en app/api.py:540 |
+| `data_gaps.symbol` | literal en app/api.py:537 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:542 |
+| `data_gaps.window_end` | literal en app/api.py:539 |
+| `data_gaps.window_start` | literal en app/api.py:538 |
+| `interval` | literal en app/api.py:525 |
+| `rows` | literal en app/api.py:526 |
+| `symbol` | literal en app/api.py:524 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -75,15 +75,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:425`
-- `app.api.historical_interval_value` — `app/api.py:264`
-- `app.api.mask_gapped_series_rows` — `app/api.py:275`
-- `app.api.records` — `app/api.py:271`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.declared_series_response` — `app/api.py:445`
+- `app.api.historical_interval_value` — `app/api.py:265`
+- `app.api.mask_gapped_series_rows` — `app/api.py:295`
+- `app.api.records` — `app/api.py:272`
+- `app.api.validate_symbol` — `app/api.py:259`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:385`
+- `app.api.minutos_de_las_filas` — `app/api.py:405`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:108`
@@ -107,8 +107,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:267` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:268` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

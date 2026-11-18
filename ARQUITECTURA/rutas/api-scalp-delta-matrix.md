@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_delta_matrix` · `app/api.py:1360` (cuerpo hasta la 1385) · decorador en la linea 1359.
+Handler `scalp_delta_matrix` · `app/api.py:1383` (cuerpo hasta la 1408) · decorador en la linea 1382.
 
 ## Parametros de entrada
 
@@ -70,7 +70,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.validate_symbol` — `app/api.py:259`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4658`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
@@ -108,7 +108,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
