@@ -308,3 +308,74 @@ def test_l2_el_parte_del_bot_lleva_la_cabeza(tmp_path, monkeypatch):
     asyncio.run(b.tic_parte())
     (p,) = [m for m in b.mandados if m.startswith("PARTE ")]
     assert f"DIARIO libro n=41 sha256 {sha}" in p
+
+
+# ------------------------------------------------------------------------- D7 (R3b H4)
+T7 = 1786406400  # un 00:00Z
+
+
+def _banco_tick(tmp_path, act: str, px: float, tick: float, semilla: int = 3) -> str:
+    """Banco como el de test_diario_ciego, con los precios en multiplos de un tick REAL del activo."""
+    import random
+
+    from app.diario import ciego as cg
+    az, d = random.Random(semilla), tmp_path / f"banco-{act}"
+    d.mkdir()
+    q = lambda x: round(round(x / tick) * tick, 8)  # noqa: E731
+    for nom, dur, desde in (("daily-ohlc", 86400, T7 - 100 * 86400), ("4hour-ohlc", 14400, T7 - 25 * 86400),
+                            ("5m", 300, T7 - 2 * 86400)):
+        filas, c = [], px
+        for s in range(desde, T7 + 3 * 86400, dur):
+            o, c = c, q(c * (1 + az.gauss(0, 0.002 * (dur / 300) ** 0.5)))
+            h, lo = q(max(o, c) * (1 + az.random() * 0.001)), q(min(o, c) * (1 - az.random() * 0.001))
+            filas.append((s, o, h, lo, c, 1.0) if nom != "5m" else (s, h, lo, c, 1.0))
+        (d / f"{act}-{nom}.txt").write_text("".join("|".join(str(x) for x in f) + "\n" for f in filas))
+    cg.carga.cache_clear()
+    return str(d)
+
+
+def _concentracion(xs, qs):
+    import numpy as np
+    f = 2 * np.pi * np.asarray(xs)[None, :] / np.asarray(qs)[:, None]
+    return np.hypot(np.cos(f).sum(1), np.sin(f).sum(1)) / len(xs)
+
+
+def _cierre_del_texto(texto: str, tick: float) -> float | None:
+    """El metodo de R3b (fable_r3_foto.py), con el texto de la foto y nada mas: el paso comun de los precios de 5 min,
+    afinado con todos; si se ve (concentracion >= 0.8), ultimo cierre / paso x tick = el precio real."""
+    import numpy as np
+    todos, m5, cols, ref = [], [], 4, 0.0
+    for ln in texto.splitlines()[2:]:
+        if ln.startswith(("DIARIAS", "4 HORAS", "5 MINUTOS")):
+            cols = 3 if ln.startswith("5 MINUTOS") else 4
+            continue
+        c = ln.split("|")
+        todos += c[1:1 + cols]
+        if cols == 3:
+            m5, ref = m5 + c[1:4], float(c[3])
+    fino = min(10.0 ** -len(c.split(".")[1]) for c in todos if "." in c)
+    xs = sorted({float(c) for c in m5})
+    saltos = sorted(b - a for a, b in zip(xs, xs[1:], strict=False) if b - a > 3 * fino)
+    if len(saltos) < 20:
+        return None
+    q, todo = saltos[len(saltos) // 10], sorted({float(c) for c in todos})
+    for base, ancho, paso in ((xs, 0.25, 5e-4), (todo, 2e-3, 1e-5), (todo, 2e-5, 1e-6)):
+        qs = q * (1 + np.arange(-int(ancho / paso), int(ancho / paso) + 1) * paso)
+        cs = _concentracion(base, qs)
+        q, conc = float(qs[cs.argmax()]), float(cs.max())
+    return round(ref / q) * tick if conc >= 0.8 else None
+
+
+@pytest.mark.parametrize("act,px,tick,n", [("SOL", 140.0, 0.01, 8), ("SOL", 40.0, 0.01, 8)])
+def test_d7_la_foto_no_devuelve_el_precio_real(tmp_path, act, px, tick, n):
+    from app.diario import ciego as cg
+    banco = _banco_tick(tmp_path, act, px, tick)
+    fuera = 0
+    for k in range(n):
+        t = T7 + 86400 + k * 14400
+        texto, clave = cg.foto(banco, act, t, semilla=5)
+        real = cg.cerradas(cg.carga(banco, act)["M"], 300, t, 1)[0][3]
+        est = _cierre_del_texto(texto, tick)
+        fuera += est is None or abs(est - real) > tick / 2
+        assert cg.foto(banco, act, t, semilla=5)[0] == texto  # determinista con la semilla
+    assert fuera == n, f"{act}: el precio real sale de {n - fuera} de {n} fotos"
