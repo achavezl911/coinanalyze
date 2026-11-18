@@ -246,3 +246,25 @@ async def test_en_seco_cuenta_y_no_escribe_ni_pregunta(base) -> None:
     assert sorted(info["padres_mixtos"]) == sorted(plantado["padres"]), "un gap id trae tambien su anidado"
     assert fuente.pedidas == [] and resumen["pedidas"] == 0
     assert huella == await conn.fetchval("SELECT md5(string_agg(id || status || start_ts::text || end_ts::text, ',' ORDER BY id)) FROM data_gap")
+
+
+async def test_r2_un_hueco_de_34_h_de_5min_dentro_del_reloj_acaba_recuperado(base) -> None:
+    """R2: el recuperador del timer tambien pide ohlcv 5min dentro de su horizonte (192 h, citado), por trozos."""
+    conn = base
+    ident5 = {**IDENT, "feed": "ohlcv_5min", "granularity": "5min"}
+    cinco = timedelta(minutes=5)
+    ini, fin = AHORA - 35 * H, AHORA - H
+    gap = await record_data_gap(
+        conn, **ident5, feed_class="cadence", start=ini, end=fin, evidence_type="missing_interval",
+        detection_reason="apagon", detection_source="plantado_test", expected_cadence=cinco,
+    )
+    fuente = FuenteReloj()
+    resumen = await recupera.recupera(conn, fuente, ahora=AHORA, permitidos=frozenset({SYM}), limite=60)
+    assert await conn.fetchval("SELECT status FROM data_gap WHERE id=$1", gap) == "recovered", resumen
+    velas = await conn.fetchval(
+        "SELECT count(*) FROM ohlcv WHERE symbol=$1 AND interval='5min' AND ts >= $2 AND ts < $3", SYM, ini, fin
+    )
+    assert velas == 34 * 12
+    assert fuente.pedidas and {p[0] for p in fuente.pedidas} == {"5min"}
+    assert max(b - a for _, a, b in fuente.pedidas) <= recupera.PLANS[("ohlcv_5min", "5min")].chunk, "por trozos"
+    assert recupera.HORIZONTE[("ohlcv_5min", "5min")] == recupera.HORIZONTE_OHLCV_5MIN == timedelta(hours=192)

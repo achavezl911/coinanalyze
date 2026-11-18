@@ -54,9 +54,15 @@ from scripts.resweep_cadence_gaps import PLANS, _control, reconcilia_hueco_enter
 RECUPERA_DETECTION_SOURCE = "recupera_v1"
 # Hasta donde contesta la fuente, por plan. El de ohlcv 1min es el SUELO medido (24-48 h, ver el
 # docstring del repaso): pedir mas atras no devuelve nada y solo gasta cupo.
+# El de ohlcv 5min NO esta medido: es CITA. harness/hechos.tsv:261 (2026-08-25) dice que el 1min
+# «NO son 8-9 dias como en 5min», y el dueno lo relleno con backfill_ohlcv.py en esa misma
+# ventana tras el apagon de 11-16. Se toma el SUELO de esos 8-9 dias: pedir dentro de 192 h no
+# gasta cupo en vano, y lo que quede entre 192 h y el borde real lo coge la ingesta o --parte.
+HORIZONTE_OHLCV_5MIN = timedelta(hours=192)
 HORIZONTE: dict[tuple[str, str], timedelta] = {
     ("ohlcv_1min", "1min"): timedelta(hours=24),
     ("long_short_ratio", "5min"): timedelta(hours=200),
+    ("ohlcv_5min", "5min"): HORIZONTE_OHLCV_5MIN,
 }
 # Lo de los ultimos minutos es de la ingesta en vivo: no se le disputa.
 FRESCO = timedelta(minutes=10)

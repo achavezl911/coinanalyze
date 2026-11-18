@@ -108,12 +108,25 @@ class Ohlcv1mPlan(FeedPlan):
         return await self._almacenado_en(conn, "ohlcv", "1min", ident, inicio, fin)
 
 
+class Ohlcv5mPlan(FeedPlan):
+    async def store(self, conn, payload, symbol_map, start_ts, end_ts, observed) -> int:
+        return await upsert_ohlcv(
+            conn, payload, symbol_map, start_ts, end_ts, "5min", observed=observed
+        )
+
+    async def almacenado(self, conn, ident, inicio, fin) -> set[datetime]:
+        return await self._almacenado_en(conn, "ohlcv", "5min", ident, inicio, fin)
+
+
 PLANS: dict[tuple[str, str], FeedPlan] = {
     ("long_short_ratio", "5min"): LongShortPlan(
         "long-short-ratio-history", "5min", timedelta(minutes=5), timedelta(hours=24)
     ),
     ("ohlcv_1min", "1min"): Ohlcv1mPlan(
         "ohlcv-history", "1min", timedelta(minutes=1), timedelta(hours=6)
+    ),
+    ("ohlcv_5min", "5min"): Ohlcv5mPlan(
+        "ohlcv-history", "5min", timedelta(minutes=5), timedelta(hours=24)
     ),
 }
 
