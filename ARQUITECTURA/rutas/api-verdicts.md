@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:2233` (cuerpo hasta la 2319) · decorador en la linea 2232.
+Handler `verdicts` · `app/api.py:2256` (cuerpo hasta la 2342) · decorador en la linea 2255.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `verdicts` · `app/api.py:2233` (cuerpo hasta la 2319) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:2312 |
-| `coverage.served_window` | literal en app/api.py:2312 |
+| `coverage` | literal en app/api.py:2335 |
+| `coverage.served_window` | literal en app/api.py:2335 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:289 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:287 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:288 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:290 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:286 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:285 |
-| `logic_version` | literal en app/api.py:2310 |
-| `note` | literal en app/api.py:2313 |
-| `rows` | literal en app/api.py:2311 |
-| `symbol` | literal en app/api.py:2309 |
+| `logic_version` | literal en app/api.py:2333 |
+| `note` | literal en app/api.py:2336 |
+| `rows` | literal en app/api.py:2334 |
+| `symbol` | literal en app/api.py:2332 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -53,9 +53,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:527`
-- `app.api.records` — `app/api.py:271`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api._session_window` — `app/api.py:547`
+- `app.api.records` — `app/api.py:272`
+- `app.api.validate_symbol` — `app/api.py:259`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
@@ -86,7 +86,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

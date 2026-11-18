@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ohlcv` · `app/api.py:714` (cuerpo hasta la 774) · decorador en la linea 713.
+Handler `ohlcv` · `app/api.py:734` (cuerpo hasta la 797) · decorador en la linea 733.
 
 ## Parametros de entrada
 
@@ -20,22 +20,22 @@ Handler `ohlcv` · `app/api.py:714` (cuerpo hasta la 774) · decorador en la lin
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:507 |
-| `coverage.served_window` | literal en app/api.py:508 |
-| `coverage.unit` | literal en app/api.py:453 |
-| `data_gaps` | literal en app/api.py:513 |
-| `data_gaps.declared` | literal en app/api.py:521 |
-| `data_gaps.exchanges` | literal en app/api.py:515 |
-| `data_gaps.feed` | literal en app/api.py:514 |
-| `data_gaps.market` | literal en app/api.py:516 |
-| `data_gaps.status` | literal en app/api.py:520 |
-| `data_gaps.symbol` | literal en app/api.py:517 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:522 |
-| `data_gaps.window_end` | literal en app/api.py:519 |
-| `data_gaps.window_start` | literal en app/api.py:518 |
-| `interval` | literal en app/api.py:505 |
-| `rows` | literal en app/api.py:506 |
-| `symbol` | literal en app/api.py:504 |
+| `coverage` | literal en app/api.py:527 |
+| `coverage.served_window` | literal en app/api.py:528 |
+| `coverage.unit` | literal en app/api.py:473 |
+| `data_gaps` | literal en app/api.py:533 |
+| `data_gaps.declared` | literal en app/api.py:541 |
+| `data_gaps.exchanges` | literal en app/api.py:535 |
+| `data_gaps.feed` | literal en app/api.py:534 |
+| `data_gaps.market` | literal en app/api.py:536 |
+| `data_gaps.status` | literal en app/api.py:540 |
+| `data_gaps.symbol` | literal en app/api.py:537 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:542 |
+| `data_gaps.window_end` | literal en app/api.py:539 |
+| `data_gaps.window_start` | literal en app/api.py:538 |
+| `interval` | literal en app/api.py:525 |
+| `rows` | literal en app/api.py:526 |
+| `symbol` | literal en app/api.py:524 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -73,20 +73,21 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-12 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+13 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:425`
-- `app.api.historical_interval_value` — `app/api.py:264`
-- `app.api.mask_gapped_series_rows` — `app/api.py:275`
-- `app.api.records` — `app/api.py:271`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.declared_series_response` — `app/api.py:445`
+- `app.api.historical_interval_value` — `app/api.py:265`
+- `app.api.mask_gapped_series_rows` — `app/api.py:295`
+- `app.api.records` — `app/api.py:272`
+- `app.api.unpriced_candles_are_not_covered` — `app/api.py:279`
+- `app.api.validate_symbol` — `app/api.py:259`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:385`
+- `app.api.minutos_de_las_filas` — `app/api.py:405`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
@@ -112,8 +113,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:267` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:268` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -125,7 +126,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+7)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:569` |
 | **panel** | `static/js/07-decision-y-ciclos.js:244` | — |
-| **tests** | — | `tests/test_p1_timeframes_and_spot.py:52`, `tests/test_recupera_r1_postgres.py:5`, `tests/test_recupera_r1_postgres.py:134` |
+| **tests** | — | `tests/test_ohlcv_sin_precio.py:1`, `tests/test_p1_timeframes_and_spot.py:52`, `tests/test_recupera_r1_postgres.py:5`, `tests/test_recupera_r1_postgres.py:134` |
 
 **La llama el panel: es superficie de producto.**
 
@@ -174,6 +175,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.ohlcv` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.api.unpriced_candles_are_not_covered` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

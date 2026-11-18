@@ -45,6 +45,10 @@ ACTIVOS = ("BTC", "ETH", "SOL")
 DIA, H4, M5 = 86400, 14400, 300
 N_D, N_H, N_M = 90, 120, 288
 OBJ_MIN, OBJ_MAX = 5.0, 20.0
+# D7 (diario R1, R3b H4): cada precio escalado se redondea a un paso PROPIO de la foto, PASO_BPS (sorteado con la
+# semilla) del objetivo. Es mayor que el tick relativo de los tres activos (SOL 0.01 a 30 USD = 3.3 bps): la rejilla
+# del exchange (tick / factor) no sobrevive, y la que se ve (objetivo x paso) no dice nada del precio real.
+PASO_BPS = (4.0, 6.0)
 SEMILLA = 20261115
 DESDE, HASTA = 1785542400, 1794009600  # 2026-08-01 y 2026-11-07, 00:00Z (ambos incluidos: 99 dias)
 N_DIAS, N_DOBLES = 64, 16
@@ -79,20 +83,22 @@ def foto(banco: str, act: str, t: int, semilla: int = SEMILLA) -> tuple[str, dic
     az = random.Random(f"{semilla}:{act}:{t}")
     letra = az.choice("ABC")
     objetivo = math.exp(az.uniform(math.log(OBJ_MIN), math.log(OBJ_MAX)))
+    paso = objetivo * az.uniform(*PASO_BPS) / 1e4
     D, H, M = cerradas(b["D"], DIA, t, N_D), cerradas(b["H"], H4, t, N_H), cerradas(b["M"], M5, t, N_M)
     if not (D and H and M):
         raise ValueError(f"{act} t={t}: el banco no tiene velas cerradas de las tres series")
     f = H[-1][4] / objetivo
     out = [f"FOTO · activo «{letra}» (perpetuo) · AHORA = cierre de una vela de 4 h; hora del dia UTC ahora: "
            f"{(t % DIA) // 3600:02d}:00",
-           "Precios divididos por un factor oculto (las proporciones son exactas). Volumen relativo a la media de su "
+           "Precios divididos por un factor oculto y redondeados a un paso propio de la foto (proporciones exactas a "
+           f"{PASO_BPS[1]:.0f} bps). Volumen relativo a la media de su "
            "serie (1.00 = media). Velas de la mas vieja a la mas reciente; solo velas ya cerradas.",
            f"DIARIAS (cierran a las 00:00 UTC; {len(D)}) · hace = horas desde su cierre · hace|o|h|l|c|v"]
 
     def filas(vs: list, dur: int, unidad: int, campos: int) -> None:
         mv = sum(v[-1] for v in vs) / len(vs) or 1.0
         for v in vs:
-            precios = "|".join(_p(x / f) for x in v[1:1 + campos])
+            precios = "|".join(_p(round(x / f / paso) * paso) for x in v[1:1 + campos])
             out.append(f"{(t - v[0] - dur) // unidad}|{precios}|{v[-1] / mv:.2f}")
 
     filas(D, DIA, 3600, 4)
@@ -100,7 +106,7 @@ def foto(banco: str, act: str, t: int, semilla: int = SEMILLA) -> tuple[str, dic
     filas(H, H4, 3600, 4)
     out.append(f"5 MINUTOS ({len(M)}; sin apertura) · hace = minutos desde su cierre · hace|h|l|c|v")
     filas(M, M5, 60, 3)
-    return "\n".join(out) + "\n", {"activo": act, "t": t, "letra": letra, "factor": f, "semilla": semilla}
+    return "\n".join(out) + "\n", {"activo": act, "t": t, "letra": letra, "factor": f, "semilla": semilla, "paso": paso}
 
 
 # ---------- S3: sello y resolucion ----------
@@ -255,7 +261,7 @@ def _corre(carpeta, tope_usd, maximo, effort, modelo, banco, semilla) -> dict:
                 return {"rc": 2, "error": f"{rp} no es el plan de la semilla {semilla}: otra carpeta"}
     else:
         _json(rp, {"semilla": semilla, "desde": DESDE, "hasta": HASTA, "instantes": instantes})
-    L = lb.Libro(ruta)
+    L = lb.Libro(ruta, monotono=False)  # sella en t simulado: un instante nuevo puede ir antes del ultimo resuelto
     filas = L.lee()
     vistos = {f["id"] for f in filas if f["tipo"] in ("propuesta", "rechazo")}
     sellados = {i.rsplit("@", 1)[1] for i in vistos if "@" in i}

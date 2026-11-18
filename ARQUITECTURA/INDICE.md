@@ -44,7 +44,7 @@
 | `/api/market-memory` | GET | 13 | 1 | 5 | [ficha](rutas/api-market-memory.md) |
 | `/api/mesa/decide` | GET | 3 | 15 | 57 | [ficha](rutas/api-mesa-decide.md) |
 | `/api/mesa/entradas` | GET | 8 | 8 | 78 | [ficha](rutas/api-mesa-entradas.md) |
-| `/api/ohlcv` | GET | 16 | 2 | 12 | [ficha](rutas/api-ohlcv.md) |
+| `/api/ohlcv` | GET | 16 | 2 | 13 | [ficha](rutas/api-ohlcv.md) |
 | `/api/oi` | GET | 16 | 2 | 12 | [ficha](rutas/api-oi.md) |
 | `/api/oi-context` | GET | 16 | 4 | 12 | [ficha](rutas/api-oi-context.md) |
 | `/api/orderflow/cinta` | GET | 1 | 0 | 3 | [ficha](rutas/api-orderflow-cinta.md) |

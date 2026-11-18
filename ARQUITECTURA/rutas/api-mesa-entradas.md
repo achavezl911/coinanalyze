@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_entradas` · `app/api.py:4178` (cuerpo hasta la 4191) · decorador en la linea 4177.
+Handler `mesa_entradas` · `app/api.py:4201` (cuerpo hasta la 4214) · decorador en la linea 4200.
 
 ## Parametros de entrada
 
@@ -82,8 +82,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2591`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
+- `app.api.validate_symbol` — `app/api.py:259`
 - `app.entradas.vista.construir` — `app/entradas/vista.py:603`
 
 <details><summary>Alcanzables de forma indirecta (75)</summary>
@@ -178,8 +178,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
-| 422 | — | `app/api.py:2600` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 422 | — | `app/api.py:2623` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
