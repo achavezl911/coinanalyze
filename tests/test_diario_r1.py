@@ -379,3 +379,36 @@ def test_d7_la_foto_no_devuelve_el_precio_real(tmp_path, act, px, tick, n):
         fuera += est is None or abs(est - real) > tick / 2
         assert cg.foto(banco, act, t, semilla=5)[0] == texto  # determinista con la semilla
     assert fuera == n, f"{act}: el precio real sale de {n - fuera} de {n} fotos"
+
+
+# --------------------------------------------------------------------------- D8 (R1 H1)
+def test_d8_bybit_apagado_se_reintenta_hasta_entregarse(monkeypatch):
+    """Telegram cae justo cuando la clave se apaga: el aviso se reintenta en cada tic hasta salir, una sola vez, y al
+    registro van el fallo (una fila) y la entrega. Con el servicio de main el APAGADO se mandaba una vez y se perdia."""
+    import asyncio
+
+    from test_bot_seguridad import BB, bot
+
+    entrega = [False]
+    b = bot(monkeypatch, entrega)
+    b.bybit = BB({"/v5/user/query-api": {"retCode": 0, "result": {"readOnly": 0, "ips": ["*"]}},
+                  "/v5/position/list": {"retCode": 0, "result": {"list": []}}})
+
+    async def nada(*a, **k):
+        return True
+    for n in ("avisa_caducidad", "caduca_veredicto", "crudo_lectura", "recarga", "operaciones"):
+        monkeypatch.setattr(b, n, nada)
+    asyncio.run(b.tic_bybit())  # juzga la clave: APAGADO, y Telegram no entrega
+    assert not b.estado["bybit"]["activo"]
+    for _ in range(2):
+        asyncio.run(b.tic_bybit())  # sigue caido: se reintenta sin volver a juzgar la clave
+    apagado = [m for m in b.mandados if m.startswith("Bybit APAGADO")]
+    assert len(apagado) == 3, b.mandados
+    entrega[0] = True
+    asyncio.run(b.tic_bybit())
+    asyncio.run(b.tic_bybit())
+    asyncio.run(b.tic_bybit())
+    apagado = [m for m in b.mandados if m.startswith("Bybit APAGADO")]
+    assert len(apagado) == 4, "entregado una vez y no se repite"
+    assert [e for t, _, e, _ in b.eventos if t == "bybit"] == [False, True]
+
