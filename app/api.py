@@ -8,6 +8,7 @@ import time
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from ipaddress import ip_address, ip_network
 from pathlib import Path
 from typing import Annotated, Any
@@ -270,6 +271,25 @@ def historical_interval_value(interval: str) -> timedelta:
 
 def records(rows: list[asyncpg.Record]) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
+
+
+OHLC_KEYS = ("open", "high", "low", "close")
+
+
+def unpriced_candles_are_not_covered(rows: list[dict[str, Any]]) -> None:
+    """Una vela sin precio no esta completa ni cubierta, aunque haya filas de 1 min debajo.
+
+    Medido en 140 el 2026-11-18 (BTC, 5 min, apagon 11-16 15:30Z -> 11-18 01:25Z): 278 cubos
+    salian con OHLC nulo (el hueco declarado los enmascara) y a la vez is_complete=true y
+    coverage_pct=100, porque sample_count se cuenta antes de enmascarar. Un lector que se fia
+    de la cobertura los tomaba por velas cerradas y buenas. Aqui la cobertura es la del precio
+    SERVIDO: sin precio, 0 muestras, 0 % e incompleta.
+    """
+    for row in rows:
+        if any(row.get(key) is None for key in OHLC_KEYS):
+            row["sample_count"] = 0
+            row["is_complete"] = False
+            row["coverage_pct"] = Decimal("0.0")
 
 
 async def mask_gapped_series_rows(
@@ -727,7 +747,9 @@ async def ohlcv(
                 MAX(high) AS high, MIN(low) AS low,
                 (array_agg(close ORDER BY ts DESC))[1] AS close,
                 SUM(volume * close) AS volume_usd,
-                COUNT(*)::int AS sample_count,
+                -- La cobertura cuenta muestras CON precio: una fila de 1 min sin OHLC no es un minuto.
+                COUNT(*) FILTER (WHERE open IS NOT NULL AND high IS NOT NULL
+                                   AND low IS NOT NULL AND close IS NOT NULL)::int AS sample_count,
                 $4::int AS expected_count,
                 MAX(ts) AS last_sample
               FROM ohlcv WHERE symbol=$1 AND interval='1min'
@@ -762,6 +784,7 @@ async def ohlcv(
             symbol=selected,
             value_keys=("open", "high", "low", "close", "volume_usd"),
         )
+        unpriced_candles_are_not_covered(result)
         return await declared_series_response(
             conn,
             result,
