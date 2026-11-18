@@ -70,9 +70,9 @@ Llamadas directas del handler:
 
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.align_down` — `app/data_gaps.py:232`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:245`
+- `app.data_gaps.align_down` — `app/data_gaps.py:242`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
 - `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3292`
 - `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3304`
 - `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3262`
@@ -142,9 +142,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps._aware_utc` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps._validated_window` | 15 | **0** | 22 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
-| `app.data_gaps.expected_buckets` | 12 | **0** | 22 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic._pct_rank` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.align_down` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-data_gaps.md) |

@@ -92,7 +92,7 @@
 | `/api/verdicts` | GET | 12 | 2 | 7 | [ficha](rutas/api-verdicts.md) |
 | `/api/volatility` | GET | 7 | 2 | 9 | [ficha](rutas/api-volatility.md) |
 | `/api/volume-profile` | GET | 17 | 1 | 6 | [ficha](rutas/api-volume-profile.md) |
-| `/api/whale/delta` | GET | 5 | 2 | 11 | [ficha](rutas/api-whale-delta.md) |
+| `/api/whale/delta` | GET | 5 | 1 | 11 | [ficha](rutas/api-whale-delta.md) |
 | `/api/wyckoff` | GET | 10 | 2 | 22 | [ficha](rutas/api-wyckoff.md) |
 | `/api/zone/analysis` | GET | 1 | 2 | 16 | [ficha](rutas/api-zone-analysis.md) |
 | `/espacio` | GET | **0 · PENDIENTE** | 0 | 0 | [ficha](rutas/espacio.md) |
@@ -124,7 +124,7 @@
 | `daily_session_agg` | 22 | 0 |
 | `daily_verdict_outcome` | 3 | 0 |
 | `daily_verdict_snapshot` | 3 | 0 |
-| `data_gap` | 22 | 0 |
+| `data_gap` | 21 | 0 |
 | `entrada_latido` | 2 | 0 |
 | `entrada_registro` | 2 | 0 |
 | `entrada_reglamento` | 2 | 0 |

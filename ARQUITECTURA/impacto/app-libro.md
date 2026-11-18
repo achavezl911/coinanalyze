@@ -8,19 +8,19 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_evidencia`](#-evidencia) | 834 | 0 | **0** | 22 ↑ | **0** |
-| [`_olvida`](#-olvida) | 864 | 0 | **0** | 22 ↑ | **0** |
-| [`_ts`](#-ts) | 823 | 0 | **0** | 22 ↑ | **0** |
-| [`declara_hueco`](#declara-hueco) | 827 | 0 | **22** | 22 | **22** |
-| [`declara_parada_anterior`](#declara-parada-anterior) | 907 | 0 | **0** | 22 ↑ | **0** |
-| [`escribe_minuto`](#escribe-minuto) | 843 | 0 | **0** | 22 ↑ | **0** |
-| [`vuelca`](#vuelca) | 875 | 0 | **0** | 22 ↑ | **0** |
+| [`_evidencia`](#-evidencia) | 834 | 0 | **0** | 21 ↑ | **0** |
+| [`_olvida`](#-olvida) | 864 | 0 | **0** | 21 ↑ | **0** |
+| [`_ts`](#-ts) | 823 | 0 | **0** | 21 ↑ | **0** |
+| [`declara_hueco`](#declara-hueco) | 827 | 0 | **21** | 21 | **21** |
+| [`declara_parada_anterior`](#declara-parada-anterior) | 907 | 0 | **0** | 21 ↑ | **0** |
+| [`escribe_minuto`](#escribe-minuto) | 843 | 0 | **0** | 21 ↑ | **0** |
+| [`vuelca`](#vuelca) | 875 | 0 | **0** | 21 ↑ | **0** |
 
 ## _evidencia
 
 `app/libro.py:834` · clave completa `app.libro._evidencia`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -33,9 +33,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -68,9 +68,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -94,7 +93,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
@@ -102,7 +100,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:864` · clave completa `app.libro._olvida`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -115,9 +113,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -151,9 +149,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -177,7 +174,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
@@ -185,7 +181,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:823` · clave completa `app.libro._ts`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -198,9 +194,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -234,9 +230,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -260,7 +255,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
@@ -268,7 +262,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:827` · clave completa `app.libro.declara_hueco`
 
-**Radio exacto: 22 rutas** de 94 · **cota superior: 22** (igual al exacto)
+**Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
 ### Por llamada — 0 rutas
 
@@ -276,7 +270,7 @@ La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
 
 _ninguna ruta la ejecuta._
 
-### Por tabla · k=0 — 22 rutas · **exacto**
+### Por tabla · k=0 — 21 rutas · **exacto**
 
 Escribe **ella misma**: `data_gap`
 
@@ -303,9 +297,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
@@ -337,9 +330,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -363,7 +355,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
@@ -371,7 +362,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:907` · clave completa `app.libro.declara_parada_anterior`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -384,9 +375,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -419,9 +410,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -445,7 +435,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 1 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
@@ -453,7 +442,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:843` · clave completa `app.libro.escribe_minuto`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -469,9 +458,9 @@ Y esas tablas las leen:
 
 
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -505,9 +494,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -531,7 +519,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
@@ -539,7 +526,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/libro.py:875` · clave completa `app.libro.vuelca`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -552,9 +539,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 21 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -588,9 +575,8 @@ Y esas tablas las leen:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**21 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -614,7 +600,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

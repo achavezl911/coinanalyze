@@ -1551,28 +1551,28 @@
     },
     "app.data_gaps.align_down": {
       "fichero": "app/data_gaps.py",
-      "linea": 232,
-      "sitio": "`app/data_gaps.py:232`"
+      "linea": 242,
+      "sitio": "`app/data_gaps.py:242`"
     },
     "app.data_gaps.blocking_requirement_keys": {
       "fichero": "app/data_gaps.py",
-      "linea": 108,
-      "sitio": "`app/data_gaps.py:108`"
+      "linea": 118,
+      "sitio": "`app/data_gaps.py:118`"
     },
     "app.data_gaps.coverage_entry": {
       "fichero": "app/data_gaps.py",
-      "linea": 253,
-      "sitio": "`app/data_gaps.py:253`"
+      "linea": 263,
+      "sitio": "`app/data_gaps.py:263`"
     },
     "app.data_gaps.declared_gap_windows": {
       "fichero": "app/data_gaps.py",
-      "linea": 197,
-      "sitio": "`app/data_gaps.py:197`"
+      "linea": 207,
+      "sitio": "`app/data_gaps.py:207`"
     },
     "app.data_gaps.expected_buckets": {
       "fichero": "app/data_gaps.py",
-      "linea": 245,
-      "sitio": "`app/data_gaps.py:245`"
+      "linea": 255,
+      "sitio": "`app/data_gaps.py:255`"
     },
     "app.db.db_identity": {
       "fichero": "app/db.py",
@@ -8933,11 +8933,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1140",
+        "sitio": "app/data_gaps.py:1150",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -8959,8 +8958,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -8972,7 +8970,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps._aware_utc": {
@@ -9037,8 +9035,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/data_gaps.py:67",
@@ -9100,11 +9097,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:439",
+        "sitio": "app/data_gaps.py:449",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9126,8 +9122,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9136,7 +9131,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps._load_gap": {
@@ -9170,11 +9165,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1220",
+        "sitio": "app/data_gaps.py:1230",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9196,8 +9190,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9209,7 +9202,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps._mark_unrecoverable": {
@@ -9240,8 +9233,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -9264,10 +9256,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1230",
+        "sitio": "app/data_gaps.py:1240",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9289,8 +9280,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9302,8 +9292,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps._record_recovery_failure": {
         "cota_mas_ancha_que_k0": false,
@@ -9333,8 +9323,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -9357,10 +9346,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1255",
+        "sitio": "app/data_gaps.py:1265",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9382,8 +9370,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9395,8 +9382,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps._validated_window": {
         "cota_mas_ancha_que_k0": true,
@@ -9462,8 +9449,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/data_gaps.py:73",
@@ -9512,7 +9498,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:232",
+        "sitio": "app/data_gaps.py:242",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -9544,8 +9530,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -9568,10 +9553,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:722",
+        "sitio": "app/data_gaps.py:732",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9593,8 +9577,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9604,8 +9587,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps.archive_source_response_absence": {
         "cota_mas_ancha_que_k0": false,
@@ -9632,8 +9615,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -9656,10 +9638,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:792",
+        "sitio": "app/data_gaps.py:802",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9681,8 +9662,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9692,8 +9672,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps.blocking_requirement_keys": {
         "cota_mas_ancha_que_k0": true,
@@ -9760,7 +9740,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:108",
+        "sitio": "app/data_gaps.py:118",
         "solo_por_tabla": [
           "/api/dashboard/state",
           "/api/data-confidence",
@@ -9821,8 +9801,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -9845,10 +9824,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1045",
+        "sitio": "app/data_gaps.py:1055",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9870,8 +9848,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -9881,8 +9858,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps.coverage_entry": {
         "cota_mas_ancha_que_k0": false,
@@ -9924,7 +9901,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:253",
+        "sitio": "app/data_gaps.py:263",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -9954,7 +9931,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:197",
+        "sitio": "app/data_gaps.py:207",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -10016,11 +9993,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:245",
+        "sitio": "app/data_gaps.py:255",
         "solo_por_tabla": [
           "/api/cvd-matrix",
           "/api/daily",
@@ -10074,11 +10050,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:378",
+        "sitio": "app/data_gaps.py:388",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10100,8 +10075,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10110,7 +10084,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps.partition_gap_by_source_coverage": {
@@ -10138,11 +10112,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:967",
+        "sitio": "app/data_gaps.py:977",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10164,8 +10137,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10173,7 +10145,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps.partition_runs": {
@@ -10203,11 +10175,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:922",
+        "sitio": "app/data_gaps.py:932",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10229,8 +10200,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10238,7 +10208,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps.reconcile_cadence_coverage": {
@@ -10299,7 +10269,6 @@
           "/api/trend-matrix",
           "/api/volatility",
           "/api/volume-profile",
-          "/api/whale/delta",
           "/api/wyckoff",
           "/api/zone/analysis",
           "/metrics"
@@ -10325,10 +10294,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:474",
+        "sitio": "app/data_gaps.py:484",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10377,7 +10345,6 @@
           "/api/trend-matrix",
           "/api/volatility",
           "/api/volume-profile",
-          "/api/whale/delta",
           "/api/wyckoff",
           "/api/zone/analysis",
           "/metrics"
@@ -10411,8 +10378,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 51,
-        "total_exacto": 22
+        "total": 50,
+        "total_exacto": 21
       },
       "app.data_gaps.record_data_gap": {
         "cota_mas_ancha_que_k0": false,
@@ -10446,8 +10413,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -10470,10 +10436,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:287",
+        "sitio": "app/data_gaps.py:297",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10495,8 +10460,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10507,8 +10471,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps.record_event_stream_loss": {
         "cota_mas_ancha_que_k0": true,
@@ -10538,11 +10502,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:348",
+        "sitio": "app/data_gaps.py:358",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10564,8 +10527,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10573,7 +10535,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps.recover_gap": {
@@ -10603,8 +10565,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -10627,10 +10588,9 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1272",
+        "sitio": "app/data_gaps.py:1282",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10652,8 +10612,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10665,8 +10624,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.data_gaps.recover_unresolved_gaps": {
         "cota_mas_ancha_que_k0": true,
@@ -10693,11 +10652,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1333",
+        "sitio": "app/data_gaps.py:1343",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10719,8 +10677,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10728,7 +10685,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.data_gaps.validate_recovery": {
@@ -10759,11 +10716,10 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1176",
+        "sitio": "app/data_gaps.py:1186",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10785,8 +10741,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -10796,7 +10751,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.db._mark_feed_shard_health": {
@@ -18027,7 +17982,6 @@
           "/api/trend-matrix",
           "/api/volatility",
           "/api/volume-profile",
-          "/api/whale/delta",
           "/api/wyckoff",
           "/api/zone/analysis",
           "/metrics"
@@ -18082,7 +18036,6 @@
           "/api/trend-matrix",
           "/api/volatility",
           "/api/volume-profile",
-          "/api/whale/delta",
           "/api/wyckoff",
           "/api/zone/analysis",
           "/metrics"
@@ -18116,7 +18069,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 51,
+        "total": 50,
         "total_exacto": 0
       },
       "app.ingest.barrido_cadencia_persistido": {
@@ -20752,8 +20705,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/libro.py:834",
@@ -20778,8 +20730,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -20793,7 +20744,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.libro._olvida": {
@@ -20825,8 +20776,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/libro.py:864",
@@ -20851,8 +20801,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -20870,7 +20819,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.libro._ts": {
@@ -20905,8 +20854,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/libro.py:823",
@@ -20931,8 +20879,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -20950,7 +20897,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.libro.declara_hueco": {
@@ -20984,8 +20931,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -21008,8 +20954,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "sitio": "app/libro.py:827",
         "solo_por_tabla": [
@@ -21033,8 +20978,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -21054,8 +20998,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.libro.declara_parada_anterior": {
         "cota_mas_ancha_que_k0": true,
@@ -21084,8 +21028,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/libro.py:907",
@@ -21110,8 +21053,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -21125,7 +21067,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.libro.escribe_minuto": {
@@ -21157,8 +21099,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/libro.py:843",
@@ -21183,8 +21124,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -21205,7 +21145,7 @@
           "libro_cobertura",
           "libro_foto"
         ],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.libro.vuelca": {
@@ -21236,8 +21176,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/libro.py:875",
@@ -21262,8 +21201,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -21281,7 +21219,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.libro_lectura._escalera": {
@@ -22309,8 +22247,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/orderflow.py:524",
@@ -22335,8 +22272,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -22366,7 +22302,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.orderflow.declara_hueco": {
@@ -22399,8 +22335,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -22423,8 +22358,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "sitio": "app/orderflow.py:528",
         "solo_por_tabla": [
@@ -22448,8 +22382,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -22481,8 +22414,8 @@
         "tablas_k0": [
           "data_gap"
         ],
-        "total": 22,
-        "total_exacto": 22
+        "total": 21,
+        "total_exacto": 21
       },
       "app.orderflow.declara_parada_anterior": {
         "cota_mas_ancha_que_k0": true,
@@ -22511,8 +22444,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/orderflow.py:654",
@@ -22537,8 +22469,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -22566,7 +22497,7 @@
         "tablas_k0": [
           "orderflow_cobertura"
         ],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.orderflow.escribe_minutos": {
@@ -22598,8 +22529,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/orderflow.py:536",
@@ -22624,8 +22554,7 @@
           "/api/quality/feeds",
           "/api/scalp/delta-matrix",
           "/api/swing-score",
-          "/api/trend-matrix",
-          "/api/whale/delta"
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
@@ -22658,7 +22587,7 @@
           "orderflow_celda",
           "orderflow_cobertura"
         ],
-        "total": 22,
+        "total": 21,
         "total_exacto": 0
       },
       "app.orderflow.nivel_de": {
@@ -35019,12 +34948,12 @@
       "campos": {
         "coverage": "literal en app/api.py:1053",
         "coverage.served_window": "literal en app/api.py:1053",
-        "coverage.served_window.complete": "literal en app/data_gaps.py:279",
-        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:277",
-        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:278",
-        "coverage.served_window.sources": "literal en app/data_gaps.py:280",
-        "coverage.served_window.window_end": "literal en app/data_gaps.py:276",
-        "coverage.served_window.window_start": "literal en app/data_gaps.py:275",
+        "coverage.served_window.complete": "literal en app/data_gaps.py:289",
+        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:287",
+        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:288",
+        "coverage.served_window.sources": "literal en app/data_gaps.py:290",
+        "coverage.served_window.window_end": "literal en app/data_gaps.py:286",
+        "coverage.served_window.window_start": "literal en app/data_gaps.py:285",
         "coverage.status": "literal en app/api.py:1053",
         "interval": "literal en app/api.py:1051",
         "rows": "literal en app/api.py:1052",
@@ -40283,14 +40212,16 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_p1_timeframes_and_spot.py:52"
+            "tests/test_p1_timeframes_and_spot.py:52",
+            "tests/test_recupera_r1_postgres.py:5",
+            "tests/test_recupera_r1_postgres.py:134"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 12,
-        "n_menciones": 4,
+        "n_menciones": 6,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -47118,12 +47049,12 @@
       "campos": {
         "coverage": "literal en app/api.py:2312",
         "coverage.served_window": "literal en app/api.py:2312",
-        "coverage.served_window.complete": "literal en app/data_gaps.py:279",
-        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:277",
-        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:278",
-        "coverage.served_window.sources": "literal en app/data_gaps.py:280",
-        "coverage.served_window.window_end": "literal en app/data_gaps.py:276",
-        "coverage.served_window.window_start": "literal en app/data_gaps.py:275",
+        "coverage.served_window.complete": "literal en app/data_gaps.py:289",
+        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:287",
+        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:288",
+        "coverage.served_window.sources": "literal en app/data_gaps.py:290",
+        "coverage.served_window.window_end": "literal en app/data_gaps.py:286",
+        "coverage.served_window.window_start": "literal en app/data_gaps.py:285",
         "logic_version": "literal en app/api.py:2310",
         "note": "literal en app/api.py:2313",
         "rows": "literal en app/api.py:2311",
@@ -47619,7 +47550,6 @@
       "tablas_dudosas": [],
       "tablas_escribe": [],
       "tablas_lee": [
-        "data_gap",
         "spot_trades_agg"
       ],
       "tipo_retorno": "dict[str, Any]"
@@ -48963,73 +48893,73 @@
         {
           "funcion": "app.data_gaps.close_partitioned_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1092",
+          "sitio": "app/data_gaps.py:1102",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps._mark_unrecoverable",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1243",
+          "sitio": "app/data_gaps.py:1253",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps._record_recovery_failure",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1262",
+          "sitio": "app/data_gaps.py:1272",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.recover_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1311",
+          "sitio": "app/data_gaps.py:1321",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.record_data_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:322",
+          "sitio": "app/data_gaps.py:332",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:584",
+          "sitio": "app/data_gaps.py:594",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:663",
+          "sitio": "app/data_gaps.py:673",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:687",
+          "sitio": "app/data_gaps.py:697",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_beyond_source_horizon",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/data_gaps.py:764",
+          "sitio": "app/data_gaps.py:774",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_beyond_source_horizon",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:764",
+          "sitio": "app/data_gaps.py:774",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_source_response_absence",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/data_gaps.py:862",
+          "sitio": "app/data_gaps.py:872",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_source_response_absence",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:862",
+          "sitio": "app/data_gaps.py:872",
           "verbo": "UPDATE"
         },
         {
@@ -49049,37 +48979,37 @@
         {
           "funcion": "app.data_gaps.close_partitioned_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1066"
+          "sitio": "app/data_gaps.py:1076"
         },
         {
           "funcion": "app.data_gaps._load_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1223"
+          "sitio": "app/data_gaps.py:1233"
+        },
+        {
+          "funcion": "app.data_gaps.blocking_requirement_keys",
+          "origen": "f-string (los huecos van como {?})",
+          "sitio": "app/data_gaps.py:133"
         },
         {
           "funcion": "app.data_gaps.blocking_requirement_keys",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:123"
+          "sitio": "app/data_gaps.py:133"
         },
         {
           "funcion": "app.data_gaps.recover_unresolved_gaps",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1344"
-        },
-        {
-          "funcion": "app.data_gaps.declared_gap_windows",
-          "origen": "constante GAP_ISLANDS_SQL",
-          "sitio": "app/data_gaps.py:164"
+          "sitio": "app/data_gaps.py:1354"
         },
         {
           "funcion": "app.data_gaps._cubierto_por_otro_detector",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:461"
+          "sitio": "app/data_gaps.py:471"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:617"
+          "sitio": "app/data_gaps.py:627"
         },
         {
           "funcion": "app.entradas.resultados.resolver_fila",
@@ -49123,8 +49053,7 @@
         "/api/quality/feeds",
         "/api/scalp/delta-matrix",
         "/api/swing-score",
-        "/api/trend-matrix",
-        "/api/whale/delta"
+        "/api/trend-matrix"
       ]
     },
     "entrada_latido": {
