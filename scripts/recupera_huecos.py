@@ -261,6 +261,15 @@ async def parte(
                 info["salta"] = "sin_padre_mixto"  # todo presente lo recupera la corrida normal; todo ausente no se parte
                 continue
             if seco:
+                # Lo que destaparia si todos los padres cierran: lo presente que no tapa NINGUNA otra fila que bloquee.
+                otras = await conn.fetch(
+                    f"SELECT start_ts, end_ts FROM data_gap WHERE feed=$1 AND exchange=$2 AND market=$3 AND symbol=$4"
+                    f" AND granularity=$5 AND {BLOQUEA_SQL} AND start_ts < $7 AND end_ts > $6"  # noqa: S608 -- constante
+                    " AND NOT id = ANY($8::bigint[])",
+                    *ident.values(), ini, fin, [i for i, _, _ in u["filas"]],
+                )
+                info["destaparia"] = sum(1 for t in presentes if not any(r["start_ts"] <= t < r["end_ts"] for r in otras))
+                resumen["destaparia"] = resumen.get("destaparia", 0) + info["destaparia"]
                 continue
 
             cortes = {ini, fin, borde} | {s for _, s, _ in u["filas"]} | {e for _, _, e in u["filas"]}
@@ -354,6 +363,7 @@ async def parte(
             )
             presentes = await plan.almacenado(conn, ident, ini, fin)
             info["minutos_destapados"] = sum(1 for t in presentes if not any(r["start_ts"] <= t < r["end_ts"] for r in tapan))
+            resumen["destapados"] = resumen.get("destapados", 0) + info["minutos_destapados"]
     return resumen
 
 

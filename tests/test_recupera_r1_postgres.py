@@ -195,7 +195,7 @@ async def test_el_apagon_se_parte_y_lo_que_esta_en_la_base_sale_con_precio(base,
     info = resumen["uniones"][0]
     assert info["minutos_en_base"] == 24 * 60 and info["sin_dato_fuera_del_reloj"] == 10 * 60, info
     assert info["padres_cerrados"] == 2 and info["padres_abiertos"] == 0, info
-    assert info["minutos_destapados"] == 24 * 60, info
+    assert info["minutos_destapados"] == resumen["destapados"] == 24 * 60, info
 
     despues = await ruta()
     hay, total = _con_precio(despues, *con_dato)
@@ -244,6 +244,7 @@ async def test_en_seco_cuenta_y_no_escribe_ni_pregunta(base) -> None:
     info = resumen["uniones"][0]
     assert (info["minutos_en_base"], info["sin_dato_fuera_del_reloj"]) == (24 * 60, 10 * 60), info
     assert sorted(info["padres_mixtos"]) == sorted(plantado["padres"]), "un gap id trae tambien su anidado"
+    assert info["destaparia"] == resumen["destaparia"] == 24 * 60, "lo que dice en seco es lo que destapa la corrida real"
     assert fuente.pedidas == [] and resumen["pedidas"] == 0
     assert huella == await conn.fetchval("SELECT md5(string_agg(id || status || start_ts::text || end_ts::text, ',' ORDER BY id)) FROM data_gap")
 
