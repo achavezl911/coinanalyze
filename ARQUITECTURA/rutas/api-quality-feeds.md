@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `quality_feeds` · `app/api.py:1597` (cuerpo hasta la 1609) · decorador en la linea 1596.
+Handler `quality_feeds` · `app/api.py:1620` (cuerpo hasta la 1632) · decorador en la linea 1619.
 
 ## Parametros de entrada
 
@@ -104,7 +104,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.validate_symbol` — `app/api.py:259`
 - `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5640`
 
 <details><summary>Alcanzables de forma indirecta (43)</summary>
@@ -167,7 +167,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

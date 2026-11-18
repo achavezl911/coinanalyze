@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `snapshot` · `app/api.py:694` (cuerpo hasta la 710) · decorador en la linea 693.
+Handler `snapshot` · `app/api.py:714` (cuerpo hasta la 730) · decorador en la linea 713.
 
 ## Parametros de entrada
 
@@ -80,9 +80,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.latest_snapshot` — `app/api.py:546`
-- `app.api.records` — `app/api.py:271`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.latest_snapshot` — `app/api.py:566`
+- `app.api.records` — `app/api.py:272`
+- `app.api.validate_symbol` — `app/api.py:259`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -99,8 +99,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
-| 404 | No data | `app/api.py:700` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | No data | `app/api.py:720` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

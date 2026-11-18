@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1209` (cuerpo hasta la 1299) · decorador en la linea 1208.
+Handler `whale_delta` · `app/api.py:1232` (cuerpo hasta la 1322) · decorador en la linea 1231.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1209` (cuerpo hasta la 1299) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:507 |
-| `data_gaps` | literal en app/api.py:513 |
-| `interval` | literal en app/api.py:505 |
-| `rows` | literal en app/api.py:506 |
-| `symbol` | literal en app/api.py:504 |
+| `coverage` | literal en app/api.py:527 |
+| `data_gaps` | literal en app/api.py:533 |
+| `interval` | literal en app/api.py:525 |
+| `rows` | literal en app/api.py:526 |
+| `symbol` | literal en app/api.py:524 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -61,15 +61,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1156`
-- `app.api.declared_series_response` — `app/api.py:425`
-- `app.api.historical_interval_value` — `app/api.py:264`
-- `app.api.records` — `app/api.py:271`
-- `app.api.validate_symbol` — `app/api.py:258`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1179`
+- `app.api.declared_series_response` — `app/api.py:445`
+- `app.api.historical_interval_value` — `app/api.py:265`
+- `app.api.records` — `app/api.py:272`
+- `app.api.validate_symbol` — `app/api.py:259`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:385`
+- `app.api.minutos_de_las_filas` — `app/api.py:405`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:253`
@@ -92,8 +92,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:260` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:267` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:268` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
