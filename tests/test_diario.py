@@ -306,7 +306,7 @@ def _op(L, fuente: str, i: str, dia: int, r: float | None, act: str = "BTC"):
 
 def test_marcador_con_r_conocido(tmp_path):
     from app.diario import marcador as mc
-    L = lb.Libro(str(tmp_path / "e.jsonl"))
+    L = lb.Libro(str(tmp_path / "e.jsonl"), monotono=False)  # escribe dias fuera de orden: aqui se mide el marcador
     for d, r in enumerate((2.0, -1.0, -1.0)):
         _op(L, "fable", f"fable:{d}", d, r, act="ETH" if d else "BTC")
         _op(L, "rejilla", f"rejilla:{d}", d, -1.0)

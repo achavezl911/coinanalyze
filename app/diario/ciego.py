@@ -255,7 +255,7 @@ def _corre(carpeta, tope_usd, maximo, effort, modelo, banco, semilla) -> dict:
                 return {"rc": 2, "error": f"{rp} no es el plan de la semilla {semilla}: otra carpeta"}
     else:
         _json(rp, {"semilla": semilla, "desde": DESDE, "hasta": HASTA, "instantes": instantes})
-    L = lb.Libro(ruta)
+    L = lb.Libro(ruta, monotono=False)  # sella en t simulado: un instante nuevo puede ir antes del ultimo resuelto
     filas = L.lee()
     vistos = {f["id"] for f in filas if f["tipo"] in ("propuesta", "rechazo")}
     sellados = {i.rsplit("@", 1)[1] for i in vistos if "@" in i}

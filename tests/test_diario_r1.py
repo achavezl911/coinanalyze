@@ -1,10 +1,11 @@
 """DIARIO R1: el hueco que congela el diario (D2), la rejilla que no sella (D3), el stop saltado en la apertura (D4),
-el SIN N por dias (D5). Todo con dobles: sin red ni 140."""
+el SIN N por dias (D5), el libro que no se rehace (D6). Todo con dobles: sin red ni 140."""
 from __future__ import annotations
 
 import csv
 import hashlib
 import io
+import itertools
 import zipfile
 
 import pytest
@@ -126,11 +127,11 @@ def test_sin_precio_a_los_tres_dias_es_indecidible_y_se_cuenta_aparte(tmp_path):
     hueco = D0 + 23 * 3600 + 600
     L = lb.Libro(str(tmp_path / "entradas.jsonl"))
     L.anade("propuesta", _prop(), ahora=D0 + 23 * 3600)
-    L.anade("propuesta", _prop(id="rejilla:2", sello=D0 + 10 * 86400 + 600), ahora=D0 + 10 * 86400 + 600)
     n, huecos = cli.resuelve_todo(L, L.lee(), v5, hueco + 300 + 3 * 86400 - 1)
     assert n == 0 and len(huecos) == 1
     n, huecos = cli.resuelve_todo(L, L.lee(), v5, hueco + 300 + 3 * 86400)
     assert n == 1 and huecos == []
+    L.anade("propuesta", _prop(id="rejilla:2", sello=D0 + 10 * 86400 + 600), ahora=D0 + 10 * 86400 + 600)  # pendiente
     r = mc.operaciones(L.lee())[1]["rejilla:1"]
     assert r["salida"] == "indecidible" and r["r_neto"] is None and r["hueco"] == hueco
     m = mc.calcula(L.lee())["rejilla"]
@@ -176,12 +177,15 @@ def test_valida_exige_un_stop_minimo():
 
 
 # ---------- D5 · SIN N cuenta dias ----------
+_SEQ = itertools.count()
+
+
 def _op(L, fuente: str, i: str, dia: int, r: float):
-    t = D0 + dia * 86400 + 3600
+    t = D0 + dia * 86400 + 3600 + next(_SEQ)  # en orden de sello (D6); el resultado, escrito en el mismo segundo
     L.anade("propuesta", _prop(id=i, fuente=fuente, sello=t), ahora=t)
     L.anade("resultado", {"id": i, "llenada": True, "px_llenado": 100.0, "t_llenado": t + 600,
                           "salida": "stop" if r < 0 else "objetivo", "px_salida": 99.0, "t_salida": t + 7200,
-                          "r_neto": r, "usd_neto": 5.0 * r, "coste": {}}, ahora=t + 7200)
+                          "r_neto": r, "usd_neto": 5.0 * r, "coste": {}}, ahora=t)
 
 
 def test_m1_un_dia_no_da_intervalo_y_sin_n_cuenta_dias(tmp_path):
@@ -193,10 +197,114 @@ def test_m1_un_dia_no_da_intervalo_y_sin_n_cuenta_dias(tmp_path):
     t = mc.texto(L.lee(), L.cabeza(), D0 + 86400)
     assert "contra la rejilla +1.58 R · SIN N (1 d, 4 de rejilla)" in t and "[" not in t
     assert "fable: 3 propuestas, 3 resueltas, 3 llenadas (llenado 100%) · SIN N (1 d)" in t
-    for k in range(30):  # 30 llenadas en 2 dias siguen siendo 2 dias
-        _op(L, "regla:D:imp1:v0:A", f"regla:{k}", k % 2, 0.5)
+    for k in range(30):  # 30 llenadas en 2 dias siguen siendo 2 dias (en orden de sello: D6)
+        _op(L, "regla:D:imp1:v0:A", f"regla:{k}", k // 15, 0.5)
     x = mc.calcula(L.lee())["regla:D:imp1:v0:A"]
     assert x["llenadas"] == 30 and x["sin_n"]
     for k in range(8):
         _op(L, "regla:D:imp1:v0:A", f"regla:b{k}", 2 + k, 0.5)
     assert not mc.calcula(L.lee())["regla:D:imp1:v0:A"]["sin_n"]
+
+
+# ------------------------------------------------------------------------- D6 (R3b H2)
+def _libro_tres(tmp_path):
+    L = lb.Libro(str(tmp_path / "entradas.jsonl"))
+    for k in range(3):
+        _op(L, "fable", f"fable:{k}", k, 1.0)
+    return L
+
+
+def test_l1_un_sello_anterior_a_la_ultima_linea_se_rechaza(tmp_path):
+    """L1: con el libro ya en T0 + 1 d, sellar «fable:tramposa» con sello T0 (y resolverla al objetivo) colaba."""
+    L = lb.Libro(str(tmp_path / "entradas.jsonl"))
+    t0 = D0 + 86400
+    _op(L, "fable", "fable:0", 1, 1.0)  # ultima linea en t0 + 1 h
+    with pytest.raises(ValueError, match="pasado del libro"):
+        L.anade("propuesta", _prop(id="fable:tramposa", fuente="fable", sello=t0), ahora=t0)
+    assert [f["id"] for f in L.lee()] == ["fable:0", "fable:0"] and lb.verifica(L.ruta) == []
+    t = L.lee()[-1]["t"]
+    L.anade("propuesta", _prop(id="fable:misma", fuente="fable", sello=t), ahora=t)  # el mismo segundo, si
+    assert lb.Libro(str(tmp_path / "c.jsonl"), monotono=False).anade("rechazo", {  # el simulador ciego, si
+        "fuente": "f", "id": "x", "motivo": "m", "cruda": "", "sello": 1}, ahora=1)["n"] == 0
+
+
+def test_l1_ahora_solo_con_la_variable_de_prueba(tmp_path, monkeypatch, capsys):
+    from app.diario import __main__ as cli
+    llamadas = []
+    monkeypatch.setattr(cli, "corre", lambda *a: llamadas.append(a) or {"rc": 0})
+    monkeypatch.delenv("DIARIO_PRUEBA", raising=False)
+    assert cli.main(["diario", "--dir", str(tmp_path), "--ahora", str(D0), "--sin-red", "--sin-entrega"]) == 2
+    assert llamadas == [] and "DIARIO_PRUEBA" in capsys.readouterr().err
+    monkeypatch.setenv("DIARIO_PRUEBA", "1")
+    assert cli.main(["diario", "--dir", str(tmp_path), "--ahora", str(D0), "--sin-red", "--sin-entrega"]) == 0
+    assert llamadas[0][2] == D0
+    assert cli.main(["diario", "--dir", str(tmp_path), "--sin-red", "--sin-entrega"]) == 0  # sin --ahora, sin ella
+    assert len(llamadas) == 2
+
+
+def _historial(tmp_path, cab: dict, dia: str = "2027-01-15"):
+    with open(tmp_path / "cabezas.tsv", "ab") as f:
+        f.write(f"{dia}\t{D0}\t{cab['n']}\t{cab['sha256']}\n".encode())
+
+
+def _rehace(ruta: str, filas: list[dict]) -> None:
+    """Reescribe el libro con la cadena RECALCULADA (n, prev): por dentro, intacta."""
+    prev, out = lb.GENESIS, b""
+    for k, o in enumerate(filas):
+        ln = lb.canon({**o, "n": k, "prev": prev})
+        out += ln + b"\n"
+        prev = lb.huella(ln)
+    with open(ruta, "wb") as f:
+        f.write(out)
+
+
+def test_l2_quitar_la_cola_o_rehacer_la_cadena_lo_delata_el_historial(tmp_path):
+    from app.diario import __main__ as cli
+    L = _libro_tres(tmp_path)
+    vieja = L.cabeza()
+    _op(L, "fable", "fable:3", 3, 1.0)
+    assert lb.verifica(L.ruta, vieja) == []  # una cabeza de un dia anterior vale: el libro solo crece
+    _historial(tmp_path, vieja)
+    _historial(tmp_path, L.cabeza())
+    assert cli.corre("cuarto", str(tmp_path), D0 + 9 * 86400, False, False)["rc"] != 2
+    filas = L.lee()
+    # quitar la ultima linea: la cadena sigue intacta, la cabeza de ayer no
+    _rehace(L.ruta, filas[:-1])
+    assert lb.verifica(L.ruta) == [] and cli.corre("cuarto", str(tmp_path), D0 + 9 * 86400, False, False)["rc"] == 2
+    # rehacer la cadena con un resultado de 9.99: tambien la delata la cabeza vieja
+    _rehace(L.ruta, [dict(o, r_neto=9.99) if o["tipo"] == "resultado" and o["id"] == "fable:0" else o for o in filas])
+    assert lb.verifica(L.ruta) == []
+    est = cli.corre("cuarto", str(tmp_path), D0 + 9 * 86400, False, False)
+    assert est["rc"] == 2 and any("se toco o se rehizo" in x for x in est["libro_tocado"])
+
+
+def test_l2_la_corrida_diaria_guarda_la_cabeza_entera(tmp_path):
+    from app.diario import __main__ as cli
+    L = _libro_tres(tmp_path)
+    cli.corre("diario", str(tmp_path), D0 + 9 * 86400, False, False)
+    cli.corre("diario", str(tmp_path), D0 + 10 * 86400, False, False)
+    lineas = (tmp_path / "cabezas.tsv").read_text().splitlines()
+    assert len(lineas) == 2 and lineas[0].split("\t")[2:] == [str(L.cabeza()["n"]), L.cabeza()["sha256"]]
+    assert L.cabeza()["sha256"] in (tmp_path / "marcador.txt").read_text()  # los 64, no 16
+
+
+def test_l2_el_parte_del_bot_lleva_la_cabeza(tmp_path, monkeypatch):
+    import asyncio
+
+    from test_bot_seguridad import _salud, bot
+
+    from app.bot import servicio as sv
+    sha = hashlib.sha256(b"x").hexdigest()
+    (tmp_path / "diario-entradas.txt").write_text(f"DIARIO DE ENTRADAS en sombra (...) · libro n=41 sha256 {sha}\nfable: ...\n")
+    b = bot(monkeypatch, [True])
+    b.informes, b.cargado, b.parte_hoy = str(tmp_path), True, None
+
+    async def nada(corto=False):
+        return "-"
+    monkeypatch.setattr(b, "texto_sombra", nada)
+    monkeypatch.setattr(b, "texto_sesgo", nada)
+    monkeypatch.setattr(b, "salud", lambda: _salud())
+    monkeypatch.setattr(sv, "PARTE_HORA_UTC", 0)
+    asyncio.run(b.tic_parte())
+    (p,) = [m for m in b.mandados if m.startswith("PARTE ")]
+    assert f"DIARIO libro n=41 sha256 {sha}" in p

@@ -131,7 +131,7 @@ def texto(filas: list[dict], cabeza: dict, ahora: int, huecos: list[str] | None 
     m = calcula(filas)
     h = datetime.fromtimestamp(ahora, UTC).strftime("%Y-%m-%d %H:%MZ")
     out = [f"DIARIO DE ENTRADAS en sombra ({h}; 5 USD de riesgo; el bot NO da entradas) · libro n={cabeza['n']} "
-           f"sha256 {cabeza['sha256'][:16]}"]
+           f"sha256 {cabeza['sha256']}"]
     if not m:
         out.append("sin propuestas todavia")
     for f, x in m.items():

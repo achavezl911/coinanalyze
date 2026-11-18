@@ -7,7 +7,8 @@
           (tools/bot/semanal.py: harness/bin/prod + sha256 de vuelta).
 El libro (<D>/entradas.jsonl) se VERIFICA antes de escribir: tocado, no se escribe nada y sale con rc 2. Lo que no se
 pudo hacer (canal caido, hueco de velas) va a <D>/estado.json y al marcador; un canal caido no es un dato.
---ahora planta el reloj (s Unix): con --sin-red sirve para rehacer una corrida sobre la cache.
+--ahora planta el reloj (s Unix), SOLO con DIARIO_PRUEBA=1 en el entorno (sin ella, rc 2): con --sin-red sirve para
+rehacer una corrida sobre la cache en una carpeta de prueba. El libro rechaza ademas un sello anterior a su ultima linea.
 python -m app.diario ciego plan|foto|corre ...: el SIMULADOR CIEGO sobre el pasado (ciego.py), en su propia carpeta.
 """
 from __future__ import annotations
@@ -121,7 +122,7 @@ def corre(orden: str, carpeta: str, ahora: int, red: bool, entregar: bool) -> di
 
 def _corre(orden: str, carpeta: str, ahora: int, red: bool, entregar: bool) -> dict:
     ruta = os.path.join(carpeta, "entradas.jsonl")
-    malos = lb.verifica(ruta) if os.path.exists(ruta) else []
+    malos = lb.verifica(ruta, lb.cabezas(carpeta)) if os.path.exists(ruta) or lb.cabezas(carpeta) else []
     if malos:
         return {"rc": 2, "libro_tocado": malos[:5]}
     L, errores = lb.Libro(ruta), []
@@ -159,6 +160,8 @@ def _corre(orden: str, carpeta: str, ahora: int, red: bool, entregar: bool) -> d
             except Exception as e:
                 errores.append(f"entrega: {type(e).__name__} {str(e)[:160]}")
     est["cabeza"] = L.cabeza()
+    if orden == "diario":
+        lb.guarda_cabeza(carpeta, est["cabeza"], ahora)
     tmp = os.path.join(carpeta, "estado.json.tmp")
     with open(tmp, "w") as f:
         json.dump(est, f, indent=1)
@@ -183,6 +186,9 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--sin-red", action="store_true")
     ap.add_argument("--sin-entrega", action="store_true")
     a = ap.parse_args(argv)
+    if a.ahora is not None and os.environ.get("DIARIO_PRUEBA") != "1":
+        print("--ahora solo con DIARIO_PRUEBA=1: el diario en vivo sella con el reloj", file=sys.stderr)
+        return 2
     os.makedirs(a.dir, exist_ok=True)
     est = corre(a.orden, a.dir, a.ahora or int(time.time()), not a.sin_red, not a.sin_entrega)
     print(json.dumps({k: v for k, v in est.items() if k != "notas"}, separators=(",", ":"))[:2000])

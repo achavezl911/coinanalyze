@@ -1256,7 +1256,7 @@ class Bot:
             return
         s = await self.salud()
         texto = self.texto_salud(s, f"PARTE {n:%Y-%m-%d}") + "\n" + await self.texto_sombra(corto=True)
-        texto += "\n" + await self.texto_sesgo(corto=True)
+        texto += "\n" + await self.texto_sesgo(corto=True) + "\n" + self.cabeza_diario()
         enviada = await self.manda(texto)
         if not enviada and self.tg:
             return  # se reintenta al minuto siguiente; el interruptor avisa si a las 13:30Z no ha salido
@@ -1303,6 +1303,19 @@ class Bot:
             return pathlib.Path(f).read_text(encoding="utf-8").strip() + f"\n(marcador de hace {edad:.0f} h)"
         except OSError:
             return "DIARIO DE ENTRADAS: sin marcador todavia (lo deja la tarea diaria de 143)"
+
+    def cabeza_diario(self) -> str:
+        """D6 (diario R1): la cabeza del libro del diario (n y sha256 enteros) que trae el marcador de 143, para el parte
+        diario. Lo que sale por Telegram no lo reescribe quien reescriba el libro y su historial en 143."""
+        f = os.path.join(self.informes, "diario-entradas.txt")
+        try:
+            m = re.search(r"libro n=(-?\d+) sha256 ([0-9a-f]{64})", pathlib.Path(f).read_text(encoding="utf-8"))
+            edad = (time.time() - os.path.getmtime(f)) / 3600
+        except OSError:
+            m = None
+        if not m:
+            return "DIARIO: sin cabeza del libro (no hay marcador de 143, o no trae n y sha256)"
+        return f"DIARIO libro n={m.group(1)} sha256 {m.group(2)} (marcador de hace {edad:.0f} h)"
 
     async def texto_sesgo(self, corto: bool = False) -> str:
         """E2: el sesgo diario de cada activo (app/bot/sesgo.py), para /entrada y el parte. CONTEXTO, NO una entrada; un
