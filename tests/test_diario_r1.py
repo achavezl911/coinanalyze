@@ -137,3 +137,66 @@ def test_sin_precio_a_los_tres_dias_es_indecidible_y_se_cuenta_aparte(tmp_path):
     assert (m["propuestas"], m["resueltas"], m["indecidibles"], m["pendientes"]) == (2, 0, 1, 1)
     assert "1 indecidibles por hueco (aparte)" in mc.texto(L.lee(), L.cabeza(), D0 + 20 * 86400)
     assert rs.INDECIDIBLE_S == 3 * 86400  # el plazo del encargo, con nombre
+
+
+# ---------- D3 · el dia sin rejilla deja un ERROR ----------
+def test_rejilla_sin_el_dia_de_ayer_es_un_error_que_se_ve(tmp_path):
+    from app.diario import __main__ as cli
+    from app.diario import fuentes as fu
+    ahora = D0 + 86400 + 300  # las 00:05Z del dia siguiente a D0
+    e = cli.corre("diario", str(tmp_path), ahora, False, False)  # sin velas de 4 h: en main, rc 0 y nada
+    assert e["rc"] == 1 and len(e["rejilla_errores"]) == 3 and e["rejilla"] == (0, 0)
+    assert (tmp_path / "marcador.txt").read_text().count("\nERROR rejilla ") == 3
+    v4 = {t: (100.0, 101.0, 99.0, 100.0) for t in range(D0 - 86400, D0 + 86400, 4 * 3600)}
+    assert len(fu.rejilla({"BTC": v4}, ahora)) == 6
+    del v4[D0 + 16 * 3600]  # como el 11-16: falta la vela de 4 h de las 16:00
+    errores = []
+    assert fu.rejilla({"BTC": v4, "ETH": {}}, ahora, errores) == []
+    assert len(errores) == 2 and f"el {pb.dia_iso(D0)} queda sin rejilla" in errores[0] and "ETH" in errores[1]
+
+
+# ---------- D4 · el stop saltado en la apertura ----------
+def test_r1_mercado_que_abre_mas_alla_del_stop_sale_a_la_apertura():
+    """Caso R1 de R3b: largo ref 100, stop 99, la vela del llenado abre en 98. En main: «stop» a 98.901, +0.79 R."""
+    p = _prop(orden="mercado", entrada=100.0, stop=99.0, objetivo=103.0, sello=D0 + 10, caduca=D0 + 3600)
+    x = rs.resuelve(p, {D0 + 300: (98.0, 98.5, 97.5, 98.2)}, D0 + 86400)["resultado"]
+    assert x["px_llenado"] == 98.0 and x["salida"] == "stop" and x["px_salida"] == pytest.approx(98 * 0.999)
+    assert x["r_neto"] == pytest.approx((-0.001 - 2 * 0.00055) / 0.01) and x["r_neto"] < 0
+    # limite: la vela que la llena abre bajo el stop -> sale a la apertura, no en el stop declarado
+    x = rs.resuelve(_prop(sello=D0 + 10), {D0 + 300: (96.5, 96.8, 96.0, 96.6)}, D0 + 86400)["resultado"]
+    assert x["px_llenado"] == 100.0 and x["px_salida"] == pytest.approx(96.5 * 0.999)
+
+
+def test_valida_exige_un_stop_minimo():
+    from app.diario import fuentes as fu
+    p = _prop(orden="mercado", entrada=100.0, stop=99.9, objetivo=101.0, caduca=D0 + 3600)
+    assert "minimo 0.5%" in (fu.valida(p, 100.2, D0, set()) or "")
+    assert fu.valida({**p, "stop": 99.5}, 100.2, D0, set()) is None
+    assert fu.STOP_MIN == 0.005
+
+
+# ---------- D5 · SIN N cuenta dias ----------
+def _op(L, fuente: str, i: str, dia: int, r: float):
+    t = D0 + dia * 86400 + 3600
+    L.anade("propuesta", _prop(id=i, fuente=fuente, sello=t), ahora=t)
+    L.anade("resultado", {"id": i, "llenada": True, "px_llenado": 100.0, "t_llenado": t + 600,
+                          "salida": "stop" if r < 0 else "objetivo", "px_salida": 99.0, "t_salida": t + 7200,
+                          "r_neto": r, "usd_neto": 5.0 * r, "coste": {}}, ahora=t + 7200)
+
+
+def test_m1_un_dia_no_da_intervalo_y_sin_n_cuenta_dias(tmp_path):
+    L = lb.Libro(str(tmp_path / "e.jsonl"))
+    for k, r in enumerate((2.0, 1.0, 1.0)):
+        _op(L, "fable", f"fable:{k}", 0, r)
+    for k in range(4):
+        _op(L, "rejilla", f"rejilla:{k}", 0, 0.0 if k else -1.0)
+    t = mc.texto(L.lee(), L.cabeza(), D0 + 86400)
+    assert "contra la rejilla +1.58 R · SIN N (1 d, 4 de rejilla)" in t and "[" not in t
+    assert "fable: 3 propuestas, 3 resueltas, 3 llenadas (llenado 100%) · SIN N (1 d)" in t
+    for k in range(30):  # 30 llenadas en 2 dias siguen siendo 2 dias
+        _op(L, "regla:D:imp1:v0:A", f"regla:{k}", k % 2, 0.5)
+    x = mc.calcula(L.lee())["regla:D:imp1:v0:A"]
+    assert x["llenadas"] == 30 and x["sin_n"]
+    for k in range(8):
+        _op(L, "regla:D:imp1:v0:A", f"regla:b{k}", 2 + k, 0.5)
+    assert not mc.calcula(L.lee())["regla:D:imp1:v0:A"]["sin_n"]

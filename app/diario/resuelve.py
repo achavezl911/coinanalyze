@@ -60,10 +60,12 @@ def resuelve(p: dict, velas: dict, ahora: int, publicas: frozenset | set = froze
                 continue
         else:
             misma = False
-        d = abs(e - st) / e
+        # d: la distancia al stop desde el llenado; si la apertura del llenado ya esta mas alla del stop (mercado),
+        # la declarada: si no, d sale del reves (o cero) y el R no tiene escala.
+        d = abs(e - st) / e if s * (e - st) > 0 else abs(float(p["entrada"]) - st) / float(p["entrada"])
         toca_stop = (lo <= st) if s > 0 else (hi >= st)
         toca_obj = (hi >= ob) if s > 0 else (lo <= ob)
-        if not misma and t > t_ll and s * (o - st) <= 0:
+        if s * (o - st) <= 0:  # abre mas alla del stop, tambien en la vela del llenado: sale a la apertura (R3b H6)
             px, como = o * (1 - s * SLIP_STOP), "stop"
         elif toca_stop:
             px, como = st * (1 - s * SLIP_STOP), "stop"

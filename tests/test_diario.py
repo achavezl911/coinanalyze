@@ -319,10 +319,10 @@ def test_marcador_con_r_conocido(tmp_path):
     assert f["r_medio"] == 0.0 and f["usd_medio"] == 0.0 and f["peor_racha"] == 2 and f["caida_r"] == 2.0
     assert f["caida_usd"] == 10.0 and f["sin_n"] and f["por_activo_lado"] == {"BTC largo": (1, 2.0), "ETH largo": (2, -1.0)}
     c = f["contra_rejilla"]
-    assert c["dif"] == 1.0 and c["n_rejilla"] == 3 and c["dias"] == 3 and c["ic"][0] <= 1.0 <= c["ic"][1]
+    assert c["dif"] == 1.0 and c["n_rejilla"] == 3 and c["dias"] == 3 and c["ic"] is None  # 3 d: SIN N, sin intervalo (D5)
     assert g["llenadas"] == 4 and g["resueltas"] == 5 and g["tasa_llenado"] == 0.8 and g["r_medio"] == 0.5
     t = mc.texto(L.lee(), L.cabeza(), 1_800_200_000)
-    assert "fable: 4 propuestas, 3 resueltas, 3 llenadas (llenado 100%) · SIN N (3/30)" in t
+    assert "fable: 4 propuestas, 3 resueltas, 3 llenadas (llenado 100%) · SIN N (3 d)" in t
     assert "contra la rejilla +1.00 R" in t and f"n={L.cabeza()['n']}" in t and "NO da entradas" in t
     for k in range(30):
         _op(L, "regla:D:imp1:v0:A", f"regla:{k}", k, 0.5)
@@ -346,8 +346,8 @@ def test_corre_no_escribe_sobre_un_libro_tocado(tmp_path):
     from app.diario import __main__ as cli
 
     d = str(tmp_path)
-    e = cli.corre("diario", d, 1_800_000_000, False, False)  # sin red ni cache: marcador vacio, rc 0
-    assert e["rc"] == 0 and (tmp_path / "marcador.txt").exists()
+    e = cli.corre("diario", d, 1_800_000_000, False, False)  # sin red ni cache: marcador vacio y rc 1 (sin rejilla, D3)
+    assert e["rc"] == 1 and len(e["rejilla_errores"]) == 3 and (tmp_path / "marcador.txt").exists()
     r = tmp_path / "entradas.jsonl"
     L = lb.Libro(str(r))
     for k in range(2):

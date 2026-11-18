@@ -140,10 +140,14 @@ def _corre(orden: str, carpeta: str, ahora: int, red: bool, entregar: bool) -> d
         precios = {a: fu.precio(v5.get(a, {}), ahora) for a in vl.ACTIVOS}
         est["buzon"] = fu.sella_buzon(L, os.path.join(carpeta, "buzon"), precios, ahora, vistos)
     else:
-        est["rejilla"] = sella(L, fu.rejilla(v4, ahora), v5, ahora, vistos)
+        est["rejilla_errores"] = []
+        est["rejilla"] = sella(L, fu.rejilla(v4, ahora, est["rejilla_errores"]), v5, ahora, vistos)
         t = mc.texto(L.lee(), L.cabeza(), ahora, huecos)
+        for e in est["rejilla_errores"]:
+            t += f"\nERROR {e}"
         if errores:
             t += f"\nCANAL: {len(errores)} lecturas de 140 fallaron hoy ({errores[0][:80]})"
+        errores.extend(est["rejilla_errores"])  # despues de CANAL, que cuenta solo lecturas de 140; rc 1
         with open(os.path.join(carpeta, "marcador.txt"), "w") as f:
             f.write(t + "\n")
         if entregar:
