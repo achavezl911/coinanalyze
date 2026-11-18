@@ -7,6 +7,8 @@
   (UTC) del periodo de la fuente (de su primer sello a su ultimo); intervalo del 95 % remuestreando DIAS con
   reemplazo (pareado: el mismo dia entra con sus operaciones de las dos), B = 2000, semilla fija.
   «SIN N» con menos de 30 resueltas llenadas: las cifras se dan, pero no dicen nada todavia.
+  INDECIDIBLES: las cerradas «indecidible» por un hueco de velas sin precio (resuelve.indecidible) no entran en
+  resueltas, llenado ni R: se cuentan aparte. «con velas publicas»: resueltas con alguna vela del volcado publico.
 El texto es corto, para el bot (/entradas): el diario NO da entradas ni avisa de nada.
 """
 from __future__ import annotations
@@ -73,14 +75,18 @@ def contra_rejilla(ops: list[dict], rej: list[dict]) -> dict | None:
 
 def calcula(filas: list[dict]) -> dict:
     props, res = operaciones(filas)
-    fuentes = defaultdict(lambda: {"propuestas": 0, "resueltas": 0, "ops": []})
+    fuentes = defaultdict(lambda: {"propuestas": 0, "resueltas": 0, "indecidibles": 0, "con_publicas": 0, "ops": []})
     for i, p in props.items():
         x = fuentes[p["fuente"]]
         x["propuestas"] += 1
         r = res.get(i)
         if r is None:
             continue
+        if r["salida"] == "indecidible":
+            x["indecidibles"] += 1
+            continue
         x["resueltas"] += 1
+        x["con_publicas"] += bool(r.get("velas_publicas"))
         if r["llenada"]:
             x["ops"].append({**r, "sello": p["sello"], "activo": p["activo"], "lado": p["lado"]})
     rechazos = defaultdict(int)
@@ -97,7 +103,8 @@ def calcula(filas: list[dict]) -> dict:
         for o in ops:
             al[(o["activo"], o["lado"])].append(o["r_neto"])
         out[f] = {"propuestas": x["propuestas"], "resueltas": x["resueltas"], "llenadas": n,
-                  "pendientes": x["propuestas"] - x["resueltas"], "rechazos": rechazos.get(f, 0),
+                  "pendientes": x["propuestas"] - x["resueltas"] - x["indecidibles"], "rechazos": rechazos.get(f, 0),
+                  "indecidibles": x["indecidibles"], "con_publicas": x["con_publicas"],
                   "tasa_llenado": round(n / x["resueltas"], 4) if x["resueltas"] else None,
                   "r_medio": round(sum(o["r_neto"] for o in ops) / n, 4) if n else None,
                   "usd_medio": round(sum(o["usd_neto"] for o in ops) / n, 4) if n else None,
@@ -126,6 +133,10 @@ def texto(filas: list[dict], cabeza: dict, ahora: int, huecos: list[str] | None 
         cab = f"{f}: {x['propuestas']} propuestas, {x['resueltas']} resueltas, {x['llenadas']} llenadas"
         if x.get("rechazos"):
             cab += f", {x['rechazos']} rechazadas"
+        if x.get("indecidibles"):
+            cab += f", {x['indecidibles']} indecidibles por hueco (aparte)"
+        if x.get("con_publicas"):
+            cab += f", {x['con_publicas']} con velas publicas"
         if x.get("tasa_llenado") is not None:
             cab += f" (llenado {x['tasa_llenado']:.0%})"
         if x["sin_n"]:
