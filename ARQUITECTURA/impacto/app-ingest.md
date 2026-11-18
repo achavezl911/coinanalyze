@@ -16,7 +16,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`upsert_ohlcv`](#upsert-ohlcv) | 102 | 0 | **40** | 56 ↑ | **40** |
 | [`valid_ts`](#valid-ts) | 60 | 0 | **0** | 56 ↑ | **0** |
 | [`ventana_barrido_cadencia`](#ventana-barrido-cadencia) | 539 | 0 | **0** | 56 ↑ | **0** |
-| [`_reconcile_response_cadence`](#-reconcile-response-cadence) | 620 | 0 | **0** | 51 ↑ | **0** |
+| [`_reconcile_response_cadence`](#-reconcile-response-cadence) | 620 | 0 | **0** | 50 ↑ | **0** |
 | [`_coverage_heartbeat_detail`](#-coverage-heartbeat-detail) | 688 | 0 | **0** | 45 ↑ | **0** |
 | [`publish_snapshot`](#publish-snapshot) | 368 | 0 | **0** | 45 ↑ | **0** |
 | [`ingest_ohlcv_cycle`](#ingest-ohlcv-cycle) | 747 | 0 | **0** | 43 ↑ | **0** |
@@ -1427,7 +1427,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/ingest.py:620` · clave completa `app.ingest._reconcile_response_cadence`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 51** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 50** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -1440,9 +1440,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 51 rutas · **cota superior**
+### Por tabla · k<=2 — 50 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (51 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (50 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -1506,12 +1506,11 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**51 rutas se enteran SOLO por el dato**, sin
+**50 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -1561,7 +1560,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
-- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)

@@ -20,7 +20,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`daily_session_agg`](#daily-session-agg) | 2 | 22 | 0 |
 | [`daily_verdict_outcome`](#daily-verdict-outcome) | 1 | 3 | 0 |
 | [`daily_verdict_snapshot`](#daily-verdict-snapshot) | 1 | 3 | 0 |
-| [`data_gap`](#data-gap) | 14 | 22 | 0 |
+| [`data_gap`](#data-gap) | 14 | 21 | 0 |
 | [`entrada_latido`](#entrada-latido) | 1 | 2 | 0 |
 | [`entrada_registro`](#entrada-registro) | 1 | 2 | 0 |
 | [`entrada_reglamento`](#entrada-reglamento) | 1 | 2 | 0 |
@@ -289,22 +289,22 @@ La escriben:
 
 La escriben:
 
-- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1092`
-- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1243`
-- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1262`
-- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1311`
-- `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:322`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:584`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:663`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:687`
-- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:764`
-- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:764`
-- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
-- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:862`
+- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1102`
+- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1253`
+- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1272`
+- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1321`
+- `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:332`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:594`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:673`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:697`
+- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:774`
+- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:774`
+- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:872`
+- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:872`
 - `app.libro.declara_hueco` — **UPDATE** en `app/libro.py:792`
 - `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:508`
 
-**Si cambia el contenido o el esquema de `data_gap`, estas 22 rutas lo notan:**
+**Si cambia el contenido o el esquema de `data_gap`, estas 21 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
@@ -327,7 +327,6 @@ La escriben:
 - [`/api/scalp/delta-matrix`](rutas/api-scalp-delta-matrix.md)
 - [`/api/swing-score`](rutas/api-swing-score.md)
 - [`/api/trend-matrix`](rutas/api-trend-matrix.md)
-- [`/api/whale/delta`](rutas/api-whale-delta.md)
 
 ### entrada_latido
 

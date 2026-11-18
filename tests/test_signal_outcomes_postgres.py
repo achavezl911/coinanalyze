@@ -77,7 +77,10 @@ CREATE TABLE data_gap(
  resolved_at timestamptz,
  recovered_at timestamptz,
  recovered_by text,
- recovery_attempts integer NOT NULL DEFAULT 0
+ recovery_attempts integer NOT NULL DEFAULT 0,
+ last_recovery_attempt_at timestamptz,
+ resolution_reason text,
+ recovery_metadata jsonb NOT NULL DEFAULT '{}'::jsonb
 );
 """
 

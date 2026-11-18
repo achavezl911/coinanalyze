@@ -105,6 +105,16 @@ class GapRequirement:
         )
 
 
+# Que fila de data_gap BLOQUEA. Un padre cerrado por close_partitioned_gap NO: sus hijos
+# lo teselan entero (K04 lo re-deriva) y bloquean por si solos lo que de verdad falta.
+# Si el padre siguiera bloqueando, partirlo no destaparia nunca los hijos recuperados
+# (recupera-r1, apagon del 2026-11-16: 19978 min con precio tapados por padres de 34 h).
+BLOQUEA_SQL = (
+    "(status = 'unresolved' OR (status = 'unrecoverable' AND"
+    " COALESCE(recovery_metadata->>'method', '') <> 'partitioned_by_source_coverage'))"
+)
+
+
 async def blocking_requirement_keys(
     conn: asyncpg.Connection,
     requirements: Sequence[GapRequirement],
@@ -119,7 +129,7 @@ async def blocking_requirement_keys(
     if not normalized:
         return set()
     rows = await conn.fetch(
-        """
+        f"""
         WITH required(key,feed,exchange,market,symbol,start_ts,end_ts) AS (
           SELECT * FROM unnest(
             $1::text[], $2::text[], $3::text[], $4::text[], $5::text[],
@@ -135,8 +145,8 @@ async def blocking_requirement_keys(
          AND gap.symbol=required.symbol
          AND gap.start_ts < required.end_ts
          AND gap.end_ts > required.start_ts
-        WHERE gap.status IN ('unresolved','unrecoverable')
-        """,
+        WHERE {BLOQUEA_SQL}
+        """,  # noqa: S608 -- BLOQUEA_SQL es una constante del modulo, no entrada
         [item.key for item in normalized],
         [item.feed for item in normalized],
         [item.exchange for item in normalized],
@@ -160,13 +170,13 @@ async def blocking_requirement_keys(
 # -(feed, exchange, market, symbol, status)- y nunca entre estados distintos: que un
 # tramo sea irrecuperable y el de al lado siga pendiente son dos hechos, no uno.
 # Se conserva `declarations` para no perder cuantas filas lo sostienen.
-GAP_ISLANDS_SQL = """
+GAP_ISLANDS_SQL = f"""
 WITH solapan AS (
   SELECT feed, exchange, market, symbol, granularity, status,
          start_ts, end_ts, detection_source, resolution_reason
   FROM data_gap
   WHERE feed = $1 AND exchange = ANY($2::text[]) AND market = $3 AND symbol = $4
-    AND status IN ('unresolved','unrecoverable')
+    AND {BLOQUEA_SQL}
     AND start_ts < $6 AND end_ts > $5
 ), marcado AS (
   SELECT *, CASE WHEN start_ts <= MAX(end_ts) OVER (
