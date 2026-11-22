@@ -63,25 +63,24 @@ async def test_long_spot_windows_stitch_history_and_live_tail_without_overlap():
 
 
 @pytest.mark.asyncio
-async def test_explicit_spot_gap_overrides_apparent_span_completeness():
-    class BlockedFlowConnection(FlowConnection):
+async def test_flow_windows_no_pregunta_a_un_feed_de_huecos_sin_escritor():
+    """M-01: el feed «spot_trades» de data_gap no lo escribe nadie (0 filas en 140); la
+    ventana se decide CONTANDO covered_seconds en el agg, no preguntandole a ese feed."""
+    class RecordingFlowConnection(FlowConnection):
+        def __init__(self):
+            super().__init__()
+            self.queries = []
+
         async def fetch(self, query, *_args):
-            if "data_gap" in query:
-                return [{"key": "4h:combined"}]
+            self.queries.append(query)
             return await super().fetch(query, *_args)
 
-    result = await spot_flow_windows(
-        BlockedFlowConnection(),
-        "BTC",
-        [("4h", 14400), ("8h", 28800)],
-        CUTOFF,
-    )
+    conn = RecordingFlowConnection()
+    result = await spot_flow_windows(conn, "BTC", [("4h", 14400), ("8h", 28800)], CUTOFF)
 
-    assert result["4h"]["combined"]["complete"] is False
-    assert result["4h"]["combined"]["coverage_status"] == "partial"
-    assert result["4h"]["combined"]["delta"] is None
-    assert result["4h"]["combined"]["gap_reason"] == "data_gap"
-    assert result["8h"]["combined"]["complete"] is True
+    assert not [q for q in conn.queries if "data_gap" in q]
+    assert "LEAST(COALESCE(t.covered_seconds, 0), 60)" in conn.query
+    assert result["4h"]["combined"]["complete"] is True
 
 
 @pytest.mark.asyncio
