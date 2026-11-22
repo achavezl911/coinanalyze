@@ -1,6 +1,6 @@
 """DATOS B (fable-f4 H1 y fable-f8 F1): el despliegue que se defiende. deploy/140/deploy-coinalyze corrido ENTERO
 contra dobles: sus rutas reescritas a un tmp, y systemctl, curl, runuser, pg_dump, psql y chown en el PATH. El curl
-doble sirve un healthz por guion y el sha de main de GitHub, y apunta su argv: asi se ve que el token no viaja en el
+doble sirve un healthz por guion, el sha de main de GitHub y su tarball, y apunta su argv: asi se ve que el token no viaja en el
 argv. Sin base ni red.
 """
 
@@ -47,6 +47,10 @@ case "$url" in
   https://api.github.com/repos/achavezl911/coinanalyze/commits/main)
     [ -z "${GH_FALLA:-}" ] || exit 22
     printf '%s' "$GH_MAIN" ;;
+  https://api.github.com/repos/achavezl911/coinanalyze/tarball/*)
+    echo "$url" >> "$SB/tarball.log"
+    [ -z "${TARBALL_FALLA:-}" ] || exit 22
+    while [ $# -gt 1 ]; do [ "$1" = -o ] && cp "$SB/github.tgz" "$2"; shift; done ;;
   */api/healthz)
     n=$(cat "$SB/healthz.n" 2>/dev/null || echo 0); n=$((n+1)); echo "$n" > "$SB/healthz.n"
     estado=ok; ingest_ts=$ahora; ingest_st=ok; ingest_det=x
@@ -126,37 +130,57 @@ def _banco(tmp_path: Path, *, recupera: bool = False, smoke_max: int = 3) -> dic
         (units / "coinalyze-recupera.service").write_text("[Service]\n", encoding="utf-8")
     env_file = sb / "coinalyze.env"
     env_file.write_text(f"PG_USER=u\nPG_DB=d\nAPI_INTERNAL_TOKEN={TOKEN}\nMETRICS_ENABLED=false\n", encoding="utf-8")
-    incoming = sb / "incoming"
-    incoming.mkdir()
+    # Lo que serviria GitHub por el commit: el arbol bajo su carpeta de cabeza, con .github/ (el artefacto de hoy no
+    # la trae).
     fuente = sb / "fuente"
     _release(fuente)
-    art = incoming / "art.tar.gz"
-    def ajeno(ti: tarfile.TarInfo) -> tarfile.TarInfo:
-        ti.uid, ti.gid, ti.uname, ti.gname = 4242, 4242, "", ""  # el paquete dice de quien son sus ficheros
-        return ti
-
-    with tarfile.open(art, "w:gz") as t:
-        t.add(fuente, arcname=".", filter=ajeno)
+    (fuente / ".github" / "workflows").mkdir(parents=True)
+    (fuente / ".github" / "workflows" / "ci.yml").write_text("on: push\n", encoding="utf-8")
+    _tar(fuente, sb / "github.tgz", "achavezl911-coinanalyze-aaaaaaa")
     rutas = {
         "APP_ROOT": app, "STATE": sb / "deployment.json", "LOGDIR": sb / "log", "ENV_FILE": env_file,
-        "INCOMING": incoming, "BACKUPDIR": sb / "backups", "LOCKFILE": sb / "lock", "UNIT_DIR": units,
+        "BACKUPDIR": sb / "backups", "LOCKFILE": sb / "lock", "UNIT_DIR": units,
         "SMOKE_MAX_WAIT": smoke_max, "SMOKE_SLEEP": 1,
     }
     texto = (ROOT / "deploy" / "140" / "deploy-coinalyze").read_text(encoding="utf-8")
     for k, v in rutas.items():
         texto, n = re.subn(rf"^{k}=.*$", f"{k}={v}", texto, count=1, flags=re.M)
         assert n == 1, k
+    # El envoltorio de antes de R1 aceptaba el tar solo bajo INCOMING: asi se le puede pasar el banco y ver que cae.
+    texto = re.sub(r"^INCOMING=.*$", f"INCOMING={sb / 'incoming'}", texto, count=1, flags=re.M)
     texto = texto.replace('[ "$(id -u)" -eq 0 ] ||', "true ||", 1)
     wrapper = sb / "deploy-coinalyze"
     _x(wrapper, texto)
     env = {**os.environ, "PATH": f"{bin_}:{os.environ['PATH']}", "SB": str(sb), "ESCENA": "arranca:0", "GH_MAIN": NUEVO}
     env.pop("FAILED_UNIT", None)
-    return {"sb": sb, "app": app, "wrapper": wrapper, "art": art, "env": env,
-            "sha": hashlib.sha256(art.read_bytes()).hexdigest()}
+    return {"sb": sb, "app": app, "wrapper": wrapper, "env": env}
 
 
-def _despliega(b: dict, commit: str = NUEVO, **env: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["bash", str(b["wrapper"]), "deploy", str(b["art"]), b["sha"], commit],
+def _tar(origen: Path, destino: Path, cabeza: str) -> str:
+    def ajeno(ti: tarfile.TarInfo) -> tarfile.TarInfo:
+        ti.uid, ti.gid, ti.uname, ti.gname = 4242, 4242, "", ""  # el paquete dice de quien son sus ficheros
+        return ti
+
+    with tarfile.open(destino, "w:gz") as t:
+        t.add(origen, arcname=cabeza, filter=ajeno)
+    return hashlib.sha256(destino.read_bytes()).hexdigest()
+
+
+def _suyo(b: dict) -> tuple[str, str]:
+    """El tar de quien llama, como lo entrega el workflow de hoy: el release con un smoke PLANTADO que deja testigo."""
+    suyo = b["sb"] / "suyo"
+    shutil.copytree(b["sb"] / "fuente", suyo, ignore=shutil.ignore_patterns(".github"))
+    (suyo / "scripts" / "smoke_test.sh").write_text('# smoke-contract: 2 \ntouch "$SB/testigo"\nexit 0\n',
+                                                     encoding="utf-8")
+    (b["sb"] / "incoming").mkdir()
+    art = b["sb"] / "incoming" / "art.tar.gz"
+    return str(art), _tar(suyo, art, ".")
+
+
+def _despliega(b: dict, commit: str = NUEVO, *, vieja: bool = False, **env: str) -> subprocess.CompletedProcess:
+    """`deploy <commit>`; con vieja=True, la firma del workflow de hoy con el tar de _suyo delante."""
+    args = [*_suyo(b), commit] if vieja else [commit]
+    return subprocess.run(["bash", str(b["wrapper"]), "deploy", *args],
                           env={**b["env"], **env}, text=True, capture_output=True, timeout=120, check=False)
 
 
@@ -296,3 +320,66 @@ def test_el_venv_lo_construye_el_usuario_del_servicio(tmp_path):
     chown = _log(b, "chown.log").splitlines()
     assert chown == [f"-R coinalyze:coinalyze {rel}", f"-R root:coinalyze {rel}"]  # lo construye el, lo sirve root
     assert (rel / "pyproject.toml").stat().st_uid != 4242  # tar no hace caso del dueno que trae el paquete
+
+
+# ENVOLTORIO R1 (D-01 y D-02, CATALOGO-HALLAZGOS-20261120): el codigo lo baja root de GitHub por el commit, con las
+# dos firmas; el tar y la suma de quien llama no cuentan; el release activo no se reconstruye encima.
+def _restos(b: dict) -> list[str]:
+    return sorted(p.name for p in (b["app"] / "releases").glob(".stage*"))
+
+
+def test_las_dos_firmas_bajan_el_codigo_de_github_y_no_el_tar_de_quien_llama(tmp_path):
+    for i, vieja in enumerate((False, True)):
+        b = _banco(tmp_path / str(i))
+        r = _despliega(b, vieja=vieja)
+        assert r.returncode == 0, r.stderr[-2000:]
+        assert _current(b) == NUEVO and f"source fetched from GitHub ({NUEVO})" in r.stderr
+        assert _log(b, "tarball.log") == f"https://api.github.com/repos/achavezl911/coinanalyze/tarball/{NUEVO}\n"
+        rel = b["app"] / "releases" / NUEVO
+        assert (rel / "scripts" / "smoke_test.sh").read_bytes() == (ROOT / "scripts" / "smoke_test.sh").read_bytes()
+        assert not (b["sb"] / "testigo").exists()  # el smoke plantado en el tar de quien llama no corre
+        assert (rel / ".github" / "workflows" / "ci.yml").is_file()  # sin la carpeta de cabeza: el arbol, a la raiz
+        assert _restos(b) == []
+
+
+def test_un_sha_que_no_es_main_da_16_sin_bajar_nada(tmp_path):
+    for i, vieja in enumerate((False, True)):
+        b = _banco(tmp_path / str(i))
+        r = _despliega(b, vieja=vieja, GH_MAIN="c" * 40)
+        assert r.returncode == 16, r.stderr[-2000:]
+        assert _current(b) == VIEJO and _log(b, "tarball.log") == "" and _log(b, "systemctl.log") == ""
+        assert not (b["sb"] / "backups").exists() and _restos(b) == []
+
+
+def test_redesplegar_el_activo_da_17_sin_tocar_el_release(tmp_path):
+    for i, vieja in enumerate((False, True)):
+        b = _banco(tmp_path / str(i))
+        marca = b["app"] / "releases" / VIEJO / ".venv" / "bin" / "MARCA"
+        marca.parent.mkdir(parents=True)
+        marca.write_text("el venv que corre\n", encoding="utf-8")
+        r = _despliega(b, VIEJO, vieja=vieja, GH_MAIN=VIEJO)
+        assert r.returncode == 17, r.stderr[-2000:]
+        assert "already the active release" in r.stderr
+        assert marca.exists() and _current(b) == VIEJO
+        assert _log(b, "systemctl.log") == "" and _log(b, "tarball.log") == "" and not (b["sb"] / "backups").exists()
+
+
+def test_github_que_no_sirve_el_tarball_falla_cerrado_sin_parar_servicios(tmp_path):
+    for i, (vieja, env) in enumerate(((False, {"TARBALL_FALLA": "1"}), (True, {"TARBALL_FALLA": "1"}), (False, {}))):
+        b = _banco(tmp_path / str(i))
+        if not env:
+            (b["sb"] / "github.tgz").write_bytes(b"<html>no es un tar</html>\n")  # llega algo que no es un tar
+        r = _despliega(b, vieja=vieja, **env)
+        assert r.returncode == 3, r.stderr[-2000:]
+        assert f"could not fetch {NUEVO} from GitHub" in r.stderr
+        assert _current(b) == VIEJO and not (b["app"] / "releases" / NUEVO).exists()
+        assert _log(b, "systemctl.log") == "" and not (b["sb"] / "backups").exists() and _restos(b) == []
+
+
+def test_una_firma_que_no_es_ninguna_de_las_dos_no_se_acepta(tmp_path):
+    b = _banco(tmp_path)
+    for args in ([], ["x", NUEVO], ["x", "y", NUEVO, "z"]):
+        r = subprocess.run(["bash", str(b["wrapper"]), "deploy", *args], env=b["env"], text=True,
+                           capture_output=True, timeout=60, check=False)
+        assert r.returncode == 2 and "usage: deploy <commit>" in r.stderr, args
+    assert _log(b, "curl.argv") == "" and _current(b) == VIEJO
