@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 import asyncpg
 import pytest
 
-from app.metrics import COBERTURA_MINIMA, compute_snapshot
+from app.metrics import compute_snapshot
 from app.scalp_logic import spot_flow_windows
 
 T = datetime(2026, 3, 5, 12, 0, tzinfo=UTC)
@@ -111,7 +111,7 @@ async def test_dia_normal_con_minutos_cortos_repartidos_se_publica():
     try:
         await _dia_normal(conn, "BTC")
         cobertura = await _cobertura(conn, "BTC")
-        assert COBERTURA_MINIMA <= cobertura < 0.9970, cobertura
+        assert 0.99 <= cobertura < 0.9970, cobertura  # 0.99: COBERTURA_MINIMA, del operador
         foto = await _foto(conn)
         assert foto["cvd_spot_24h"] == 1440 * 60.0, foto
         assert foto["spot_vol_24h"] == 1440 * 140.0, foto
@@ -122,8 +122,10 @@ async def test_dia_normal_con_minutos_cortos_repartidos_se_publica():
 
 async def _ventana_24h(conn, *, hueco: bool):
     """Un dia en las tres venues con el realtime tocando los DOS extremos de la ventana (T-24h y
-    T-10s): el normal de 0.997, o con `hueco` el de dz2 sin 698 minutos a partir de T-18h."""
+    T-10s): el normal de 0.997, o con `hueco` el de dz2 sin 698 minutos a partir de T-18h.
+    Sin `hueco` el realtime trae solo la cola (T-10s): la ventana va por el agg, la regla de A2."""
     venues = ("binance", "bybit", "combined")
+    extremos = [D, T - timedelta(seconds=10)] if hueco else [T - timedelta(seconds=10)]
     await conn.execute(
         "CREATE TABLE spot_trades_realtime_cobertura_r1 PARTITION OF spot_trades_realtime "
         "FOR VALUES FROM ('2026-03-04 00:00:00+00') TO ('2026-03-06 00:00:00+00')")
@@ -144,7 +146,7 @@ async def _ventana_24h(conn, *, hueco: bool):
             "INSERT INTO spot_trades_realtime(ts,symbol,exchange,buy_vol_usd,sell_vol_usd,"
             "inst_buy_usd,inst_sell_usd,trade_count,last_px,venue_count) "
             "SELECT s,'ETH',$1,1,0,0,0,1,3000,$2 FROM unnest($3::timestamptz[]) s",
-            exchange, 2 if exchange == "combined" else 1, [D, T - timedelta(seconds=10)])
+            exchange, 2 if exchange == "combined" else 1, extremos)
     return (await spot_flow_windows(conn, "ETH", [("24h", 86400)], T))["24h"]["combined"]
 
 
@@ -171,8 +173,10 @@ async def test_dia_normal_la_ventana_de_flujo_es_completa():
         assert item["source"] == "agg_1min+realtime", item
         assert item["agg_minutes"] == item["agg_minutes_expected"] == 1440, item
         assert item["agg_minutes_full"] == 1440 - 54, item
+        # main: agg_full (1386) <> agg_minutes (1440) -> complete False, agg_minutes_short
         assert item["complete"] is True, item
         assert item["coverage_reason"] is None, item
+        assert item["agg_covered_seconds"] == 86400 - 54 * 5, item  # 0.996875
     finally:
         await tx.rollback()
         await conn.close()
