@@ -2179,6 +2179,11 @@
       "linea": 52,
       "sitio": "`app/orderflow_lectura.py:52`"
     },
+    "app.rango._hechos": {
+      "fichero": "app/rango.py",
+      "linea": 204,
+      "sitio": "`app/rango.py:204`"
+    },
     "app.rango._prueba": {
       "fichero": "app/rango.py",
       "linea": 107,
@@ -2196,13 +2201,13 @@
     },
     "app.rango._veredicto": {
       "fichero": "app/rango.py",
-      "linea": 189,
-      "sitio": "`app/rango.py:189`"
+      "linea": 219,
+      "sitio": "`app/rango.py:219`"
     },
     "app.rango.estructura_de_rango": {
       "fichero": "app/rango.py",
-      "linea": 234,
-      "sitio": "`app/rango.py:234`"
+      "linea": 268,
+      "sitio": "`app/rango.py:268`"
     },
     "app.scalp_logic._as_utc_datetime": {
       "fichero": "app/scalp_logic.py",
@@ -23079,6 +23084,24 @@
         "total": 22,
         "total_exacto": 0
       },
+      "app.rango._hechos": {
+        "cota_mas_ancha_que_k0": false,
+        "llamadores_hasta_k": [
+          "app.rango._veredicto",
+          "app.rango.estructura_de_rango"
+        ],
+        "por_llamada": [
+          "/api/rango/estructura"
+        ],
+        "por_tabla": [],
+        "por_tabla_k0": [],
+        "sitio": "app/rango.py:204",
+        "solo_por_tabla": [],
+        "tablas_escritas": {},
+        "tablas_k0": [],
+        "total": 1,
+        "total_exacto": 1
+      },
       "app.rango._prueba": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
@@ -23144,7 +23167,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/rango.py:189",
+        "sitio": "app/rango.py:219",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -23161,7 +23184,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/rango.py:234",
+        "sitio": "app/rango.py:268",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -32969,7 +32992,7 @@
   "resumen": {
     "declaradas_completas": 68,
     "declaradas_incompletas": 0,
-    "funciones_alcanzables": 461,
+    "funciones_alcanzables": 462,
     "rutas": 94,
     "rutas_con_campos": 84,
     "rutas_sin_campos": 10,
@@ -34201,7 +34224,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:244"
+            "tests/test_deploy_wrapper.py:268"
           ],
           "menciones": []
         }
@@ -35847,7 +35870,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:244",
+            "tests/test_deploy_wrapper.py:268",
             "tests/test_metrics_endpoint.py:253",
             "tests/test_v121_hardening.py:35",
             "tests/test_v150_desk_snapshot.py:130"
@@ -37179,7 +37202,7 @@
         "tests": {
           "llamadas": [
             "tests/test_dashboard_layout.py:134",
-            "tests/test_deploy_wrapper.py:244"
+            "tests/test_deploy_wrapper.py:268"
           ],
           "menciones": [
             "tests/test_dashboard_layout.py:130"
@@ -37632,7 +37655,7 @@
         "tests": {
           "llamadas": [
             "tests/test_bot_r3.py:337",
-            "tests/test_deploy_wrapper.py:236",
+            "tests/test_deploy_wrapper.py:260",
             "tests/test_smoke_arranque.py:39"
           ],
           "menciones": [
@@ -37641,7 +37664,7 @@
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
             "tests/test_deploy_health_gate.py:144",
-            "tests/test_deploy_wrapper.py:50",
+            "tests/test_deploy_wrapper.py:54",
             "tests/test_ingest_health.py:236",
             "tests/test_smoke_arranque.py:1"
           ]
@@ -43223,8 +43246,8 @@
     {
       "camino": "/api/rango/estructura",
       "campos": {
-        "as_of": "literal en app/rango.py:253",
-        "control": "literal en app/rango.py:249",
+        "as_of": "literal en app/rango.py:287",
+        "control": "literal en app/rango.py:283",
         "control.ballena_spot_usd": "literal en app/rango.py:91",
         "control.cvd_spot_usd": "literal en app/rango.py:90",
         "control.desde": "literal en app/rango.py:84",
@@ -43244,10 +43267,10 @@
         "control.precio_inicio": "literal en app/rango.py:88",
         "control.precio_pct": "literal en app/rango.py:89",
         "control.velas_1min": "literal en app/rango.py:87",
-        "fin_abierto": "literal en app/rango.py:250",
-        "pruebas": "literal en app/rango.py:251",
-        "symbol": "literal en app/rango.py:247",
-        "ventana": "literal en app/rango.py:248",
+        "fin_abierto": "literal en app/rango.py:284",
+        "pruebas": "literal en app/rango.py:285",
+        "symbol": "literal en app/rango.py:281",
+        "ventana": "literal en app/rango.py:282",
         "ventana.ballena_spot_usd": "literal en app/rango.py:91",
         "ventana.cvd_spot_usd": "literal en app/rango.py:90",
         "ventana.desde": "literal en app/rango.py:84",
@@ -43267,19 +43290,20 @@
         "ventana.precio_inicio": "literal en app/rango.py:88",
         "ventana.precio_pct": "literal en app/rango.py:89",
         "ventana.velas_1min": "literal en app/rango.py:87",
-        "veredicto": "literal en app/rango.py:252",
-        "veredicto.estructura": "literal en app/rango.py:222",
-        "veredicto.no_es_prediccion": "literal en app/rango.py:229",
-        "veredicto.porque": "literal en app/rango.py:223",
-        "veredicto.pruebas_que_votan": "literal en app/rango.py:224",
-        "veredicto.pruebas_totales": "literal en app/rango.py:225",
-        "veredicto.reparto": "literal en app/rango.py:226"
+        "veredicto": "literal en app/rango.py:286",
+        "veredicto.estructura": "literal en app/rango.py:256",
+        "veredicto.no_es_prediccion": "literal en app/rango.py:263",
+        "veredicto.porque": "literal en app/rango.py:257",
+        "veredicto.pruebas_que_votan": "literal en app/rango.py:258",
+        "veredicto.pruebas_totales": "literal en app/rango.py:259",
+        "veredicto.reparto": "literal en app/rango.py:260"
       },
       "campos_pendientes": [],
       "cierre": [
         "app.api.rechaza_parametros_desconocidos",
         "app.api.validate_symbol",
         "app.api.ventana_pedida",
+        "app.rango._hechos",
         "app.rango._prueba",
         "app.rango._pruebas",
         "app.rango._ventana",
@@ -43287,6 +43311,7 @@
         "app.rango.estructura_de_rango"
       ],
       "cierre_indirecto": [
+        "app.rango._hechos",
         "app.rango._prueba",
         "app.rango._pruebas",
         "app.rango._ventana",
@@ -46914,13 +46939,13 @@
         "tests": {
           "llamadas": [
             "tests/test_deploy_health_gate.py:170",
-            "tests/test_deploy_wrapper.py:244",
+            "tests/test_deploy_wrapper.py:268",
             "tests/test_smoke_arranque.py:40"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
             "tests/test_deploy_health_gate.py:148",
-            "tests/test_deploy_wrapper.py:68"
+            "tests/test_deploy_wrapper.py:72"
           ]
         }
       },

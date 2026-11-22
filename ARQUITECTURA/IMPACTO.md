@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 690 funciones con radio, 270 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 691 funciones con radio, 270 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **55** de las 690 escriben alguna tabla
+Solo **55** de las 691 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -85,7 +85,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-690 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+691 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -578,11 +578,12 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.orderflow_lectura.activo_de`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:74` | 1 | **0** | 0 | **1** |
 | [`app.orderflow_lectura.pasos`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:99` | 1 | **0** | 0 | **1** |
 | [`app.orderflow_lectura.texto`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:52` | 1 | **0** | 0 | **1** |
+| [`app.rango._hechos`](impacto/app-rango.md) | `app/rango.py:204` | 1 | **0** | 0 | **1** |
 | [`app.rango._prueba`](impacto/app-rango.md) | `app/rango.py:107` | 1 | **0** | 0 | **1** |
 | [`app.rango._pruebas`](impacto/app-rango.md) | `app/rango.py:111` | 1 | **0** | 0 | **1** |
 | [`app.rango._ventana`](impacto/app-rango.md) | `app/rango.py:51` | 1 | **0** | 0 | **1** |
-| [`app.rango._veredicto`](impacto/app-rango.md) | `app/rango.py:189` | 1 | **0** | 0 | **1** |
-| [`app.rango.estructura_de_rango`](impacto/app-rango.md) | `app/rango.py:234` | 1 | **0** | 0 | **1** |
+| [`app.rango._veredicto`](impacto/app-rango.md) | `app/rango.py:219` | 1 | **0** | 0 | **1** |
+| [`app.rango.estructura_de_rango`](impacto/app-rango.md) | `app/rango.py:268` | 1 | **0** | 0 | **1** |
 | [`app.scalp_logic.execution_cost`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:5557` | 1 | **0** | 0 | **1** |
 | [`app.scalp_logic.level_breakout`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1706` | 1 | **0** | 0 | **1** |
 | [`app.scalp_logic.range_validate`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1581` | 1 | **0** | 0 | **1** |
