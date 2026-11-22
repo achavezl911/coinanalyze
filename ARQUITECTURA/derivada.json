@@ -2011,43 +2011,43 @@
     },
     "app.external_macro._direction": {
       "fichero": "app/external_macro.py",
-      "linea": 190,
-      "sitio": "`app/external_macro.py:190`"
+      "linea": 204,
+      "sitio": "`app/external_macro.py:204`"
     },
     "app.external_macro._metric": {
       "fichero": "app/external_macro.py",
-      "linea": 205,
-      "sitio": "`app/external_macro.py:205`"
+      "linea": 219,
+      "sitio": "`app/external_macro.py:219`"
     },
     "app.external_macro._pct_change": {
       "fichero": "app/external_macro.py",
-      "linea": 184,
-      "sitio": "`app/external_macro.py:184`"
+      "linea": 198,
+      "sitio": "`app/external_macro.py:198`"
     },
     "app.external_macro._pillar": {
       "fichero": "app/external_macro.py",
-      "linea": 232,
-      "sitio": "`app/external_macro.py:232`"
+      "linea": 266,
+      "sitio": "`app/external_macro.py:266`"
     },
     "app.external_macro._state": {
       "fichero": "app/external_macro.py",
-      "linea": 197,
-      "sitio": "`app/external_macro.py:197`"
+      "linea": 211,
+      "sitio": "`app/external_macro.py:211`"
     },
     "app.external_macro.align_with_internal": {
       "fichero": "app/external_macro.py",
-      "linea": 415,
-      "sitio": "`app/external_macro.py:415`"
+      "linea": 463,
+      "sitio": "`app/external_macro.py:463`"
     },
     "app.external_macro.build_external_macro_context": {
       "fichero": "app/external_macro.py",
-      "linea": 237,
-      "sitio": "`app/external_macro.py:237`"
+      "linea": 271,
+      "sitio": "`app/external_macro.py:271`"
     },
     "app.external_macro.external_macro_context": {
       "fichero": "app/external_macro.py",
-      "linea": 437,
-      "sitio": "`app/external_macro.py:437`"
+      "linea": 485,
+      "sitio": "`app/external_macro.py:485`"
     },
     "app.field_disambiguation.build": {
       "fichero": "app/field_disambiguation.py",
@@ -16900,7 +16900,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:190",
+        "sitio": "app/external_macro.py:204",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16930,7 +16930,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:472",
+        "sitio": "app/external_macro.py:520",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16981,7 +16981,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:205",
+        "sitio": "app/external_macro.py:219",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16991,7 +16991,6 @@
       "app.external_macro._pct_change": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
-          "app.external_macro._metric",
           "app.external_macro.build_external_macro_context",
           "app.external_macro.external_macro_context"
         ],
@@ -17002,7 +17001,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:184",
+        "sitio": "app/external_macro.py:198",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17022,7 +17021,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:232",
+        "sitio": "app/external_macro.py:266",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17042,7 +17041,7 @@
           "/api/external-macro"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:146",
+        "sitio": "app/external_macro.py:160",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17074,7 +17073,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:197",
+        "sitio": "app/external_macro.py:211",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17094,7 +17093,7 @@
           "/api/external-macro"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:103",
+        "sitio": "app/external_macro.py:117",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17126,7 +17125,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:415",
+        "sitio": "app/external_macro.py:463",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17147,7 +17146,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:237",
+        "sitio": "app/external_macro.py:271",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17168,7 +17167,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:437",
+        "sitio": "app/external_macro.py:485",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17198,7 +17197,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:113",
+        "sitio": "app/external_macro.py:127",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17259,7 +17258,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:88",
+        "sitio": "app/external_macro.py:102",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17320,7 +17319,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:150",
+        "sitio": "app/external_macro.py:164",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17381,7 +17380,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:58",
+        "sitio": "app/external_macro.py:72",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17442,7 +17441,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:74",
+        "sitio": "app/external_macro.py:88",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17508,7 +17507,7 @@
           "/api/ai/context/bundle",
           "/api/external-macro"
         ],
-        "sitio": "app/external_macro.py:478",
+        "sitio": "app/external_macro.py:526",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -37067,7 +37066,7 @@
     {
       "camino": "/api/external-macro",
       "campos": {
-        "alignment": "asignado en app/external_macro.py:433"
+        "alignment": "asignado en app/external_macro.py:481"
       },
       "campos_pendientes": [
         "la respuesta pasa por dict(), que no se puede seguir",
@@ -48853,7 +48852,7 @@
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
-          "sitio": "app/external_macro.py:458"
+          "sitio": "app/external_macro.py:506"
         },
         {
           "funcion": "app.scalp_logic.market_structure",
@@ -49348,13 +49347,13 @@
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:553",
+          "sitio": "app/external_macro.py:601",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:574",
+          "sitio": "app/external_macro.py:622",
           "verbo": "DELETE"
         }
       ],
@@ -49362,17 +49361,17 @@
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
-          "sitio": "app/external_macro.py:442"
+          "sitio": "app/external_macro.py:490"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:488"
+          "sitio": "app/external_macro.py:536"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:574"
+          "sitio": "app/external_macro.py:622"
         }
       ],
       "leida_por": [
@@ -49758,13 +49757,13 @@
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:564",
+          "sitio": "app/external_macro.py:612",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:576",
+          "sitio": "app/external_macro.py:624",
           "verbo": "DELETE"
         }
       ],
@@ -49777,12 +49776,12 @@
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
-          "sitio": "app/external_macro.py:450"
+          "sitio": "app/external_macro.py:498"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:576"
+          "sitio": "app/external_macro.py:624"
         }
       ],
       "leida_por": [

@@ -18,7 +18,7 @@ Handler `external_macro_endpoint` · `app/api.py:2232` (cuerpo hasta la 2238) ·
 
 | campo | de donde sale |
 |---|---|
-| `alignment` | asignado en app/external_macro.py:433 |
+| `alignment` | asignado en app/external_macro.py:481 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -50,11 +50,11 @@ LEE:
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `external_macro_observation` — `sql/schema.sql:1241`, 5 columnas
-  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
-  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
+  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:601`
+  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:622`
 - `macro_event` — `sql/schema.sql:1252`, 6 columnas
-  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:564`
-  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:576`
+  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:612`
+  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:624`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -86,19 +86,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.external_macro.align_with_internal` — `app/external_macro.py:415`
-- `app.external_macro.external_macro_context` — `app/external_macro.py:437`
+- `app.external_macro.align_with_internal` — `app/external_macro.py:463`
+- `app.external_macro.external_macro_context` — `app/external_macro.py:485`
 - `app.scalp_logic.swing_score` — `app/scalp_logic.py:6645`
 
 <details><summary>Alcanzables de forma indirecta (46)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
-- `app.external_macro._direction` — `app/external_macro.py:190`
-- `app.external_macro._metric` — `app/external_macro.py:205`
-- `app.external_macro._pct_change` — `app/external_macro.py:184`
-- `app.external_macro._pillar` — `app/external_macro.py:232`
-- `app.external_macro._state` — `app/external_macro.py:197`
-- `app.external_macro.build_external_macro_context` — `app/external_macro.py:237`
+- `app.external_macro._direction` — `app/external_macro.py:204`
+- `app.external_macro._metric` — `app/external_macro.py:219`
+- `app.external_macro._pct_change` — `app/external_macro.py:198`
+- `app.external_macro._pillar` — `app/external_macro.py:266`
+- `app.external_macro._state` — `app/external_macro.py:211`
+- `app.external_macro.build_external_macro_context` — `app/external_macro.py:271`
 - `app.metrics.current_nyse_start` — `app/metrics.py:20`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
 - `app.scalp_logic._beta` — `app/scalp_logic.py:3620`
