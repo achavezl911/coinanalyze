@@ -251,15 +251,12 @@ def test_supported_deployment_path_includes_the_real_partition_migration() -> No
     # make the deploy wrapper report success while the real partition
     # migration never ran. The migration is inlined directly instead.
     schema = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
-    update = (ROOT / "scripts/update.sh").read_text(encoding="utf-8")
 
     assert r"\ir migrations/20260809_temporal_partitioning.sql" not in schema
     assert MIGRATION.strip() in schema
     assert schema.index(
         "SELECT ensure_temporal_partitions();"
     ) < schema.index(MIGRATION.strip())
-    assert "sql/migrations/20260809_temporal_partitioning.sql" in update
-    assert "sql/migrations/20260809_temporal_partitioning.down.sql" in update
 
 
 @pytest.mark.asyncio

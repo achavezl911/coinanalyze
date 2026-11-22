@@ -130,8 +130,8 @@ SETTINGS = get_settings()
 configure_logging(SETTINGS.LOG_LEVEL)
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 if not STATIC_DIR.is_dir():
-    # update.sh instala el paquete en el venv ademas de copiar el arbol; la copia
-    # de site-packages no lleva static/. Al importarse desde ahi, resolver contra
+    # un despliegue que instale el paquete en el venv (lo hacia el guion retirado en
+    # D-03) deja en site-packages una copia sin static/. Al importarse de ahi, resolver contra
     # el WorkingDirectory del servicio en vez de reventar en el mount.
     STATIC_DIR = Path.cwd() / "static"
 # Los dos intervalos con buy_volume y con historia util: 4h llega a ~300 dias y 5min a ~9.

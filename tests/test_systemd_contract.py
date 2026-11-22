@@ -42,14 +42,11 @@ def test_fresh_install_enables_unattended_security_updates() -> None:
     assert "apt-daily-upgrade.timer" in source
 
 
-def test_install_and_update_build_package_outside_live_tree() -> None:
+def test_install_builds_package_outside_live_tree() -> None:
     install = Path("deploy/proxmox/install.sh").read_text(encoding="utf-8")
-    update = Path("scripts/update.sh").read_text(encoding="utf-8")
 
     assert '--no-deps "$SOURCE_DIR"' in install
-    assert '--no-deps "$SOURCE_DIR"' in update
     assert "--no-deps /opt/coinalyze" not in install
-    assert "--no-deps /opt/coinalyze" not in update
 
 
 def test_horizontal_collectors_have_compatible_template_units() -> None:
@@ -73,14 +70,3 @@ def test_scalable_services_acquire_lifetime_locks_before_websockets() -> None:
 
     assert 'acquire_service_lock(settings, "ingest")' in Path("app/ingest.py").read_text()
     assert 'acquire_service_lock(settings, "daily")' in Path("app/daily_agg.py").read_text()
-
-
-def test_update_restarts_enabled_collectors_even_when_not_active() -> None:
-    source = Path("scripts/update.sh").read_text(encoding="utf-8")
-    assert "CONFIGURED_COLLECTOR_SERVICES" in source
-    assert "list-unit-files --type=service --state=enabled" in source
-    assert "'coinalyze-ws@*.service' 'coinalyze-scalp@*.service'" in source
-    assert "for service in coinalyze-ws coinalyze-scalp" not in source
-    assert "ACTIVE_SHARD_SERVICES" not in source
-    assert "list-units --type=service --state=active" not in source
-    assert "enable --now coinalyze-scalp" not in source
