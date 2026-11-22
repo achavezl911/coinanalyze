@@ -712,6 +712,13 @@ LEVEL_TOL_ATR_MULT = 0.5
 FALLBACK_TOL_PCT = 0.15
 """Tolerancia de respaldo (% del precio) cuando no hay ATR ni anchura de zona utilizables."""
 
+EPISODIO_MAX_VELAS = 32
+"""Velas cerradas que sigue vivo un episodio (8 h a 15 m). SIN CALIBRAR (fable-dz4 P1).
+
+Ruptura: el ultimo cruce de la frontera por el cierre. Rechazo: el ultimo contacto con la
+zona. Mas viejo que esto no abre episodio, y sin episodio no hay CONFIRMADO ni FALLIDO.
+"""
+
 
 def _obs(
     value: Any,
@@ -795,6 +802,57 @@ def _norm_bars(bundle: dict[str, Any]) -> list[dict[str, Any]]:
     return bars
 
 
+def _apertura(setup: str, signo: int, zone: dict[str, Any] | None, bars: list[dict[str, Any]]) -> int | None:
+    """Vela que abre el episodio sobre `zone`, o None si no hay uno vivo (Z-01, F11a S8).
+
+    Ruptura: la ULTIMA vela cuyo cierre cruza la frontera (el previo no estaba mas alla y el
+    suyo si). Rechazo: la ULTIMA vela que toca la zona con su rango. Solo cuenta si cae en las
+    ultimas `EPISODIO_MAX_VELAS` velas.
+    """
+    if not zone or not bars:
+        return None
+    vivo = len(bars) - 1 - EPISODIO_MAX_VELAS
+    if setup == "ruptura":
+        frontera, bsign = _breakout_frontier(setup, signo, zone)
+        if frontera is None or bsign == 0:
+            return None
+        for i in range(len(bars) - 1, max(vivo, 1) - 1, -1):
+            if (bars[i]["close"] - frontera) * bsign > 0 >= (bars[i - 1]["close"] - frontera) * bsign:
+                return i
+        return None
+    if setup == "rechazo":
+        low, high = zone.get("low"), zone.get("high")
+        if low is None or high is None:
+            return None
+        for i in range(len(bars) - 1, max(vivo, 0) - 1, -1):
+            if bars[i]["low"] <= high and bars[i]["high"] >= low:
+                return i
+    return None
+
+
+def episodio(
+    setup: str, signo: int, barriers: dict[str, Any], bars: list[dict[str, Any]]
+) -> tuple[dict[str, Any] | None, int | None]:
+    """La zona que juzga el setup y la vela que abre su episodio (None: no hay episodio vivo).
+
+    Antes se juzgaba siempre `nearest_*`, que excluye la zona donde esta el precio: un rechazo
+    EN la zona se medía contra la siguiente, y una ruptura contra la que aun no habia cruzado.
+    Ruptura: la zona cuya frontera cruzo el cierre por ultima vez, buscada en la de detras,
+    la activa y la de delante. Rechazo: la activa (o la de detras) con contacto reciente.
+    """
+    activa = barriers.get("active_zone")
+    detras = barriers.get("nearest_support") if signo > 0 else barriers.get("nearest_resistance")
+    delante = barriers.get("nearest_resistance") if signo > 0 else barriers.get("nearest_support")
+    if setup == "rechazo":
+        zona = activa or detras
+        return zona, _apertura(setup, signo, zona, bars)
+    for zona in (detras, activa, delante):
+        i0 = _apertura(setup, signo, zona, bars)
+        if i0 is not None:
+            return zona, i0
+    return activa or delante, None
+
+
 def _gap_in(bars: list[dict[str, Any]], bar_seconds: int | None) -> bool:
     """¿Falta alguna vela en la secuencia? (separacion distinta al paso del timeframe)."""
     if not bar_seconds or len(bars) < 2:
@@ -843,10 +901,13 @@ def _bars_closed_beyond(
 
 def _returned_inside(
     bars: list[dict[str, Any]], setup: str, signo: int, boundary: float | None, bsign: int,
-    zone: dict[str, Any], *, tf: str | None, source: str | None, as_of: str | None,
+    zone: dict[str, Any], apertura: int | None, *, tf: str | None, source: str | None,
+    as_of: str | None,
 ) -> dict[str, Any]:
     """¿Volvio el precio al rango tras salir/tocar? None mientras no pueda evaluarse (spec 1.3).
 
+    Se mide desde la vela que abre el EPISODIO (`_apertura`), no desde el primer evento de las
+    velas: sin cruce o contacto reciente no hay nada de lo que volver (F11a S8, dz4 N3).
     Nunca se convierte None en False: False solo si SE observo el periodo posterior y NO regreso.
     """
     if boundary is None or bsign == 0 or not bars:
@@ -854,36 +915,30 @@ def _returned_inside(
                     coverage="sin frontera o sin velas")
     low, high = zone.get("low"), zone.get("high")
     if setup == "ruptura":
-        # Solo evaluable tras al menos un cierre fuera de la zona.
-        idx = next((i for i, b in enumerate(bars) if (b["close"] - boundary) * bsign > 0), None)
-        if idx is None:
+        if apertura is None:
             return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
-                        coverage="aun no hay cierre fuera")
-        posteriores = bars[idx + 1:]
+                        coverage=f"sin cruce de la frontera en {EPISODIO_MAX_VELAS} velas")
+        posteriores = bars[apertura + 1:]
         if not posteriores:
             return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
-                        coverage="sin periodo posterior al cierre fuera")
-        volvio = any((b["close"] - boundary) * bsign <= 0 for b in posteriores)
+                        coverage="sin periodo posterior al cruce")
+        # Tras el ULTIMO cruce, volver dentro es quedarse dentro: basta con el ultimo cierre.
+        volvio = (bars[-1]["close"] - boundary) * bsign <= 0
         return _obs(volvio, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
-                    sample_count=len(posteriores),
+                    sample_count=len(posteriores), episode_open=bars[apertura]["ts"],
                     coverage="regreso observado" if volvio else "no regreso en el periodo")
     if setup == "rechazo":
         if low is None or high is None:
             return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
                         coverage="sin bordes de zona para medir el retorno")
-        idx = next((i for i, b in enumerate(bars) if low <= b["close"] <= high), None)
-        if idx is None:
+        if apertura is None:
             return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
-                        coverage="el precio aun no entro en la zona")
-        posteriores = bars[idx + 1:]
-        if not posteriores:
-            return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
-                        coverage="sin periodo posterior al toque")
-        # Rechazo largo (soporte): retorno = cerrar de vuelta por encima del borde superior.
-        volvio = any(b["close"] > high for b in posteriores) if signo > 0 else any(
-            b["close"] < low for b in posteriores)
+                        coverage=f"sin contacto con la zona en {EPISODIO_MAX_VELAS} velas")
+        # Rechazo largo (soporte): retorno = el ultimo cierre por encima del borde superior.
+        ultimo = bars[-1]["close"]
+        volvio = ultimo > high if signo > 0 else ultimo < low
         return _obs(volvio, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
-                    sample_count=len(posteriores),
+                    sample_count=len(bars) - apertura, episode_open=bars[apertura]["ts"],
                     coverage="retorno al rango observado" if volvio else "sin retorno todavia")
     return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of)
 
@@ -1087,7 +1142,8 @@ def setup_observables(
         "bars_closed_beyond": _bars_closed_beyond(
             bars, boundary, bsign, bar_seconds=bar_seconds, tf=tf, source=source, as_of=as_of),
         "returned_inside": _returned_inside(
-            bars, setup, signo, boundary, bsign, zone, tf=tf, source=source, as_of=as_of),
+            bars, setup, signo, boundary, bsign, zone, _apertura(setup, signo, zone, bars),
+            tf=tf, source=source, as_of=as_of),
         "retest_done": _retest_done(
             bars, signo, boundary, bsign, atr, zone, tf=tf, source=source, as_of=as_of),
         "pullback_pct": _pullback(
@@ -1131,20 +1187,24 @@ def build_setup_context(
     resistencia = barriers.get("nearest_resistance") or {}
     soporte = barriers.get("nearest_support") or {}
     activa = barriers.get("active_zone")
-    # La barrera relevante depende de hacia donde mira la tesis y de que se espera de ella:
-    # una ruptura larga ataca la resistencia; un rechazo largo se apoya en el soporte.
-    if setup == "rechazo":
-        zona = soporte if direction == "long" else (resistencia if direction == "short" else {})
+    signo = DIRECTIONS.get(direction, {}).get("sign", 0)
+    # Ruptura y rechazo juzgan la zona de SU episodio (`episodio`, Z-01): la que el cierre
+    # cruzo, o la que el precio toco. El resto de setups mira la barrera hacia donde va la tesis.
+    apertura: int | None = None
+    bars = _norm_bars(observ_bundle) if observ_bundle is not None else []
+    if setup in ("ruptura", "rechazo") and signo:
+        zona_ep, apertura = episodio(setup, signo, barriers, bars)
+        zona = zona_ep or {}
     else:
         zona = resistencia if direction == "long" else (soporte if direction == "short" else {})
-    nivel = zona.get("center")
+    boundary, _ = _breakout_frontier(setup, signo, zona) if zona else (None, 0)
+    # `barrier_level` es el CENTRO para el chequeo blando de "cierre mas alla" de la ruptura; en
+    # el rechazo es la frontera de aceptacion, la que lo invalida (dz4 N2). La frontera de
+    # ruptura real es `breakout_boundary`, publicada aparte (spec 1.1).
+    nivel = boundary if setup == "rechazo" else zona.get("center")
 
     # Observables MEDIDOS sobre velas cerradas cuando el llamador aporta el paquete de
-    # confirmacion; si no, los cinco siguen en None (fail-closed, no se inventan). El
-    # `barrier_level` de arriba sigue siendo el CENTRO para el chequeo blando de "cierre mas
-    # alla"; la frontera de ruptura real es `breakout_boundary`, publicada aparte (spec 1.1).
-    signo = DIRECTIONS.get(direction, {}).get("sign", 0)
-    boundary, _ = _breakout_frontier(setup, signo, zona) if zona else (None, 0)
+    # confirmacion; si no, los cinco siguen en None (fail-closed, no se inventan).
     medidos: dict[str, Any] = {
         "bars_closed_beyond": None,
         "returned_inside": None,
@@ -1178,10 +1238,17 @@ def build_setup_context(
     return {
         "price": barriers.get("current_price"),
         "barrier_level": nivel,
-        "barrier_side": "resistencia" if zona is resistencia else ("soporte" if zona is soporte else None),
-        # Tocar el nivel = el precio esta DENTRO de una zona de barreras. Es lo unico que el
-        # sistema mide hoy sobre el contacto; el conteo de toques por episodio no llega aqui.
-        "touched_level": (activa is not None) if barriers.get("available") else None,
+        "barrier_side": (
+            "resistencia" if zona is resistencia else "soporte" if zona is soporte
+            else "activa" if zona and zona is activa else None
+        ),
+        # Rechazo: contacto = una vela del episodio toco la zona juzgada (sin velas, no se
+        # sabe). Para el resto sigue siendo que el precio esta DENTRO de una zona de barreras.
+        "touched_level": (
+            None if not barriers.get("available")
+            else (None if observ_bundle is None else apertura is not None) if setup == "rechazo"
+            else activa is not None
+        ),
         "volume_multiple": presion.get("volume_multiple_15m"),
         "spot_delta": scalp.get("spot_delta_3m"),
         "fut_delta": scalp.get("fut_delta_3m"),
@@ -1212,6 +1279,13 @@ def build_setup_context(
         "level_defended": medidos["level_defended"],
         # Procedencia completa de cada observable (value/status/source/timeframe/as_of/...).
         "observables": observables,
+        # Marca del episodio juzgado (ruptura/rechazo); None si no hay uno vivo.
+        "episodio": None if apertura is None else {
+            "zona": {"low": zona.get("low"), "high": zona.get("high"), "center": zona.get("center")},
+            "vela_apertura_ts": bars[apertura]["ts"],
+            "max_velas": EPISODIO_MAX_VELAS,
+            "calibrado": False,
+        },
     }
 
 
@@ -1331,6 +1405,8 @@ def evaluate_setup(
         "missing_confirmation": missing_confirmation,
         "min_confirmations": minimo_confirmaciones,
         "min_coverage_pct": MIN_COVERAGE_PCT,
+        # Marca de despliegue de Zona R1: la zona y la vela del episodio juzgado.
+        "episodio": ctx.get("episodio"),
         "note": (
             "Cada setup declara sus propios requisitos e invalidaciones, y cada requisito su "
             "nivel (CRITICAL/CONFIRMATION/SECONDARY). Un requisito sin observable queda "
