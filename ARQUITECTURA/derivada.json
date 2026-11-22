@@ -34224,7 +34224,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:244"
+            "tests/test_deploy_wrapper.py:268"
           ],
           "menciones": []
         }
@@ -35870,7 +35870,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:244",
+            "tests/test_deploy_wrapper.py:268",
             "tests/test_metrics_endpoint.py:253",
             "tests/test_v121_hardening.py:35",
             "tests/test_v150_desk_snapshot.py:130"
@@ -37202,7 +37202,7 @@
         "tests": {
           "llamadas": [
             "tests/test_dashboard_layout.py:134",
-            "tests/test_deploy_wrapper.py:244"
+            "tests/test_deploy_wrapper.py:268"
           ],
           "menciones": [
             "tests/test_dashboard_layout.py:130"
@@ -37655,7 +37655,7 @@
         "tests": {
           "llamadas": [
             "tests/test_bot_r3.py:337",
-            "tests/test_deploy_wrapper.py:236",
+            "tests/test_deploy_wrapper.py:260",
             "tests/test_smoke_arranque.py:39"
           ],
           "menciones": [
@@ -37663,8 +37663,8 @@
             "tests/test_bot_r3.py:338",
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
-            "tests/test_deploy_health_gate.py:154",
-            "tests/test_deploy_wrapper.py:50",
+            "tests/test_deploy_health_gate.py:144",
+            "tests/test_deploy_wrapper.py:54",
             "tests/test_ingest_health.py:236",
             "tests/test_smoke_arranque.py:1"
           ]
@@ -46938,14 +46938,14 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_health_gate.py:180",
-            "tests/test_deploy_wrapper.py:244",
+            "tests/test_deploy_health_gate.py:170",
+            "tests/test_deploy_wrapper.py:268",
             "tests/test_smoke_arranque.py:40"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
-            "tests/test_deploy_health_gate.py:158",
-            "tests/test_deploy_wrapper.py:68"
+            "tests/test_deploy_health_gate.py:148",
+            "tests/test_deploy_wrapper.py:72"
           ]
         }
       },
