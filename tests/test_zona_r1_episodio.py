@@ -12,29 +12,12 @@ from datetime import UTC, datetime
 import pytest
 
 from app import setups as S
-from app.interpretation import price_barrier_read
 from app.scalp_logic import _atr, _swings
+from barreras_reales import barreras
 
 AHORA = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 FIN = int(AHORA.timestamp()) - 900
 N = 32  # EPISODIO_MAX_VELAS, escrito aqui para que el control corra tambien contra main
-
-
-def _diarias() -> list[dict]:
-    puntos = [100, 110, 104, 120, 110, 120, 100, 110, 100, 120, 110, 116]
-    cierres = [float(puntos[0])]
-    for a, b in zip(puntos, puntos[1:], strict=False):
-        pasos = max(2, round(abs(b - a) / 2.5))
-        cierres += [a + (b - a) * (i + 1) / pasos for i in range(pasos)]
-    return [{"session_date": f"d{i:03d}", "price_high": c + 0.5, "price_low": c - 0.5,
-             "price_close": c, "volume_usd": 1e9, "cvd_spot_usd": None} for i, c in enumerate(cierres)]
-
-
-DIARIAS = _diarias()
-
-
-def barreras(precio: float) -> dict:
-    return price_barrier_read(DIARIAS, [], precio, live={"volume_multiple_15m": 2.0})
 
 
 def paquete(cierres: list[float], mecha: float = 0.0004) -> dict:

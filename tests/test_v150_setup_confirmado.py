@@ -8,6 +8,7 @@ CONFIRMADO, y que siguen fail-closed cuando faltan los observables criticos (sin
 from __future__ import annotations
 
 from app.setups import build_setup_context, evaluate_setup
+from barreras_reales import barreras as barreras_reales
 
 TF = 900
 
@@ -46,12 +47,11 @@ def _scalp(**over):
 
 
 def test_ruptura_llega_a_confirmado_con_datos_suficientes() -> None:
-    barreras = {
-        "available": True, "current_price": 100.5,
-        "nearest_resistance": {"center": 99.5, "low": 99.0, "high": 100.0},
-        "live_pressure": {"volume_multiple_15m": 1.4},
-    }
-    bundle = _bundle(_bars([100.4, 100.6]))  # dos cierres > high(100) -> aceptacion
+    # Barreras del productor real: a 110.0 la zona 109.35-109.65 queda DEBAJO (soporte). Antes
+    # eran a mano, con una resistencia bajo el precio que el productor nunca emite (dz4 N1).
+    barreras = barreras_reales(110.0, volumen=1.4)
+    assert barreras["nearest_support"]["high"] == 109.65 and not barreras["active_zone"]
+    bundle = _bundle(_bars([109.5, 109.9, 110.0]))  # cruza 109.65 y dos cierres fuera -> aceptacion
     ctx = build_setup_context(
         _scalp(), _VIEW, {}, barreras, {"horizons": {}},
         direction="long", setup="ruptura", observ_bundle=bundle,
@@ -63,11 +63,7 @@ def test_ruptura_llega_a_confirmado_con_datos_suficientes() -> None:
 
 
 def test_ruptura_es_fail_closed_sin_bundle() -> None:
-    barreras = {
-        "available": True, "current_price": 100.5,
-        "nearest_resistance": {"center": 99.5, "low": 99.0, "high": 100.0},
-        "live_pressure": {"volume_multiple_15m": 1.4},
-    }
+    barreras = barreras_reales(110.0, volumen=1.4)
     ctx = build_setup_context(
         _scalp(), _VIEW, {}, barreras, {"horizons": {}}, direction="long", setup="ruptura",
     )
@@ -80,12 +76,11 @@ def test_ruptura_es_fail_closed_sin_bundle() -> None:
 
 
 def test_rechazo_llega_a_confirmado_con_datos_suficientes() -> None:
-    # Rechazo largo: se apoya en el SOPORTE (low 99 / high 100). Toca la zona y vuelve arriba.
-    barreras = {
-        "available": True, "current_price": 100.5, "active_zone": {"center": 99.5},
-        "nearest_support": {"center": 99.5, "low": 99.0, "high": 100.0},
-    }
-    bundle = _bundle(_bars([99.5, 100.5]))  # entra en zona y cierra de vuelta sobre high
+    # Rechazo largo: se apoya en el SOPORTE real 103.35-103.65 (precio 103.9, fuera de la zona).
+    # Antes era a mano, con una zona activa que no contenia el precio (dz4 N1).
+    barreras = barreras_reales(103.9)
+    assert barreras["nearest_support"]["low"] == 103.35 and not barreras["active_zone"]
+    bundle = _bundle(_bars([103.5, 103.9]))  # entra en zona y cierra de vuelta sobre high
     ctx = build_setup_context(
         _scalp(), _VIEW, {}, barreras, {"horizons": {}},
         direction="long", setup="rechazo", observ_bundle=bundle,
@@ -97,10 +92,7 @@ def test_rechazo_llega_a_confirmado_con_datos_suficientes() -> None:
 
 
 def test_rechazo_es_fail_closed_sin_bundle() -> None:
-    barreras = {
-        "available": True, "current_price": 100.5, "active_zone": {"center": 99.5},
-        "nearest_support": {"center": 99.5, "low": 99.0, "high": 100.0},
-    }
+    barreras = barreras_reales(103.9)
     ctx = build_setup_context(
         _scalp(), _VIEW, {}, barreras, {"horizons": {}}, direction="long", setup="rechazo",
     )

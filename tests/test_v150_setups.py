@@ -13,6 +13,7 @@ from app.setups import (
     evaluate_setup,
     split_hypothesis,
 )
+from barreras_reales import barreras as barreras_reales
 
 SETUPS_REALES = ("ruptura", "rechazo", "reversion", "continuacion")
 
@@ -247,18 +248,19 @@ def test_build_setup_context_no_inventa_lo_que_no_se_mide() -> None:
 
 
 def test_build_setup_context_elige_la_barrera_segun_direccion_y_setup() -> None:
-    barreras = {
-        "available": True,
-        "current_price": 100.0,
-        "nearest_resistance": {"center": 105.0},
-        "nearest_support": {"center": 95.0},
-    }
+    # Barreras del productor REAL a 106.0 (soporte 103.35-103.65, resistencia 109.35-109.65, sin
+    # zona activa); antes eran centros a mano sin bordes, que el productor nunca emite (dz4 N1).
+    # Sin velas no hay episodio: la ruptura mira la zona de delante y el rechazo la de detras,
+    # por su frontera de aceptacion (Zona R1).
+    barreras = barreras_reales(106.0)
+    sop, res = barreras["nearest_support"], barreras["nearest_resistance"]
+    assert (sop["low"], res["high"]) == (103.35, 109.65) and not barreras["active_zone"]
     args = ({}, {"layers": {}}, {}, barreras, {"horizons": {}})
-    assert build_setup_context(*args, direction="long", setup="ruptura")["barrier_level"] == 105.0
-    assert build_setup_context(*args, direction="short", setup="ruptura")["barrier_level"] == 95.0
+    assert build_setup_context(*args, direction="long", setup="ruptura")["barrier_level"] == res["center"]
+    assert build_setup_context(*args, direction="short", setup="ruptura")["barrier_level"] == sop["center"]
     # Un rechazo largo se apoya en el soporte, no ataca la resistencia.
-    assert build_setup_context(*args, direction="long", setup="rechazo")["barrier_level"] == 95.0
-    assert build_setup_context(*args, direction="short", setup="rechazo")["barrier_level"] == 105.0
+    assert build_setup_context(*args, direction="long", setup="rechazo")["barrier_level"] == sop["low"]
+    assert build_setup_context(*args, direction="short", setup="rechazo")["barrier_level"] == res["high"]
 
 
 def test_el_evento_de_estructura_sale_de_las_distancias_publicadas() -> None:
