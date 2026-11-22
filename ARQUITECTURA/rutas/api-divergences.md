@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `divergences_endpoint` · `app/api.py:2242` (cuerpo hasta la 2245) · decorador en la linea 2241.
+Handler `divergences_endpoint` · `app/api.py:2347` (cuerpo hasta la 2350) · decorador en la linea 2346.
 
 ## Parametros de entrada
 
@@ -67,7 +67,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2200`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -92,7 +92,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

@@ -42,7 +42,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`orderbook_depth`](#orderbook-depth) | 1 | 1 | 0 |
 | [`orderbook_snapshot`](#orderbook-snapshot) | 2 | 15 | 0 |
 | [`orderflow_paso`](#orderflow-paso) | **0 · PENDIENTE** | 1 | 0 |
-| [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 8 | 1 |
+| [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 14 | 1 |
 | [`predicted_funding_rate`](#predicted-funding-rate) | 1 | 3 | 0 |
 | [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 5 | 0 |
 | [`signal_execution_snapshot`](#signal-execution-snapshot) | 1 | 1 | 0 |
@@ -764,15 +764,21 @@ La escriben:
 - `app.db.heartbeat_component` — **INSERT** en `app/db.py:472`
 - `app.db.heartbeat_shard` — **INSERT** en `app/db.py:542`
 
-**Si cambia el contenido o el esquema de `pipeline_heartbeat`, estas 8 rutas lo notan:**
+**Si cambia el contenido o el esquema de `pipeline_heartbeat`, estas 14 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](rutas/api-cvd.md)
+- [`/api/cvd/spot`](rutas/api-cvd-spot.md)
 - [`/api/data-confidence`](rutas/api-data-confidence.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)
 - [`/api/healthz`](rutas/api-healthz.md)
+- [`/api/liquidations`](rutas/api-liquidations.md)
 - [`/api/mesa/decide`](rutas/api-mesa-decide.md)
+- [`/api/ohlcv`](rutas/api-ohlcv.md)
+- [`/api/oi`](rutas/api-oi.md)
 - [`/api/quality/feeds`](rutas/api-quality-feeds.md)
+- [`/api/whale/delta`](rutas/api-whale-delta.md)
 - [`/metrics`](rutas/metrics.md)
 
 Rutas que ESCRIBEN en `pipeline_heartbeat`: `/api/healthz`

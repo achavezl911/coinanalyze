@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:2353` (cuerpo hasta la 2434) · decorador en la linea 2352.
+Handler `daily` · `app/api.py:2458` (cuerpo hasta la 2539) · decorador en la linea 2457.
 
 ## Parametros de entrada
 
@@ -21,18 +21,18 @@ Handler `daily` · `app/api.py:2353` (cuerpo hasta la 2434) · decorador en la l
 
 | campo | de donde sale |
 |---|---|
-| `coverage_note` | literal en app/api.py:699 |
-| `data_gaps` | asignado en app/api.py:2417 |
-| `knowledge_time_replay` | literal en app/api.py:696 |
-| `projection_latest_session_date` | literal en app/api.py:692 |
-| `quick_read` | literal en app/api.py:697 |
-| `rows` | literal en app/api.py:688 |
-| `sources` | literal en app/api.py:698 |
-| `streak` | literal en app/api.py:686 |
-| `streak_source` | literal en app/api.py:687 |
-| `symbol` | literal en app/api.py:685 |
-| `temporal_semantics` | literal en app/api.py:695 |
-| `through_session_date` | literal en app/api.py:689 |
+| `coverage_note` | literal en app/api.py:797 |
+| `data_gaps` | asignado en app/api.py:2522 |
+| `knowledge_time_replay` | literal en app/api.py:794 |
+| `projection_latest_session_date` | literal en app/api.py:790 |
+| `quick_read` | literal en app/api.py:795 |
+| `rows` | literal en app/api.py:786 |
+| `sources` | literal en app/api.py:796 |
+| `streak` | literal en app/api.py:784 |
+| `streak_source` | literal en app/api.py:785 |
+| `symbol` | literal en app/api.py:783 |
+| `temporal_semantics` | literal en app/api.py:793 |
+| `through_session_date` | literal en app/api.py:787 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -73,15 +73,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:547`
-- `app.api.daily_data` — `app/api.py:593`
-- `app.api.mask_gapped_series_rows` — `app/api.py:295`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api._session_window` — `app/api.py:645`
+- `app.api.daily_data` — `app/api.py:691`
+- `app.api.mask_gapped_series_rows` — `app/api.py:296`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:207`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.api.records` — `app/api.py:272`
+- `app.api.records` — `app/api.py:273`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
@@ -112,8 +112,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2360` | el propio handler |
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2465` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -165,7 +165,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.metrics.session_bounds` | 2 | **0** | 56 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |

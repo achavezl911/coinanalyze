@@ -573,8 +573,10 @@ async def declared_series_response(
                 "status": GAP_STATUS_NO_DATA,
                 "declared": [],
                 "undeclared_buckets": None,
-            }
-            | pedido,
+                "as_of": pedido["as_of"],
+                "age_seconds": pedido["age_seconds"],
+                "requested_window": pedido["requested_window"],
+            },
         }
     window_start, window_end = starts[0], starts[-1] + bucket
     esperados = expected_buckets(window_start, window_end, bucket)
@@ -633,8 +635,10 @@ async def declared_series_response(
             "status": status,
             "declared": declared,
             "undeclared_buckets": undeclared,
-        }
-        | pedido,
+            "as_of": pedido["as_of"],
+            "age_seconds": pedido["age_seconds"],
+            "requested_window": pedido["requested_window"],
+        },
     }
 
 
