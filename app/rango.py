@@ -186,6 +186,36 @@ def _pruebas(v: dict[str, Any], c: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+# Las cuatro pruebas que el «porque» cita, con la frase de cada lado. Una prueba solo AFIRMA el
+# lado que voto: si no voto, o voto el otro, la frase lo dice en vez de afirmarlo. Antes el
+# «porque» era fijo -«el precio cae, el spot vende...»- aunque los dos votos bajistas fueran el
+# precio y las liquidaciones: 22 de 120 ventanas de 6 h en 140 el 2026-11-22 afirmaban un voto que
+# su tabla no tenia (Z-05, scripts/sonda_rango_porque.py).
+_PATAS = (
+    ("progreso_precio", "el precio", {"bajista": "el precio cae", "alcista": "el precio sube"}),
+    ("cvd_spot", "el spot", {"bajista": "el spot vende", "alcista": "el spot compra"}),
+    ("liquidaciones", "la prueba de liquidaciones",
+     {"bajista": "se rompen los largos", "alcista": "se rompen los cortos"}),
+    ("interes_abierto", "el interes abierto",
+     {"cierre": "el interes abierto cae", "traspaso": "el interes abierto aguanta"}),
+)
+
+
+def _hechos(lado: dict[str, str | None], esperado: dict[str, str]) -> str:
+    """Una frase por prueba, en orden fijo: el hecho si voto el lado esperado, «no voto» si no se
+    pudo medir y «no acompana (vota X)» si voto el otro."""
+    partes = []
+    for prueba, sujeto, frases in _PATAS:
+        v = lado.get(prueba)
+        if v == esperado[prueba]:
+            partes.append(frases[v])
+        elif v is None:
+            partes.append(f"{sujeto} no voto")
+        else:
+            partes.append(f"{sujeto} no acompana (vota {v})")
+    return ", ".join(partes[:-1]) + " y " + partes[-1]
+
+
 def _veredicto(pruebas: list[dict[str, Any]]) -> dict[str, Any]:
     """La cuenta, legible. Sin pesos: un peso que no sale de una medida es un peso inventado."""
     votan = [p for p in pruebas if p["vota"] is not None]
@@ -200,20 +230,24 @@ def _veredicto(pruebas: list[dict[str, Any]]) -> dict[str, Any]:
     # vendio. Se mira la pata de spot POR SI MISMA, no el diferencial.
     spot = next((p for p in pruebas if p["prueba"] == "cvd_spot"), None)
     spot_lado = spot["vota"] if spot else None
+    # El «porque» se COMPONE con los votos que hubo; la regla que elige el nombre no cambia.
+    lado = {p["prueba"]: p["vota"] for p in pruebas}
+    bajista = {"progreso_precio": "bajista", "cvd_spot": "bajista", "liquidaciones": "bajista"}
+    alcista = {"progreso_precio": "alcista", "cvd_spot": "alcista", "liquidaciones": "alcista"}
 
     if cierre and baja >= 2:
         nombre = "desapalancamiento"
-        porque = ("el precio cae, el spot vende y el interes abierto cae con ellos. No es "
-                  "distribucion: en una distribucion alguien compra lo que otro vende y el OI "
-                  "aguanta. Aqui las posiciones se CIERRAN. Esta casa no tenia nombre para esto "
-                  "-su vocabulario era acumulacion, distribucion o equilibrio- y forzarlo a uno "
-                  "de los tres seria el mismo error que el README ya cuenta.")
+        porque = (_hechos(lado, {**bajista, "interes_abierto": "cierre"})
+                  + ". No es distribucion: en una distribucion alguien compra lo que otro vende y "
+                  "el OI aguanta. Aqui las posiciones se CIERRAN. Esta casa no tenia nombre para "
+                  "esto -su vocabulario era acumulacion, distribucion o equilibrio- y forzarlo a "
+                  "uno de los tres seria el mismo error que el README ya cuenta.")
     elif traspaso and baja >= 2 and spot_lado == "bajista":
         nombre = "compatible_con_distribucion"
-        porque = "el precio cae y el spot vende, y el interes abierto aguanta: el papel cambia de manos."
+        porque = _hechos(lado, {**bajista, "interes_abierto": "traspaso"}) + ": el papel cambia de manos."
     elif traspaso and alta >= 2 and spot_lado == "alcista":
         nombre = "compatible_con_acumulacion"
-        porque = "el precio sube y el spot compra, y el interes abierto aguanta."
+        porque = _hechos(lado, {**alcista, "interes_abierto": "traspaso"}) + "."
     else:
         nombre = "ninguna"
         porque = ("las pruebas no apuntan a la misma estructura. Un veredicto que siempre elige "

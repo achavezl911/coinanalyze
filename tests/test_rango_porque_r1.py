@@ -89,5 +89,6 @@ def test_ninguna_combinacion_de_votos_afirma_lo_que_no_se_voto():
         v = _veredicto(pruebas)
         assert afirmaciones_sin_voto(v, pruebas) == [], (p, s, o, liq, v["porque"])
         if v["estructura"] != "ninguna":
-            for pata in ("el precio", "el spot", "el interes abierto", "liquidaciones"):
-                assert pata in v["porque"], (p, s, o, liq, v["porque"])
+            for pata in (("el precio",), ("el spot",), ("el interes abierto",),
+                         ("liquidaciones", "se rompen los")):
+                assert any(x in v["porque"] for x in pata), (p, s, o, liq, v["porque"])

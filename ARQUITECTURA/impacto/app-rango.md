@@ -2,17 +2,41 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-5 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+6 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
+| [`_hechos`](#-hechos) | 204 | 1 | **0** | 0 | **1** |
 | [`_prueba`](#-prueba) | 107 | 1 | **0** | 0 | **1** |
 | [`_pruebas`](#-pruebas) | 111 | 1 | **0** | 0 | **1** |
 | [`_ventana`](#-ventana) | 51 | 1 | **0** | 0 | **1** |
-| [`_veredicto`](#-veredicto) | 189 | 1 | **0** | 0 | **1** |
-| [`estructura_de_rango`](#estructura-de-rango) | 234 | 1 | **0** | 0 | **1** |
+| [`_veredicto`](#-veredicto) | 219 | 1 | **0** | 0 | **1** |
+| [`estructura_de_rango`](#estructura-de-rango) | 268 | 1 | **0** | 0 | **1** |
+
+## _hechos
+
+`app/rango.py:204` · clave completa `app.rango._hechos`
+
+**Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
+
+### Por llamada — 1 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/rango/estructura`](../rutas/api-rango-estructura.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _prueba
 
@@ -85,7 +109,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _veredicto
 
-`app/rango.py:189` · clave completa `app.rango._veredicto`
+`app/rango.py:219` · clave completa `app.rango._veredicto`
 
 **Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 
@@ -108,7 +132,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## estructura_de_rango
 
-`app/rango.py:234` · clave completa `app.rango.estructura_de_rango`
+`app/rango.py:268` · clave completa `app.rango.estructura_de_rango`
 
 **Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 

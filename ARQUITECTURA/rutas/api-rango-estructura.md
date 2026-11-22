@@ -21,8 +21,8 @@ Handler `rango_estructura` · `app/api.py:2134` (cuerpo hasta la 2157) · decora
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/rango.py:253 |
-| `control` | literal en app/rango.py:249 |
+| `as_of` | literal en app/rango.py:287 |
+| `control` | literal en app/rango.py:283 |
 | `control.ballena_spot_usd` | literal en app/rango.py:91 |
 | `control.cvd_spot_usd` | literal en app/rango.py:90 |
 | `control.desde` | literal en app/rango.py:84 |
@@ -42,10 +42,10 @@ Handler `rango_estructura` · `app/api.py:2134` (cuerpo hasta la 2157) · decora
 | `control.precio_inicio` | literal en app/rango.py:88 |
 | `control.precio_pct` | literal en app/rango.py:89 |
 | `control.velas_1min` | literal en app/rango.py:87 |
-| `fin_abierto` | literal en app/rango.py:250 |
-| `pruebas` | literal en app/rango.py:251 |
-| `symbol` | literal en app/rango.py:247 |
-| `ventana` | literal en app/rango.py:248 |
+| `fin_abierto` | literal en app/rango.py:284 |
+| `pruebas` | literal en app/rango.py:285 |
+| `symbol` | literal en app/rango.py:281 |
+| `ventana` | literal en app/rango.py:282 |
 | `ventana.ballena_spot_usd` | literal en app/rango.py:91 |
 | `ventana.cvd_spot_usd` | literal en app/rango.py:90 |
 | `ventana.desde` | literal en app/rango.py:84 |
@@ -65,13 +65,13 @@ Handler `rango_estructura` · `app/api.py:2134` (cuerpo hasta la 2157) · decora
 | `ventana.precio_inicio` | literal en app/rango.py:88 |
 | `ventana.precio_pct` | literal en app/rango.py:89 |
 | `ventana.velas_1min` | literal en app/rango.py:87 |
-| `veredicto` | literal en app/rango.py:252 |
-| `veredicto.estructura` | literal en app/rango.py:222 |
-| `veredicto.no_es_prediccion` | literal en app/rango.py:229 |
-| `veredicto.porque` | literal en app/rango.py:223 |
-| `veredicto.pruebas_que_votan` | literal en app/rango.py:224 |
-| `veredicto.pruebas_totales` | literal en app/rango.py:225 |
-| `veredicto.reparto` | literal en app/rango.py:226 |
+| `veredicto` | literal en app/rango.py:286 |
+| `veredicto.estructura` | literal en app/rango.py:256 |
+| `veredicto.no_es_prediccion` | literal en app/rango.py:263 |
+| `veredicto.porque` | literal en app/rango.py:257 |
+| `veredicto.pruebas_que_votan` | literal en app/rango.py:258 |
+| `veredicto.pruebas_totales` | literal en app/rango.py:259 |
+| `veredicto.reparto` | literal en app/rango.py:260 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -100,7 +100,7 @@ LEE:
 
 ## Funciones que la componen
 
-8 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+9 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -108,14 +108,15 @@ Llamadas directas del handler:
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
 - `app.api.validate_symbol` — `app/api.py:259`
 - `app.api.ventana_pedida` — `app/api.py:1748`
-- `app.rango.estructura_de_rango` — `app/rango.py:234`
+- `app.rango.estructura_de_rango` — `app/rango.py:268`
 
-<details><summary>Alcanzables de forma indirecta (4)</summary>
+<details><summary>Alcanzables de forma indirecta (5)</summary>
 
+- `app.rango._hechos` — `app/rango.py:204`
 - `app.rango._prueba` — `app/rango.py:107`
 - `app.rango._pruebas` — `app/rango.py:111`
 - `app.rango._ventana` — `app/rango.py:51`
-- `app.rango._veredicto` — `app/rango.py:189`
+- `app.rango._veredicto` — `app/rango.py:219`
 
 </details>
 
@@ -192,6 +193,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.rechaza_parametros_desconocidos` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
 | `app.api.ventana_pedida` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-api.md) |
 | `app.api.rango_estructura` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
+| `app.rango._hechos` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |
 | `app.rango._prueba` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |
 | `app.rango._pruebas` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |
 | `app.rango._ventana` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-rango.md) |
