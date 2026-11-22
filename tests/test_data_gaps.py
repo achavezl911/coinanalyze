@@ -533,10 +533,10 @@ async def test_postgres_partir_se_niega_con_cobertura_completa_o_vacia() -> None
 
 
 @pytest.mark.asyncio
-async def test_postgres_cerrar_se_niega_mientras_quede_un_hijo_abierto() -> None:
-    """EL CONTROL QUE IMPIDE ESCRIBIR LA AFIRMACION FALSA. Y el positivo al lado: en
-    cuanto los hijos estan, cierra -- un guardia que no deja cerrar nunca esta tan roto
-    como el que cierra siempre."""
+async def test_postgres_cerrar_con_un_hijo_abierto_y_el_hijo_sigue_tapando_su_tramo() -> None:
+    """huecos-r1 (H-01): antes se negaba mientras quedara un hijo abierto, y el padre abierto
+    tapaba TAMBIEN lo repuesto (en 140, 13 de 13 velas de 1 h del apagon). Los hijos teselan
+    la ventana: cierra. El hijo abierto bloquea SU tramo por si solo; nada mas queda tapado."""
     conn, tx = await _espejo()
     if conn is None:
         pytest.skip("TEST_DATABASE_URL is not configured")
@@ -546,16 +546,17 @@ async def test_postgres_cerrar_se_niega_mientras_quede_un_hijo_abierto() -> None
         presentes = [inicio + timedelta(minutes=5 * i) for i in range(10) if i != 3]
         await data_gaps.partition_gap_by_source_coverage(
             conn, gap_id=padre, present_buckets=presentes, proof_source="prueba")
+        assert await conn.fetchval(
+            "SELECT count(*) FROM data_gap WHERE detection_source=$1 AND status='unresolved'",
+            data_gaps.PARTITION_DETECTION_SOURCE) >= 1
 
-        with pytest.raises(ValueError, match="still unresolved"):
-            await data_gaps.close_partitioned_gap(
-                conn, gap_id=padre, proof_source="prueba")
-
-        await conn.execute(
-            "UPDATE data_gap SET status='unrecoverable', resolved_at=now() "
-            "WHERE detection_source=$1", data_gaps.PARTITION_DETECTION_SOURCE)
         assert await data_gaps.close_partitioned_gap(
             conn, gap_id=padre, proof_source="prueba") == "unrecoverable"
+        # Los hijos presentes siguen 'unresolved' hasta que la recuperacion los reconcilia; el padre ya no tapa nada.
+        tapan = f"SELECT array_agg(g.id) FROM data_gap g WHERE {data_gaps.BLOQUEA_SQL} AND g.start_ts <= $1 AND g.end_ts > $1"
+        for minuto in (15, 20):
+            ids = await conn.fetchval(tapan, inicio + timedelta(minutes=minuto))
+            assert len(ids) == 1 and padre not in ids, (minuto, ids)
 
         fila = await conn.fetchrow(
             "SELECT status, resolution_reason, recovery_metadata FROM data_gap WHERE id=$1",

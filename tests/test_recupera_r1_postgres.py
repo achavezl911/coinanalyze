@@ -160,20 +160,25 @@ async def _k04_particion(conn, padre: int) -> bool:
     return await conn.fetchval(
         """
         SELECT g.recovery_metadata->>'partition_detection_source' IS NOT NULL
-          AND (SELECT count(*) >= 2 AND count(*) FILTER (WHERE h.status='unresolved') = 0
-                      AND sum(h.end_ts - h.start_ts) = g.end_ts - g.start_ts
+          AND (SELECT count(*) >= 1
+                      AND sum(least(h.end_ts, g.end_ts) - greatest(h.start_ts, g.start_ts)) = g.end_ts - g.start_ts
                  FROM data_gap h
-                WHERE h.feed=g.feed AND h.symbol=g.symbol AND h.granularity=g.granularity
+                WHERE h.feed=g.feed AND h.exchange=g.exchange AND h.market=g.market
+                  AND h.symbol=g.symbol AND h.granularity=g.granularity
                   AND h.detection_source=g.recovery_metadata->>'partition_detection_source'
-                  AND h.start_ts >= g.start_ts AND h.end_ts <= g.end_ts)
+                  AND h.id <> g.id AND h.start_ts < g.end_ts AND h.end_ts > g.start_ts)
           AND NOT EXISTS (
                 SELECT 1 FROM data_gap a JOIN data_gap b
-                    ON b.id > a.id AND b.symbol=a.symbol AND b.detection_source=a.detection_source
-                   AND b.start_ts >= g.start_ts AND b.end_ts <= g.end_ts
+                    ON b.id > a.id
+                   AND b.feed=a.feed AND b.exchange=a.exchange AND b.market=a.market
+                   AND b.symbol=a.symbol AND b.granularity=a.granularity
+                   AND b.detection_source=a.detection_source
+                   AND b.id <> g.id AND b.start_ts < g.end_ts AND b.end_ts > g.start_ts
                    AND a.start_ts < b.end_ts AND b.start_ts < a.end_ts
-                 WHERE a.symbol=g.symbol
+                 WHERE a.feed=g.feed AND a.exchange=g.exchange AND a.market=g.market
+                   AND a.symbol=g.symbol AND a.granularity=g.granularity
                    AND a.detection_source=g.recovery_metadata->>'partition_detection_source'
-                   AND a.start_ts >= g.start_ts AND a.end_ts <= g.end_ts)
+                   AND a.id <> g.id AND a.start_ts < g.end_ts AND a.end_ts > g.start_ts)
         FROM data_gap g WHERE g.id=$1
         """,
         padre,
@@ -220,18 +225,23 @@ async def test_el_apagon_se_parte_y_lo_que_esta_en_la_base_sale_con_precio(base,
     assert segunda["pedidas"] == 0 and not segunda["uniones"], "una segunda corrida no tiene nada que partir"
 
 
-async def test_con_la_fuente_muda_no_se_archiva_ni_se_destapa_nada(base, ruta) -> None:
+async def test_con_la_fuente_muda_no_se_archiva_nada_y_lo_presente_se_destapa(base, ruta) -> None:
+    """Sin control no hay prueba de horizonte: la parte vieja se queda 'unresolved' y declarada. Pero los hijos ya
+    teselan a los padres: se cierran (huecos-r1, H-01) y lo que esta en la base deja de estar tapado."""
     conn = base
     plantado = await _apagon(conn)
     resumen = await _corre(conn, FuenteReloj(muda=True), seco=False)
     info = resumen["uniones"][0]
     assert info.get("fuente_muda") and info["archivados_fuera_del_reloj"] == 0, info
-    assert info["padres_cerrados"] == 0 and info["minutos_destapados"] == 0, info
+    assert info["padres_cerrados"] == 2 and info["minutos_destapados"] == 24 * 60, info
+    cerrados = await conn.fetch("SELECT id FROM data_gap WHERE status='unrecoverable'")
+    assert sorted(r["id"] for r in cerrados) == sorted(plantado["padres"]), "solo los padres: ningun hijo se archiva"
     for padre in plantado["padres"]:
-        assert await conn.fetchval("SELECT status FROM data_gap WHERE id=$1", padre) == "unresolved"
-    assert not await conn.fetchval("SELECT count(*) FROM data_gap WHERE status='unrecoverable'")
-    hay, _ = _con_precio(await ruta(), AHORA - 25 * H, AHORA - H)
-    assert hay == 0
+        assert await _k04_particion(conn, padre)
+    despues = await ruta()
+    hay, total = _con_precio(despues, AHORA - 25 * H, AHORA - H)
+    assert (hay, total) == (288, 288)
+    assert _cubre(despues["data_gaps"]["declared"], AHORA - 35 * H, AHORA - 25 * H), "la parte vieja sigue declarada"
 
 
 async def test_en_seco_cuenta_y_no_escribe_ni_pregunta(base) -> None:

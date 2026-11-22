@@ -62,18 +62,25 @@
 # metodo sino de GRANULARIDAD: una sola fila para un tramo que la fuente cubre a trozos.
 #
 #   partitioned_by_source_coverage  el hueco se partio por donde la MEDICION lo parte, y
-#                                   cada trozo se resolvio por su propia via.
+#                                   cada trozo responde por si mismo en su propia fila.
 #
 # ESTA RAMA NO CREE NADA DE LO QUE LA FILA CUENTA SOBRE SI MISMA, y es lo que la
 # distingue de un motivo con buena letra: se re-deriva contra la TABLA. Los hijos tienen
-# que TESELAR la ventana del padre -- contenidos, disjuntos, y la suma de sus medidas
-# igual a la del padre -- y ninguno puede seguir 'unresolved'. Hacen falta las tres
-# condiciones: contencion + suma sola admite un HUECO compensado por un SOLAPE, que es
-# justo como se pierde un bucket sin que ningun conteo baje.
+# que TESELAR la ventana del padre -- disjuntos, y la suma de lo que cubren DENTRO de
+# ella igual a la del padre --. Hacen falta las dos: la suma sola admite un HUECO
+# compensado por un SOLAPE, que es justo como se pierde un bucket sin que ningun conteo baje.
 #
+# huecos-r1, 2026-11-22 (H-01 + N2), DOS AFLOJES A PROPOSITO, y por que no pierden nada:
+#   1. Un hijo puede seguir 'unresolved'. Antes no: el padre se quedaba abierto y TAPABA
+#      tambien lo repuesto (140: 75 padres del apagon del 11-16, 13 de 13 velas de 1 h sin
+#      precio). El hijo abierto bloquea SU tramo y lo cuenta la primera regla de este check
+#      (sin resolver de mas de 24 h) en su propia fila: el padre no esconde nada.
+#   2. Un hijo puede asomar por el borde del padre (cuenta lo que cubre dentro). Un padre
+#      detectado despues de partir, con un borde que no es un corte, se quedaba abierto
+#      para siempre.
 # Y NO SE AFLOJA NADA AL COMPONER: un hijo recuperado paso validate_recovery entero sobre
-# su propio tramo, y un hijo archivado lo juzga ESTE MISMO check por sus otras dos ramas.
-# El padre no hereda una excusa, hereda pruebas ya verificadas una a una.
+# su propio tramo, un hijo archivado lo juzga ESTE MISMO check por sus otras ramas, y uno
+# abierto lo cuenta la primera. El padre no hereda una excusa.
 #
 # EL CONJUNTO DE HIJOS SALE DE LA PROPIA FILA -- recovery_metadata->>
 # 'partition_detection_source' --, nunca de una constante escrita aqui. TRES razones
@@ -239,26 +246,26 @@ sin_prueba=$(leer sin_prueba "SELECT count(*) FROM data_gap g
           AND (recovery_metadata->>'control_returned_rows')::int >  0
         WHEN 'partitioned_by_source_coverage' THEN
               g.recovery_metadata->>'partition_detection_source' IS NOT NULL
-          AND (SELECT count(*) >= 2
-                  AND count(*) FILTER (WHERE h.status='unresolved') = 0
-                  AND sum(h.end_ts - h.start_ts) = g.end_ts - g.start_ts
+          AND (SELECT count(*) >= 1
+                  AND sum(least(h.end_ts, g.end_ts) - greatest(h.start_ts, g.start_ts))
+                      = g.end_ts - g.start_ts
                  FROM data_gap h
                 WHERE h.feed=g.feed AND h.exchange=g.exchange AND h.market=g.market
                   AND h.symbol=g.symbol AND h.granularity=g.granularity
                   AND h.detection_source=g.recovery_metadata->>'partition_detection_source'
-                  AND h.start_ts >= g.start_ts AND h.end_ts <= g.end_ts)
+                  AND h.id <> g.id AND h.start_ts < g.end_ts AND h.end_ts > g.start_ts)
           AND NOT EXISTS (
                 SELECT 1 FROM data_gap a JOIN data_gap b
                     ON b.id > a.id
                    AND b.feed=a.feed AND b.exchange=a.exchange AND b.market=a.market
                    AND b.symbol=a.symbol AND b.granularity=a.granularity
                    AND b.detection_source=a.detection_source
-                   AND b.start_ts >= g.start_ts AND b.end_ts <= g.end_ts
+                   AND b.id <> g.id AND b.start_ts < g.end_ts AND b.end_ts > g.start_ts
                    AND a.start_ts < b.end_ts AND b.start_ts < a.end_ts
                  WHERE a.feed=g.feed AND a.exchange=g.exchange AND a.market=g.market
                    AND a.symbol=g.symbol AND a.granularity=g.granularity
                    AND a.detection_source=g.recovery_metadata->>'partition_detection_source'
-                   AND a.start_ts >= g.start_ts AND a.end_ts <= g.end_ts)
+                   AND a.id <> g.id AND a.start_ts < g.end_ts AND a.end_ts > g.start_ts)
         $OF_RAMA
         ELSE false
       END, false)") || exit 2

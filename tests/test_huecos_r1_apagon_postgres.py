@@ -205,13 +205,12 @@ async def test_la_primera_pasada_del_timer_cierra_los_padres_y_destapa_lo_repues
     seco = await recupera.parte(conn, FuenteQueNoSeLlama(), ahora=AHORA, permitidos=SIMBOLOS, seco=True)
     assert huella == await conn.fetchval("SELECT md5(string_agg(id || status, ',' ORDER BY id)) FROM data_gap")
 
+    # La primera pasada del timer (sin --parte), con la fuente sin llamar: lo que 140 hara tras desplegar.
     resumen = await recupera.recupera(conn, FuenteQueNoSeLlama(), ahora=AHORA, permitidos=SIMBOLOS)
+    despues = (await _padres_abiertos(conn), await _minutos_tapados(conn), *(await _sonda(conn, monkeypatch))[:2])
+    assert despues == (0, 0, 0, 13), "(padres abiertos, buckets recovered tapados, velas sin precio, velas) tras la pasada"
     assert (resumen.get("padres_cerrados"), resumen.get("padres_abiertos"), resumen["pedidas"]) == (75, 0, 0), resumen
-
-    assert await _padres_abiertos(conn) == 0
-    assert await _minutos_tapados(conn) == 0, f"antes {antes_tapados} buckets recovered tapados"
-    sin, velas, declarados = await _sonda(conn, monkeypatch)
-    assert (sin, velas) == (0, 13), "la sonda h01 VERDE: lo que la base guarda sale con precio"
+    _, _, declarados = await _sonda(conn, monkeypatch)
     # La ruta declara solo dentro de lo que sirve (desde la vela de 11-17 00:00): ahi el hijo abierto 23:17-00:17 sigue.
     assert _cubre(declarados, datetime(2026, 11, 17, tzinfo=UTC), SIN_DATO[1]), [(d["start"], d["end"]) for d in declarados]
     assert await conn.fetchval(
