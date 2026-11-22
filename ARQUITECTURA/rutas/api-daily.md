@@ -87,8 +87,8 @@ Llamadas directas del handler:
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
 - `app.interpretation.daily_flow_read` — `app/interpretation.py:208`
 - `app.interpretation.number` — `app/interpretation.py:10`
-- `app.metrics.session_bounds` — `app/metrics.py:31`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.metrics.session_bounds` — `app/metrics.py:60`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 

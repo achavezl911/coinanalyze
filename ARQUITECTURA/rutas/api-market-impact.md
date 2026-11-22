@@ -18,12 +18,12 @@ Handler `market_impact_endpoint` · `app/api.py:1412` (cuerpo hasta la 1416) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5970 |
-| `definition` | literal en app/scalp_logic.py:5972 |
-| `limitations` | literal en app/scalp_logic.py:5974 |
-| `metric` | literal en app/scalp_logic.py:5971 |
-| `symbol` | literal en app/scalp_logic.py:5969 |
-| `windows` | literal en app/scalp_logic.py:5973 |
+| `as_of` | literal en app/scalp_logic.py:5969 |
+| `definition` | literal en app/scalp_logic.py:5971 |
+| `limitations` | literal en app/scalp_logic.py:5973 |
+| `metric` | literal en app/scalp_logic.py:5970 |
+| `symbol` | literal en app/scalp_logic.py:5968 |
+| `windows` | literal en app/scalp_logic.py:5972 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,15 +54,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5877`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5876`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 

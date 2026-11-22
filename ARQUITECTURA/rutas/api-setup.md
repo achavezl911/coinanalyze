@@ -40,7 +40,7 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 - `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:712`
 
 ## Funciones que la componen
 
@@ -59,7 +59,7 @@ Llamadas directas del handler:
 - `app.api.records` — `app/api.py:272`
 - `app.interpretation.daily_flow_read` — `app/interpretation.py:208`
 - `app.interpretation.number` — `app/interpretation.py:10`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 

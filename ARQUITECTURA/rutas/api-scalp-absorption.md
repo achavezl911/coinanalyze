@@ -46,16 +46,16 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5683`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5682`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
+- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 

@@ -67,30 +67,30 @@ Llamadas directas del handler:
 
 - `app.api.statistical_alerts` — `app/api.py:1928`
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5877`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
+- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5876`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
+- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
-- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
-- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
-- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
-- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
-- `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
+- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
+- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
+- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:571`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._first_present` — `app/scalp_logic.py:507`
+- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:519`
+- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:563`
+- `app.scalp_logic._utc_now` — `app/scalp_logic.py:73`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
+- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
+- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
+- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
+- `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`

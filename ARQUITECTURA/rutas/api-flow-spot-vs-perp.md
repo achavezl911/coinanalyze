@@ -22,18 +22,18 @@ Handler `flow_spot_vs_perp` · `app/api.py:1806` (cuerpo hasta la 1828) · decor
 
 | campo | de donde sale |
 |---|---|
-| `buckets` | literal en app/scalp_logic.py:6150 |
-| `buckets_with_both_legs` | literal en app/scalp_logic.py:6151 |
-| `coverage_pct` | literal en app/scalp_logic.py:6152 |
-| `interval` | literal en app/scalp_logic.py:6148 |
-| `reason` | literal en app/scalp_logic.py:6082 |
-| `rows` | literal en app/scalp_logic.py:6155 |
-| `spot_symbol` | literal en app/scalp_logic.py:6146 |
-| `state_counts` | literal en app/scalp_logic.py:6154 |
-| `status` | literal en app/scalp_logic.py:6153 |
-| `symbol` | literal en app/scalp_logic.py:6145 |
-| `unit` | literal en app/scalp_logic.py:6149 |
-| `venue` | literal en app/scalp_logic.py:6147 |
+| `buckets` | literal en app/scalp_logic.py:6149 |
+| `buckets_with_both_legs` | literal en app/scalp_logic.py:6150 |
+| `coverage_pct` | literal en app/scalp_logic.py:6151 |
+| `interval` | literal en app/scalp_logic.py:6147 |
+| `reason` | literal en app/scalp_logic.py:6081 |
+| `rows` | literal en app/scalp_logic.py:6154 |
+| `spot_symbol` | literal en app/scalp_logic.py:6145 |
+| `state_counts` | literal en app/scalp_logic.py:6153 |
+| `status` | literal en app/scalp_logic.py:6152 |
+| `symbol` | literal en app/scalp_logic.py:6144 |
+| `unit` | literal en app/scalp_logic.py:6148 |
+| `venue` | literal en app/scalp_logic.py:6146 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,12 +59,12 @@ Llamadas directas del handler:
 - `app.api.declara_ventana` — `app/api.py:1781`
 - `app.api.validate_symbol` — `app/api.py:259`
 - `app.api.ventana_pedida` — `app/api.py:1748`
-- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:6061`
+- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:6060`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4794`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4793`
 
 </details>
 

@@ -47,7 +47,7 @@ Llamadas directas del handler:
 
 - `app.api.sella_respuesta` — `app/api.py:2026`
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1706`
+- `app.scalp_logic.level_breakout` — `app/scalp_logic.py:1711`
 
 <details><summary>Alcanzables de forma indirecta (12)</summary>
 

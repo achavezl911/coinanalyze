@@ -18,16 +18,16 @@ Handler `funding_context_endpoint` · `app/api.py:1970` (cuerpo hasta la 1973) �
 
 | campo | de donde sale |
 |---|---|
-| `annualized_pct` | literal en app/scalp_logic.py:3756 |
-| `coverage` | literal en app/scalp_logic.py:3758 |
-| `current_pct` | literal en app/scalp_logic.py:3751 |
-| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3753 |
-| `history_avg_pct` | literal en app/scalp_logic.py:3757 |
-| `next_funding_time_utc` | literal en app/scalp_logic.py:3759 |
-| `note` | literal en app/scalp_logic.py:3767 |
-| `predicted_pct` | literal en app/scalp_logic.py:3752 |
-| `regime` | literal en app/scalp_logic.py:3760 |
-| `symbol` | literal en app/scalp_logic.py:3750 |
+| `annualized_pct` | literal en app/scalp_logic.py:3755 |
+| `coverage` | literal en app/scalp_logic.py:3757 |
+| `current_pct` | literal en app/scalp_logic.py:3750 |
+| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3752 |
+| `history_avg_pct` | literal en app/scalp_logic.py:3756 |
+| `next_funding_time_utc` | literal en app/scalp_logic.py:3758 |
+| `note` | literal en app/scalp_logic.py:3766 |
+| `predicted_pct` | literal en app/scalp_logic.py:3751 |
+| `regime` | literal en app/scalp_logic.py:3759 |
+| `symbol` | literal en app/scalp_logic.py:3749 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3698`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3697`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -59,7 +59,7 @@ Llamadas directas del handler:
 - `app.data_gaps.align_down` — `app/data_gaps.py:242`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 

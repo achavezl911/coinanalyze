@@ -18,13 +18,13 @@ Handler `macro_context_endpoint` · `app/api.py:2225` (cuerpo hasta la 2228) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:1985 |
-| `conditional_note` | literal en app/scalp_logic.py:1990 |
-| `metrics` | literal en app/scalp_logic.py:1988 |
-| `session_date` | literal en app/scalp_logic.py:1987 |
-| `sessions` | literal en app/scalp_logic.py:1986 |
-| `symbol` | literal en app/scalp_logic.py:1984 |
-| `tension` | literal en app/scalp_logic.py:1989 |
+| `as_of` | literal en app/scalp_logic.py:1990 |
+| `conditional_note` | literal en app/scalp_logic.py:1995 |
+| `metrics` | literal en app/scalp_logic.py:1993 |
+| `session_date` | literal en app/scalp_logic.py:1992 |
+| `sessions` | literal en app/scalp_logic.py:1991 |
+| `symbol` | literal en app/scalp_logic.py:1989 |
+| `tension` | literal en app/scalp_logic.py:1994 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,18 +46,18 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1934`
+- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1939`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1894`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1884`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic._regime` — `app/scalp_logic.py:1865`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1899`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1889`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1861`
+- `app.scalp_logic._regime` — `app/scalp_logic.py:1870`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 
