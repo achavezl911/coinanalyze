@@ -289,10 +289,10 @@ La escriben:
 
 La escriben:
 
-- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1102`
-- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1253`
-- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1272`
-- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1321`
+- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1104`
+- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1255`
+- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1274`
+- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1323`
 - `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:332`
 - `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:594`
 - `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:673`
