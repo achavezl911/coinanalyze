@@ -37640,7 +37640,7 @@
             "tests/test_bot_r3.py:338",
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
-            "tests/test_deploy_health_gate.py:154",
+            "tests/test_deploy_health_gate.py:144",
             "tests/test_deploy_wrapper.py:50",
             "tests/test_ingest_health.py:236",
             "tests/test_smoke_arranque.py:1"
@@ -46913,13 +46913,13 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_health_gate.py:180",
+            "tests/test_deploy_health_gate.py:170",
             "tests/test_deploy_wrapper.py:244",
             "tests/test_smoke_arranque.py:40"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
-            "tests/test_deploy_health_gate.py:158",
+            "tests/test_deploy_health_gate.py:148",
             "tests/test_deploy_wrapper.py:68"
           ]
         }
