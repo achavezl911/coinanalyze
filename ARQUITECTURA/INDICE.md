@@ -23,14 +23,14 @@
 | `/api/dashboard/state` | GET | 165 | 14 | 44 | [ficha](rutas/api-dashboard-state.md) |
 | `/api/data-confidence` | GET | 6 | 5 | 5 | [ficha](rutas/api-data-confidence.md) |
 | `/api/delta-profile` | GET | 3 | 1 | 13 | [ficha](rutas/api-delta-profile.md) |
-| `/api/desk/state` | GET | 26 | 13 | 81 | [ficha](rutas/api-desk-state.md) |
+| `/api/desk/state` | GET | 26 | 13 | 83 | [ficha](rutas/api-desk-state.md) |
 | `/api/divergences` | GET | 15 | 3 | 7 | [ficha](rutas/api-divergences.md) |
 | `/api/entradas` | GET | 19 | 8 | 50 | [ficha](rutas/api-entradas.md) |
 | `/api/external-macro` | GET | 1 | 6 | 50 | [ficha](rutas/api-external-macro.md) |
 | `/api/flow/spot-vs-perp` | GET | 12 | 1 | 6 | [ficha](rutas/api-flow-spot-vs-perp.md) |
 | `/api/funding-context` | GET | 10 | 2 | 8 | [ficha](rutas/api-funding-context.md) |
 | `/api/healthz` | GET | 13 | 3 | 5 | [ficha](rutas/api-healthz.md) |
-| `/api/hypothesis` | GET | 82 | 12 | 79 | [ficha](rutas/api-hypothesis.md) |
+| `/api/hypothesis` | GET | 83 | 12 | 81 | [ficha](rutas/api-hypothesis.md) |
 | `/api/level/breakout` | GET | 1 | 1 | 15 | [ficha](rutas/api-level-breakout.md) |
 | `/api/libro/cobertura` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-cobertura.md) |
 | `/api/libro/fotos` | GET | 1 | 0 | 3 | [ficha](rutas/api-libro-fotos.md) |

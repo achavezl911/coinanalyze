@@ -118,21 +118,22 @@ def test_bundle_ausente_deja_bars_en_none() -> None:
 
 
 def test_regreso_posterior_dentro_es_true() -> None:
+    # Desde dentro (99.5): el cruce abre el episodio (Zona R1); sin cruce no hay de que volver.
     obs = setup_observables(direction="long", setup="ruptura", zone=ZONE,
-                            bundle=_bundle(_bars(0, [100.5, 99.4])))
+                            bundle=_bundle(_bars(0, [99.5, 100.5, 99.4])))
     r = obs["returned_inside"]
     assert r["value"] is True and r["status"] == "MEASURED"
 
 
 def test_sigue_fuera_es_false_no_none() -> None:
     obs = setup_observables(direction="long", setup="ruptura", zone=ZONE,
-                            bundle=_bundle(_bars(0, [100.5, 100.7])))
+                            bundle=_bundle(_bars(0, [99.5, 100.5, 100.7])))
     assert obs["returned_inside"]["value"] is False
 
 
 def test_sin_periodo_posterior_es_none() -> None:
     obs = setup_observables(direction="long", setup="ruptura", zone=ZONE,
-                            bundle=_bundle(_bars(0, [100.5])))
+                            bundle=_bundle(_bars(0, [99.5, 100.5])))
     r = obs["returned_inside"]
     assert r["value"] is None and r["status"] == "PENDING"
 

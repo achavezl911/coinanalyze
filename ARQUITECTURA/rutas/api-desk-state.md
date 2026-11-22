@@ -127,7 +127,7 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-81 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+83 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -145,9 +145,9 @@ Llamadas directas del handler:
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2518`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
 - `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6320`
-- `app.setups.build_setup_context` — `app/setups.py:1100`
+- `app.setups.build_setup_context` — `app/setups.py:1156`
 
-<details><summary>Alcanzables de forma indirecta (67)</summary>
+<details><summary>Alcanzables de forma indirecta (69)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
@@ -198,23 +198,25 @@ Llamadas directas del handler:
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
 - `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2853`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2843`
-- `app.setups._bars_closed_beyond` — `app/setups.py:805`
-- `app.setups._breakout_frontier` — `app/setups.py:741`
-- `app.setups._gap_in` — `app/setups.py:798`
-- `app.setups._last_pivots` — `app/setups.py:927`
-- `app.setups._level_defended` — `app/setups.py:1003`
-- `app.setups._norm_bars` — `app/setups.py:777`
-- `app.setups._obs` — `app/setups.py:716`
-- `app.setups._pullback` — `app/setups.py:934`
-- `app.setups._retest_done` — `app/setups.py:891`
-- `app.setups._returned_inside` — `app/setups.py:844`
+- `app.setups._apertura` — `app/setups.py:805`
+- `app.setups._bars_closed_beyond` — `app/setups.py:863`
+- `app.setups._breakout_frontier` — `app/setups.py:748`
+- `app.setups._gap_in` — `app/setups.py:856`
+- `app.setups._last_pivots` — `app/setups.py:982`
+- `app.setups._level_defended` — `app/setups.py:1058`
+- `app.setups._norm_bars` — `app/setups.py:784`
+- `app.setups._obs` — `app/setups.py:723`
+- `app.setups._pullback` — `app/setups.py:989`
+- `app.setups._retest_done` — `app/setups.py:946`
+- `app.setups._returned_inside` — `app/setups.py:902`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups._structure_event` — `app/setups.py:665`
-- `app.setups._tolerance` — `app/setups.py:762`
+- `app.setups._tolerance` — `app/setups.py:769`
 - `app.setups.classify_oi` — `app/setups.py:162`
-- `app.setups.evaluate_setup` — `app/setups.py:1218`
+- `app.setups.episodio` — `app/setups.py:833`
+- `app.setups.evaluate_setup` — `app/setups.py:1292`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
-- `app.setups.setup_observables` — `app/setups.py:1057`
+- `app.setups.setup_observables` — `app/setups.py:1112`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
 </details>
@@ -315,7 +317,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_coverage_reason` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 57 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 59 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

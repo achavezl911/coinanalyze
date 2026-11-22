@@ -36,10 +36,10 @@ esta **dentro a k=2**, porque la cadena de llamadas es mas corta. El corte no de
 de la estructura del sistema sino de **la profundidad de cada cadena**, y eso no es un
 limite: es un numero que acierta en el caso con el que se ajusto.
 
-**Sobre las 688 funciones con radio, 270 tienen la cota mas ancha que su k=0.** El 17 no era
+**Sobre las 690 funciones con radio, 270 tienen la cota mas ancha que su k=0.** El 17 no era
 falso -es una cota verdadera-: lo que faltaba era **decir que es una cota**.
 
-Solo **55** de las 688 escriben alguna tabla
+Solo **55** de las 690 escriben alguna tabla
 ellas mismas. Para el resto -las funciones puras- la cota es lo unico que hay, y por
 eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
@@ -85,7 +85,7 @@ eso se sigue publicando: sin ella, `compute_snapshot` tendria radio cero.
 
 ## B · si toco una FUNCION
 
-688 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
+690 funciones alcanzan alguna ruta. Ordenadas por radio total. **Abre solo el
 fichero de su modulo**: `impacto/<modulo>.md`.
 
 | funcion | sitio | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
@@ -381,21 +381,23 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic.hypothesis_evidence`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:5065` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.liquidation_burst`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1810` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.setup_confirmation_bundle`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2518` | 2 | **0** | 0 | **2** |
-| [`app.setups._bars_closed_beyond`](impacto/app-setups.md) | `app/setups.py:805` | 2 | **0** | 0 | **2** |
-| [`app.setups._breakout_frontier`](impacto/app-setups.md) | `app/setups.py:741` | 2 | **0** | 0 | **2** |
-| [`app.setups._gap_in`](impacto/app-setups.md) | `app/setups.py:798` | 2 | **0** | 0 | **2** |
-| [`app.setups._last_pivots`](impacto/app-setups.md) | `app/setups.py:927` | 2 | **0** | 0 | **2** |
-| [`app.setups._level_defended`](impacto/app-setups.md) | `app/setups.py:1003` | 2 | **0** | 0 | **2** |
-| [`app.setups._norm_bars`](impacto/app-setups.md) | `app/setups.py:777` | 2 | **0** | 0 | **2** |
-| [`app.setups._obs`](impacto/app-setups.md) | `app/setups.py:716` | 2 | **0** | 0 | **2** |
-| [`app.setups._pullback`](impacto/app-setups.md) | `app/setups.py:934` | 2 | **0** | 0 | **2** |
-| [`app.setups._retest_done`](impacto/app-setups.md) | `app/setups.py:891` | 2 | **0** | 0 | **2** |
-| [`app.setups._returned_inside`](impacto/app-setups.md) | `app/setups.py:844` | 2 | **0** | 0 | **2** |
+| [`app.setups._apertura`](impacto/app-setups.md) | `app/setups.py:805` | 2 | **0** | 0 | **2** |
+| [`app.setups._bars_closed_beyond`](impacto/app-setups.md) | `app/setups.py:863` | 2 | **0** | 0 | **2** |
+| [`app.setups._breakout_frontier`](impacto/app-setups.md) | `app/setups.py:748` | 2 | **0** | 0 | **2** |
+| [`app.setups._gap_in`](impacto/app-setups.md) | `app/setups.py:856` | 2 | **0** | 0 | **2** |
+| [`app.setups._last_pivots`](impacto/app-setups.md) | `app/setups.py:982` | 2 | **0** | 0 | **2** |
+| [`app.setups._level_defended`](impacto/app-setups.md) | `app/setups.py:1058` | 2 | **0** | 0 | **2** |
+| [`app.setups._norm_bars`](impacto/app-setups.md) | `app/setups.py:784` | 2 | **0** | 0 | **2** |
+| [`app.setups._obs`](impacto/app-setups.md) | `app/setups.py:723` | 2 | **0** | 0 | **2** |
+| [`app.setups._pullback`](impacto/app-setups.md) | `app/setups.py:989` | 2 | **0** | 0 | **2** |
+| [`app.setups._retest_done`](impacto/app-setups.md) | `app/setups.py:946` | 2 | **0** | 0 | **2** |
+| [`app.setups._returned_inside`](impacto/app-setups.md) | `app/setups.py:902` | 2 | **0** | 0 | **2** |
 | [`app.setups._structure_event`](impacto/app-setups.md) | `app/setups.py:665` | 2 | **0** | 0 | **2** |
-| [`app.setups._tolerance`](impacto/app-setups.md) | `app/setups.py:762` | 2 | **0** | 0 | **2** |
-| [`app.setups.build_setup_context`](impacto/app-setups.md) | `app/setups.py:1100` | 2 | **0** | 0 | **2** |
-| [`app.setups.evaluate_setup`](impacto/app-setups.md) | `app/setups.py:1218` | 2 | **0** | 0 | **2** |
-| [`app.setups.setup_observables`](impacto/app-setups.md) | `app/setups.py:1057` | 2 | **0** | 0 | **2** |
+| [`app.setups._tolerance`](impacto/app-setups.md) | `app/setups.py:769` | 2 | **0** | 0 | **2** |
+| [`app.setups.build_setup_context`](impacto/app-setups.md) | `app/setups.py:1156` | 2 | **0** | 0 | **2** |
+| [`app.setups.episodio`](impacto/app-setups.md) | `app/setups.py:833` | 2 | **0** | 0 | **2** |
+| [`app.setups.evaluate_setup`](impacto/app-setups.md) | `app/setups.py:1292` | 2 | **0** | 0 | **2** |
+| [`app.setups.setup_observables`](impacto/app-setups.md) | `app/setups.py:1112` | 2 | **0** | 0 | **2** |
 | [`app.setups.split_hypothesis`](impacto/app-setups.md) | `app/setups.py:88` | 2 | **0** | 0 | **2** |
 | [`app.scalp_collector._write_ladders`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:893` | 0 | **1** | 20 ↑ | **1** |
 | [`app.signal_execution.persist_signal_execution_snapshots`](impacto/app-signal_execution.md) | `app/signal_execution.py:429` | 0 | **1** | 11 ↑ | **1** |
