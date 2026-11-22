@@ -1058,12 +1058,13 @@ async def close_partitioned_gap(
     gap_id: int,
     proof_source: str,
 ) -> str:
-    """Cerrar el padre SOLO si sus hijos ya teselan la ventana y ninguno sigue abierto.
+    """Cerrar el padre SOLO si los hijos que lo solapan TESELAN su ventana: sin hueco ni solape.
 
-    La comprobacion se hace aqui Y la rehace K04 desde la fila: no es duplicar por
-    duplicar. Esta impide ESCRIBIR la afirmacion falsa; la de K04 impide que siga en pie
-    si manana alguien reabre un hijo. Un guardia en la escritura no vigila el pasado, y
-    uno en la lectura no impide el error -- hacen falta los dos.
+    Que un hijo siga abierto NO lo impide (huecos-r1, H-01): ese hijo bloquea SU tramo por
+    si solo, y el padre abierto solo tapaba ademas lo ya repuesto. Un hijo puede asomar por
+    el borde (N2: un padre detectado despues de partir, con un borde que no es un corte):
+    cuenta lo que cubre DENTRO. K04 rehace esta comprobacion desde la fila: esta impide
+    ESCRIBIR la afirmacion falsa; la de K04, que siga en pie si manana alguien borra un hijo.
     """
     gap = await _load_gap(conn, gap_id)
     if gap is None:
@@ -1071,27 +1072,28 @@ async def close_partitioned_gap(
     if gap.status != "unresolved":
         return gap.status
 
-    fila = await conn.fetchrow(
+    hijos = await conn.fetch(
         """
-        SELECT count(*) AS hijos,
-               count(*) FILTER (WHERE status='unresolved') AS abiertos,
-               coalesce(sum(end_ts-start_ts), interval '0') AS cubierto
+        SELECT start_ts, end_ts
         FROM data_gap
         WHERE feed=$1 AND exchange=$2 AND market=$3 AND symbol=$4 AND granularity=$5
-          AND detection_source=$6
-          AND start_ts >= $7 AND end_ts <= $8
+          AND detection_source=$6 AND id <> $9
+          AND start_ts < $8 AND end_ts > $7
+        ORDER BY start_ts, end_ts
         """,
         gap.feed, gap.exchange, gap.market, gap.symbol, gap.granularity,
-        PARTITION_DETECTION_SOURCE, gap.start, gap.end,
+        PARTITION_DETECTION_SOURCE, gap.start, gap.end, gap_id,
     )
-    if int(fila["hijos"]) < 2:
+    if not hijos:
         raise ValueError(f"gap {gap_id} has no partition to close")
-    if int(fila["abiertos"]) != 0:
-        raise ValueError(
-            f"{fila['abiertos']} of the {fila['hijos']} sub-gaps are still unresolved: "
-            "closing the parent now would claim an accounting that is not done"
-        )
-    if fila["cubierto"] != gap.end - gap.start:
+    cubierto = gap.start  # hasta donde llegan los hijos ya vistos, contando desde el padre
+    for i, h in enumerate(hijos):
+        if i and h["start_ts"] < hijos[i - 1]["end_ts"]:
+            raise ValueError("the sub-gaps overlap: they are not a tiling of the parent window")
+        if h["start_ts"] > cubierto:
+            break
+        cubierto = h["end_ts"]
+    if cubierto < gap.end:
         raise ValueError(
             "the sub-gaps do not tile the parent window: closing it would leave "
             "buckets accounted for nowhere"
@@ -1115,7 +1117,7 @@ async def close_partitioned_gap(
         WHERE id=$1 AND status='unresolved'
         """,
         gap_id, PARTITION_REASON, proof_source,
-        PARTITION_DETECTION_SOURCE, int(fila["hijos"]),
+        PARTITION_DETECTION_SOURCE, len(hijos),
     )
     return "unrecoverable"
 
