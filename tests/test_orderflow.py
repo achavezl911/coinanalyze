@@ -810,6 +810,29 @@ async def test_los_indicadores_dicen_hueco_pendiente_y_el_cero_certificado(conn,
                                            "marco": "5m", **malo})
 
 
+async def test_al_cortar_las_sueltas_sirven_las_mas_recientes_y_el_evento_mas_nuevo_sale(conn, monkeypatch):
+    # U-04: con mas de TOPE_SUELTAS en la ventana se queda con las MAS RECIENTES, en orden ascendente. La variante a
+    # medias (DESC en el SQL y [:TOPE] en Python) tira justo el mas nuevo: por eso se aserta el ultimo evento.
+    hasta = _m(60)
+    desde = hasta - timedelta(hours=10)
+    monkeypatch.setattr(lec, "_ahora", lambda: hasta + timedelta(minutes=5))
+    n = lec.TOPE_SUELTAS + 3
+    paso = timedelta(hours=10) / (n + 1)
+    filas = [(desde + paso * (k + 1), "BTCUSDT_PERP.A", ("binance", "bybit")[k % 2], ("long", "short")[k % 3 == 0],
+              1000.0 + k, 81000.0, 0.01, f"e{k}") for k in range(n)]
+    await conn.executemany(
+        """INSERT INTO liquidations_realtime(ts,symbol,exchange,side,notional_usd,price,qty,event_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)""", filas)
+    d = await lec.indicadores(conn, symbol="BTC", desde=lec.iso(desde), hasta=lec.iso(hasta), marco="1h")
+    s = d["sueltas"]
+    ev = s["eventos"]
+    assert s["truncada"] is True and len(ev) == lec.TOPE_SUELTAS
+    assert ev[-1]["ts"] == lec.iso(filas[-1][0]) and ev[-1]["usd"] == lec.texto(Decimal(str(filas[-1][4])))
+    assert ev[0]["ts"] == lec.iso(filas[3][0])  # fuera, las tres mas viejas
+    assert [e["ts"] for e in ev] == sorted(e["ts"] for e in ev)  # la salida sigue ascendente
+    assert s["desde_dato"] == lec.iso(desde)  # desde_dato conserva su sentido: la retencion, no el corte
+
+
 async def test_la_orden_agregada_es_venue_milisegundo_y_lado_y_el_vivo_pide_solo_lo_nuevo(conn, monkeypatch):
     t1 = _m(1) + timedelta(milliseconds=123)
     filas = [(t1, "binance_usdm", "100", "0.1", "10", True, "a1"), (t1, "binance_usdm", "101", "0.1", "20", True, "a2"),
