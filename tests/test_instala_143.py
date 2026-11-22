@@ -168,5 +168,5 @@ def test_e01b_velas_de_la_copia_llama_al_api_de_la_copia(tmp_path, monkeypatch):
     spec = importlib.util.spec_from_file_location("velas_copia", v)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    assert mod.H == str(tmp_path / "copia/harness/bin")
+    assert str(tmp_path / "copia/harness/bin") == mod.H
     assert mod.pide("BTC", "5min") == {} and (tmp_path / "copia/harness/bin/testigo").exists()

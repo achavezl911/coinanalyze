@@ -64,7 +64,7 @@ chmod +x "$DIR/prodsql-doble"
 
 # _corta de mentira, para no depender del arnes entero
 mkdir -p "$DIR/harness/bin"
-printf '#!/bin/sh\ncat\n' > "$DIR/harness/bin/_corta"; chmod +x "$DIR/harness/bin/_corta"
+printf '#!/bin/sh\ncat\n' > "$DIR/_corta"; chmod +x "$DIR/_corta"
 printf 'PROD_SSH_USER=x\nPROD_HOST=x\nPROD_SSH_KEY=/dev/null\nPROD_KNOWN_HOSTS=/dev/null\nPROD_PG_USER=x\nPROD_PG_DB=x\n' \
   > "$DIR/harness/env"
 
