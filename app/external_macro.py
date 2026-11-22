@@ -31,6 +31,20 @@ FRED_SERIES = {
     "vix": ("VIXCLS", "VIX"),
 }
 CORE_SERIES = (*FRED_SERIES, "stablecoin_supply_usd")
+# M-04: edad maxima en dias de calendario (hoy UTC - observed_on). Pasada, la serie ni vota ni
+# cuenta en cobertura ni en confianza. Mercado diario: FRED publica al dia habil siguiente, y
+# el peor caso rutinario es un festivo en lunes (dato del viernes, visto el martes: 5 d).
+# usd_broad (H.10) sale los lunes con la semana hasta el viernes: 10 d el lunes antes de
+# publicar, 11 si el lunes es festivo. Stablecoins: DefiLlama diario, 0-1 d.
+MAX_AGE_DAYS = {
+    "treasury_2y": 7,
+    "real_yield_10y": 7,
+    "usd_broad": 12,
+    "nasdaq": 7,
+    "sp500": 7,
+    "vix": 7,
+    "stablecoin_supply_usd": 3,
+}
 EASTERN = ZoneInfo("America/New_York")
 MONTHS = {
     name: number
@@ -208,20 +222,40 @@ def _metric(
     values: Sequence[float],
     dates: Sequence[date],
     *,
-    change_period: int,
+    today: date,
+    change_days: int,
     change_kind: str = "pct",
     threshold: float,
     inverse: bool = False,
 ) -> dict[str, Any]:
-    change = _pct_change(values, change_period)
-    if change_kind == "bps" and len(values) > change_period:
-        change = (values[-1] - values[-change_period - 1]) * 100
+    # M-04: el cambio se mide contra la ultima observacion de hace change_days DIAS o mas, no
+    # n filas atras; si esa base pasa de 2N dias (un hueco), no hay cambio. Una serie con mas
+    # de MAX_AGE_DAYS no mide cambio ni vota.
+    max_age = MAX_AGE_DAYS[key]
+    age = (today - dates[-1]).days if dates else None
+    stale = age is None or age > max_age
+    change: float | None = None
+    base_on: date | None = None
+    if not stale:
+        limit = dates[-1] - timedelta(days=change_days)
+        base = next((i for i in range(len(dates) - 1, -1, -1) if dates[i] <= limit), None)
+        if base is not None and (dates[-1] - dates[base]).days <= 2 * change_days:
+            base_on = dates[base]
+            if change_kind == "bps":
+                change = (values[-1] - values[base]) * 100
+            elif values[base] != 0:
+                change = (values[-1] / values[base] - 1) * 100
     vote = _direction(change, threshold, inverse=inverse)
     return {
         "key": key,
         "label": label,
         "value": values[-1] if values else None,
         "observed_on": dates[-1].isoformat() if dates else None,
+        "age_days": age,
+        "max_age_days": max_age,
+        "stale": stale,
+        "change_base_on": base_on.isoformat() if base_on else None,
+        "change_days": change_days,
         "change": change,
         "change_kind": change_kind,
         "state": "favorable" if vote > 0 else "restrictivo" if vote < 0 else "mixto",
@@ -266,19 +300,22 @@ def build_external_macro_context(
     vix, vix_dates = series("vix")
     stable, stable_dates = series("stablecoin_supply_usd")
 
+    today = now.date()
+    # 7 dias = las 5 sesiones de antes en una semana sin festivo; stablecoins cotiza a diario.
     monetary_metrics = [
-        _metric("treasury_2y", "Treasury 2Y", y2, y2_dates, change_period=5, change_kind="bps", threshold=5, inverse=True),
-        _metric("real_yield_10y", "Tasa real 10Y", real, real_dates, change_period=5, change_kind="bps", threshold=5, inverse=True),
-        _metric("usd_broad", "Dólar amplio", usd, usd_dates, change_period=5, threshold=0.3, inverse=True),
+        _metric("treasury_2y", "Treasury 2Y", y2, y2_dates, today=today, change_days=7, change_kind="bps", threshold=5, inverse=True),
+        _metric("real_yield_10y", "Tasa real 10Y", real, real_dates, today=today, change_days=7, change_kind="bps", threshold=5, inverse=True),
+        _metric("usd_broad", "Dólar amplio", usd, usd_dates, today=today, change_days=7, threshold=0.3, inverse=True),
     ]
     risk_metrics = [
-        _metric("nasdaq", "Nasdaq", nasdaq, nasdaq_dates, change_period=5, threshold=1),
-        _metric("sp500", "S&P 500", sp500, sp500_dates, change_period=5, threshold=1),
-        _metric("vix", "VIX", vix, vix_dates, change_period=5, threshold=8, inverse=True),
+        _metric("nasdaq", "Nasdaq", nasdaq, nasdaq_dates, today=today, change_days=7, threshold=1),
+        _metric("sp500", "S&P 500", sp500, sp500_dates, today=today, change_days=7, threshold=1),
+        _metric("vix", "VIX", vix, vix_dates, today=today, change_days=7, threshold=8, inverse=True),
     ]
     liquidity_metrics = [
-        _metric("stablecoin_supply_usd", "Stablecoins", stable, stable_dates, change_period=30, threshold=0.5)
+        _metric("stablecoin_supply_usd", "Stablecoins", stable, stable_dates, today=today, change_days=30, threshold=0.5)
     ]
+    by_key = {metric["key"]: metric for metric in (*monetary_metrics, *risk_metrics, *liquidity_metrics)}
     pillars = {
         "monetary": _pillar(
             "Presión monetaria",
@@ -363,10 +400,13 @@ def build_external_macro_context(
         else "Sin evento macro de alto impacto dentro de las próximas 72 horas."
     )
 
-    available_core = sum(bool(grouped.get(key)) for key in CORE_SERIES)
+    # M-04: una serie vieja no cuenta en cobertura ni en confianza, y as_of es la fecha de la
+    # serie nucleo MAS VIEJA de las que votan: la frescura de la lectura es la de su peor pata.
+    fresh_core = [key for key in CORE_SERIES if not by_key[key]["stale"]]
+    available_core = len(fresh_core)
     coverage = round(available_core / len(CORE_SERIES) * 100)
     confidence = "alta" if coverage >= 86 else "media" if coverage >= 60 else "baja"
-    latest_dates = [rows[-1][0] for key, rows in grouped.items() if key in CORE_SERIES and rows]
+    latest_dates = [grouped[key][-1][0] for key in fresh_core]
     latest_fetches = [rows[-1][3] for key, rows in grouped.items() if key in CORE_SERIES and rows and rows[-1][3]]
     limitations = []
     if not etf_configured:
@@ -376,6 +416,13 @@ def build_external_macro_context(
     missing = [key for key in CORE_SERIES if not grouped.get(key)]
     if missing:
         limitations.append("Series núcleo ausentes: " + ", ".join(missing) + ".")
+    stale = [key for key in CORE_SERIES if grouped.get(key) and by_key[key]["stale"]]
+    if stale:
+        limitations.append(
+            "Series núcleo viejas, sin voto ni cobertura: "
+            + ", ".join(f"{key} ({by_key[key]['age_days']} d > {by_key[key]['max_age_days']})" for key in stale)
+            + "."
+        )
 
     return {
         "available": available_core >= 4,
@@ -383,7 +430,8 @@ def build_external_macro_context(
         "regime_label": {"favorable": "Favorable", "restrictivo": "Restrictivo", "mixto": "Mixto", "sin_datos": "Datos insuficientes"}[regime if available_core >= 4 else "sin_datos"],
         "coverage_pct": coverage,
         "data_confidence": confidence,
-        "as_of": max(latest_dates).isoformat() if latest_dates else None,
+        "as_of": min(latest_dates).isoformat() if latest_dates else None,
+        "stale_series": stale,
         "fetched_at": max(latest_fetches).isoformat() if latest_fetches else None,
         "pillars": pillars,
         "institutional_flows": {
@@ -408,7 +456,7 @@ def build_external_macro_context(
         "alignment": {"state": "pendiente", "reading": "Se requiere el sesgo interno del activo para evaluar alineación."},
         "limitations": limitations,
         "sources": ["FRED / Federal Reserve", "BLS", "Federal Reserve FOMC", "DefiLlama", *( ["CoinGlass"] if etf_values else [])],
-        "method": "Reglas deterministas de cambio a 5/30 sesiones; no es probabilidad ni señal de entrada.",
+        "method": "Reglas deterministas de cambio a 7/30 días con edad máxima por serie; no es probabilidad ni señal de entrada.",
     }
 
 
