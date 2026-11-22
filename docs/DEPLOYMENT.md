@@ -43,14 +43,14 @@ El workflow (en el runner self-hosted) hace:
 4. Calcula **SHA256**.
 5. Carga la clave de deploy desde el secret `DEPLOY_SSH_KEY`; host key de prod embebida.
 6. `scp` del artefacto a `coinalyze-deploy@10.151.1.6:incoming/`.
-7. `ssh ... sudo -n /usr/local/sbin/deploy-coinalyze deploy <artefacto> <sha256> <commit>`.
+7. `ssh ... sudo -n /usr/local/sbin/deploy-coinalyze deploy <artefacto> <sha256> <commit>` (el wrapper solo usa `<commit>`; acepta también `deploy <commit>`).
 8. Limpia el artefacto remoto y la clave local.
 
 ## Qué hace el wrapper (trust boundary)
 
 `/usr/local/sbin/deploy-coinalyze` (root:root 0750, **no está en el repo**):
 
-1. Valida que el artefacto esté bajo `incoming/` y que su **SHA256 coincida**.
+1. Valida que el commit no sea el release activo (rc 17) y que sea `origin/main` en GitHub (rc 16), y **baja él mismo** el árbol de ese commit (`api.github.com/repos/achavezl911/coinanalyze/tarball/<sha>`; rc 3 si no llega). El artefacto y su SHA256 se ignoran.
 2. Extrae a `releases/<sha>` y valida rutas requeridas (pyproject, requirements.lock,
    sql/schema.sql, app, static, scripts/smoke_test.sh).
 3. Construye un `.venv` aislado del release.

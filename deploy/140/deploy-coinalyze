@@ -20,7 +20,6 @@ STATE=/var/lib/coinalyze/deployment.json
 LOGDIR=/var/log/coinalyze
 LOG="$LOGDIR/deploy.log"
 ENV_FILE=/etc/coinalyze/coinalyze.env
-INCOMING=/home/coinalyze-deploy/incoming
 BACKUPDIR=/var/backups/coinalyze
 LOCKFILE=/run/lock/deploy-coinalyze.lock
 # Solo se despliega lo que es origin/main en GitHub en ese momento (API publica, solo lectura, sin credenciales).
@@ -140,6 +139,11 @@ github_main_sha(){
     "$GITHUB_API/repos/$GITHUB_REPO/commits/main" | tr -d '[:space:]')" || return 1
   printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$' || return 1
   printf '%s\n' "$sha"
+}
+
+# El arbol de ese commit tal como lo sirve GitHub (una carpeta de cabeza <dueno>-<repo>-<sha7>/; la acepta cmd_deploy).
+github_tarball(){
+  curl -fsSL --proto '=https' --proto-redir '=https' -m 300 -o "$2" "$GITHUB_API/repos/$GITHUB_REPO/tarball/$1"
 }
 
 as_service(){
@@ -393,23 +397,11 @@ deploy_exit_guard(){
 trap deploy_exit_guard EXIT
 
 cmd_deploy(){
-  local artifact="$1" expsha="$2" commit="$3"
+  local commit="$1"
 
-  [ -n "$artifact" ] && [ -n "$expsha" ] && [ -n "$commit" ] \
-    || die "usage: deploy <artifact> <sha256> <commit>" 2
-
-  case "$(readlink -f "$artifact")" in
-    "$INCOMING"/*) ;;
-    *) die "artifact must live under $INCOMING" 2 ;;
-  esac
-
-  [ -f "$artifact" ] || die "artifact not found: $artifact" 2
   echo "$commit" | grep -Eq '^[0-9a-f]{40}$' || die "bad commit sha (want the full 40-hex sha): $commit" 2
-
-  local got
-  got="$(sha256sum "$artifact" | awk '{print $1}')"
-  [ "$got" = "$expsha" ] || die "sha256 mismatch (got $got want $expsha)" 3
-  log "checksum OK ($commit)"
+  # D-02: el release que corre no se reconstruye encima (se borraria antes de armar la guarda).
+  [ "$commit" != "$(active_sha)" ] || die "commit $commit is already the active release" 17
 
   # Falla cerrado: GitHub que no contesta o un main que ya se movio niegan el despliegue (se relanza).
   local main_sha=""
@@ -418,9 +410,16 @@ cmd_deploy(){
     || die "commit $commit is not origin/main on GitHub (main=${main_sha:-unreachable})" 16
   log "commit is origin/main on GitHub"
 
+  # D-01: el CONTENIDO lo baja root de GitHub para ese sha; quien llama dice una cadena y no entrega nada.
   local stage
   stage="$(mktemp -d "$RELEASES/.stage.XXXXXX")"
-  tar --no-same-owner --no-same-permissions -xzf "$artifact" -C "$stage"
+  if ! github_tarball "$commit" "$stage.tgz" \
+     || ! tar --no-same-owner --no-same-permissions -xzf "$stage.tgz" -C "$stage"; then
+    rm -rf "$stage" "$stage.tgz"
+    die "could not fetch $commit from GitHub" 3
+  fi
+  rm -f "$stage.tgz"
+  log "source fetched from GitHub ($commit)"
 
   local src="$stage"
   if [ ! -f "$stage/pyproject.toml" ]; then
@@ -433,7 +432,7 @@ cmd_deploy(){
   for p in pyproject.toml requirements.lock sql/schema.sql app static scripts/smoke_test.sh; do
     [ -e "$src/$p" ] || {
       rm -rf "$stage"
-      die "incomplete artifact, missing $p" 4
+      die "incomplete source tree, missing $p" 4
     }
   done
 
@@ -580,7 +579,13 @@ cmd_status(){
 case "${1:-}" in
   deploy)
     shift
-    cmd_deploy "${1:-}" "${2:-}" "${3:-}"
+    # Dos firmas: `deploy <commit>` y la del workflow de hoy, `deploy <artifact> <sha256> <commit>`, de la que solo
+    # cuenta el commit: el tar y su suma los trae quien llama, y de eso no se fia (D-01). El codigo, de GitHub.
+    case $# in
+      1) cmd_deploy "$1" ;;
+      3) log "caller artifact ignored; the source comes from GitHub"; cmd_deploy "$3" ;;
+      *) die "usage: deploy <commit> | deploy <artifact> <sha256> <commit>" 2 ;;
+    esac
     ;;
   rollback)
     cmd_rollback
@@ -589,7 +594,7 @@ case "${1:-}" in
     cmd_status
     ;;
   *)
-    echo "usage: deploy-coinalyze {deploy <artifact> <sha256> <commit>|rollback|status}" >&2
+    echo "usage: deploy-coinalyze {deploy <commit>|deploy <artifact> <sha256> <commit>|rollback|status}" >&2
     exit 64
     ;;
 esac
