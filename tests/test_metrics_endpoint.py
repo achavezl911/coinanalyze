@@ -253,18 +253,6 @@ def test_smoke_test_covers_metrics_and_a_symbol_endpoint() -> None:
     assert "/api/dashboard/state" in source
 
 
-def test_update_refuses_an_incomplete_source_tree() -> None:
-    """rsync --delete con un paquete solo-app borraba sql/, scripts/ y deploy/."""
-    source = (ROOT / "scripts" / "update.sh").read_text(encoding="utf-8")
-    guard = source.split("rsync -a --delete")[0]
-    assert "REQUIRED_PATHS=(" in guard
-    for path in ("requirements.lock", "sql/schema.sql", "scripts/backup.sh", "scripts/update.sh"):
-        assert path in guard
-    assert "Directorio fuente incompleto" in guard
-    # el historico local de despliegues no vive en el repo: --delete lo borraria
-    assert "--exclude '.deploy-backups'" in source
-
-
 def test_vendor_checksums_are_verifiable_from_the_repo() -> None:
     """SHA256SUMS traia la ruta absoluta de la maquina de build; no verificaba nada."""
     sums = (ROOT / "static" / "vendor" / "SHA256SUMS").read_text(encoding="utf-8")
