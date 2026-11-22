@@ -8968,7 +8968,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1150",
+        "sitio": "app/data_gaps.py:1152",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9200,7 +9200,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1230",
+        "sitio": "app/data_gaps.py:1232",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9290,7 +9290,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1240",
+        "sitio": "app/data_gaps.py:1242",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9380,7 +9380,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1265",
+        "sitio": "app/data_gaps.py:1267",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10622,7 +10622,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1282",
+        "sitio": "app/data_gaps.py:1284",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10687,7 +10687,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1343",
+        "sitio": "app/data_gaps.py:1345",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10751,7 +10751,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1186",
+        "sitio": "app/data_gaps.py:1188",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -40298,6 +40298,8 @@
         "tests": {
           "llamadas": [],
           "menciones": [
+            "tests/test_huecos_r1_apagon_postgres.py:36",
+            "tests/test_huecos_r1_apagon_postgres.py:150",
             "tests/test_ohlcv_sin_precio.py:1",
             "tests/test_p1_timeframes_and_spot.py:52",
             "tests/test_recupera_r1_postgres.py:5",
@@ -40308,7 +40310,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 12,
-        "n_menciones": 7,
+        "n_menciones": 9,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48981,25 +48983,25 @@
         {
           "funcion": "app.data_gaps.close_partitioned_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1102",
+          "sitio": "app/data_gaps.py:1104",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps._mark_unrecoverable",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1253",
+          "sitio": "app/data_gaps.py:1255",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps._record_recovery_failure",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1272",
+          "sitio": "app/data_gaps.py:1274",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.recover_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1321",
+          "sitio": "app/data_gaps.py:1323",
           "verbo": "UPDATE"
         },
         {
@@ -49067,12 +49069,12 @@
         {
           "funcion": "app.data_gaps.close_partitioned_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1076"
+          "sitio": "app/data_gaps.py:1077"
         },
         {
           "funcion": "app.data_gaps._load_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1233"
+          "sitio": "app/data_gaps.py:1235"
         },
         {
           "funcion": "app.data_gaps.blocking_requirement_keys",
@@ -49087,7 +49089,7 @@
         {
           "funcion": "app.data_gaps.recover_unresolved_gaps",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1354"
+          "sitio": "app/data_gaps.py:1356"
         },
         {
           "funcion": "app.data_gaps._cubierto_por_otro_detector",

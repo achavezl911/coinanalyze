@@ -102,13 +102,13 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.daily_agg.compute_session`](impacto/app-daily_agg.md) | `app/daily_agg.py:141` | 0 | **22** | 56 ↑ | **22** |
 | [`app.api.records`](impacto/app-api.md) | `app/api.py:272` | 22 | **0** | 8 ↑ | **22** |
 | [`app.data_gaps.reconcile_cadence_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:484` | 0 | **21** | 50 ↑ | **21** |
-| [`app.data_gaps._mark_unrecoverable`](impacto/app-data_gaps.md) | `app/data_gaps.py:1240` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps._record_recovery_failure`](impacto/app-data_gaps.md) | `app/data_gaps.py:1265` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps._mark_unrecoverable`](impacto/app-data_gaps.md) | `app/data_gaps.py:1242` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps._record_recovery_failure`](impacto/app-data_gaps.md) | `app/data_gaps.py:1267` | 0 | **21** | 21 | **21** |
 | [`app.data_gaps.archive_beyond_source_horizon`](impacto/app-data_gaps.md) | `app/data_gaps.py:732` | 0 | **21** | 21 | **21** |
 | [`app.data_gaps.archive_source_response_absence`](impacto/app-data_gaps.md) | `app/data_gaps.py:802` | 0 | **21** | 21 | **21** |
 | [`app.data_gaps.close_partitioned_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1055` | 0 | **21** | 21 | **21** |
 | [`app.data_gaps.record_data_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:297` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1282` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1284` | 0 | **21** | 21 | **21** |
 | [`app.libro.declara_hueco`](impacto/app-libro.md) | `app/libro.py:827` | 0 | **21** | 21 | **21** |
 | [`app.orderflow.declara_hueco`](impacto/app-orderflow.md) | `app/orderflow.py:528` | 0 | **21** | 21 | **21** |
 | [`app.data_gaps.blocking_requirement_keys`](impacto/app-data_gaps.md) | `app/data_gaps.py:118` | 19 | **0** | 15 ↑ | **19** |
@@ -634,15 +634,15 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.partitioning.ensure_temporal_partitions`](impacto/app-partitioning.md) | `app/partitioning.py:29` | 0 | **0** | 22 ↑ | **0** |
 | [`app.scalp_collector._write_trade_rows`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:738` | 0 | **0** | 22 ↑ | **0** |
 | [`app.scalp_collector.flush_trades`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:648` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.DataGap.from_record`](impacto/app-data_gaps.md) | `app/data_gaps.py:1150` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.DataGap.from_record`](impacto/app-data_gaps.md) | `app/data_gaps.py:1152` | 0 | **0** | 21 ↑ | **0** |
 | [`app.data_gaps._cubierto_por_otro_detector`](impacto/app-data_gaps.md) | `app/data_gaps.py:449` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps._load_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1230` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps._load_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1232` | 0 | **0** | 21 ↑ | **0** |
 | [`app.data_gaps.missing_cadence_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:388` | 0 | **0** | 21 ↑ | **0** |
 | [`app.data_gaps.partition_gap_by_source_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:977` | 0 | **0** | 21 ↑ | **0** |
 | [`app.data_gaps.partition_runs`](impacto/app-data_gaps.md) | `app/data_gaps.py:932` | 0 | **0** | 21 ↑ | **0** |
 | [`app.data_gaps.record_event_stream_loss`](impacto/app-data_gaps.md) | `app/data_gaps.py:358` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.recover_unresolved_gaps`](impacto/app-data_gaps.md) | `app/data_gaps.py:1343` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.validate_recovery`](impacto/app-data_gaps.md) | `app/data_gaps.py:1186` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.recover_unresolved_gaps`](impacto/app-data_gaps.md) | `app/data_gaps.py:1345` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.validate_recovery`](impacto/app-data_gaps.md) | `app/data_gaps.py:1188` | 0 | **0** | 21 ↑ | **0** |
 | [`app.db.mark_feed_shard_degraded`](impacto/app-db.md) | `app/db.py:792` | 0 | **0** | 21 ↑ | **0** |
 | [`app.libro._evidencia`](impacto/app-libro.md) | `app/libro.py:834` | 0 | **0** | 21 ↑ | **0** |
 | [`app.libro._olvida`](impacto/app-libro.md) | `app/libro.py:864` | 0 | **0** | 21 ↑ | **0** |

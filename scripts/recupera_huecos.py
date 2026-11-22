@@ -105,8 +105,36 @@ async def _faltan(conn, plan, u) -> list[tuple[datetime, datetime]]:
     return missing_cadence_windows(guardado, start=u["lo"], end=u["hi"], cadence=plan.cadence)
 
 
+async def cierra_padres_teselados(conn, permitidos, ids: list[int] | None = None) -> dict:
+    """Cierra cada padre sin resolver que ya tiene hijos de particion encima (huecos-r1, H-01 y N2). Que cierre o no lo
+    decide close_partitioned_gap contra la tabla: si los hijos lo TESELAN se cierra, aunque alguno siga abierto (ese
+    bloquea su tramo solo). No pide nada a la fuente ni archiva nada: por eso va tambien en el timer."""
+    filas = await conn.fetch(
+        """
+        SELECT g.id FROM data_gap g
+        WHERE g.status='unresolved' AND g.feed_class='cadence' AND g.detection_source <> $1
+          AND g.symbol = ANY($2::text[]) AND ($3::bigint[] IS NULL OR g.id = ANY($3::bigint[]))
+          AND EXISTS (SELECT 1 FROM data_gap h
+                       WHERE h.detection_source=$1 AND h.feed=g.feed AND h.exchange=g.exchange AND h.market=g.market
+                         AND h.symbol=g.symbol AND h.granularity=g.granularity
+                         AND h.start_ts < g.end_ts AND h.end_ts > g.start_ts)
+        ORDER BY g.id
+        """,
+        PARTITION_DETECTION_SOURCE, sorted(permitidos), ids,
+    )
+    cerrados, abiertos = 0, 0
+    for f in filas:
+        try:
+            if await close_partitioned_gap(conn, gap_id=f["id"], proof_source=PARTE_PROOF) == "unrecoverable":
+                cerrados += 1
+        except ValueError:
+            abiertos += 1
+    return {"padres_cerrados": cerrados, "padres_abiertos": abiertos}
+
+
 async def recupera(conn, client, *, ahora: datetime, permitidos, limite: int = LIMITE_PETICIONES) -> dict:
     resumen: dict = {"pedidas": 0, "filas": 0, "recuperados": 0, "cortado_por_tope": False}
+    resumen.update(await cierra_padres_teselados(conn, permitidos))
     # Buckets que la fuente NO trae en una respuesta que SI trae otros: es su salto, no un pendiente nuestro. No se
     # archivan (eso pide la prueba del repaso), pero tampoco cuentan como recuperables para el reloj de la vigia.
     saltados: set[tuple] = set()
@@ -184,9 +212,9 @@ async def recupera(conn, client, *, ahora: datetime, permitidos, limite: int = L
 # solaparian y K04 condenaria), cortada en los bordes de cada fila, donde cambia la presencia en la base y en el borde
 # del reloj. Los hijos presentes se recuperan con la base; los ausentes se piden a la fuente; los ausentes MAS ALLA del
 # reloj que vuelven vacios pasan a 'unrecoverable' con provider_horizon_exhausted y su control (la prueba que K04
-# re-deriva), y SOLO con control positivo: sin el, se quedan 'unresolved', el padre no se cierra y no se destapa nada.
-# El padre se cierra con close_partitioned_gap, que lo verifica contra la tabla. No va en el timer: escribe
-# 'unrecoverable', y eso es una decision que se toma mirando primero el modo en seco.
+# re-deriva), y SOLO con control positivo: sin el, se quedan 'unresolved' y bloquean SU tramo, nada mas (huecos-r1).
+# El padre se cierra con close_partitioned_gap, que lo verifica contra la tabla. PARTIR no va en el timer: archiva
+# 'unrecoverable', y eso es una decision que se toma mirando primero el modo en seco. CERRAR un padre ya teselado si va.
 PARTE_PROOF = "recupera_huecos --parte"
 
 
@@ -284,7 +312,9 @@ async def parte(
                 )
             }
             if previos and previos != {(a, b) for a, b, _ in hijos}:
-                info["salta"] = "particion_previa_distinta"  # partir otra vez solaparia hijos: K04 condena
+                # Partir otra vez solaparia hijos (K04 condena); saltarlo sin mas lo dejaba abierto PARA SIEMPRE (N2).
+                info["salta"] = "particion_previa_distinta"
+                info.update(await cierra_padres_teselados(conn, permitidos, [i for i, _, _ in u["filas"]]))
                 continue
             async with conn.transaction():
                 for a, b, x in hijos:

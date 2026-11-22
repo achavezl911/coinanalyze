@@ -27,8 +27,8 @@ DOS PASOS, Y LA SEPARACION ES LA PROPIEDAD:
                          Aqui NO se recupera ni se archiva. Copiar esas dos rutinas
                          seria fabricar una segunda prueba que nadie vigila; K04 ya
                          re-deriva las suyas.
-  3  --close --gap-id N  cierra al padre SOLO si sus hijos teselan la ventana y ninguno
-                         sigue abierto. La comprobacion la rehace close_partitioned_gap
+  3  --close --gap-id N  cierra al padre SOLO si sus hijos teselan la ventana; un hijo
+                         abierto tapa su tramo solo (huecos-r1). La rehace close_partitioned_gap
                          contra la tabla, no contra lo que diga este script.
 
 Entre el paso 1 y el 3 la contabilidad esta ABIERTA y se ve: el padre sigue sin

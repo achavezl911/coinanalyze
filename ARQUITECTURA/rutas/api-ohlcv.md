@@ -46,10 +46,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1102`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1253`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1272`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1321`
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
   - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
   - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
   - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
@@ -126,7 +126,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+7)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:569` |
 | **panel** | `static/js/07-decision-y-ciclos.js:244` | — |
-| **tests** | — | `tests/test_ohlcv_sin_precio.py:1`, `tests/test_p1_timeframes_and_spot.py:52`, `tests/test_recupera_r1_postgres.py:5`, `tests/test_recupera_r1_postgres.py:134` |
+| **tests** | — | `tests/test_huecos_r1_apagon_postgres.py:36`, `tests/test_huecos_r1_apagon_postgres.py:150`, `tests/test_ohlcv_sin_precio.py:1`, `tests/test_p1_timeframes_and_spot.py:52` _(+2)_ |
 
 **La llama el panel: es superficie de producto.**
 
