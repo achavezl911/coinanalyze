@@ -126,7 +126,7 @@ pre-commit, que entre otras cosas no acepta un `ARQUITECTURA/` que no cuadre con
   JavaScript (`tests/js/`) y checks del arnés.
 - **Despliegue** ([`.github/workflows/deploy-production.yml`](.github/workflows/deploy-production.yml)):
   **solo manual** (`workflow_dispatch`), solo desde `main` y con un texto de confirmación.
-  El envoltorio [`deploy/140/deploy-coinalyze`](deploy/140/deploy-coinalyze) respalda la base,
+  El envoltorio [`deploy/140/deploy-coinalyze`](deploy/140/deploy-coinalyze) baja de GitHub el código del commit (no se fía del artefacto), respalda la base,
   aplica el esquema **antes** de cambiar de release, prueba humo y, si falla, vuelve solo al
   release anterior.
 

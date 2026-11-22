@@ -64,7 +64,7 @@
 | `/api/profile` | GET | 14 | 5 | 30 | [ficha](rutas/api-profile.md) |
 | `/api/quality/feeds` | GET | 7 | 10 | 45 | [ficha](rutas/api-quality-feeds.md) |
 | `/api/range/validate` | GET | 1 | 1 | 10 | [ficha](rutas/api-range-validate.md) |
-| `/api/rango/estructura` | GET | 51 | 5 | 8 | [ficha](rutas/api-rango-estructura.md) |
+| `/api/rango/estructura` | GET | 51 | 5 | 9 | [ficha](rutas/api-rango-estructura.md) |
 | `/api/reference-levels` | GET | 22 | 1 | 3 | [ficha](rutas/api-reference-levels.md) |
 | `/api/scalp/absorption` | GET | **0 · PENDIENTE** | 2 | 8 | [ficha](rutas/api-scalp-absorption.md) |
 | `/api/scalp/alerts` | GET | 2 | 8 | 26 | [ficha](rutas/api-scalp-alerts.md) |

@@ -5,7 +5,7 @@
 | Workflow | Trigger | Runner | Qué hace |
 |---|---|---|---|
 | `ci.yml` (CI) | `pull_request`, `push` a `main` | self-hosted | venv + `ruff check .` + `compileall app` + `pytest -q` |
-| `deploy-production.yml` (Deploy production) | `workflow_dispatch` (deploy/rollback) | self-hosted | build+sha256+scp+wrapper (ver [DEPLOYMENT.md](DEPLOYMENT.md)) |
+| `deploy-production.yml` (Deploy production) | `workflow_dispatch` (deploy/rollback) | self-hosted | build+sha256+scp+wrapper; el wrapper ignora el artefacto y baja el commit de GitHub (ver [DEPLOYMENT.md](DEPLOYMENT.md)) |
 
 CI usa `python3` del sistema (3.13) creando un venv; instala `requirements.lock` + `.[dev]`.
 Falla ante tests rotos, lint sucio, dependencias que no instalan o errores de importación.
