@@ -27,7 +27,7 @@ Handler `hypothesis` · `app/api.py:1428` (cuerpo hasta la 1505) · decorador en
 
 ## Campos que publica
 
-82 campos derivados. La procedencia dice de donde sale cada uno.
+83 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
@@ -76,32 +76,33 @@ Handler `hypothesis` · `app/api.py:1428` (cuerpo hasta la 1505) · decorador en
 | `profile_coverage_pct` | literal en app/scalp_logic.py:5228 |
 | `setup` | literal en app/scalp_logic.py:5215 |
 | `setup_evaluation` | literal en app/scalp_logic.py:5218 |
-| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1328 |
-| `setup_evaluation.confirmation_met` | literal en app/setups.py:1329 |
-| `setup_evaluation.confirmation_total` | literal en app/setups.py:1327 |
-| `setup_evaluation.coverage_pct` | literal en app/setups.py:1323 |
-| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1325 |
-| `setup_evaluation.critical_met` | literal en app/setups.py:1326 |
-| `setup_evaluation.critical_total` | literal en app/setups.py:1324 |
-| `setup_evaluation.cumplidos` | literal en app/setups.py:1318 |
-| `setup_evaluation.direction` | literal en app/setups.py:1310 |
-| `setup_evaluation.direction_label` | literal en app/setups.py:1311 |
-| `setup_evaluation.faltantes` | literal en app/setups.py:1319 |
-| `setup_evaluation.invalidaciones` | literal en app/setups.py:1316 |
-| `setup_evaluation.label` | literal en app/setups.py:1309 |
-| `setup_evaluation.min_confirmations` | literal en app/setups.py:1332 |
-| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1333 |
-| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1331 |
-| `setup_evaluation.missing_critical` | literal en app/setups.py:1330 |
-| `setup_evaluation.no_evaluables` | literal en app/setups.py:1317 |
-| `setup_evaluation.note` | literal en app/setups.py:1334 |
-| `setup_evaluation.pendientes` | literal en app/setups.py:1315 |
-| `setup_evaluation.requisitos` | literal en app/setups.py:1314 |
-| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1321 |
-| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1320 |
-| `setup_evaluation.setup` | literal en app/setups.py:1308 |
-| `setup_evaluation.state` | literal en app/setups.py:1313 |
-| `setup_evaluation.thesis` | literal en app/setups.py:1312 |
+| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1402 |
+| `setup_evaluation.confirmation_met` | literal en app/setups.py:1403 |
+| `setup_evaluation.confirmation_total` | literal en app/setups.py:1401 |
+| `setup_evaluation.coverage_pct` | literal en app/setups.py:1397 |
+| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1399 |
+| `setup_evaluation.critical_met` | literal en app/setups.py:1400 |
+| `setup_evaluation.critical_total` | literal en app/setups.py:1398 |
+| `setup_evaluation.cumplidos` | literal en app/setups.py:1392 |
+| `setup_evaluation.direction` | literal en app/setups.py:1384 |
+| `setup_evaluation.direction_label` | literal en app/setups.py:1385 |
+| `setup_evaluation.episodio` | literal en app/setups.py:1409 |
+| `setup_evaluation.faltantes` | literal en app/setups.py:1393 |
+| `setup_evaluation.invalidaciones` | literal en app/setups.py:1390 |
+| `setup_evaluation.label` | literal en app/setups.py:1383 |
+| `setup_evaluation.min_confirmations` | literal en app/setups.py:1406 |
+| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1407 |
+| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1405 |
+| `setup_evaluation.missing_critical` | literal en app/setups.py:1404 |
+| `setup_evaluation.no_evaluables` | literal en app/setups.py:1391 |
+| `setup_evaluation.note` | literal en app/setups.py:1410 |
+| `setup_evaluation.pendientes` | literal en app/setups.py:1389 |
+| `setup_evaluation.requisitos` | literal en app/setups.py:1388 |
+| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1395 |
+| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1394 |
+| `setup_evaluation.setup` | literal en app/setups.py:1382 |
+| `setup_evaluation.state` | literal en app/setups.py:1387 |
+| `setup_evaluation.thesis` | literal en app/setups.py:1386 |
 | `setup_label` | literal en app/scalp_logic.py:5216 |
 | `setup_observables` | literal en app/scalp_logic.py:5239 |
 | `setup_state` | literal en app/scalp_logic.py:5217 |
@@ -188,7 +189,7 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-79 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+81 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -204,10 +205,10 @@ Llamadas directas del handler:
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2518`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
 - `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6320`
-- `app.setups.build_setup_context` — `app/setups.py:1100`
+- `app.setups.build_setup_context` — `app/setups.py:1156`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
-<details><summary>Alcanzables de forma indirecta (66)</summary>
+<details><summary>Alcanzables de forma indirecta (68)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
@@ -258,23 +259,25 @@ Llamadas directas del handler:
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
 - `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2853`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2843`
-- `app.setups._bars_closed_beyond` — `app/setups.py:805`
-- `app.setups._breakout_frontier` — `app/setups.py:741`
-- `app.setups._gap_in` — `app/setups.py:798`
-- `app.setups._last_pivots` — `app/setups.py:927`
-- `app.setups._level_defended` — `app/setups.py:1003`
-- `app.setups._norm_bars` — `app/setups.py:777`
-- `app.setups._obs` — `app/setups.py:716`
-- `app.setups._pullback` — `app/setups.py:934`
-- `app.setups._retest_done` — `app/setups.py:891`
-- `app.setups._returned_inside` — `app/setups.py:844`
+- `app.setups._apertura` — `app/setups.py:805`
+- `app.setups._bars_closed_beyond` — `app/setups.py:863`
+- `app.setups._breakout_frontier` — `app/setups.py:748`
+- `app.setups._gap_in` — `app/setups.py:856`
+- `app.setups._last_pivots` — `app/setups.py:982`
+- `app.setups._level_defended` — `app/setups.py:1058`
+- `app.setups._norm_bars` — `app/setups.py:784`
+- `app.setups._obs` — `app/setups.py:723`
+- `app.setups._pullback` — `app/setups.py:989`
+- `app.setups._retest_done` — `app/setups.py:946`
+- `app.setups._returned_inside` — `app/setups.py:902`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups._structure_event` — `app/setups.py:665`
-- `app.setups._tolerance` — `app/setups.py:762`
+- `app.setups._tolerance` — `app/setups.py:769`
 - `app.setups.classify_oi` — `app/setups.py:162`
-- `app.setups.evaluate_setup` — `app/setups.py:1218`
+- `app.setups.episodio` — `app/setups.py:833`
+- `app.setups.evaluate_setup` — `app/setups.py:1292`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
-- `app.setups.setup_observables` — `app/setups.py:1057`
+- `app.setups.setup_observables` — `app/setups.py:1112`
 
 </details>
 
@@ -372,7 +375,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_coverage_reason` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
-| _… y 55 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 57 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

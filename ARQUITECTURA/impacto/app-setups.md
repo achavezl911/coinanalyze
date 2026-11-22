@@ -2,7 +2,7 @@
 
 > Generado por `harness/bin/arquitectura`. No editar a mano.
 
-19 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
+21 funciones de este fichero alcanzan alguna ruta. **Tocar cualquiera de ellas puede cambiar las rutas que se listan.**
 
 El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe ella misma (**exacto**), y `k<=2` sube por los llamadores (**cota superior declarada**). Nunca uno solo.
 
@@ -11,21 +11,23 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`classify_oi`](#classify-oi) | 162 | 10 | **0** | 11 ↑ | **10** |
 | [`oi_price_reading`](#oi-price-reading) | 228 | 10 | **0** | 11 ↑ | **10** |
 | [`_sign`](#-sign) | 95 | 10 | **0** | 0 | **10** |
-| [`_bars_closed_beyond`](#-bars-closed-beyond) | 805 | 2 | **0** | 0 | **2** |
-| [`_breakout_frontier`](#-breakout-frontier) | 741 | 2 | **0** | 0 | **2** |
-| [`_gap_in`](#-gap-in) | 798 | 2 | **0** | 0 | **2** |
-| [`_last_pivots`](#-last-pivots) | 927 | 2 | **0** | 0 | **2** |
-| [`_level_defended`](#-level-defended) | 1003 | 2 | **0** | 0 | **2** |
-| [`_norm_bars`](#-norm-bars) | 777 | 2 | **0** | 0 | **2** |
-| [`_obs`](#-obs) | 716 | 2 | **0** | 0 | **2** |
-| [`_pullback`](#-pullback) | 934 | 2 | **0** | 0 | **2** |
-| [`_retest_done`](#-retest-done) | 891 | 2 | **0** | 0 | **2** |
-| [`_returned_inside`](#-returned-inside) | 844 | 2 | **0** | 0 | **2** |
+| [`_apertura`](#-apertura) | 805 | 2 | **0** | 0 | **2** |
+| [`_bars_closed_beyond`](#-bars-closed-beyond) | 863 | 2 | **0** | 0 | **2** |
+| [`_breakout_frontier`](#-breakout-frontier) | 748 | 2 | **0** | 0 | **2** |
+| [`_gap_in`](#-gap-in) | 856 | 2 | **0** | 0 | **2** |
+| [`_last_pivots`](#-last-pivots) | 982 | 2 | **0** | 0 | **2** |
+| [`_level_defended`](#-level-defended) | 1058 | 2 | **0** | 0 | **2** |
+| [`_norm_bars`](#-norm-bars) | 784 | 2 | **0** | 0 | **2** |
+| [`_obs`](#-obs) | 723 | 2 | **0** | 0 | **2** |
+| [`_pullback`](#-pullback) | 989 | 2 | **0** | 0 | **2** |
+| [`_retest_done`](#-retest-done) | 946 | 2 | **0** | 0 | **2** |
+| [`_returned_inside`](#-returned-inside) | 902 | 2 | **0** | 0 | **2** |
 | [`_structure_event`](#-structure-event) | 665 | 2 | **0** | 0 | **2** |
-| [`_tolerance`](#-tolerance) | 762 | 2 | **0** | 0 | **2** |
-| [`build_setup_context`](#build-setup-context) | 1100 | 2 | **0** | 0 | **2** |
-| [`evaluate_setup`](#evaluate-setup) | 1218 | 2 | **0** | 0 | **2** |
-| [`setup_observables`](#setup-observables) | 1057 | 2 | **0** | 0 | **2** |
+| [`_tolerance`](#-tolerance) | 769 | 2 | **0** | 0 | **2** |
+| [`build_setup_context`](#build-setup-context) | 1156 | 2 | **0** | 0 | **2** |
+| [`episodio`](#episodio) | 833 | 2 | **0** | 0 | **2** |
+| [`evaluate_setup`](#evaluate-setup) | 1292 | 2 | **0** | 0 | **2** |
+| [`setup_observables`](#setup-observables) | 1112 | 2 | **0** | 0 | **2** |
 | [`split_hypothesis`](#split-hypothesis) | 88 | 2 | **0** | 0 | **2** |
 
 ## classify_oi
@@ -188,9 +190,33 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## _apertura
+
+`app/setups.py:805` · clave completa `app.setups._apertura`
+
+**Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
+
+### Por llamada — 2 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## _bars_closed_beyond
 
-`app/setups.py:805` · clave completa `app.setups._bars_closed_beyond`
+`app/setups.py:863` · clave completa `app.setups._bars_closed_beyond`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -214,7 +240,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _breakout_frontier
 
-`app/setups.py:741` · clave completa `app.setups._breakout_frontier`
+`app/setups.py:748` · clave completa `app.setups._breakout_frontier`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -234,11 +260,11 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 6 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _gap_in
 
-`app/setups.py:798` · clave completa `app.setups._gap_in`
+`app/setups.py:856` · clave completa `app.setups._gap_in`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -262,7 +288,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _last_pivots
 
-`app/setups.py:927` · clave completa `app.setups._last_pivots`
+`app/setups.py:982` · clave completa `app.setups._last_pivots`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -286,7 +312,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _level_defended
 
-`app/setups.py:1003` · clave completa `app.setups._level_defended`
+`app/setups.py:1058` · clave completa `app.setups._level_defended`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -310,7 +336,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _norm_bars
 
-`app/setups.py:777` · clave completa `app.setups._norm_bars`
+`app/setups.py:784` · clave completa `app.setups._norm_bars`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -330,11 +356,11 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 4 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _obs
 
-`app/setups.py:716` · clave completa `app.setups._obs`
+`app/setups.py:723` · clave completa `app.setups._obs`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -358,7 +384,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _pullback
 
-`app/setups.py:934` · clave completa `app.setups._pullback`
+`app/setups.py:989` · clave completa `app.setups._pullback`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -382,7 +408,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _retest_done
 
-`app/setups.py:891` · clave completa `app.setups._retest_done`
+`app/setups.py:946` · clave completa `app.setups._retest_done`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -406,7 +432,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _returned_inside
 
-`app/setups.py:844` · clave completa `app.setups._returned_inside`
+`app/setups.py:902` · clave completa `app.setups._returned_inside`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -454,7 +480,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _tolerance
 
-`app/setups.py:762` · clave completa `app.setups._tolerance`
+`app/setups.py:769` · clave completa `app.setups._tolerance`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -478,7 +504,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_setup_context
 
-`app/setups.py:1100` · clave completa `app.setups.build_setup_context`
+`app/setups.py:1156` · clave completa `app.setups.build_setup_context`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -500,9 +526,33 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 2 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## episodio
+
+`app/setups.py:833` · clave completa `app.setups.episodio`
+
+**Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
+
+### Por llamada — 2 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 3 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## evaluate_setup
 
-`app/setups.py:1218` · clave completa `app.setups.evaluate_setup`
+`app/setups.py:1292` · clave completa `app.setups.evaluate_setup`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -526,7 +576,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## setup_observables
 
-`app/setups.py:1057` · clave completa `app.setups.setup_observables`
+`app/setups.py:1112` · clave completa `app.setups.setup_observables`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
