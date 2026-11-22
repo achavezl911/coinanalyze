@@ -1,6 +1,6 @@
 # Parche del bridge de Telegram — v1.3.4
 
-El bridge (`/opt/coinalyze-ai-bridge`) es **otro proyecto**: `update.sh` de coinalyze no lo
+El bridge (`/opt/coinalyze-ai-bridge`) es **otro proyecto**: el despliegue de coinalyze no lo
 toca. Estos cambios viven aquí para que no se pierdan si el bridge se reinstala desde cero.
 
 ## Qué hace
