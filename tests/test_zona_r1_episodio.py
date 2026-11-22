@@ -10,10 +10,10 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 import pytest
+from barreras_reales import barreras
 
 from app import setups as S
 from app.scalp_logic import _atr, _swings
-from barreras_reales import barreras
 
 AHORA = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 FIN = int(AHORA.timestamp()) - 900

@@ -7,8 +7,9 @@ CONFIRMADO, y que siguen fail-closed cuando faltan los observables criticos (sin
 
 from __future__ import annotations
 
-from app.setups import build_setup_context, evaluate_setup
 from barreras_reales import barreras as barreras_reales
+
+from app.setups import build_setup_context, evaluate_setup
 
 TF = 900
 

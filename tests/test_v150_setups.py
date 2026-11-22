@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from barreras_reales import barreras as barreras_reales
 
 from app.scalp_logic import hypothesis_evidence
 from app.setups import (
@@ -13,7 +14,6 @@ from app.setups import (
     evaluate_setup,
     split_hypothesis,
 )
-from barreras_reales import barreras as barreras_reales
 
 SETUPS_REALES = ("ruptura", "rechazo", "reversion", "continuacion")
 
