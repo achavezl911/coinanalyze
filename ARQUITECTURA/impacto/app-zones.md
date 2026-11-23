@@ -8,15 +8,15 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_atr_abs`](#-atr-abs) | 519 | 4 | **0** | 0 | **4** |
-| [`_edge_episodes`](#-edge-episodes) | 499 | 4 | **0** | 0 | **4** |
-| [`_ols_slope`](#-ols-slope) | 471 | 4 | **0** | 0 | **4** |
-| [`_rotations`](#-rotations) | 483 | 4 | **0** | 0 | **4** |
-| [`range_validate_read`](#range-validate-read) | 535 | 4 | **0** | 0 | **4** |
+| [`_atr_abs`](#-atr-abs) | 545 | 4 | **0** | 0 | **4** |
+| [`_edge_episodes`](#-edge-episodes) | 525 | 4 | **0** | 0 | **4** |
+| [`_ols_slope`](#-ols-slope) | 497 | 4 | **0** | 0 | **4** |
+| [`_rotations`](#-rotations) | 509 | 4 | **0** | 0 | **4** |
+| [`range_validate_read`](#range-validate-read) | 561 | 4 | **0** | 0 | **4** |
 | [`_atr_pct`](#-atr-pct) | 104 | 1 | **0** | 0 | **1** |
 | [`_clamp`](#-clamp) | 100 | 1 | **0** | 0 | **1** |
 | [`_effort_result`](#-effort-result) | 128 | 1 | **0** | 0 | **1** |
-| [`_narrative`](#-narrative) | 394 | 1 | **0** | 0 | **1** |
+| [`_narrative`](#-narrative) | 420 | 1 | **0** | 0 | **1** |
 | [`_oi_behaviour`](#-oi-behaviour) | 208 | 1 | **0** | 0 | **1** |
 | [`_percentile`](#-percentile) | 121 | 1 | **0** | 0 | **1** |
 | [`_rejection`](#-rejection) | 194 | 1 | **0** | 0 | **1** |
@@ -24,7 +24,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 ## _atr_abs
 
-`app/zones.py:519` · clave completa `app.zones._atr_abs`
+`app/zones.py:545` · clave completa `app.zones._atr_abs`
 
 **Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
@@ -50,7 +50,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _edge_episodes
 
-`app/zones.py:499` · clave completa `app.zones._edge_episodes`
+`app/zones.py:525` · clave completa `app.zones._edge_episodes`
 
 **Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
@@ -76,7 +76,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _ols_slope
 
-`app/zones.py:471` · clave completa `app.zones._ols_slope`
+`app/zones.py:497` · clave completa `app.zones._ols_slope`
 
 **Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
@@ -102,7 +102,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _rotations
 
-`app/zones.py:483` · clave completa `app.zones._rotations`
+`app/zones.py:509` · clave completa `app.zones._rotations`
 
 **Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
@@ -128,7 +128,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## range_validate_read
 
-`app/zones.py:535` · clave completa `app.zones.range_validate_read`
+`app/zones.py:561` · clave completa `app.zones.range_validate_read`
 
 **Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
 
@@ -223,7 +223,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _narrative
 
-`app/zones.py:394` · clave completa `app.zones._narrative`
+`app/zones.py:420` · clave completa `app.zones._narrative`
 
 **Radio exacto: 1 rutas** de 94 · **cota superior: 1** (igual al exacto)
 

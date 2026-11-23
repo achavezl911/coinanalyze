@@ -77,11 +77,11 @@ Llamadas directas del handler:
 - `app.wyckoff._signed_balance` — `app/wyckoff.py:178`
 - `app.wyckoff.detect_latest_range` — `app/wyckoff.py:99`
 - `app.wyckoff.wyckoff_auto_read` — `app/wyckoff.py:447`
-- `app.zones._atr_abs` — `app/zones.py:519`
-- `app.zones._edge_episodes` — `app/zones.py:499`
-- `app.zones._ols_slope` — `app/zones.py:471`
-- `app.zones._rotations` — `app/zones.py:483`
-- `app.zones.range_validate_read` — `app/zones.py:535`
+- `app.zones._atr_abs` — `app/zones.py:545`
+- `app.zones._edge_episodes` — `app/zones.py:525`
+- `app.zones._ols_slope` — `app/zones.py:497`
+- `app.zones._rotations` — `app/zones.py:509`
+- `app.zones.range_validate_read` — `app/zones.py:561`
 
 </details>
 

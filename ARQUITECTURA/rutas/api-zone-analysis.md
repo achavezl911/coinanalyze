@@ -65,7 +65,7 @@ Llamadas directas del handler:
 - `app.zones._atr_pct` — `app/zones.py:104`
 - `app.zones._clamp` — `app/zones.py:100`
 - `app.zones._effort_result` — `app/zones.py:128`
-- `app.zones._narrative` — `app/zones.py:394`
+- `app.zones._narrative` — `app/zones.py:420`
 - `app.zones._oi_behaviour` — `app/zones.py:208`
 - `app.zones._percentile` — `app/zones.py:121`
 - `app.zones._rejection` — `app/zones.py:194`
