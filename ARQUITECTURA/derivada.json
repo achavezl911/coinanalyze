@@ -34234,9 +34234,9 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/02-canal.js:35",
-            "static/js/02-canal.js:49",
-            "static/js/02-canal.js:53",
+            "static/js/02-canal.js:40",
+            "static/js/02-canal.js:55",
+            "static/js/02-canal.js:59",
             "static/js/10-contexto-y-estructura.js:927",
             "static/js/10-contexto-y-estructura.js:952",
             "static/js/10-contexto-y-estructura.js:962",
@@ -34257,6 +34257,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/panel_sobre.test.js:96",
             "tests/test_bot.py:325"
           ],
           "menciones": [
@@ -34269,7 +34270,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 48,
+        "n_llamadas": 49,
         "n_menciones": 18,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -35808,7 +35809,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:317"
+            "static/js/07-decision-y-ciclos.js:318"
           ],
           "menciones": []
         }
@@ -36155,8 +36156,8 @@
         "panel": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:219",
-            "static/js/07-decision-y-ciclos.js:320",
-            "static/js/07-decision-y-ciclos.js:430"
+            "static/js/07-decision-y-ciclos.js:321",
+            "static/js/07-decision-y-ciclos.js:431"
           ],
           "menciones": []
         },
@@ -36722,7 +36723,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/02-canal.js:66"
+            "static/js/02-canal.js:72"
           ],
           "menciones": []
         }
@@ -37415,7 +37416,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:433"
+            "static/js/07-decision-y-ciclos.js:434"
           ],
           "menciones": []
         }
@@ -37911,7 +37912,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:220",
-            "static/js/07-decision-y-ciclos.js:432"
+            "static/js/07-decision-y-ciclos.js:433"
           ],
           "menciones": []
         },
@@ -38232,7 +38233,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:384"
+            "static/js/07-decision-y-ciclos.js:385"
           ],
           "menciones": []
         },
@@ -38364,7 +38365,7 @@
         "panel": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:245",
-            "static/js/07-decision-y-ciclos.js:405"
+            "static/js/07-decision-y-ciclos.js:406"
           ],
           "menciones": []
         },
@@ -39824,7 +39825,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:308"
+            "static/js/07-decision-y-ciclos.js:309"
           ],
           "menciones": []
         },
@@ -40124,8 +40125,8 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:352",
-            "static/js/07-decision-y-ciclos.js:431"
+            "static/js/07-decision-y-ciclos.js:353",
+            "static/js/07-decision-y-ciclos.js:432"
           ],
           "menciones": []
         }
@@ -40238,7 +40239,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:342"
+            "static/js/07-decision-y-ciclos.js:343"
           ],
           "menciones": []
         }
@@ -41246,13 +41247,13 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:318",
-            "static/js/07-decision-y-ciclos.js:377",
+            "static/js/07-decision-y-ciclos.js:319",
+            "static/js/07-decision-y-ciclos.js:378",
             "static/js/09-ejecucion-y-calidad.js:118",
             "static/js/09-ejecucion-y-calidad.js:119"
           ],
           "menciones": [
-            "static/js/07-decision-y-ciclos.js:386",
+            "static/js/07-decision-y-ciclos.js:387",
             "static/js/09-ejecucion-y-calidad.js:103"
           ]
         },
@@ -43059,7 +43060,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:353"
+            "static/js/07-decision-y-ciclos.js:354"
           ],
           "menciones": []
         }
@@ -43190,7 +43191,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:385"
+            "static/js/07-decision-y-ciclos.js:386"
           ],
           "menciones": []
         }
@@ -43703,12 +43704,12 @@
         "panel": {
           "llamadas": [],
           "menciones": [
-            "static/js/07-decision-y-ciclos.js:402"
+            "static/js/07-decision-y-ciclos.js:403"
           ]
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:406"
+            "static/js/07-decision-y-ciclos.js:407"
           ],
           "menciones": []
         }
@@ -44389,7 +44390,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:326"
+            "static/js/07-decision-y-ciclos.js:327"
           ],
           "menciones": []
         },
@@ -44652,7 +44653,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:378"
+            "static/js/07-decision-y-ciclos.js:379"
           ],
           "menciones": []
         },
@@ -44812,7 +44813,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:325"
+            "static/js/07-decision-y-ciclos.js:326"
           ],
           "menciones": []
         }
@@ -45003,7 +45004,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:341"
+            "static/js/07-decision-y-ciclos.js:342"
           ],
           "menciones": []
         }
@@ -45207,7 +45208,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:383"
+            "static/js/07-decision-y-ciclos.js:384"
           ],
           "menciones": []
         },
@@ -45340,7 +45341,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:379"
+            "static/js/07-decision-y-ciclos.js:380"
           ],
           "menciones": []
         }
@@ -45454,7 +45455,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/02-canal.js:70"
+            "static/js/02-canal.js:76"
           ],
           "menciones": []
         },
@@ -45576,7 +45577,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:422"
+            "static/js/07-decision-y-ciclos.js:423"
           ],
           "menciones": []
         },
@@ -46074,7 +46075,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:420"
+            "static/js/07-decision-y-ciclos.js:421"
           ],
           "menciones": []
         },
@@ -46274,7 +46275,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:418"
+            "static/js/07-decision-y-ciclos.js:419"
           ],
           "menciones": []
         },
@@ -46462,7 +46463,7 @@
         "tests": {
           "llamadas": [],
           "menciones": [
-            "tests/test_dashboard_layout.py:236",
+            "tests/test_dashboard_layout.py:241",
             "tests/test_familia_demanda.py:126",
             "tests/test_signals_outcomes.py:1"
           ]
@@ -46649,7 +46650,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:419"
+            "static/js/07-decision-y-ciclos.js:420"
           ],
           "menciones": []
         },
@@ -46842,7 +46843,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:421"
+            "static/js/07-decision-y-ciclos.js:422"
           ],
           "menciones": []
         },
@@ -47256,7 +47257,7 @@
         },
         "panel-sobre": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:351"
+            "static/js/07-decision-y-ciclos.js:352"
           ],
           "menciones": []
         }
@@ -47389,7 +47390,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:217",
-            "static/js/07-decision-y-ciclos.js:356"
+            "static/js/07-decision-y-ciclos.js:357"
           ],
           "menciones": []
         }
@@ -47585,7 +47586,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:216",
-            "static/js/07-decision-y-ciclos.js:355"
+            "static/js/07-decision-y-ciclos.js:356"
           ],
           "menciones": []
         }
@@ -47828,7 +47829,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:215",
-            "static/js/07-decision-y-ciclos.js:354"
+            "static/js/07-decision-y-ciclos.js:355"
           ],
           "menciones": []
         },
@@ -47967,7 +47968,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:417"
+            "static/js/07-decision-y-ciclos.js:418"
           ],
           "menciones": []
         }
@@ -48340,7 +48341,7 @@
         },
         "panel": {
           "llamadas": [
-            "static/js/07-decision-y-ciclos.js:319"
+            "static/js/07-decision-y-ciclos.js:320"
           ],
           "menciones": []
         },
@@ -48528,7 +48529,7 @@
         "panel-sobre": {
           "llamadas": [
             "static/js/07-decision-y-ciclos.js:218",
-            "static/js/07-decision-y-ciclos.js:357"
+            "static/js/07-decision-y-ciclos.js:358"
           ],
           "menciones": []
         },

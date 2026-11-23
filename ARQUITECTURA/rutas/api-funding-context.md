@@ -86,7 +86,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:47`, `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K43-foto-unica.sh:210` | `harness/checks/K03-hueco-declarado.sh:29` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:384` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:385` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:12` |
 
 **La llama el panel: es superficie de producto.**
