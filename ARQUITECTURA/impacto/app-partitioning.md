@@ -9,7 +9,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
 | [`apply_temporal_retention`](#apply-temporal-retention) | 34 | 0 | **0** | 56 ↑ | **0** |
-| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 29 | 0 | **0** | 22 ↑ | **0** |
+| [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 29 | 0 | **0** | 28 ↑ | **0** |
 
 ## apply_temporal_retention
 
@@ -185,7 +185,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 `app/partitioning.py:29` · clave completa `app.partitioning.ensure_temporal_partitions`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 28** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -198,9 +198,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 22 rutas · **cota superior**
+### Por tabla · k<=2 — 28 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (22 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (28 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -224,13 +224,18 @@ Y esas tablas las leen:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -243,20 +248,26 @@ Y esas tablas las leen:
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 - [`/api/stream`](../rutas/api-stream.md)
 - [`/api/structure`](../rutas/api-structure.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**22 rutas se enteran SOLO por el dato**, sin
+**28 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/desk/state`](../rutas/api-desk-state.md)
 - [`/api/healthz`](../rutas/api-healthz.md)
 - [`/api/hypothesis`](../rutas/api-hypothesis.md)
 - [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
 - [`/api/price-barriers`](../rutas/api-price-barriers.md)
 - [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
 - [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
@@ -269,6 +280,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
 - [`/api/stream`](../rutas/api-stream.md)
 - [`/api/structure`](../rutas/api-structure.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/metrics`](../rutas/metrics.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>

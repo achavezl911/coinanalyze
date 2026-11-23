@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro_ultimo` · `app/api.py:4010` (cuerpo hasta la 4023) · decorador en la linea 4009.
+Handler `libro_ultimo` · `app/api.py:4115` (cuerpo hasta la 4128) · decorador en la linea 4114.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `libro_ultimo` · `app/api.py:4010` (cuerpo hasta la 4023) · decorador 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:4023 |
+| `as_of` | literal en app/api.py:4128 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -48,8 +48,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2494`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
+- `app.api._utc_iso` — `app/api.py:2599`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
 - `app.libro_lectura.ultimo` — `app/libro_lectura.py:436`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
@@ -81,8 +81,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2623` | una funcion de su cierre |
-| 422 | — | `app/api.py:4022` | el propio handler |
+| 422 | — | `app/api.py:2728` | una funcion de su cierre |
+| 422 | — | `app/api.py:4127` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `passive_flow_endpoint` · `app/api.py:2203` (cuerpo hasta la 2206) · decorador en la linea 2202.
+Handler `passive_flow_endpoint` · `app/api.py:2308` (cuerpo hasta la 2311) · decorador en la linea 2307.
 
 ## Parametros de entrada
 
@@ -88,7 +88,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6192`
 
 <details><summary>Alcanzables de forma indirecta (19)</summary>
@@ -127,7 +127,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
