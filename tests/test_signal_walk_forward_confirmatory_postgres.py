@@ -648,7 +648,7 @@ def _confirmatory_contract(**overrides: object) -> ConfirmatoryContract:
         "primary_exchange": "binance",
         "primary_size_usd": 1_000.0,
         "primary_taker_fee_bps": 0.0,
-        "baseline_version": 1,
+        "baseline_version": 2,
         "unmodeled_execution_stress_bps": 0.0,
         "inference_version": 1,
         "block_unit": "day",
