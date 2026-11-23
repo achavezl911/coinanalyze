@@ -18,7 +18,14 @@ COPIADOS = (
     "deploy/143/coinalyze-bot-semanal.service", "deploy/143/coinalyze-bot-semanal.timer",
     "deploy/143/coinalyze-libretas.service", "deploy/systemd/coinalyze-libretas.timer",
     "harness/bin/capta-healthz", "harness/bin/respalda-libretas", "tools/bot/semanal.py",
+    "deploy/143/coinalyze-diario-cuarto.service", "deploy/143/coinalyze-diario-cuarto.timer",
+    "deploy/143/coinalyze-diario-dia.service", "deploy/143/coinalyze-diario-dia.timer",
 )
+DIARIO = ("coinalyze-diario-cuarto.service", "coinalyze-diario-cuarto.timer",
+          "coinalyze-diario-dia.service", "coinalyze-diario-dia.timer")
+CANALES = ("api", "prod", "prodsql", "espejosql", "leer")
+CORTA_SUYO = '"$(dirname "$(readlink -f "$0")")/_corta"'
+
 CRONTAB = """#!/usr/bin/env bash
 # crontab -l -u root | crontab -u root FICHERO, sobre $SB/crontab
 if [ "$1" = -l ]; then cat "$SB/crontab"; else cp "$3" "$SB/crontab"; fi
@@ -88,12 +95,17 @@ def test_instala_desde_la_copia_congelada_de_main(tmp_path):
     for p in [copia, *copia.rglob("*")]:
         assert not p.lstat().st_mode & (stat.S_IWGRP | stat.S_IWOTH), p
     for u in ("coinalyze-bot-semanal.service", "coinalyze-bot-semanal.timer",
-              "coinalyze-libretas.service", "coinalyze-libretas.timer"):
+              "coinalyze-libretas.service", "coinalyze-libretas.timer", *DIARIO):
         texto = "\n".join(x for x in (b["units"] / u).read_text(encoding="utf-8").splitlines() if not x.startswith("#"))
         assert not any(x in texto for x in DEL_ARBOL), u
     assert "/opt/coinalyze-143/current/tools/bot/semanal.py" in (b["units"] / "coinalyze-bot-semanal.service").read_text()
     assert "/opt/coinalyze-143/current/harness/bin/respalda-libretas" in (b["units"] / "coinalyze-libretas.service").read_text()
     assert "enable --now coinalyze-bot-semanal.timer coinalyze-libretas.timer" in (b["sb"] / "systemctl.log").read_text()
+    assert "coinalyze-diario-cuarto.timer coinalyze-diario-dia.timer" in (b["sb"] / "systemctl.log").read_text()
+    for u, orden in (("coinalyze-diario-cuarto.service", "cuarto"), ("coinalyze-diario-dia.service", "diario")):
+        texto = (b["units"] / u).read_text(encoding="utf-8")
+        assert "WorkingDirectory=/opt/coinalyze-143/current\n" in texto, u
+        assert f"ExecStart=/usr/bin/python3 -E -s -m app.diario {orden}\n" in texto, u  # sin el venv del arbol
     cron = b["CRON_FILE"].read_text(encoding="utf-8")
     assert f"* * * * * root {b['BASE']}/current/harness/bin/capta-healthz" in cron
     crontab = (b["sb"] / "crontab").read_text(encoding="utf-8")
@@ -119,3 +131,42 @@ def test_lo_de_143_no_ejecuta_el_arbol_de_trabajo():
 
 def test_el_repo_no_trae_ganchos_de_claude_code():
     assert not (ROOT / ".claude" / "settings.json").exists()
+
+
+def test_e01a_los_canales_de_la_copia_corren_su_propio_corta(tmp_path):
+    """E-01a: harness/bin/prod en una copia, con un _corta plantado en el «arbol»: corre el de la copia."""
+    for c in CANALES:
+        texto = (ROOT / "harness/bin" / c).read_text(encoding="utf-8")
+        assert '"$B/bin/_corta"' not in texto and CORTA_SUYO in texto, c
+    texto = (ROOT / "harness/bin/prod").read_text(encoding="utf-8")
+    assert texto.count("B=/srv/coinanalyze/harness;") == 1
+    texto = texto.replace("B=/srv/coinanalyze/harness;", f"B={tmp_path}/arbol/harness;")  # hace de /srv/coinanalyze/harness
+    for d in ("copia/harness/bin", "arbol/harness/bin", "bin"):
+        (tmp_path / d).mkdir(parents=True)
+    _x(tmp_path / "copia/harness/bin/prod", texto)
+    _x(tmp_path / "copia/harness/bin/_corta", "#!/bin/sh\ncat\n")
+    _x(tmp_path / "arbol/harness/bin/_corta", '#!/bin/sh\ntouch "$(dirname "$0")/testigo"\ncat\n')
+    (tmp_path / "arbol/harness/env").write_text("PROD_SSH_USER=x\nPROD_HOST=x\nPROD_SSH_KEY=/dev/null\n"
+                                                "PROD_KNOWN_HOSTS=/dev/null\n", encoding="utf-8")
+    _x(tmp_path / "bin/ssh", "#!/bin/sh\necho ssh-doble\n")
+    r = subprocess.run(["sh", str(tmp_path / "copia/harness/bin/prod"), "echo hola"], capture_output=True, text=True,
+                       env={"PATH": f"{tmp_path}/bin:/usr/bin:/bin"}, timeout=30, check=False)
+    assert r.stdout.strip() == "ssh-doble", (r.returncode, r.stdout, r.stderr)
+    assert not (tmp_path / "arbol/harness/bin/testigo").exists()
+
+
+def test_e01b_velas_de_la_copia_llama_al_api_de_la_copia(tmp_path, monkeypatch):
+    """E-01b: app/diario/velas.py en una copia toma H de su propio arbol, no de /srv/coinanalyze ni del entorno."""
+    import importlib.util
+    monkeypatch.setenv("DIARIO_HARNESS", str(tmp_path / "ajeno"))
+    v = tmp_path / "copia/app/diario/velas.py"
+    v.parent.mkdir(parents=True)
+    shutil.copy(ROOT / "app/diario/velas.py", v)
+    (tmp_path / "copia/harness/bin").mkdir(parents=True)
+    _x(tmp_path / "copia/harness/bin/api", 'touch "$(dirname "$0")/testigo"\n'
+                                           'printf \'{"symbol":"BTCUSDT_PERP.A","interval":"5min","rows":[]}\'\n')
+    spec = importlib.util.spec_from_file_location("velas_copia", v)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert str(tmp_path / "copia/harness/bin") == mod.H
+    assert mod.pide("BTC", "5min") == {} and (tmp_path / "copia/harness/bin/testigo").exists()

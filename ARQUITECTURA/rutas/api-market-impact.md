@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `market_impact_endpoint` · `app/api.py:1412` (cuerpo hasta la 1416) · decorador en la linea 1411.
+Handler `market_impact_endpoint` · `app/api.py:1517` (cuerpo hasta la 1521) · decorador en la linea 1516.
 
 ## Parametros de entrada
 
@@ -53,7 +53,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.market_impact` — `app/scalp_logic.py:5877`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -78,7 +78,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -89,7 +89,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:157`, `harness/checks/K43-foto-unica.sh:221` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:342` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:343` | — |
 
 **La llama el panel: es superficie de producto.**
 

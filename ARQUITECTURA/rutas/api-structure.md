@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure` · `app/api.py:2346` (cuerpo hasta la 2349) · decorador en la linea 2345.
+Handler `structure` · `app/api.py:2451` (cuerpo hasta la 2454) · decorador en la linea 2450.
 
 ## Parametros de entrada
 
@@ -58,7 +58,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.market_structure` — `app/scalp_logic.py:1041`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -98,7 +98,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:155`, `harness/checks/K43-foto-unica.sh:217` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:351` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:352` | — |
 
 **La llama el panel: es superficie de producto.**
 

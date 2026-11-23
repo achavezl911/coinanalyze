@@ -8,7 +8,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 484 | 0 | **21** | 50 ↑ | **21** |
+| [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 484 | 0 | **21** | 51 ↑ | **21** |
 | [`blocking_requirement_keys`](#blocking-requirement-keys) | 118 | 19 | **0** | 15 ↑ | **19** |
 | [`_aware_utc`](#-aware-utc) | 67 | 15 | **0** | 21 ↑ | **15** |
 | [`_validated_window`](#-validated-window) | 73 | 15 | **0** | 21 ↑ | **15** |
@@ -30,14 +30,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1345 | 0 | **0** | 21 ↑ | **0** |
 | [`validate_recovery`](#validate-recovery) | 1188 | 0 | **0** | 21 ↑ | **0** |
 | [`coverage_entry`](#coverage-entry) | 263 | 14 | **0** | 0 | **14** |
+| [`align_down`](#align-down) | 242 | 10 | **0** | 0 | **10** |
 | [`declared_gap_windows`](#declared-gap-windows) | 207 | 7 | **0** | 0 | **7** |
-| [`align_down`](#align-down) | 242 | 4 | **0** | 0 | **4** |
 
 ## reconcile_cadence_coverage
 
 `app/data_gaps.py:484` · clave completa `app.data_gaps.reconcile_cadence_coverage`
 
-**Radio exacto: 21 rutas** de 94 · **cota superior: 50** (mas ancha)
+**Radio exacto: 21 rutas** de 94 · **cota superior: 51** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -73,9 +73,9 @@ Y esas tablas las leen:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-### Por tabla · k<=2 — 50 rutas · **cota superior**
+### Por tabla · k<=2 — 51 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (50 contra 21). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (51 contra 21). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -138,11 +138,12 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**50 rutas se enteran SOLO por el dato**, sin
+**51 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -192,6 +193,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
@@ -364,7 +366,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 20 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 21 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## _validated_window
 
@@ -447,7 +449,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 22 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 23 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## expected_buckets
 
@@ -1947,6 +1949,38 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 <sub>k=0 es exacto. La cota k<=2 sube por 18 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
+## align_down
+
+`app/data_gaps.py:242` · clave completa `app.data_gaps.align_down`
+
+**Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
+
+### Por llamada — 10 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/funding-context`](../rutas/api-funding-context.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/oi-context`](../rutas/api-oi-context.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 0 rutas · **cota superior**
+
+_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
+
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
 ## declared_gap_windows
 
 `app/data_gaps.py:207` · clave completa `app.data_gaps.declared_gap_windows`
@@ -1974,31 +2008,5 @@ impacto por dato viaja por quien la llama: mira la cota de abajo.
 
 _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
-<sub>k=0 es exacto. La cota k<=2 sube por 8 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## align_down
-
-`app/data_gaps.py:242` · clave completa `app.data_gaps.align_down`
-
-**Radio exacto: 4 rutas** de 94 · **cota superior: 4** (igual al exacto)
-
-### Por llamada — 4 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/funding-context`](../rutas/api-funding-context.md)
-- [`/api/oi-context`](../rutas/api-oi-context.md)
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 0 rutas · **cota superior**
-
-_ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
-
-<sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 9 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 

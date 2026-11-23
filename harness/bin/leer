@@ -30,6 +30,6 @@ if [ $# -lt 2 ] && [ "${TODO:-0}" != "1" ] && [ -f "$f" ]; then
     exit 3
   fi
 fi
-if   [ $# -eq 3 ]; then sed -n "$2,$3p" "$f" | "$B/bin/_corta"
-elif [ $# -eq 2 ]; then grep -n -C3 -- "$2" "$f" | "$B/bin/_corta"
-else                    "$B/bin/_corta" < "$f"; fi
+if   [ $# -eq 3 ]; then sed -n "$2,$3p" "$f" | "$(dirname "$(readlink -f "$0")")/_corta"
+elif [ $# -eq 2 ]; then grep -n -C3 -- "$2" "$f" | "$(dirname "$(readlink -f "$0")")/_corta"
+else                    "$(dirname "$(readlink -f "$0")")/_corta" < "$f"; fi

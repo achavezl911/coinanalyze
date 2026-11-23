@@ -2,7 +2,8 @@
 # DATOS B (fable-f8 F3) · Lo que root ejecuta en 143 deja de salir del arbol de trabajo /srv/coinanalyze/repo (alli se
 # sacan ramas de campana) y sale de una COPIA CONGELADA de main, de root y sin escritura para nadie mas:
 # /opt/coinalyze-143/<sha>, con /opt/coinalyze-143/current apuntando a la vigente. Desde esa copia instala el informe
-# semanal (coinalyze-bot-semanal), el respaldo de las libretas (coinalyze-libretas) y el cron de capta-healthz (K05),
+# semanal (coinalyze-bot-semanal), el respaldo de las libretas (coinalyze-libretas), el diario de entradas
+# (coinalyze-diario-cuarto y -dia, con el python del sistema: E-01) y el cron de capta-healthz (K05),
 # y quita del crontab de root la linea vieja de capta-healthz (dos crons escribirian dos muestras por minuto).
 #
 # Lo corre el OPERADOR, como root:
@@ -14,7 +15,8 @@ REPO=/srv/coinanalyze/repo
 BASE=/opt/coinalyze-143
 UNIT_DIR=/etc/systemd/system
 CRON_FILE=/etc/cron.d/coinalyze-capta-healthz
-UNITS=(coinalyze-bot-semanal.service coinalyze-bot-semanal.timer coinalyze-libretas.service coinalyze-libretas.timer)
+UNITS=(coinalyze-bot-semanal.service coinalyze-bot-semanal.timer coinalyze-libretas.service coinalyze-libretas.timer
+       coinalyze-diario-cuarto.service coinalyze-diario-cuarto.timer coinalyze-diario-dia.service coinalyze-diario-dia.timer)
 
 die(){ echo "instala.sh: $*" >&2; exit 1; }
 log(){ echo "instala.sh: $*"; }
@@ -51,7 +53,7 @@ for u in "${UNITS[@]}"; do
   install -m 644 "$src" "$UNIT_DIR/$u"
 done
 systemctl daemon-reload
-systemctl enable --now coinalyze-bot-semanal.timer coinalyze-libretas.timer
+systemctl enable --now coinalyze-bot-semanal.timer coinalyze-libretas.timer coinalyze-diario-cuarto.timer coinalyze-diario-dia.timer
 log "unidades instaladas: ${UNITS[*]}"
 
 # 3 · el cron de capta-healthz, desde la copia; fuera la linea vieja del crontab de root.

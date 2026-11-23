@@ -12,7 +12,7 @@ B=/srv/coinanalyze/harness; . "$B/env"
 export PGOPTIONS='-c timezone=UTC'
 
 # EL FALLO DEL SQL SE PROPAGA. La version anterior terminaba en
-#     psql ... -c "$*" 2>&1 | "$B/bin/_corta"
+#     psql ... -c "$*" 2>&1 | "$(dirname "$(readlink -f "$0")")/_corta"
 # y tenia los DOS defectos que el operador ya pago en `prodsql` el 2026-09-05, juntos:
 #   · `2>&1` fundia el canal de error con el de datos, asi que una fila cuyo primer campo
 #     empezara por ERROR: era indistinguible de un fallo del motor;
@@ -33,7 +33,7 @@ trap 'rm -f "$err"' EXIT INT TERM
 rc=0
 salida=$(psql -X -A -F'|' -t -v ON_ERROR_STOP=1 -q -d "$ESPEJO_DB" -c "$*" 2>"$err") || rc=$?
 
-printf '%s\n' "$salida" | "$B/bin/_corta"
+printf '%s\n' "$salida" | "$(dirname "$(readlink -f "$0")")/_corta"
 
 if [ "$rc" != "0" ]; then
   cat "$err" >&2
