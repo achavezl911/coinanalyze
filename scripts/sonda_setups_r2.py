@@ -3,7 +3,8 @@
 Uso:  python3 scripts/sonda_setups_r2.py [--salida DIR]
 
 Solo lectura: pide `/api/hypothesis` a PRODUCCION por `harness/bin/api` (GET) para BTC, ETH y SOL,
-los dos perfiles, largo y corto, setups ruptura y continuacion (24 GET), y cuenta:
+los dos perfiles, largo y corto, setups ruptura, continuacion y reversion (36 GET; la reversion es el
+otro llamador de `_oi_check`), y cuenta:
 
   Z-03  requisitos de OI EVALUADOS (no `no_evaluable`) cuyo detalle no declara «precio 15 m»: el
         OI es de 15 m (`oi_chg_15m_pct`) y el codigo viejo lo cruzaba con el precio de 3 m sin
@@ -37,7 +38,7 @@ API = "/srv/coinanalyze/harness/bin/api"
 SIMBOLOS = ("BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A")
 PERFILES = ("intradia", "swing")
 DIRECCIONES = ("long", "short")
-SETUPS = ("ruptura", "continuacion")
+SETUPS = ("ruptura", "continuacion", "reversion")
 REQ_OI = ("open interest", "respuesta de futuros (OI)")
 SETUPS_PY = Path(__file__).resolve().parent.parent / "app" / "setups.py"
 
