@@ -324,7 +324,8 @@ def oi_price_reading(
 def _oi_check(nombre: str, ctx: dict[str, Any], signo: int) -> dict[str, Any]:
     """Requisito de OI: exige POSICIONAMIENTO NUEVO en el sentido de la tesis.
 
-    Sustituye al `_flow_check` que trataba ΔOI como si fuera un delta direccional.
+    Sustituye al `_flow_check` que trataba ΔOI como si fuera un delta direccional. El OI es de
+    15 m y se cruza con el precio de la MISMA ventana (`oi_price_pct`), como el tablero (Z-03).
     """
     oi = classify_oi(
         ctx.get("oi_chg_pct"),
@@ -333,22 +334,24 @@ def _oi_check(nombre: str, ctx: dict[str, Any], signo: int) -> dict[str, Any]:
         oi_to_volume=ctx.get("oi_to_volume"),
         timeframe=ctx.get("oi_timeframe"),
     )
+    precio = ctx.get("oi_price_pct")
     lectura = oi_price_reading(
-        ctx.get("reaction_pct"), oi, fut_delta=ctx.get("fut_delta"),
+        precio, oi, fut_delta=ctx.get("fut_delta"),
         spot_delta=ctx.get("spot_delta"), liq_skew=ctx.get("liq_skew"),
     )
     if lectura["quadrant"] is None:
         return _req(nombre, NO_EVALUABLE, lectura["reading"], nivel=CONFIRMATION)
+    lectura_15m = f"precio 15 m {precio:+.2f}% · {lectura['reading']}"
     if signo == 0:
-        return _req(nombre, PENDIENTE, f"{lectura['reading']}; la direccion es neutral",
+        return _req(nombre, PENDIENTE, f"{lectura_15m}; la direccion es neutral",
                     nivel=CONFIRMATION)
     if lectura["supports"] is None:
         # Cierre de posiciones o OI plano: no sostiene NINGUNA direccion, tampoco la contraria.
-        return _req(nombre, PENDIENTE, lectura["reading"], nivel=CONFIRMATION)
+        return _req(nombre, PENDIENTE, lectura_15m, nivel=CONFIRMATION)
     return _req(
         nombre,
         CUMPLE if lectura["supports"] == signo else NO_CUMPLE,
-        f"{oi['state']} · {lectura['reading']}",
+        f"{oi['state']} · {lectura_15m}",
         nivel=CONFIRMATION,
     )
 
@@ -586,6 +589,8 @@ def _eval_continuacion(ctx: dict[str, Any], signo: int) -> list[dict[str, Any]]:
         else ((previo == "alcista" and signo > 0) or (previo == "bajista" and signo < 0))
     )
     retroceso = ctx.get("pullback_pct")
+    # Z-04: un retroceso cuenta si tiene TAMANO (>= LEVEL_TOL_ATR_MULT ATR), no si es distinto de 0.
+    retroceso_atr = ctx.get("pullback_atr")
     defendido = ctx.get("level_defended")
     vwap = ctx.get("vwap_dist_pct")
     multi = ctx.get("multi_tf_aligned")
@@ -599,8 +604,12 @@ def _eval_continuacion(ctx: dict[str, Any], signo: int) -> list[dict[str, Any]]:
         ),
         _req(
             "retroceso previo",
-            NO_EVALUABLE if retroceso is None else (CUMPLE if abs(retroceso) > 0 else PENDIENTE),
-            "sin retroceso medido" if retroceso is None else f"{retroceso:+.2f}%",
+            NO_EVALUABLE
+            if retroceso is None or retroceso_atr is None
+            else (CUMPLE if retroceso_atr >= LEVEL_TOL_ATR_MULT else PENDIENTE),
+            "sin retroceso medido" if retroceso is None
+            else f"{retroceso:+.2f}% sin ATR para medir su tamano" if retroceso_atr is None
+            else f"{retroceso:+.2f}% = {retroceso_atr:.2f} ATR (minimo {LEVEL_TOL_ATR_MULT})",
             nivel=CRITICAL,
         ),
         _req(
@@ -1061,29 +1070,35 @@ def _level_defended(
 ) -> dict[str, Any]:
     """Nivel estructural defendido: pullback lo toca, no hay aceptacion al otro lado, reacciona.
 
-    Usa UN nivel explicito (el ultimo swing en el sentido de la tendencia) y lo declara; no
-    mezcla soporte/VWAP/POC en silencio (spec 1.6).
+    Usa UN nivel explicito y lo declara; no mezcla soporte/VWAP/POC en silencio (spec 1.6). El
+    nivel es el ORIGEN del ultimo impulso y se mide en el MISMO tramo que `_pullback`: las velas
+    posteriores al extremo del impulso. Antes era el ultimo swing con `ts >= level_ts`, y la vela
+    del pivote tocaba su propio nivel por construccion (Z-04).
     """
     if signo == 0 or not bars:
         return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
                     coverage="sin direccion o sin velas")
     highs, lows = _last_pivots(pivots)
-    piv = lows if signo > 0 else highs
+    fines, origenes = (highs, lows) if signo > 0 else (lows, highs)
+    piv = [p for p in origenes if fines and p[0] < fines[-1][0]]
     if not piv:
         return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
                     defended_level_type=None, defended_level_price=None,
-                    coverage="sin nivel estructural identificable")
+                    coverage="sin impulso: nivel estructural no identificable")
     level_ts, level = piv[-1]
+    desde = fines[-1][0]
     tol, tol_src = _tolerance(atr, zone, level, LEVEL_TOL_ATR_MULT)
     if tol is None:
         return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
                     defended_level_type="swing_low" if signo > 0 else "swing_high",
-                    defended_level_price=level, coverage="sin tolerancia normalizable")
-    posteriores = [b for b in bars if b["ts"] >= level_ts]
+                    defended_level_price=level, defended_level_ts=level_ts,
+                    defense_from_ts=desde, coverage="sin tolerancia normalizable")
+    posteriores = [b for b in bars if b["ts"] > desde]
     if len(posteriores) < 2:
         return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
                     defended_level_type="swing_low" if signo > 0 else "swing_high",
-                    defended_level_price=level, coverage="sin velas posteriores suficientes")
+                    defended_level_price=level, defended_level_ts=level_ts,
+                    defense_from_ts=desde, coverage="sin velas posteriores suficientes")
     # Aceptacion INVALIDANTE al otro lado: dos cierres claramente pasados el nivel.
     if signo > 0:
         aceptados = sum(1 for b in posteriores if b["close"] < level - tol)
@@ -1098,14 +1113,17 @@ def _level_defended(
     tipo = "swing_low" if signo > 0 else "swing_high"
     if aceptados >= 2:
         return _obs(False, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
-                    defended_level_type=tipo, defended_level_price=level,
+                    defended_level_type=tipo, defended_level_price=level, defended_level_ts=level_ts,
+                    defense_from_ts=desde,
                     coverage=f"nivel perdido: {aceptados} cierres aceptados al otro lado")
     if toco and reacciono:
         return _obs(True, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
-                    defended_level_type=tipo, defended_level_price=level,
+                    defended_level_type=tipo, defended_level_price=level, defended_level_ts=level_ts,
+                    defense_from_ts=desde,
                     coverage=f"nivel tocado ({tol_src}) y con reaccion a favor")
     return _obs(None, OBS_PENDING, timeframe=tf, source=source, as_of=as_of,
-                defended_level_type=tipo, defended_level_price=level,
+                defended_level_type=tipo, defended_level_price=level, defended_level_ts=level_ts,
+                defense_from_ts=desde,
                 coverage="nivel aun sin probar o sin reaccion")
 
 
@@ -1253,6 +1271,7 @@ def build_setup_context(
         "spot_delta": scalp.get("spot_delta_3m"),
         "fut_delta": scalp.get("fut_delta_3m"),
         "oi_chg_pct": scalp.get("oi_chg_15m_pct"),
+        "oi_price_pct": scalp.get("price_move_15m_pct"),  # el precio de la ventana del OI (Z-03)
         "book_bid_share": scalp.get("imbalance_l5"),
         "absorption": scalp.get("absorption"),
         "reaction_pct": scalp.get("price_move_3m_pct"),
@@ -1276,6 +1295,7 @@ def build_setup_context(
         "retest_done": medidos["retest_done"],
         "returned_inside": medidos["returned_inside"],
         "pullback_pct": medidos["pullback_pct"],
+        "pullback_atr": (observables or {}).get("pullback_pct", {}).get("pullback_atr"),
         "level_defended": medidos["level_defended"],
         # Procedencia completa de cada observable (value/status/source/timeframe/as_of/...).
         "observables": observables,
