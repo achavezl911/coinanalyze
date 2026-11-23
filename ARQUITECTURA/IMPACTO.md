@@ -221,11 +221,11 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic.market_impact`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:5877` | 4 | **0** | 0 | **4** |
 | [`app.scalp_logic.market_memory`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1734` | 4 | **0** | 0 | **4** |
 | [`app.scalp_logic.reference_levels`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3505` | 4 | **0** | 0 | **4** |
-| [`app.zones._atr_abs`](impacto/app-zones.md) | `app/zones.py:519` | 4 | **0** | 0 | **4** |
-| [`app.zones._edge_episodes`](impacto/app-zones.md) | `app/zones.py:499` | 4 | **0** | 0 | **4** |
-| [`app.zones._ols_slope`](impacto/app-zones.md) | `app/zones.py:471` | 4 | **0** | 0 | **4** |
-| [`app.zones._rotations`](impacto/app-zones.md) | `app/zones.py:483` | 4 | **0** | 0 | **4** |
-| [`app.zones.range_validate_read`](impacto/app-zones.md) | `app/zones.py:535` | 4 | **0** | 0 | **4** |
+| [`app.zones._atr_abs`](impacto/app-zones.md) | `app/zones.py:545` | 4 | **0** | 0 | **4** |
+| [`app.zones._edge_episodes`](impacto/app-zones.md) | `app/zones.py:525` | 4 | **0** | 0 | **4** |
+| [`app.zones._ols_slope`](impacto/app-zones.md) | `app/zones.py:497` | 4 | **0** | 0 | **4** |
+| [`app.zones._rotations`](impacto/app-zones.md) | `app/zones.py:509` | 4 | **0** | 0 | **4** |
+| [`app.zones.range_validate_read`](impacto/app-zones.md) | `app/zones.py:561` | 4 | **0** | 0 | **4** |
 | [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:308` | 3 | **0** | 58 ↑ | **3** |
 | [`app.daily_agg.materialize_daily_verdict_outcomes`](impacto/app-daily_agg.md) | `app/daily_agg.py:521` | 0 | **3** | 56 ↑ | **3** |
 | [`app.daily_agg.persist_verdicts`](impacto/app-daily_agg.md) | `app/daily_agg.py:353` | 0 | **3** | 56 ↑ | **3** |
@@ -596,7 +596,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.zones._atr_pct`](impacto/app-zones.md) | `app/zones.py:104` | 1 | **0** | 0 | **1** |
 | [`app.zones._clamp`](impacto/app-zones.md) | `app/zones.py:100` | 1 | **0** | 0 | **1** |
 | [`app.zones._effort_result`](impacto/app-zones.md) | `app/zones.py:128` | 1 | **0** | 0 | **1** |
-| [`app.zones._narrative`](impacto/app-zones.md) | `app/zones.py:394` | 1 | **0** | 0 | **1** |
+| [`app.zones._narrative`](impacto/app-zones.md) | `app/zones.py:420` | 1 | **0** | 0 | **1** |
 | [`app.zones._oi_behaviour`](impacto/app-zones.md) | `app/zones.py:208` | 1 | **0** | 0 | **1** |
 | [`app.zones._percentile`](impacto/app-zones.md) | `app/zones.py:121` | 1 | **0** | 0 | **1** |
 | [`app.zones._rejection`](impacto/app-zones.md) | `app/zones.py:194` | 1 | **0** | 0 | **1** |

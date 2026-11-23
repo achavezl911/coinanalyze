@@ -2971,8 +2971,8 @@
     },
     "app.zones._atr_abs": {
       "fichero": "app/zones.py",
-      "linea": 519,
-      "sitio": "`app/zones.py:519`"
+      "linea": 545,
+      "sitio": "`app/zones.py:545`"
     },
     "app.zones._atr_pct": {
       "fichero": "app/zones.py",
@@ -2986,8 +2986,8 @@
     },
     "app.zones._edge_episodes": {
       "fichero": "app/zones.py",
-      "linea": 499,
-      "sitio": "`app/zones.py:499`"
+      "linea": 525,
+      "sitio": "`app/zones.py:525`"
     },
     "app.zones._effort_result": {
       "fichero": "app/zones.py",
@@ -2996,8 +2996,8 @@
     },
     "app.zones._narrative": {
       "fichero": "app/zones.py",
-      "linea": 394,
-      "sitio": "`app/zones.py:394`"
+      "linea": 420,
+      "sitio": "`app/zones.py:420`"
     },
     "app.zones._oi_behaviour": {
       "fichero": "app/zones.py",
@@ -3006,8 +3006,8 @@
     },
     "app.zones._ols_slope": {
       "fichero": "app/zones.py",
-      "linea": 471,
-      "sitio": "`app/zones.py:471`"
+      "linea": 497,
+      "sitio": "`app/zones.py:497`"
     },
     "app.zones._percentile": {
       "fichero": "app/zones.py",
@@ -3021,13 +3021,13 @@
     },
     "app.zones._rotations": {
       "fichero": "app/zones.py",
-      "linea": 483,
-      "sitio": "`app/zones.py:483`"
+      "linea": 509,
+      "sitio": "`app/zones.py:509`"
     },
     "app.zones.range_validate_read": {
       "fichero": "app/zones.py",
-      "linea": 535,
-      "sitio": "`app/zones.py:535`"
+      "linea": 561,
+      "sitio": "`app/zones.py:561`"
     },
     "app.zones.zone_character_read": {
       "fichero": "app/zones.py",
@@ -33435,7 +33435,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/zones.py:519",
+        "sitio": "app/zones.py:545",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -33494,7 +33494,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/zones.py:499",
+        "sitio": "app/zones.py:525",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -33530,7 +33530,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/zones.py:394",
+        "sitio": "app/zones.py:420",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -33570,7 +33570,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/zones.py:471",
+        "sitio": "app/zones.py:497",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -33628,7 +33628,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/zones.py:483",
+        "sitio": "app/zones.py:509",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -33651,7 +33651,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/zones.py:535",
+        "sitio": "app/zones.py:561",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
