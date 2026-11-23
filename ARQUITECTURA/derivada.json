@@ -6547,16 +6547,16 @@
             "app.orderflow.vuelca"
           ],
           "orderflow_cobertura": [
+            "app.orderflow._poda_vuelta",
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.vuelca"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "pipeline_heartbeat": [
@@ -10832,15 +10832,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -10881,8 +10876,9 @@
           "app.libro.vuelca",
           "app.libro_honda.una",
           "app.orderflow._particion_hora",
+          "app.orderflow._poda_vuelta",
+          "app.orderflow._poda_vuelta.tx",
           "app.orderflow.declara_parada_anterior",
-          "app.orderflow.poda",
           "app.orderflow.suma_horas",
           "app.orderflow.vuelca",
           "app.scalp_collector.cleanup",
@@ -11112,17 +11108,17 @@
             "app.orderflow.vuelca"
           ],
           "orderflow_cobertura": [
+            "app.orderflow._poda_vuelta",
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.vuelca"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "pipeline_heartbeat": [
@@ -11248,15 +11244,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -11358,6 +11349,8 @@
           "app.libro_honda.honda",
           "app.libro_honda.una",
           "app.orderflow._particion_hora",
+          "app.orderflow._poda_vuelta",
+          "app.orderflow._poda_vuelta.tx",
           "app.orderflow.declara_parada_anterior",
           "app.orderflow.escritor",
           "app.orderflow.latido",
@@ -11597,17 +11590,17 @@
             "app.orderflow.vuelca"
           ],
           "orderflow_cobertura": [
+            "app.orderflow._poda_vuelta",
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.vuelca"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "pipeline_heartbeat": [
@@ -12187,15 +12180,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -12768,15 +12756,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -12888,15 +12871,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -13066,15 +13044,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -13167,15 +13140,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -21212,15 +21180,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -22056,15 +22019,10 @@
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22166,15 +22124,10 @@
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22249,15 +22202,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22338,15 +22286,10 @@
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22527,8 +22470,9 @@
           "app.daily_agg.retencion_o_aplazar",
           "app.libro.poda",
           "app.libro.run",
+          "app.orderflow._poda_vuelta",
+          "app.orderflow._poda_vuelta.particionada",
           "app.orderflow.poda",
-          "app.orderflow.run",
           "app.scalp_collector.cleanup",
           "app.scalp_collector.cleanup_expired_rows"
         ],
@@ -22591,7 +22535,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/partitioning.py:34",
+        "sitio": "app/partitioning.py:77",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22686,20 +22630,14 @@
           "orderflow_celda_hora": [
             "app.orderflow.suma_horas"
           ],
-          "orderflow_cinta": [
-            "app.orderflow.vuelca"
-          ],
           "orderflow_cobertura": [
-            "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
-            "app.orderflow.vuelca"
+            "app.orderflow._poda_vuelta"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
-            "app.orderflow.vuelca"
+            "app.orderflow._poda_vuelta"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "predicted_funding_rate": [
@@ -22760,7 +22698,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/partitioning.py:29",
+        "sitio": "app/partitioning.py:72",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22809,15 +22747,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -50413,7 +50346,7 @@
         {
           "funcion": "app.orderflow.run",
           "origen": "literal",
-          "sitio": "app/orderflow.py:877"
+          "sitio": "app/orderflow.py:919"
         },
         {
           "funcion": "app.orderflow_lectura.pasos",
@@ -51833,7 +51766,7 @@
         {
           "funcion": "app.orderflow.suma_horas",
           "origen": "literal",
-          "sitio": "app/orderflow.py:860",
+          "sitio": "app/orderflow.py:902",
           "verbo": "DELETE"
         }
       ],
@@ -51846,7 +51779,7 @@
         {
           "funcion": "app.orderflow.suma_horas",
           "origen": "literal",
-          "sitio": "app/orderflow.py:860"
+          "sitio": "app/orderflow.py:902"
         }
       ]
     },
@@ -51908,9 +51841,9 @@
           "verbo": "UPDATE"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:808",
+          "sitio": "app/orderflow.py:868",
           "verbo": "DELETE"
         }
       ],
@@ -51921,9 +51854,9 @@
           "sitio": "app/orderflow.py:676"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:808"
+          "sitio": "app/orderflow.py:868"
         },
         {
           "funcion": "app.orderflow_lectura.cobertura",
@@ -51941,17 +51874,17 @@
           "verbo": "INSERT"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:805",
+          "sitio": "app/orderflow.py:865",
           "verbo": "DELETE"
         }
       ],
       "lectores": [
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:805"
+          "sitio": "app/orderflow.py:865"
         },
         {
           "funcion": "app.orderflow_lectura.grandes",
@@ -51969,17 +51902,17 @@
           "verbo": "INSERT"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:812",
+          "sitio": "app/orderflow.py:873",
           "verbo": "DELETE"
         }
       ],
       "lectores": [
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:812"
+          "sitio": "app/orderflow.py:873"
         },
         {
           "funcion": "app.orderflow_lectura.footprint",
