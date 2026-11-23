@@ -635,7 +635,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_collector.monitor`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1499` | 0 | **0** | 27 ↑ | **0** |
 | [`app.scalp_collector.persist_liquidation_health_snapshot`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:536` | 0 | **0** | 27 ↑ | **0** |
 | [`app.signal_outcomes.materialize_due_signal_outcomes`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:289` | 0 | **0** | 25 ↑ | **0** |
-| [`app.signal_visibility.run_certification_cycle`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:363` | 0 | **0** | 25 ↑ | **0** |
+| [`app.signal_visibility.run_certification_cycle`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:373` | 0 | **0** | 25 ↑ | **0** |
 | [`app.daily_agg._coverage_complete`](impacto/app-daily_agg.md) | `app/daily_agg.py:73` | 0 | **0** | 22 ↑ | **0** |
 | [`app.daily_agg._expected_session_samples`](impacto/app-daily_agg.md) | `app/daily_agg.py:64` | 0 | **0** | 22 ↑ | **0** |
 | [`app.metrics.liquidation_history_observation`](impacto/app-metrics.md) | `app/metrics.py:252` | 0 | **0** | 22 ↑ | **0** |
@@ -723,8 +723,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.signal_outcomes.compute_path_metrics`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:96` | 0 | **0** | 11 ↑ | **0** |
 | [`app.signal_outcomes.expected_bar_timestamps`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:89` | 0 | **0** | 11 ↑ | **0** |
 | [`app.signal_replay.replay_context_as_of`](impacto/app-signal_replay.md) | `app/signal_replay.py:76` | 0 | **0** | 11 ↑ | **0** |
-| [`app.signal_visibility.certify_final_outcomes`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:347` | 0 | **0** | 11 ↑ | **0** |
-| [`app.signal_visibility.certify_research_bundles`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:328` | 0 | **0** | 11 ↑ | **0** |
+| [`app.signal_visibility.certify_final_outcomes`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:357` | 0 | **0** | 11 ↑ | **0** |
+| [`app.signal_visibility.certify_research_bundles`](impacto/app-signal_visibility.md) | `app/signal_visibility.py:338` | 0 | **0** | 11 ↑ | **0** |
 | [`app.metrics._liquidation_history_observed`](impacto/app-metrics.md) | `app/metrics.py:315` | 0 | **0** | 9 ↑ | **0** |
 | [`app.metrics.compute_regime`](impacto/app-metrics.md) | `app/metrics.py:166` | 0 | **0** | 9 ↑ | **0** |
 | [`app.metrics.compute_snapshot`](impacto/app-metrics.md) | `app/metrics.py:429` | 0 | **0** | 9 ↑ | **0** |
