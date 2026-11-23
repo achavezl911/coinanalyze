@@ -182,9 +182,12 @@ RESTORE
 openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
   -pass "file:$BACKUP_KEY_FILE" -in "$PLAIN_ARCHIVE" -out "$FINAL_PATH.tmp"
 chmod 0600 "$FINAL_PATH.tmp"
-mv "$FINAL_PATH.tmp" "$FINAL_PATH"
+# SE VERIFICA EL .tmp Y SOLO DESPUES SE PUBLICA (D-05). Con el `mv` delante, un cifrado que no
+# descifraba quedaba con nombre de respaldo y sin .sha256: la poda lo contaba y la restauracion
+# cogia el mas nuevo. Si esto falla, la trampa EXIT borra el .tmp y el guion acaba en fallo.
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
-  -pass "file:$BACKUP_KEY_FILE" -in "$FINAL_PATH" | gzip -t
+  -pass "file:$BACKUP_KEY_FILE" -in "$FINAL_PATH.tmp" | gzip -t
+mv "$FINAL_PATH.tmp" "$FINAL_PATH"
 (
   cd "$BACKUP_DIR"
   sha256sum "$FINAL_NAME" > "$FINAL_NAME.sha256"

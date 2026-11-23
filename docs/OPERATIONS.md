@@ -19,7 +19,7 @@ Referencia operativa del entorno DEV/CI-CD (LXC 143) y del deploy a producción 
 | `devops` | LXC 143 | desarrollo, Codex/Claude, git/gh | login por clave; en grupo sudo (sin NOPASSWD) |
 | `github-runner` | LXC 143 | CI runner | sin sudo, solo su grupo |
 | `coinalyze` | LXC 140 | runtime de la app | dueño de servicios; sin sudo |
-| `coinalyze-deploy` | LXC 140 | recibe artefacto y llama al wrapper | sudo SOLO a `/usr/local/sbin/deploy-coinalyze` |
+| `coinalyze-deploy` | LXC 140 | recibe artefacto (el wrapper lo ignora y baja el commit de GitHub) y llama al wrapper | sudo SOLO a `/usr/local/sbin/deploy-coinalyze` |
 
 Claves SSH:
 - `~/.ssh/coin-cicd_ed25519` (Windows) → `devops@10.10.100.2`.

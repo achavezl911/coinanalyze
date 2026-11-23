@@ -1,23 +1,21 @@
 DIARIO DE ENTRADAS EN SOMBRA (fase 2) · instalacion en 143, la hace el OPERADOR (como root)
 
-  install -m 644 /srv/coinanalyze/repo/deploy/143/coinalyze-diario-*.service \
-                 /srv/coinanalyze/repo/deploy/143/coinalyze-diario-*.timer /etc/systemd/system/
+  git -C /srv/coinanalyze/repo fetch origin main
   mkdir -p /srv/coinanalyze/diario/buzon
-  systemctl daemon-reload
-  systemctl enable --now coinalyze-diario-cuarto.timer coinalyze-diario-dia.timer
+  bash /srv/coinanalyze/repo/deploy/143/instala.sh     (copia congelada de main en /opt/coinalyze-143/current; las
+     unidades del diario corren DESDE ELLA con /usr/bin/python3 -E -s: ni el venv ni el harness del arbol, E-01)
 
 Comprobar:  systemctl list-timers 'coinalyze-diario-*'
             journalctl -u coinalyze-diario-cuarto -n 5      (una linea JSON por pasada; rc 1 = un canal fallo)
             cat /srv/coinanalyze/diario/estado.json         (huecos, errores, cabeza del libro)
-            cd /srv/coinanalyze/repo && .venv/bin/python -c "from app.diario import libro; \
+            cd /opt/coinalyze-143/current && /usr/bin/python3 -E -s -c "from app.diario import libro; \
               print(libro.verifica('/srv/coinanalyze/diario/entradas.jsonl') or 'libro intacto')"
 Quitar:     systemctl disable --now coinalyze-diario-cuarto.timer coinalyze-diario-dia.timer
             (el libro /srv/coinanalyze/diario/entradas.jsonl NO se borra: es el registro)
 
 Que escribe: solo /srv/coinanalyze/diario (libro, cache de velas, estado, marcador, buzon/leidos) en 143, y una vez al
 dia /var/lib/coinalyze-bot/informes/diario-entradas.txt en 140 (como el informe semanal). Lee 140 solo por
-harness/bin/api. Corre el arbol de /srv/coinanalyze/repo: hasta fusionar claude/diario-entradas en main, el modulo
-app/diario no existe en main y las unidades fallarian (rc 1 en el journal, nada escrito).
+harness/bin/api de la copia. Un cambio de app/diario llega a 143 solo al re-correr instala.sh tras el merge.
 Buzon de Fable: un JSON por corrida en /srv/coinanalyze/diario/buzon/ con el formato de app/diario/fuentes.py (c).
 
 SIMULADOR CIEGO (fase 2b) · a mano, como root (usa el plan Max de root: sin ANTHROPIC_API_KEY), sin unidad ni timer

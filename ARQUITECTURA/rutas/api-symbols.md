@@ -46,7 +46,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:170`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:745`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:749` | — |
 | **panel** | `static/js/08-arranque.js:160` | — |
-| **tests** | `tests/test_deploy_health_gate.py:180`, `tests/test_deploy_wrapper.py:244`, `tests/test_smoke_arranque.py:40` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:158`, `tests/test_deploy_wrapper.py:68` |
+| **tests** | `tests/test_deploy_health_gate.py:170`, `tests/test_deploy_wrapper.py:268`, `tests/test_smoke_arranque.py:40` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:148`, `tests/test_deploy_wrapper.py:72` |
 
 **La llama el panel: es superficie de producto.**
 

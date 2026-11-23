@@ -43,14 +43,14 @@ El workflow (en el runner self-hosted) hace:
 4. Calcula **SHA256**.
 5. Carga la clave de deploy desde el secret `DEPLOY_SSH_KEY`; host key de prod embebida.
 6. `scp` del artefacto a `coinalyze-deploy@10.151.1.6:incoming/`.
-7. `ssh ... sudo -n /usr/local/sbin/deploy-coinalyze deploy <artefacto> <sha256> <commit>`.
+7. `ssh ... sudo -n /usr/local/sbin/deploy-coinalyze deploy <artefacto> <sha256> <commit>` (el wrapper solo usa `<commit>`; acepta también `deploy <commit>`).
 8. Limpia el artefacto remoto y la clave local.
 
 ## Qué hace el wrapper (trust boundary)
 
 `/usr/local/sbin/deploy-coinalyze` (root:root 0750, **no está en el repo**):
 
-1. Valida que el artefacto esté bajo `incoming/` y que su **SHA256 coincida**.
+1. Valida que el commit no sea el release activo (rc 17) y que sea `origin/main` en GitHub (rc 16), y **baja él mismo** el árbol de ese commit (`api.github.com/repos/achavezl911/coinanalyze/tarball/<sha>`; rc 3 si no llega). El artefacto y su SHA256 se ignoran.
 2. Extrae a `releases/<sha>` y valida rutas requeridas (pyproject, requirements.lock,
    sql/schema.sql, app, static, scripts/smoke_test.sh).
 3. Construye un `.venv` aislado del release.
@@ -63,6 +63,29 @@ El workflow (en el runner self-hosted) hace:
 9. **Smoke test propio** (`/api/healthz`, `/api/symbols`, `/api/ai/profiles`).
 10. Si el smoke pasa: escribe `deployment.json`, conserva los últimos 5 releases (nunca borra
     `legacy-*`). Si falla: **rollback automático** al release anterior.
+
+## Units systemd y nginx: paso a mano del dueño
+
+El despliegue **no** instala units ni la configuración de nginx. Lo hacía `scripts/update.sh`,
+retirado en D-03 (su `rsync --delete` borraba `releases/` y `current`). Si un cambio toca
+`deploy/systemd/` o `deploy/nginx/`, como root en 140:
+
+```bash
+R=/opt/coinalyze/current
+install -m 0644 $R/deploy/systemd/coinalyze-*.service /etc/systemd/system/
+install -m 0644 $R/deploy/systemd/coinalyze-backup.timer /etc/systemd/system/
+install -m 0644 $R/deploy/nginx/coinalyze.conf /etc/nginx/sites-available/coinalyze
+# el token interno es API_INTERNAL_TOKEN de /etc/coinalyze/coinalyze.env
+sed -i "s|__API_INTERNAL_TOKEN__|$API_INTERNAL_TOKEN|g" /etc/nginx/sites-available/coinalyze
+# lista blanca: una línea `allow <cidr>;` por red y `deny all;` al final
+editor /etc/nginx/snippets/coinalyze-allowlist.conf
+nginx -t && systemctl reload nginx
+systemctl daemon-reload
+```
+
+OJO: los units del repo apuntan a `/opt/coinalyze` (el árbol LEGACY); el wrapper los repunta a
+`current` al desplegar. Tras instalarlos, despliega antes de reiniciar nada y comprueba
+`systemctl cat coinalyze-api | grep WorkingDirectory`.
 
 ## Seguridad clave
 

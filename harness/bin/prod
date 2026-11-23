@@ -28,4 +28,4 @@ esac
 enc=$(printf '%s' "$cmd" | base64 | tr -d '\n')
 ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
   -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
-  "$PROD_SSH_USER@$PROD_HOST" "printf %s $enc | base64 -d | sh" 2>&1 | "$B/bin/_corta"
+  "$PROD_SSH_USER@$PROD_HOST" "printf %s $enc | base64 -d | sh" 2>&1 | "$(dirname "$(readlink -f "$0")")/_corta"

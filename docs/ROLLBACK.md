@@ -48,6 +48,8 @@ reconstruir el release desde git.
 
 ## Rollback automático en un deploy fallido
 
+Redesplegar el commit que ya corre no reconstruye nada: el wrapper sale con rc 17 sin tocar el release. Para volver atrás, `rollback`.
+
 Si el smoke test post-deploy falla, el wrapper hace rollback **solo**, al release anterior,
 reinicia y verifica, y devuelve código de error a GitHub Actions:
 

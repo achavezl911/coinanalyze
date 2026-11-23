@@ -368,10 +368,10 @@ sudo -u postgres psql -d coinalyze -c "select service,status,ts from pipeline_he
 Dashboard:
 
 ```bash
-cd /tmp
-tar -xzf coinalyze-operator-dashboard-v1.2.5-final.tar.gz
-cd coinalyze-operator-dashboard-v1.2.5
-sudo ./scripts/update.sh /tmp/coinalyze-operator-dashboard-v1.2.5
+# con el cambio mergeado a main y la CI verde (detalle en docs/DEPLOYMENT.md);
+# el paquete ya no se instala a mano: scripts/update.sh se retiro (D-03)
+gh workflow run deploy-production.yml -f action=deploy -f confirm="deploy production" --ref main
+gh run watch
 ```
 
 Bridge:
