@@ -564,7 +564,7 @@ La escriben:
 
 La escriben:
 
-- `app.daily_agg._store_baseline` — **INSERT** en `app/daily_agg.py:798`
+- `app.daily_agg._store_baseline` — **INSERT** en `app/daily_agg.py:824`
 
 **Si cambia el contenido o el esquema de `metric_baseline`, estas 15 rutas lo notan:**
 
