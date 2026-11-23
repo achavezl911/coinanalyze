@@ -41189,11 +41189,17 @@
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:7",
             "harness/checks/K120-liq.py:4"
           ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/flujo_ind_refresco.test.js:16"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 9,
+        "n_llamadas": 10,
         "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48125,6 +48131,7 @@
             "tests/test_nginx_allowlist.py:59"
           ],
           "menciones": [
+            "tests/js/flujo_ind_refresco.test.js:2",
             "tests/js/flujo_trazos.test.js:4",
             "tests/js/flujo_trazos.test.js:153",
             "tests/js/libro_pantalla.test.js:8",
@@ -48136,7 +48143,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "n_llamadas": 59,
-        "n_menciones": 41,
+        "n_menciones": 42,
         "sin_ninguno": false,
         "solo_mencion": false
       },
