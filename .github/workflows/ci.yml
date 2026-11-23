@@ -134,7 +134,7 @@ jobs:
       # mandato lo vuelve superficial y K93 sale NO MEDIDO (medido el 2026-10-03 en 143).
       - name: Fetch main for the reglamento history test
         if: steps.alcance.outputs.pruebas != 'no'
-        run: git fetch --no-tags --depth=1 origin main:refs/remotes/origin/main
+        run: git fetch --no-tags --depth=1 origin +main:refs/remotes/origin/main
 
       # CI RAPIDA · C2. EN PARALELO, un proceso por nucleo (pytest-xdist, version fija en
       # pyproject.toml). Cada proceso gwK se copia la base de arriba con CREATE DATABASE ...

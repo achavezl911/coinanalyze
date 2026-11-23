@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:4162` (cuerpo hasta la 4197) · decorador en la linea 4161.
+Handler `mesa_decide` · `app/api.py:4267` (cuerpo hasta la 4302) · decorador en la linea 4266.
 
 ## Parametros de entrada
 
@@ -92,8 +92,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.build_mesa_decide` — `app/ai_context.py:1575`
-- `app.api.scalp_persistence` — `app/api.py:3222`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.scalp_persistence` — `app/api.py:3327`
+- `app.api.validate_symbol` — `app/api.py:260`
 
 <details><summary>Alcanzables de forma indirecta (54)</summary>
 
@@ -169,8 +169,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:4173` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:4278` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -243,9 +243,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.setups.oi_price_reading` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-setups.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.db.required_heartbeat_failures` | 5 | **0** | 14 ↑ | **5** | [impacto](../impacto/app-db.md) |
 | `app.scalp_logic._as_utc_datetime` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._contiguous_measured_suffix` | 11 | **0** | 0 | **11** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.signal_ledger.classify_signal_observation` | 1 | **0** | 11 ↑ | **1** | [impacto](../impacto/app-signal_ledger.md) |
 | _… y 33 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**

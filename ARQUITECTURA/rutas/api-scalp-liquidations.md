@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_liquidations` · `app/api.py:1857` (cuerpo hasta la 1860) · decorador en la linea 1856.
+Handler `scalp_liquidations` · `app/api.py:1962` (cuerpo hasta la 1965) · decorador en la linea 1961.
 
 ## Parametros de entrada
 
@@ -40,7 +40,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5778`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
@@ -55,7 +55,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

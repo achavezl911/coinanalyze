@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1232` (cuerpo hasta la 1322) · decorador en la linea 1231.
+Handler `whale_delta` · `app/api.py:1336` (cuerpo hasta la 1427) · decorador en la linea 1335.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1232` (cuerpo hasta la 1322) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:527 |
-| `data_gaps` | literal en app/api.py:533 |
-| `interval` | literal en app/api.py:525 |
-| `rows` | literal en app/api.py:526 |
-| `symbol` | literal en app/api.py:524 |
+| `coverage` | literal en app/api.py:622 |
+| `data_gaps` | literal en app/api.py:628 |
+| `interval` | literal en app/api.py:620 |
+| `rows` | literal en app/api.py:621 |
+| `symbol` | literal en app/api.py:619 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -34,6 +34,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
+- `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
+  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
+  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
+  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 - `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
@@ -41,25 +45,28 @@ LEE:
 
 ## Funciones que la componen
 
-11 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+14 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1179`
-- `app.api.declared_series_response` — `app/api.py:445`
-- `app.api.historical_interval_value` — `app/api.py:265`
-- `app.api.records` — `app/api.py:272`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1283`
+- `app.api.declared_series_response` — `app/api.py:519`
+- `app.api.historical_interval_value` — `app/api.py:266`
+- `app.api.records` — `app/api.py:273`
+- `app.api.validate_symbol` — `app/api.py:260`
 
-<details><summary>Alcanzables de forma indirecta (6)</summary>
+<details><summary>Alcanzables de forma indirecta (9)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:405`
+- `app.api.lo_pedido` — `app/api.py:446`
+- `app.api.minutos_de_las_filas` — `app/api.py:406`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:73`
+- `app.data_gaps.align_down` — `app/data_gaps.py:242`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:207`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
+- `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:986`
 
 </details>
 
@@ -77,8 +84,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:268` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:269` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -125,15 +132,18 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.align_down` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api.lo_pedido` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.orderflow_lectura._barrido_liquidaciones` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-orderflow_lectura.md) |
 | `app.api.declarar_tramo_no_medible` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.api.whale_delta` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
