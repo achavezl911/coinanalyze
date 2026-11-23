@@ -50,7 +50,7 @@ LEE:
   - la llena `app.signal_outcomes._defer_missing_path` (UPDATE) — `app/signal_outcomes.py:226`
   - la llena `app.signal_outcomes._finalize_evaluated` (UPDATE) — `app/signal_outcomes.py:252`
 - `signal_outcome_final_visibility` — `sql/schema.sql:2494`, 8 columnas
-  - la llena `app.signal_visibility._certify_final_outcomes_once` (INSERT) — `app/signal_visibility.py:308`
+  - la llena `app.signal_visibility._certify_final_outcomes_once` (INSERT) — `app/signal_visibility.py:318`
 
 ## Funciones que la componen
 
