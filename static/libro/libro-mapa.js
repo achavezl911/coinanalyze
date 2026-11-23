@@ -811,7 +811,8 @@ function creaMapa(canvas, alLeer, aviso, alEscala, alVista) {
           + ' con un paso mayor caben más' : '')
         + (m.honda ? ' · capa honda: ' + (m.honda.pinta ? m.honda.columnas + ' de ' + n + ' columnas' : m.honda.motivo) : '')
         + (m.huella ? ' · volumen: footprint 1m de ' + hh(m.huella.desde) + ' a ' + hh(m.huella.hasta) + 'Z, a la vista '
-          + hh(volumen.desde) + '–' + hh(volumen.hasta) + 'Z' : m.huellaFallo ? ' · volumen: ' + m.huellaFallo : '');
+          + hh(volumen.desde) + '–' + hh(volumen.hasta) + 'Z' : '')
+        + (m.huellaFallo ? ' · volumen: ' + m.huellaFallo + (m.huella ? ' (se ve el de antes)' : '') : '');
       L.aviso.title = L.aviso.textContent; // (149 rC r1) la fila es de alto fijo (libro.css): la frase entera
     }
   }
