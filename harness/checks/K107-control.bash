@@ -10,7 +10,9 @@
 # tiene que caer por SU brazo:
 #
 #   guardado_que_no_sale   una fila de entrada_resultado con huellas validas y otra salida (A, y B al servirla)
-#   main_sirve_vivo        lo que sirve main en la misma copia y a la misma hora: 3945 VIVO y sin resultado (B)
+#   ruta_sirve_vivo        lo que sirve una COPIA del arbol con UNA linea plantada en app/entradas/ruta.py -los
+#                          DISPARADOS acabados se quedan entre los vivos, el defecto de #204- en la misma copia y a
+#                          la misma hora: 3945 VIVO (B). Hasta mant-r2 era main, y caduco cuando main trajo #204
 #   final_sin_guardar      la fila FINAL de 3945 no esta y su asentamiento paso hace mas de 15 min (C)
 #   cuentas_que_no_salen   la respuesta sirve un resuelto de mas (D)
 #   papel_que_no_sale      la respuesta sirve otro saldo en la cuenta de v2 (E)
@@ -22,7 +24,8 @@
 #   catalogo_sin_guardia   sin el disparador que rechaza TRUNCATE (F)
 #   velas_podadas          sin las velas de 2632: NO MEDIDO para ese, y VERDE lo demas (ni absuelve ni condena)
 #   todo_podado            sin ninguna vela: NO MEDIDO (rc=2), nunca VERDE
-#   sin_la_tabla           schema.sql de main: ROJO «FALTA DESPLEGAR»
+#   sin_la_tabla           la copia limpia sin entrada_resultado (DROP TABLE): ROJO «FALTA DESPLEGAR». Hasta
+#                          mant-r2 era el schema.sql de main, que ya trae la tabla
 #   canal_caido            una base que no existe: NO MEDIDO (CANAL)
 #   provisional / recien   a las 05:30Z (STOP provisional) y a las 05:18Z: el arbol sirve lo provisional fiel
 #
@@ -126,12 +129,13 @@ PY
 sirve "$REPO" "$b" "$RELOJ" "$T/s-guardado.json"
 planta guardado_que_no_sale 1 "^   - A 3945: lo guardado dice objetivo" "una fila con huellas validas y salida objetivo" "$b" "$T/s-guardado.json" "$RELOJ" "$H_BUENA"
 
-# B · lo que sirve main en la misma copia y a la misma hora
-mkdir -p "$T/main"; git -C "$REPO" archive main app config | tar -x -C "$T/main"
-git -C "$REPO" show main:sql/schema.sql > "$T/main-schema.sql"
-b=$(copia main base)   # con lo que el arbol ya guardo: main no lo lee, pero el sujeto lo tiene
-sirve "$T/main" "$b" "$RELOJ" "$T/s-main.json"
-planta main_sirve_vivo 1 "^   - B 3945: servido VIVO y su plan ya acabo: stop a las 05:16Z" "main sirve 3945 entre los vivos" "$b" "$T/s-main.json" "$RELOJ" "$H_BUENA"
+# B · lo que sirve la ruta plantada en la misma copia y a la misma hora
+mkdir -p "$T/malo"; cp -a "$REPO/app" "$REPO/config" "$T/malo/"
+sed -i 's|^             or (resultados.get(f\["registro_id"\]) or {}).get("estado") == RES.ABIERTO\]$|             or True]|' "$T/malo/app/entradas/ruta.py"
+[ "$(diff "$REPO/app/entradas/ruta.py" "$T/malo/app/entradas/ruta.py" | grep -c '^>')" = 1 ] || { echo "control: el plantado de la ruta (B) no mordio una linea"; exit 2; }
+b=$(copia ruta base)
+sirve "$T/malo" "$b" "$RELOJ" "$T/s-ruta.json"
+planta ruta_sirve_vivo 1 "^   - B 3945: servido VIVO y su plan ya acabo: stop a las 05:16Z" "la ruta plantada sirve 3945 entre los vivos" "$b" "$T/s-ruta.json" "$RELOJ" "$H_BUENA"
 
 # C · lo final sin guardar: la copia buena sin la fila de 3945, juzgada a las 07:00Z (una hora despues de su
 # asentamiento de las 05:59Z; la holgura del bucle de la API es de 15 min) con la respuesta de las 06:00Z
@@ -177,11 +181,9 @@ planta velas_podadas 0 "^   NO MEDIDO 2632: sus velas ya se podaron" "sin las ve
 b=$(copia todo base); en "$b" "DELETE FROM ohlcv" > /dev/null
 planta todo_podado 2 "^NO MEDIDO: ningun resultado se pudo recalcular" "sin ninguna vela" "$b" "$T/servido-base.json" "$RELOJ" "$H_BUENA"
 
-# sin la tabla: la copia con el schema.sql de main
-psql -h "$H" -d postgres -qc "CREATE DATABASE \"${DB}_sintabla\"" > /dev/null
-"$PY" "$AYU" carga "$COPIA" "$(dsn "${DB}_sintabla")" "$T/main-schema.sql" > /dev/null 2>&1
-sirve "$T/main" "${DB}_sintabla" "$RELOJ" "$T/s-sintabla.json"
-planta sin_la_tabla 1 "^ROJO  K107 FALTA DESPLEGAR: el sujeto no tiene entrada_resultado" "schema.sql de main" "${DB}_sintabla" "$T/s-sintabla.json" "$RELOJ" "$H_BUENA"
+# sin la tabla: la copia limpia sin entrada_resultado, con lo que el arbol sirve
+b=$(copia sintabla); en "$b" "DROP TABLE entrada_resultado CASCADE" > /dev/null
+planta sin_la_tabla 1 "^ROJO  K107 FALTA DESPLEGAR: el sujeto no tiene entrada_resultado" "sin entrada_resultado" "$b" "$T/servido-base.json" "$RELOJ" "$H_BUENA"
 
 # el canal: una base que no existe
 rc=$(k107 "${DB}_no_existe" "$T/servido-base.json" "$RELOJ")
