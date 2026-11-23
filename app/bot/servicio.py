@@ -33,8 +33,8 @@ from datetime import UTC, datetime, timedelta
 import asyncpg
 import httpx
 
+from app.bot import auditor, calc, calidad, historial, llm, vidas
 from app.bot import bybit as bb
-from app.bot import calc, calidad, historial, llm, vidas
 from app.bot import centinela as cen
 from app.bot import sesgo as ses
 from app.bot import sombra as sb
@@ -1038,18 +1038,36 @@ class Bot:
                                    "mmr": mmr, "dif_pct": round(dif, 4), "dif_dist_pct": dd})
 
     async def evalua(self, p: dict, motivo: str):
-        v_dec, dec, texto, liq, horas, llamada = "NO EVALUABLE", {}, None, "", {"posicion": ahora_iso()}, None
+        """AUDITOR R1: el mensaje EMPIEZA por la linea del auditor (app/bot/auditor.py), siempre, tambien con Opus o el
+        sobre caidos o el INSERT fallido; el dictamen va en detalle.auditor del MISMO INSERT (la tabla sigue solo-anadir)."""
+        v_dec, dec, ctx, texto, liq, horas, llamada = "NO EVALUABLE", {}, {}, None, "", {"posicion": ahora_iso()}, None
+        v_opus, de_opus, t_aud = None, "NO EVALUABLE (no se le pregunto)", datetime.now(UTC)
         try:
             ctx, dec = await self.sobre(p["symbol"])
+            # el instante del auditor: lo que Opus pudo saber, justo despues de leer sobre y DECIDE y antes de llamarle
+            t_aud = datetime.now(UTC)
             horas |= {"sobre": ctx.get("generated_at"), "decide": dec.get("generated_at")}
             v_dec = veredicto_decide(dec, p["lado"])
             r = await self.opus("evalua", mensaje("EVALUA", posicion=p, dec=dec, ctx=ctx))
             texto, llamada = r["texto"] or r["error"], r["id"]
-            v, fuente = (lee_veredicto(r["texto"]), "opus") if r["texto"] else (v_dec, f"DECIDE ({r['error']})")
+            if r["texto"]:
+                v_opus = lee_veredicto(r["texto"])
+                de_opus = v_opus or "NO EVALUABLE (sin veredicto legible)"
+            else:
+                de_opus = f"NO EVALUABLE (caido: {r['error']})"
+            v, fuente = (v_opus, "opus") if r["texto"] else (v_dec, f"DECIDE ({r['error']})")
         except LookupError as e:
             v, fuente, texto = "NO EVALUABLE", str(e), str(e)
+            de_opus = f"NO EVALUABLE (no se le pregunto: {e})"
         if v is None:
             v, fuente = "NO EVALUABLE", "opus sin veredicto legible"
+        try:  # audita no lanza; si lanzara, el mensaje sale igual con su linea de error
+            dictamen = auditor.audita(p, dec, ctx, v_opus, v_dec, t_aud)
+            aud, error_aud = dictamen.como_dict(), None
+        except Exception as e:  # noqa: BLE001
+            dictamen, error_aud = None, f"{type(e).__name__}: {str(e)[:160]}"
+            aud = {"version": auditor.VERSION, "estado": "NO EVALUABLE", "razon": f"error: {error_aud}"}
+        linea_aud = auditor.linea(dictamen, error_aud)
         if p.get("liquidacion"):
             liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.validaciones.get(p['symbol']), p['symbol'])}"
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
@@ -1062,14 +1080,18 @@ class Bot:
                 "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, veredicto_decide, detalle)"
                 " VALUES ('veredicto', $1, $2, $3, $4::jsonb)",
                 p["id"], v, v_dec, js({"motivo": motivo, "fuente": fuente, "posicion": p, "horas": horas,
-                                       "llamada": llamada, "decide": dec}))
+                                       "llamada": llamada, "decide": dec, "auditor": aud}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             self.anota("BASE", f"no registro la evaluacion de {p['id']}: {type(e).__name__}", "registro veredicto")
         else:
             self.bien("registro veredicto")
         sesgo = ((dec.get("decide") or {}).get("bias") or {}).get("value")
-        await self.manda(f"EVALUACION {p['symbol']} {'LARGO' if p['lado'] > 0 else 'CORTO'} ({motivo})\nVEREDICTO: {v} ({fuente})"
-                         f"\nDECIDE: {sesgo} -> {v_dec}{liq}\n{texto or ''}")
+        quien = f"{p['symbol']} {'LARGO' if p['lado'] > 0 else 'CORTO'}"
+        await self.manda(f"{linea_aud}\nOPUS: {de_opus}\nDECIDE: {sesgo} -> {v_dec}"
+                         f"\nEVALUACION {quien} ({motivo}) · VEREDICTO: {v} ({fuente}){liq}\n{texto or ''}")
+        malas = dictamen.riesgo() if dictamen else []
+        if malas:  # respuesta 3 del dueno: alerta aparte SOLO si falla una regla de riesgo (A5, A6, A7)
+            await self.manda(f"ALERTA AUDITOR {quien}: " + "; ".join(f"{c.nombre} {c.razon}" for c in malas))
 
     async def evalua_una(self, p: dict, motivo: str):
         """La evaluacion de una vida nueva. Si cae (la base, la red...), se reintenta con espera creciente -1, 2, 4... min,
