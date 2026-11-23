@@ -428,6 +428,8 @@ function clearSnapshotView() { $('summary').replaceChildren(); $('decision-horiz
 function clearSymbolView() {
   clearSnapshotView();
   renderDataConfidence({ rows: [] });
+  for (const id of ['veredicto', 'ventana', 'porque', 'precio', 'precio-pie', 'oi', 'oi-pie', 'carry',
+    'carry-pie', 'liq', 'liq-pie']) textoEn('portada-' + id, '—');
   for (const id of ['live-price', 'live-delta', 'live-book']) {
     const node = $(id);
     node.textContent = '—';

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `wyckoff_endpoint` · `app/api.py:2119` (cuerpo hasta la 2123) · decorador en la linea 2118.
+Handler `wyckoff_endpoint` · `app/api.py:2224` (cuerpo hasta la 2228) · decorador en la linea 2223.
 
 ## Parametros de entrada
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1680`
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
@@ -77,11 +77,11 @@ Llamadas directas del handler:
 - `app.wyckoff._signed_balance` — `app/wyckoff.py:178`
 - `app.wyckoff.detect_latest_range` — `app/wyckoff.py:99`
 - `app.wyckoff.wyckoff_auto_read` — `app/wyckoff.py:447`
-- `app.zones._atr_abs` — `app/zones.py:519`
-- `app.zones._edge_episodes` — `app/zones.py:499`
-- `app.zones._ols_slope` — `app/zones.py:471`
-- `app.zones._rotations` — `app/zones.py:483`
-- `app.zones.range_validate_read` — `app/zones.py:535`
+- `app.zones._atr_abs` — `app/zones.py:545`
+- `app.zones._edge_episodes` — `app/zones.py:525`
+- `app.zones._ols_slope` — `app/zones.py:497`
+- `app.zones._rotations` — `app/zones.py:509`
+- `app.zones.range_validate_read` — `app/zones.py:561`
 
 </details>
 
@@ -97,7 +97,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -108,7 +108,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-control.bash:187`, `harness/checks/K43-foto-unica.sh:159`, `harness/checks/K43-foto-unica.sh:223`, `harness/checks/K44-control.bash:259` _(+9)_ | `harness/checks/K44-control.bash:256`, `harness/checks/K44-control.bash:586` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:218`, `static/js/07-decision-y-ciclos.js:357` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:218`, `static/js/07-decision-y-ciclos.js:358` | — |
 | **tests** | `tests/test_wyckoff.py:112` | — |
 
 **La llama el panel: es superficie de producto.**

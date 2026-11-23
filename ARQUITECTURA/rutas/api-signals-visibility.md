@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_visibility` · `app/api.py:3019` (cuerpo hasta la 3098) · decorador en la linea 3018.
+Handler `signals_visibility` · `app/api.py:3124` (cuerpo hasta la 3203) · decorador en la linea 3123.
 
 ## Parametros de entrada
 
@@ -23,16 +23,16 @@ Handler `signals_visibility` · `app/api.py:3019` (cuerpo hasta la 3098) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3092 |
-| `certificates` | literal en app/api.py:3097 |
-| `count` | literal en app/api.py:3095 |
-| `limit` | literal en app/api.py:3094 |
-| `since` | literal en app/api.py:3089 |
-| `status` | literal en app/api.py:3093 |
-| `symbol` | literal en app/api.py:3088 |
-| `truncated` | literal en app/api.py:3096 |
-| `until` | literal en app/api.py:3090 |
-| `ventana_maxima_h` | literal en app/api.py:3091 |
+| `as_of` | literal en app/api.py:3197 |
+| `certificates` | literal en app/api.py:3202 |
+| `count` | literal en app/api.py:3200 |
+| `limit` | literal en app/api.py:3199 |
+| `since` | literal en app/api.py:3194 |
+| `status` | literal en app/api.py:3198 |
+| `symbol` | literal en app/api.py:3193 |
+| `truncated` | literal en app/api.py:3201 |
+| `until` | literal en app/api.py:3195 |
+| `ventana_maxima_h` | literal en app/api.py:3196 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,10 +59,10 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2494`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
-- `app.api.records` — `app/api.py:272`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api._utc_iso` — `app/api.py:2599`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
+- `app.api.records` — `app/api.py:273`
+- `app.api.validate_symbol` — `app/api.py:260`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (10)</summary>
 
@@ -85,13 +85,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:2623` | una funcion de su cierre |
-| 422 | status tiene que ser evaluated o not_evaluable | `app/api.py:3044` | el propio handler |
-| 422 | — | `app/api.py:3052` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:3054` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:3056` | el propio handler |
-| 422 | — | `app/api.py:3058` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:2728` | una funcion de su cierre |
+| 422 | status tiene que ser evaluated o not_evaluable | `app/api.py:3149` | el propio handler |
+| 422 | — | `app/api.py:3157` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:3159` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:3161` | el propio handler |
+| 422 | — | `app/api.py:3163` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -102,7 +102,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K25-visibilidad-de-lo-final.sh:110`, `harness/checks/K43-control.bash:93`, `harness/checks/K43-foto-unica.sh:164` | — |
-| **panel** | `static/js/07-decision-y-ciclos.js:421` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:422` | — |
 | **tests** | — | `tests/test_signals_visibility.py:1` |
 
 **La llama el panel: es superficie de producto.**
@@ -140,7 +140,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api._utc_iso` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
 | `app.api.rechaza_parametros_desconocidos` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
 | `app.api.signals_visibility` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |

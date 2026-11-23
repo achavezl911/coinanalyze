@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trading_profile` · `app/api.py:1654` (cuerpo hasta la 1670) · decorador en la linea 1653.
+Handler `trading_profile` · `app/api.py:1759` (cuerpo hasta la 1775) · decorador en la linea 1758.
 
 ## Parametros de entrada
 
@@ -19,7 +19,7 @@ Handler `trading_profile` · `app/api.py:1654` (cuerpo hasta la 1670) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1668 |
+| `as_of` | literal en app/api.py:1773 |
 | `bias` | literal en app/scalp_logic.py:5028 |
 | `confidence` | literal en app/scalp_logic.py:5030 |
 | `contradictions` | literal en app/scalp_logic.py:5034 |
@@ -31,7 +31,7 @@ Handler `trading_profile` · `app/api.py:1654` (cuerpo hasta la 1670) · decorad
 | `profile` | literal en app/scalp_logic.py:5026 |
 | `profile_label` | literal en app/scalp_logic.py:5027 |
 | `reference_only` | literal en app/scalp_logic.py:5033 |
-| `symbol` | literal en app/api.py:1667 |
+| `symbol` | literal en app/api.py:1772 |
 | `weights_note` | literal en app/scalp_logic.py:5036 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -61,7 +61,7 @@ LEE:
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -92,7 +92,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4658`
 - `app.scalp_logic.profile_view` — `app/scalp_logic.py:4873`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
@@ -143,8 +143,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:1658` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:1763` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

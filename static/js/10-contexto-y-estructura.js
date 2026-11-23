@@ -652,7 +652,7 @@ function tramoLinea(padre, clase, texto) {
 // UTC: la ventana del viernes es 09:30Z y confundir la zona la mueve horas enteras.
 function tramoISO(valor) {
   if (!valor) return null;
-  const d = new Date(valor);
+  const d = new Date(/(Z|[+-]\d\d:?\d\d)$/.test(valor) ? valor : valor + 'Z'); // el rotulo dice UTC
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 function renderTramo(res) {
