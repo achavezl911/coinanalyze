@@ -940,7 +940,7 @@ SUELTAS_SQL = """
 SELECT l.ts, l.exchange, l.side, l.notional_usd, l.price, l.qty, l.avg_price,
        c.ts AS c_ts, c.venue AS c_venue, c.compra AS c_compra, c.precio AS c_precio, c.usd AS c_usd
   FROM (SELECT ts, exchange, side, notional_usd, price, qty, avg_price, event_id FROM liquidations_realtime
-         WHERE symbol = $1 AND ts >= $2 AND ts < $3 ORDER BY ts, exchange, event_id LIMIT $4) l
+         WHERE symbol = $1 AND ts >= $2 AND ts < $3 ORDER BY ts DESC, exchange DESC, event_id DESC LIMIT $4) l
   LEFT JOIN LATERAL (
         SELECT k.ts, k.venue, k.compra, k.precio, k.usd FROM orderflow_cinta k
          WHERE l.avg_price IS NULL AND k.symbol = $5
@@ -1080,7 +1080,7 @@ async def indicadores(conn: Any, *, symbol: str, desde: str | None, hasta: str |
             "fuente": FUENTE_SUELTAS, "retencion_h": retencion // timedelta(hours=1),
             "desde_dato": iso(min(borde, b)), "truncada": len(sueltas) > TOPE_SUELTAS,
             "regla_ejecucion": REGLA_EJECUCION,
-            "eventos": [_evento(f) for f in sueltas[:TOPE_SUELTAS]],
+            "eventos": [_evento(f) for f in sueltas[-TOPE_SUELTAS:]],
             "huecos": [{"exchange": f["exchange"], "desde": iso(f["start_ts"]), "hasta": iso(f["end_ts"]),
                         "evidencia": f["evidence_type"], "estado": f["status"]} for f in huecos[:TOPE_HUECOS]],
             "cascada": {"n": CASCADA_N, "s": CASCADA_S, "regla": REGLA_CASCADA},
