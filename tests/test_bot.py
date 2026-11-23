@@ -193,6 +193,21 @@ def test_el_esfuerzo_por_ruta_sale_del_entorno_y_max_no_entra_en_tiempo_real():
     assert len(sv.ESTABLE) > 3000  # > 512 tokens: el minimo cacheable de Opus 5.5 (cl100k da 1281)
 
 
+def test_estable_juzga_con_las_reglas_de_riesgo_de_calc_y_no_con_la_forma_vieja():
+    """BOT R1: el prompt de Opus decia 10 USD a 50x, stop a -0.6 %, objetivo a +2 % y 3 USD de perdida maxima, cuando
+    calc.py ya iba por riesgo (PERDIDA_MAX, APALANCAMIENTO). Primero lo que el viejo decia mal; despues, que sigue a calc."""
+    for viejo in ("3 USD", "50x", "-0.6 %", "+2 %"):
+        assert viejo not in sv.ESTABLE, viejo
+    assert f"como mucho {calc.PERDIDA_MAX:g} USD por operacion" in sv.ESTABLE
+    assert f"Apalancamiento por omision {calc.APALANCAMIENTO:g}x" in sv.ESTABLE
+    assert f"{calc.TAKER * 1e4:g} puntos basicos por lado" in sv.ESTABLE
+    assert "LOS DE LA POSICION" in sv.ESTABLE and "no trae stop" in sv.ESTABLE
+    assert sv.arma_estable(calc.PERDIDA_MAX, calc.APALANCAMIENTO, calc.TAKER, calc.LIQ_VECES) == sv.ESTABLE
+    otro = sv.arma_estable(7.5, 25.0, calc.TAKER, calc.LIQ_VECES)  # si calc.py cambia, cambia el prompt
+    assert "como mucho 7.5 USD por operacion" in otro and "Apalancamiento por omision 25x" in otro
+    assert f"como mucho {calc.PERDIDA_MAX:g} USD" not in otro
+
+
 async def test_el_tope_no_se_pasa_y_una_caida_apunta_el_peor_caso():
     http, vistas = _anthropic()
     r = await llm.llama(http, "k", "sys", "hola", gastado=3.0 - llm.reserva(50_000, "high") + 0.01, tope=3.0)
