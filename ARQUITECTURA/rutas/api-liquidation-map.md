@@ -105,7 +105,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
 | **panel-html** | — | `static/index.html:245` |
 | **panel-sobre** | `static/js/07-decision-y-ciclos.js:308` | — |
-| **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
+| **tests** | `tests/js/mesa_f12a.test.js:146` | `tests/test_liquidation_map_ventana.py:1` |
 
 **La llama el panel: es superficie de producto.**
 

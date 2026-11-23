@@ -32997,10 +32997,10 @@
     "rutas_con_campos": 84,
     "rutas_sin_campos": 10,
     "sin_clave_temporal": 27,
-    "sin_consumidor": 8,
+    "sin_consumidor": 7,
     "sin_declarar": 26,
-    "sin_llamada": 18,
-    "solo_mencion": 10,
+    "sin_llamada": 16,
+    "solo_mencion": 9,
     "tablas_alcanzadas": 35,
     "tablas_catalogo": 62
   },
@@ -37201,6 +37201,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/mesa_f12a.test.js:174",
             "tests/test_dashboard_layout.py:134",
             "tests/test_deploy_wrapper.py:268"
           ],
@@ -37212,7 +37213,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 6,
+        "n_llamadas": 7,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -39113,7 +39114,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:146"
+          ],
           "menciones": [
             "tests/test_liquidation_map_ventana.py:1"
           ]
@@ -39122,7 +39125,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 5,
+        "n_llamadas": 6,
         "n_menciones": 6,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -39857,6 +39860,10 @@
         "tests": {
           "llamadas": [
             "tests/js/mesa_decide.test.js:275",
+            "tests/js/mesa_f12a.test.js:95",
+            "tests/js/mesa_f12a.test.js:232",
+            "tests/js/mesa_f12a.test.js:307",
+            "tests/js/mesa_f12a.test.js:324",
             "tests/js/mesa_remate.test.js:28",
             "tests/test_bot.py:328"
           ],
@@ -39867,7 +39874,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 17,
+        "n_llamadas": 21,
         "n_menciones": 8,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -40662,7 +40669,9 @@
           ]
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:165"
+          ],
           "menciones": [
             "tests/test_oi_context_referencia.py:1"
           ]
@@ -40670,7 +40679,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 3,
+        "n_llamadas": 4,
         "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -42956,12 +42965,18 @@
             "static/js/07-decision-y-ciclos.js:406"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:109"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 3,
+        "n_llamadas": 4,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -43903,6 +43918,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/mesa_f12a.test.js:157",
             "tests/test_v121_hardening.py:40"
           ],
           "menciones": []
@@ -43911,7 +43927,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 0,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -44060,11 +44076,17 @@
             "static/js/07-decision-y-ciclos.js:325"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:124"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 20,
+        "n_llamadas": 21,
         "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -44704,7 +44726,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:138"
+          ],
           "menciones": [
             "tests/js/libro_vacio_o_rancio.test.js:4",
             "tests/test_orderbook_frescura.py:1",
@@ -44715,7 +44739,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 9,
+        "n_llamadas": 10,
         "n_menciones": 6,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -44826,7 +44850,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:117"
+          ],
           "menciones": [
             "tests/test_dashboard_layout.py:160"
           ]
@@ -44834,7 +44860,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 7,
+        "n_llamadas": 8,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -45171,14 +45197,20 @@
             "harness/checks/K88-control.bash:162",
             "harness/checks/K88-control.bash:479"
           ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:136"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
+        "n_llamadas": 1,
         "n_menciones": 4,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -45899,7 +45931,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:137"
+          ],
           "menciones": [
             "tests/test_signals_replay.py:1"
           ]
@@ -45907,7 +45941,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -46637,12 +46671,18 @@
             "static/js/07-decision-y-ciclos.js:356"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:161"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 1,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -47459,12 +47499,19 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:153"
+          ],
+          "menciones": []
+        }
+      },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
+        "n_llamadas": 1,
         "n_menciones": 0,
-        "sin_ninguno": true,
+        "sin_ninguno": false,
         "solo_mencion": false
       },
       "declarada": {
@@ -47772,6 +47819,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/mesa_f12a.test.js:170",
             "tests/test_wyckoff.py:112"
           ],
           "menciones": []
@@ -47780,7 +47828,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 16,
+        "n_llamadas": 17,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
