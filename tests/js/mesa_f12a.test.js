@@ -323,11 +323,12 @@ async function edadesYFormas() {
   const b = foto();
   const fuera = m.pedidas.slice(n0).filter((p) => p.ruta !== '/api/mesa/decide').length;
   const refrescos = m.pedidas.length - n0 - fuera;
-  caso('B1 edad fija', a.tile === b.tile && a.scan === b.scan && a.libro === b.libro && a.tira === b.tira && refrescos > 0,
-    '300 s despues (' + fuera + ' peticiones de ola 2, ' + refrescos + ' refrescos de DECIDE): cinta «' + corta(b.tile, 60) +
-    '» · scan «' + corta(b.scan, 62) + '» · libro «' + corta(b.libro, 58) + '» · tira «' + corta(b.tira, 40) + '»');
-  caso('B1b etiqueta de edad', !/^leído hace \d+ s$/.test(m.t('edad-scan')),
-    'la etiqueta edad-scan dice «' + m.t('edad-scan') + '» tras ' + fuera + ' peticiones de ola 2');
+  // B1 (de fable_dz3_cierra.py, B1n): la ola 2 se vuelve a pedir y el rotulo de edad se MUEVE
+  const e1 = m.t('edad-scan');
+  await m.avanza(7);
+  const e2 = m.t('edad-scan');
+  caso('B1 edad medida', !(fuera > 0 && /hace [0-9]+ s/.test(e1) && e1 !== e2),
+    'ola 2: ' + fuera + ' peticiones en 300 s; rotulo de edad de SCAN «' + e1 + '» y 7 s despues «' + e2 + '»');
   const vivos = (m.t('scan').match(/VIVO/g) || []).length;
   caso('F1 scan VIVO', vivos === 4 && /VIVO No Trade/.test(m.t('scan')),
     vivos + ' chips VIVO sobre las 4 ultimas EVALUACIONES de 200 (truncated=true), «No Trade» incluido, y 300 s despues');
@@ -378,10 +379,27 @@ const corrida = () => {
   return _corrida;
 };
 
-['A1', 'A2', 'B1', 'B1b', 'F1', 'E1', 'E2', 'E3', 'E4', 'E6', 'D1', 'H1', 'G1'].forEach((id) => {
+['A1', 'A2', 'B1', 'F1', 'E1', 'E2', 'E3', 'E4', 'E6', 'D1', 'H1', 'G1'].forEach((id) => {
   test('f12a ' + id + ' no reproduce', async () => {
     const r = (await corrida())[id];
     assert.ok(r, 'el caso ' + id + ' no llego a correr');
     assert.ok(!r.reproduce, id + ' REPRODUCE: ' + r.texto);
   });
+});
+
+// EL ROTULO DE EDAD EN EL DOM DE VERDAD. El mundo de arriba CREA cualquier id que se le pida, asi
+// que B1 pasaria aunque mesa.html no tuviera donde escribir la edad. Aqui: las siete cajas existen
+// en mesa.html, y en el DOM que no CREA ids (harness-mesa.js) el rotulo nace dentro del scan.
+test('U-02: el rotulo edad-<panel> tiene caja en mesa.html y se crea si falta', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', '..', 'static', 'mesa.html'), 'utf8');
+  ['tira', 'scan', 'matriz', 'inspect', 'research', 'follow', 'learn'].forEach((id) => {
+    assert.ok(html.includes('id="' + id + '"'), 'mesa.html sin la caja #' + id);
+  });
+  const { cargaMesa } = require('./harness-mesa.js');
+  const { documento, evalua } = cargaMesa();
+  assert.strictEqual(documento.getElementById('edad-scan'), null);
+  const n = evalua("nodoEdad('scan')");
+  assert.ok(n, 'nodoEdad no creo el rotulo del scan');
+  assert.strictEqual(n.id, 'edad-scan');
+  assert.strictEqual(n.parentNode, documento.getElementById('scan'));
 });
