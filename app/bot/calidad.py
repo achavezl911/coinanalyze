@@ -133,6 +133,24 @@ PAREADAS = 60  # la regla sellada (entregas/*-auditor-prediccion.md)
 Z95 = 1.959963984540054
 FUENTES = ("OPUS", "DECIDE", "SIEMPRE A FAVOR")
 ESTADOS_AUDITOR = ("APROBADO", "CON RESERVAS", "RECHAZADO", "NO EVALUABLE", "SIN AUDITOR")
+# las vidas de `vida()`, ACUMULADAS hasta $1 (minuto), en orden de su primer cierre: la ULTIMA cifra de cada una (una
+# CORRECCION es otra fila 'cierre'), su primer veredicto automatico (lo que se sabia al abrir) y el coste de su llamada
+SQL_VIDAS = (
+    "SELECT c.posicion, c.pnl_usd, c.detalle->'medicion' medicion, coalesce(v.veredicto, c.veredicto) veredicto,"
+    " v.detalle->>'fuente' fuente, coalesce(v.veredicto_decide, c.veredicto_decide) veredicto_decide,"
+    " v.detalle->'auditor' auditor, coalesce(c.detalle->'medicion'->>'llamada', v.detalle->>'llamada') llamada, l.coste_usd"
+    " FROM (SELECT DISTINCT ON (posicion) posicion, veredicto, veredicto_decide, pnl_usd, detalle FROM bot_evaluacion"
+    " WHERE tipo = 'cierre' AND ts < to_timestamp($1::bigint * 60) ORDER BY posicion, ts DESC) c"
+    " JOIN (SELECT posicion, min(ts) t0 FROM bot_evaluacion WHERE tipo = 'cierre' GROUP BY posicion) f USING (posicion)"
+    " LEFT JOIN LATERAL (SELECT veredicto, veredicto_decide, detalle FROM bot_evaluacion e WHERE e.tipo = 'veredicto'"
+    " AND e.posicion = c.posicion AND e.detalle->>'motivo' LIKE 'posicion nueva%' ORDER BY e.ts LIMIT 1) v ON true"
+    " LEFT JOIN bot_llamada l ON l.id::text = coalesce(c.detalle->'medicion'->>'llamada', v.detalle->>'llamada')"
+    " ORDER BY f.t0, c.posicion")
+# las evaluaciones no automaticas (/evalua, rafaga...) de [$1, $2) minutos: se reportan aparte, sin calificar
+SQL_A_MANO = (
+    "SELECT veredicto, count(*)::int FROM bot_evaluacion WHERE tipo = 'veredicto'"
+    " AND coalesce(detalle->>'motivo', '') NOT LIKE 'posicion nueva%'"
+    " AND ts >= to_timestamp($1::bigint * 60) AND ts < to_timestamp($2::bigint * 60) GROUP BY 1")
 
 
 def wilson(aciertos: int, n: int, z: float = Z95) -> tuple[float, float] | None:
@@ -197,6 +215,15 @@ def mide(ap: dict, pnl: float | None) -> dict:
             "auditor": ap.get("auditor"), "perdida_stop": ap.get("perdida_stop"), "llamada": ap.get("llamada"),
             "acierto_opus": acierta(ap.get("opus"), pnl), "acierto_decide": acierta(ap.get("decide"), pnl),
             "pnl_usd": pnl, "r": r, "sin_r": sin_r}
+
+
+def linea_cierre(m: dict) -> str:
+    """La segunda linea de la CERRADA (y de la CORRECCION): las otras dos fuentes y el R."""
+    def nota(v: str, a: bool | None) -> str:
+        return f"{v} -> {'sin puntuar' if a is None else ('ACIERTO' if a else 'FALLO')}"
+    r = f"R {m['r']:+.2f}" if m.get("r") is not None else str(m.get("sin_r"))
+    return (f"MEDICION: OPUS {nota(m['opus'], m['acierto_opus'])} · DECIDE {nota(m['decide'], m['acierto_decide'])}"
+            f" · AUDITOR al abrir {m.get('auditor') or 'sin auditor'} · {r}")
 
 
 def vida(fila: dict) -> dict:
