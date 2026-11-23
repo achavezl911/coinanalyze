@@ -8,16 +8,16 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`run_certification_cycle`](#run-certification-cycle) | 363 | 0 | **0** | 25 ↑ | **0** |
-| [`certify_final_outcomes`](#certify-final-outcomes) | 347 | 0 | **0** | 11 ↑ | **0** |
-| [`certify_research_bundles`](#certify-research-bundles) | 328 | 0 | **0** | 11 ↑ | **0** |
+| [`run_certification_cycle`](#run-certification-cycle) | 373 | 0 | **0** | 25 ↑ | **0** |
+| [`certify_final_outcomes`](#certify-final-outcomes) | 357 | 0 | **0** | 11 ↑ | **0** |
+| [`certify_research_bundles`](#certify-research-bundles) | 338 | 0 | **0** | 11 ↑ | **0** |
 | [`_aware_utc`](#-aware-utc) | 141 | 0 | **0** | 1 ↑ | **0** |
 | [`_certify_final_outcomes_once`](#-certify-final-outcomes-once) | 249 | 0 | **1** | 1 | **1** |
 | [`_validate_batch_size`](#-validate-batch-size) | 147 | 0 | **0** | 1 ↑ | **0** |
 
 ## run_certification_cycle
 
-`app/signal_visibility.py:363` · clave completa `app.signal_visibility.run_certification_cycle`
+`app/signal_visibility.py:373` · clave completa `app.signal_visibility.run_certification_cycle`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 25** (mas ancha)
 
@@ -107,7 +107,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## certify_final_outcomes
 
-`app/signal_visibility.py:347` · clave completa `app.signal_visibility.certify_final_outcomes`
+`app/signal_visibility.py:357` · clave completa `app.signal_visibility.certify_final_outcomes`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 11** (mas ancha)
 
@@ -167,7 +167,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## certify_research_bundles
 
-`app/signal_visibility.py:328` · clave completa `app.signal_visibility.certify_research_bundles`
+`app/signal_visibility.py:338` · clave completa `app.signal_visibility.certify_research_bundles`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 11** (mas ancha)
 

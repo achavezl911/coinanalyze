@@ -2517,6 +2517,12 @@ CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_outcome_idx
     ON signal_outcome_final_visibility(outcome_id);
 CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_verified_idx
     ON signal_outcome_final_visibility(verified_visible_at);
+-- COLA R1 (P26): la busqueda de candidatos del certificador recorria TODO el heap de
+-- signal_outcome por la pk para filtrar status (sin candidatos no para nunca) y caia por
+-- statement_timeout. Con este indice el anti-join contra los certificados es solo-indice.
+CREATE INDEX IF NOT EXISTS signal_outcome_final_certify_idx
+    ON signal_outcome(outcome_id) INCLUDE (observation_id,outcome_version)
+    WHERE status IN ('evaluated','not_evaluable');
 
 CREATE OR REPLACE FUNCTION reject_signal_outcome_final_visibility_mutation()
 RETURNS trigger

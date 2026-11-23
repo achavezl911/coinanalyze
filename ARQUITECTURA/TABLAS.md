@@ -330,7 +330,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2719`, 8 columnas.
+`sql/schema.sql:2725`, 8 columnas.
 
 La escriben:
 
@@ -343,7 +343,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2682`, 26 columnas.
+`sql/schema.sql:2688`, 26 columnas.
 
 La escriben:
 
@@ -356,7 +356,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2672`, 6 columnas.
+`sql/schema.sql:2678`, 6 columnas.
 
 La escriben:
 
@@ -369,7 +369,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2860`, 12 columnas.
+`sql/schema.sql:2866`, 12 columnas.
 
 La escriben:
 
@@ -745,7 +745,7 @@ La escriben:
 
 ### orderflow_paso
 
-`sql/schema.sql:2945`, 2 columnas.
+`sql/schema.sql:2951`, 2 columnas.
 
 **PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena
 algo fuera del paquete analizado, o el SQL se arma en ejecucion.
@@ -866,7 +866,7 @@ La escriben:
 
 La escriben:
 
-- `app.signal_visibility._certify_final_outcomes_once` — **INSERT** en `app/signal_visibility.py:308`
+- `app.signal_visibility._certify_final_outcomes_once` — **INSERT** en `app/signal_visibility.py:318`
 
 **Si cambia el contenido o el esquema de `signal_outcome_final_visibility`, estas 1 rutas lo notan:**
 

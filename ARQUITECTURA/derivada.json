@@ -36,31 +36,31 @@
     }
   },
   "catalogo_lineas": {
-    "bot_crudo": "`sql/schema.sql:3421`, 4 columnas",
-    "bot_estado": "`sql/schema.sql:3373`, 3 columnas",
-    "bot_evaluacion": "`sql/schema.sql:3329`, 9 columnas",
-    "bot_evento": "`sql/schema.sql:3314`, 8 columnas",
-    "bot_llamada": "`sql/schema.sql:3342`, 11 columnas",
-    "bot_operacion": "`sql/schema.sql:3357`, 12 columnas",
-    "bot_sombra": "`sql/schema.sql:3460`, 15 columnas",
-    "bot_sombra_candidata": "`sql/schema.sql:3450`, 6 columnas",
+    "bot_crudo": "`sql/schema.sql:3427`, 4 columnas",
+    "bot_estado": "`sql/schema.sql:3379`, 3 columnas",
+    "bot_evaluacion": "`sql/schema.sql:3335`, 9 columnas",
+    "bot_evento": "`sql/schema.sql:3320`, 8 columnas",
+    "bot_llamada": "`sql/schema.sql:3348`, 11 columnas",
+    "bot_operacion": "`sql/schema.sql:3363`, 12 columnas",
+    "bot_sombra": "`sql/schema.sql:3466`, 15 columnas",
+    "bot_sombra_candidata": "`sql/schema.sql:3456`, 6 columnas",
     "daily_session_agg": "`sql/schema.sql:1039`, 37 columnas",
     "daily_verdict": "`sql/schema.sql:1080`, 17 columnas",
     "daily_verdict_outcome": "`sql/schema.sql:2307`, 10 columnas",
     "daily_verdict_snapshot": "`sql/schema.sql:1106`, 26 columnas",
     "data_gap": "`sql/schema.sql:1419`, 22 columnas",
-    "entrada_latido": "`sql/schema.sql:2719`, 8 columnas",
-    "entrada_registro": "`sql/schema.sql:2682`, 26 columnas",
-    "entrada_reglamento": "`sql/schema.sql:2672`, 6 columnas",
-    "entrada_resultado": "`sql/schema.sql:2860`, 12 columnas",
+    "entrada_latido": "`sql/schema.sql:2725`, 8 columnas",
+    "entrada_registro": "`sql/schema.sql:2688`, 26 columnas",
+    "entrada_reglamento": "`sql/schema.sql:2678`, 6 columnas",
+    "entrada_resultado": "`sql/schema.sql:2866`, 12 columnas",
     "external_api_rate_event": "`sql/schema.sql:1316`, 3 columnas",
     "external_macro_observation": "`sql/schema.sql:1241`, 5 columnas",
     "funding_rate": "`sql/schema.sql:146`, 7 columnas",
     "futures_trades_agg": "`sql/schema.sql:273`, 11 columnas",
     "futures_trades_realtime": "`sql/schema.sql:256`, 11 columnas",
-    "libro_cobertura": "`sql/schema.sql:3225`, 9 columnas",
-    "libro_foto": "`sql/schema.sql:3206`, 13 columnas",
-    "libro_honda": "`sql/schema.sql:3255`, 17 columnas",
+    "libro_cobertura": "`sql/schema.sql:3231`, 9 columnas",
+    "libro_foto": "`sql/schema.sql:3212`, 13 columnas",
+    "libro_honda": "`sql/schema.sql:3261`, 17 columnas",
     "liquidations": "`sql/schema.sql:174`, 5 columnas",
     "liquidations_realtime": "`sql/schema.sql:339`, 9 columnas",
     "long_short_ratio": "`sql/schema.sql:187`, 6 columnas",
@@ -76,13 +76,13 @@
     "open_interest_daily": "`sql/schema.sql:128`, 10 columnas",
     "orderbook_depth": "`sql/schema.sql:329`, 6 columnas",
     "orderbook_snapshot": "`sql/schema.sql:287`, 19 columnas",
-    "orderflow_celda": "`sql/schema.sql:2952`, 10 columnas",
-    "orderflow_celda_hora": "`sql/schema.sql:3018`, 10 columnas",
-    "orderflow_cinta": "`sql/schema.sql:2968`, 8 columnas",
-    "orderflow_cobertura": "`sql/schema.sql:2998`, 10 columnas",
-    "orderflow_grande": "`sql/schema.sql:2981`, 9 columnas",
-    "orderflow_hora_hecha": "`sql/schema.sql:3034`, 6 columnas",
-    "orderflow_paso": "`sql/schema.sql:2945`, 2 columnas",
+    "orderflow_celda": "`sql/schema.sql:2958`, 10 columnas",
+    "orderflow_celda_hora": "`sql/schema.sql:3024`, 10 columnas",
+    "orderflow_cinta": "`sql/schema.sql:2974`, 8 columnas",
+    "orderflow_cobertura": "`sql/schema.sql:3004`, 10 columnas",
+    "orderflow_grande": "`sql/schema.sql:2987`, 9 columnas",
+    "orderflow_hora_hecha": "`sql/schema.sql:3040`, 6 columnas",
+    "orderflow_paso": "`sql/schema.sql:2951`, 2 columnas",
     "pipeline_heartbeat": "`sql/schema.sql:1291`, 4 columnas",
     "predicted_funding_rate": "`sql/schema.sql:160`, 7 columnas",
     "scalp_signal_snapshot": "`sql/schema.sql:388`, 16 columnas",
@@ -31247,7 +31247,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/signal_visibility.py:347",
+        "sitio": "app/signal_visibility.py:357",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -31297,7 +31297,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/signal_visibility.py:328",
+        "sitio": "app/signal_visibility.py:338",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -31361,7 +31361,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/signal_visibility.py:363",
+        "sitio": "app/signal_visibility.py:373",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -50058,7 +50058,7 @@
         {
           "funcion": "app.signal_outcomes.materialize_due_signal_outcomes",
           "origen": "literal",
-          "sitio": "app/signal_outcomes.py:358"
+          "sitio": "app/signal_outcomes.py:363"
         }
       ],
       "leida_por": [
@@ -50694,7 +50694,7 @@
         {
           "funcion": "app.signal_outcomes.materialize_due_signal_outcomes",
           "origen": "literal",
-          "sitio": "app/signal_outcomes.py:310"
+          "sitio": "app/signal_outcomes.py:315"
         },
         {
           "funcion": "app.signal_regime._fetch_outcome_summary",
@@ -50744,7 +50744,7 @@
         {
           "funcion": "app.signal_visibility._certify_final_outcomes_once",
           "origen": "literal",
-          "sitio": "app/signal_visibility.py:262"
+          "sitio": "app/signal_visibility.py:267"
         },
         {
           "funcion": "app.signal_walk_forward._fetch_period_grid_v2",
@@ -50869,7 +50869,7 @@
         {
           "funcion": "app.signal_outcomes.materialize_due_signal_outcomes",
           "origen": "literal",
-          "sitio": "app/signal_outcomes.py:310"
+          "sitio": "app/signal_outcomes.py:315"
         },
         {
           "funcion": "app.signal_regime._fetch_outcome_summary",
@@ -50894,7 +50894,7 @@
         {
           "funcion": "app.signal_visibility._certify_final_outcomes_once",
           "origen": "literal",
-          "sitio": "app/signal_visibility.py:262"
+          "sitio": "app/signal_visibility.py:267"
         },
         {
           "funcion": "app.signal_walk_forward._fetch_period_grid_v2",
@@ -50919,7 +50919,7 @@
         {
           "funcion": "app.signal_visibility._certify_final_outcomes_once",
           "origen": "literal",
-          "sitio": "app/signal_visibility.py:308",
+          "sitio": "app/signal_visibility.py:318",
           "verbo": "INSERT"
         }
       ],
@@ -50932,7 +50932,7 @@
         {
           "funcion": "app.signal_visibility._certify_final_outcomes_once",
           "origen": "literal",
-          "sitio": "app/signal_visibility.py:262"
+          "sitio": "app/signal_visibility.py:267"
         },
         {
           "funcion": "app.signal_walk_forward._fetch_period_grid_v2",
