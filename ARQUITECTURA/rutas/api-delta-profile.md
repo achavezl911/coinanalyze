@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `delta_profile_endpoint` · `app/api.py:1991` (cuerpo hasta la 2016) · decorador en la linea 1990.
+Handler `delta_profile_endpoint` · `app/api.py:2096` (cuerpo hasta la 2121) · decorador en la linea 2095.
 
 ## Parametros de entrada
 
@@ -52,9 +52,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1781`
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.api.ventana_pedida` — `app/api.py:1748`
+- `app.api.declara_ventana` — `app/api.py:1886`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.api.ventana_pedida` — `app/api.py:1853`
 - `app.delta_profile.delta_profile` — `app/delta_profile.py:222`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
@@ -86,13 +86,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1765` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1768` | una funcion de su cierre |
-| 422 | — | `app/api.py:1773` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1775` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1777` | una funcion de su cierre |
-| 422 | — | `app/api.py:2008` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1870` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1873` | una funcion de su cierre |
+| 422 | — | `app/api.py:1878` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1880` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1882` | una funcion de su cierre |
+| 422 | — | `app/api.py:2113` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

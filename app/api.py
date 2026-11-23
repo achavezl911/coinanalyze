@@ -47,6 +47,7 @@ from app.daily_agg import (
 )
 from app.data_gaps import (
     GapRequirement,
+    align_down,
     blocking_requirement_keys,
     coverage_entry,
     declared_gap_windows,
@@ -442,6 +443,79 @@ def minutos_de_las_filas(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+async def lo_pedido(
+    conn: asyncpg.Connection,
+    starts: list[datetime],
+    *,
+    bucket: timedelta,
+    limit: int | None,
+    ahora: datetime | None,
+    barrido: dict[str, Any] | None,
+    feed: str,
+    exchanges: tuple[str, ...],
+    market: str,
+    symbol: str,
+) -> dict[str, Any]:
+    """La EDAD del sobre y la ventana PEDIDA, al lado de la servida (M-03, paso 1 de 2).
+
+    La ventana servida sale de las filas: si el proveedor se para, la ultima fila se queda
+    atras, la ventana con ella, y el hueco del final queda FUERA de lo que se mira. Por eso
+    aqui se dice de cuando es lo ultimo servido (`as_of`, `age_seconds`) y se cuentan los
+    cubos de lo que se PIDIO -[fin - limit x bucket, fin), con fin el ultimo cubo cerrado-
+    que no traen fila ni hueco declarado. ESTE PASO SOLO ANADE: `status`, `complete` y la
+    ventana servida no cambian; el veredicto lo cambia P08 con el retraso por feed medido.
+
+    ``barrido`` es el latido de una serie RALA (/api/liquidations: sin fila = cero, pero
+    solo donde el latido `ingest:liquidations_history` lo certifica con estado ok). Ahi la
+    edad es la del barrido y un cubo sin fila dentro de lo certificado no falta.
+    """
+    ahora = ahora or datetime.now(UTC)
+    certificado: tuple[datetime, datetime] | None = None
+    if barrido and barrido.get("estado") == "ok" and barrido.get("desde") and barrido.get("hasta"):
+        certificado = (barrido["desde"], barrido["hasta"])
+    finales = [m for m in (starts[-1] + bucket if starts else None, certificado and certificado[1]) if m]
+    # El cubo en curso acaba en el futuro: lo servido llega, como mucho, hasta ahora.
+    as_of = min(max(finales), ahora) if finales else None
+    bloque: dict[str, Any] = {
+        "as_of": as_of.isoformat() if as_of else None,
+        "age_seconds": int((ahora - as_of).total_seconds()) if as_of else None,
+        "requested_window": None,
+    }
+    if limit is None or limit <= 0:
+        return bloque
+    fin = align_down(ahora, bucket)
+    inicio = fin - limit * bucket
+    declared = await declared_gap_windows(
+        conn, feed=feed, exchanges=exchanges, market=market, symbol=symbol, start=inicio, end=fin
+    )
+    ventanas = [
+        (datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
+        for item in declared
+    ]
+    presentes = set(starts)
+    undeclared: int | None = 0
+    if limit > MAX_BUCKET_SWEEP:
+        undeclared = None
+    else:
+        for paso in range(limit):
+            cubo = inicio + paso * bucket
+            final = cubo + bucket
+            if cubo in presentes:
+                continue
+            if certificado and certificado[0] <= cubo and final <= certificado[1]:
+                continue
+            if not any(a < final and b > cubo for a, b in ventanas):
+                undeclared += 1
+    bloque["requested_window"] = {
+        "window_start": inicio.isoformat(),
+        "window_end": fin.isoformat(),
+        "limit": limit,
+        "declared": declared,
+        "undeclared_buckets": undeclared,
+    }
+    return bloque
+
+
 async def declared_series_response(
     conn: asyncpg.Connection,
     rows: list[dict[str, Any]],
@@ -453,15 +527,33 @@ async def declared_series_response(
     market: str,
     symbol: str,
     gap_symbol: str | None = None,
+    limit: int | None = None,
+    ahora: datetime | None = None,
+    rala: bool = False,
 ) -> dict[str, Any]:
     """El sobre de una serie: las filas, la cobertura de su ventana y sus huecos.
 
     ``gap_symbol`` es la identidad con la que se apunto el hueco cuando no coincide con
     el simbolo pedido: las series de spot se guardan con el simbolo de websocket.
+    ``limit`` y ``ahora`` van a `lo_pedido`: la edad y la ventana pedida. ``rala`` es
+    /api/liquidations: sin fila = cero solo donde lo certifica el latido de su historia.
     """
+    barrido = await orderflow_lectura._barrido_liquidaciones(conn) if rala else None
     identidad = gap_symbol or symbol
     starts = sorted(
         row["bucket"].astimezone(UTC) for row in rows if isinstance(row.get("bucket"), datetime)
+    )
+    pedido = await lo_pedido(
+        conn,
+        starts,
+        bucket=bucket,
+        limit=limit,
+        ahora=ahora,
+        barrido=barrido,
+        feed=feed,
+        exchanges=exchanges,
+        market=market,
+        symbol=identidad,
     )
     if not starts:
         return {
@@ -481,6 +573,9 @@ async def declared_series_response(
                 "status": GAP_STATUS_NO_DATA,
                 "declared": [],
                 "undeclared_buckets": None,
+                "as_of": pedido["as_of"],
+                "age_seconds": pedido["age_seconds"],
+                "requested_window": pedido["requested_window"],
             },
         }
     window_start, window_end = starts[0], starts[-1] + bucket
@@ -540,6 +635,9 @@ async def declared_series_response(
             "status": status,
             "declared": declared,
             "undeclared_buckets": undeclared,
+            "as_of": pedido["as_of"],
+            "age_seconds": pedido["age_seconds"],
+            "requested_window": pedido["requested_window"],
         },
     }
 
@@ -794,6 +892,7 @@ async def ohlcv(
             exchanges=("binance",),
             market="perpetual",
             symbol=selected,
+            limit=limit,
         )
 
 
@@ -842,6 +941,7 @@ async def cvd(
             exchanges=("binance",),
             market="perpetual",
             symbol=selected,
+            limit=limit,
         )
 
 
@@ -956,6 +1056,7 @@ async def cvd_spot(
             market="spot",
             symbol=selected,
             gap_symbol=ws_symbol,
+            limit=limit,
         )
 
 
@@ -1123,6 +1224,7 @@ async def oi(
             exchanges=("binance",),
             market="perpetual",
             symbol=selected,
+            limit=limit,
         )
 
 
@@ -1173,6 +1275,8 @@ async def liquidation_series(
             exchanges=("binance", "bybit"),
             market="perpetual",
             symbol=selected,
+            limit=limit,
+            rala=True,
         )
 
 
@@ -1317,6 +1421,7 @@ async def whale_delta(
             market="spot",
             symbol=selected,
             gap_symbol=ws_symbol,
+            limit=limit,
         )
         declarar_tramo_no_medible(payload, ws_symbol)
         return payload

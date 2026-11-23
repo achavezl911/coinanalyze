@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `health` · `app/api.py:4033` (cuerpo hasta la 4102) · decorador en la linea 4032.
+Handler `health` · `app/api.py:4138` (cuerpo hasta la 4207) · decorador en la linea 4137.
 
 ## Parametros de entrada
 
@@ -16,19 +16,19 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `database` | literal en app/api.py:4086 |
-| `governed_services` | literal en app/api.py:4089 |
-| `informative_services` | literal en app/api.py:4090 |
-| `informative_services.failing` | literal en app/api.py:4096 |
-| `informative_services.lag_seconds` | literal en app/api.py:4094 |
-| `informative_services.max_age_seconds` | literal en app/api.py:4095 |
-| `informative_services.service` | literal en app/api.py:4092 |
-| `informative_services.status` | literal en app/api.py:4093 |
-| `missing_services` | literal en app/api.py:4087 |
-| `missing_symbols` | literal en app/api.py:4088 |
-| `services` | literal en app/api.py:4100 |
-| `status` | literal en app/api.py:4081 |
-| `symbols` | literal en app/api.py:4101 |
+| `database` | literal en app/api.py:4191 |
+| `governed_services` | literal en app/api.py:4194 |
+| `informative_services` | literal en app/api.py:4195 |
+| `informative_services.failing` | literal en app/api.py:4201 |
+| `informative_services.lag_seconds` | literal en app/api.py:4199 |
+| `informative_services.max_age_seconds` | literal en app/api.py:4200 |
+| `informative_services.service` | literal en app/api.py:4197 |
+| `informative_services.status` | literal en app/api.py:4198 |
+| `missing_services` | literal en app/api.py:4192 |
+| `missing_symbols` | literal en app/api.py:4193 |
+| `services` | literal en app/api.py:4205 |
+| `status` | literal en app/api.py:4186 |
+| `symbols` | literal en app/api.py:4206 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -63,7 +63,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.records` — `app/api.py:272`
+- `app.api.records` — `app/api.py:273`
 - `app.db.db_identity` — `app/db.py:64`
 - `app.db.heartbeat` — `app/db.py:409`
 - `app.db.heartbeat_max_age` — `app/db.py:95`
@@ -104,7 +104,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K03-hueco-declarado.sh:55`, `harness/checks/K05-control.bash:307`, `harness/checks/K05-latidos.sh:127`, `harness/checks/K05-latidos.sh:388` _(+7)_ | `harness/checks/K05-latidos.sh:2`, `harness/checks/K08-control.bash:6`, `harness/checks/K08-control.bash:40`, `harness/checks/K08-que-base.sh:6` _(+3)_ |
-| **panel** | `static/js/07-decision-y-ciclos.js:245`, `static/js/07-decision-y-ciclos.js:405` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:245`, `static/js/07-decision-y-ciclos.js:406` | — |
 | **tests** | `tests/test_bot_r3.py:337`, `tests/test_deploy_wrapper.py:260`, `tests/test_smoke_arranque.py:39` | `tests/test_bot_r3.py:336`, `tests/test_bot_r3.py:338`, `tests/test_cobertura_proveedor.py:7`, `tests/test_deploy_health_gate.py:38` _(+4)_ |
 
 **La llama el panel: es superficie de producto.**
@@ -139,12 +139,12 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.db.heartbeat` | 1 | **8** | 58 ↑ | **8** | [impacto](../impacto/app-db.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
-| `app.api.health` | 1 | **0** | 8 ↑ | **1** | [impacto](../impacto/app-api.md) |
-| `app.db.db_identity` | 1 | **0** | 8 ↑ | **1** | [impacto](../impacto/app-db.md) |
-| `app.db.heartbeat_max_age` | 1 | **0** | 8 ↑ | **1** | [impacto](../impacto/app-db.md) |
-| `app.db.required_heartbeat_failures` | 5 | **0** | 8 ↑ | **5** | [impacto](../impacto/app-db.md) |
+| `app.db.heartbeat` | 1 | **14** | 58 ↑ | **14** | [impacto](../impacto/app-db.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.health` | 1 | **0** | 14 ↑ | **1** | [impacto](../impacto/app-api.md) |
+| `app.db.db_identity` | 1 | **0** | 14 ↑ | **1** | [impacto](../impacto/app-db.md) |
+| `app.db.heartbeat_max_age` | 1 | **0** | 14 ↑ | **1** | [impacto](../impacto/app-db.md) |
+| `app.db.required_heartbeat_failures` | 5 | **0** | 14 ↑ | **5** | [impacto](../impacto/app-db.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

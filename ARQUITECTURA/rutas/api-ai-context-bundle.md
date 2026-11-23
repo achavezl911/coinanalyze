@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_context_bundle` · `app/api.py:3610` (cuerpo hasta la 3627) · decorador en la linea 3609.
+Handler `ai_context_bundle` · `app/api.py:3715` (cuerpo hasta la 3732) · decorador en la linea 3714.
 
 ## Parametros de entrada
 
@@ -148,7 +148,7 @@ Llamadas directas del handler:
 
 - `app.ai_context.build_ai_context` — `app/ai_context.py:1083`
 - `app.ai_context.normalize_profile` — `app/ai_context.py:220`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 
 <details><summary>Alcanzables de forma indirecta (170)</summary>
 
@@ -317,11 +317,11 @@ Llamadas directas del handler:
 - `app.wyckoff._signed_balance` — `app/wyckoff.py:178`
 - `app.wyckoff.detect_latest_range` — `app/wyckoff.py:99`
 - `app.wyckoff.wyckoff_auto_read` — `app/wyckoff.py:447`
-- `app.zones._atr_abs` — `app/zones.py:519`
-- `app.zones._edge_episodes` — `app/zones.py:499`
-- `app.zones._ols_slope` — `app/zones.py:471`
-- `app.zones._rotations` — `app/zones.py:483`
-- `app.zones.range_validate_read` — `app/zones.py:535`
+- `app.zones._atr_abs` — `app/zones.py:545`
+- `app.zones._edge_episodes` — `app/zones.py:525`
+- `app.zones._ols_slope` — `app/zones.py:497`
+- `app.zones._rotations` — `app/zones.py:509`
+- `app.zones.range_validate_read` — `app/zones.py:561`
 
 </details>
 
@@ -343,8 +343,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:3623` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:3728` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
