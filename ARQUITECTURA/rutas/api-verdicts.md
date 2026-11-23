@@ -22,12 +22,12 @@ Handler `verdicts` · `app/api.py:2361` (cuerpo hasta la 2447) · decorador en l
 |---|---|
 | `coverage` | literal en app/api.py:2440 |
 | `coverage.served_window` | literal en app/api.py:2440 |
-| `coverage.served_window.complete` | literal en app/data_gaps.py:289 |
-| `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:287 |
-| `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:288 |
-| `coverage.served_window.sources` | literal en app/data_gaps.py:290 |
-| `coverage.served_window.window_end` | literal en app/data_gaps.py:286 |
-| `coverage.served_window.window_start` | literal en app/data_gaps.py:285 |
+| `coverage.served_window.complete` | literal en app/data_gaps.py:294 |
+| `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:292 |
+| `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:293 |
+| `coverage.served_window.sources` | literal en app/data_gaps.py:295 |
+| `coverage.served_window.window_end` | literal en app/data_gaps.py:291 |
+| `coverage.served_window.window_start` | literal en app/data_gaps.py:290 |
 | `logic_version` | literal en app/api.py:2438 |
 | `note` | literal en app/api.py:2441 |
 | `rows` | literal en app/api.py:2439 |
@@ -56,12 +56,12 @@ Llamadas directas del handler:
 - `app.api._session_window` — `app/api.py:645`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
 
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
 - `app.metrics.session_bounds` — `app/metrics.py:31`
 
 </details>

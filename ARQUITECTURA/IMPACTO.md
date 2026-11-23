@@ -101,22 +101,22 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic.resolve_matrix_as_of`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2592` | 24 | **0** | 12 ↑ | **24** |
 | [`app.daily_agg.compute_session`](impacto/app-daily_agg.md) | `app/daily_agg.py:141` | 0 | **22** | 56 ↑ | **22** |
 | [`app.api.records`](impacto/app-api.md) | `app/api.py:273` | 22 | **0** | 14 ↑ | **22** |
-| [`app.data_gaps.reconcile_cadence_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:484` | 0 | **21** | 51 ↑ | **21** |
-| [`app.data_gaps._mark_unrecoverable`](impacto/app-data_gaps.md) | `app/data_gaps.py:1242` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps._record_recovery_failure`](impacto/app-data_gaps.md) | `app/data_gaps.py:1267` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.archive_beyond_source_horizon`](impacto/app-data_gaps.md) | `app/data_gaps.py:732` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.archive_source_response_absence`](impacto/app-data_gaps.md) | `app/data_gaps.py:802` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.close_partitioned_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1055` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.record_data_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:297` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1284` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.reconcile_cadence_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:489` | 0 | **21** | 51 ↑ | **21** |
+| [`app.data_gaps._mark_unrecoverable`](impacto/app-data_gaps.md) | `app/data_gaps.py:1247` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps._record_recovery_failure`](impacto/app-data_gaps.md) | `app/data_gaps.py:1272` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.archive_beyond_source_horizon`](impacto/app-data_gaps.md) | `app/data_gaps.py:737` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.archive_source_response_absence`](impacto/app-data_gaps.md) | `app/data_gaps.py:807` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.close_partitioned_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1060` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.record_data_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:302` | 0 | **21** | 21 | **21** |
+| [`app.data_gaps.recover_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1289` | 0 | **21** | 21 | **21** |
 | [`app.libro.declara_hueco`](impacto/app-libro.md) | `app/libro.py:827` | 0 | **21** | 21 | **21** |
 | [`app.orderflow.declara_hueco`](impacto/app-orderflow.md) | `app/orderflow.py:528` | 0 | **21** | 21 | **21** |
-| [`app.data_gaps.blocking_requirement_keys`](impacto/app-data_gaps.md) | `app/data_gaps.py:118` | 19 | **0** | 15 ↑ | **19** |
+| [`app.data_gaps.blocking_requirement_keys`](impacto/app-data_gaps.md) | `app/data_gaps.py:123` | 19 | **0** | 15 ↑ | **19** |
 | [`app.scalp_collector._write_combined_realtime`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:795` | 0 | **17** | 22 ↑ | **17** |
 | [`app.metrics.current_nyse_start`](impacto/app-metrics.md) | `app/metrics.py:20` | 16 | **0** | 15 ↑ | **16** |
 | [`app.daily_agg._store_baseline`](impacto/app-daily_agg.md) | `app/daily_agg.py:745` | 0 | **15** | 58 ↑ | **15** |
-| [`app.data_gaps._aware_utc`](impacto/app-data_gaps.md) | `app/data_gaps.py:67` | 15 | **0** | 21 ↑ | **15** |
-| [`app.data_gaps._validated_window`](impacto/app-data_gaps.md) | `app/data_gaps.py:73` | 15 | **0** | 21 ↑ | **15** |
+| [`app.data_gaps._aware_utc`](impacto/app-data_gaps.md) | `app/data_gaps.py:72` | 15 | **0** | 21 ↑ | **15** |
+| [`app.data_gaps._validated_window`](impacto/app-data_gaps.md) | `app/data_gaps.py:78` | 15 | **0** | 21 ↑ | **15** |
 | [`app.scalp_logic.load_baselines`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:158` | 15 | **0** | 11 ↑ | **15** |
 | [`app.scalp_collector._write_combined_books`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:925` | 0 | **15** | 20 ↑ | **15** |
 | [`app.scalp_collector.flush_books`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:850` | 0 | **15** | 20 ↑ | **15** |
@@ -128,9 +128,9 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.db.heartbeat_shard`](impacto/app-db.md) | `app/db.py:522` | 0 | **14** | 28 ↑ | **14** |
 | [`app.scalp_logic.baseline_band`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:134` | 14 | **0** | 11 ↑ | **14** |
 | [`app.interpretation.number`](impacto/app-interpretation.md) | `app/interpretation.py:10` | 14 | **0** | 3 ↑ | **14** |
-| [`app.data_gaps.coverage_entry`](impacto/app-data_gaps.md) | `app/data_gaps.py:263` | 14 | **0** | 0 | **14** |
+| [`app.data_gaps.coverage_entry`](impacto/app-data_gaps.md) | `app/data_gaps.py:268` | 14 | **0** | 0 | **14** |
 | [`app.ws_collector.flush_realtime`](impacto/app-ws_collector.md) | `app/ws_collector.py:378` | 0 | **13** | 13 | **13** |
-| [`app.data_gaps.expected_buckets`](impacto/app-data_gaps.md) | `app/data_gaps.py:255` | 12 | **0** | 21 ↑ | **12** |
+| [`app.data_gaps.expected_buckets`](impacto/app-data_gaps.md) | `app/data_gaps.py:260` | 12 | **0** | 21 ↑ | **12** |
 | [`app.ws_collector._write_minute`](impacto/app-ws_collector.md) | `app/ws_collector.py:252` | 0 | **12** | 19 ↑ | **12** |
 | [`app.scalp_logic._flow_coverage_reason`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2619` | 12 | **0** | 0 | **12** |
 | [`app.scalp_logic._flow_windows`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2644` | 12 | **0** | 0 | **12** |
@@ -158,7 +158,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic.score_component`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:317` | 10 | **0** | 11 ↑ | **10** |
 | [`app.setups.classify_oi`](impacto/app-setups.md) | `app/setups.py:162` | 10 | **0** | 11 ↑ | **10** |
 | [`app.setups.oi_price_reading`](impacto/app-setups.md) | `app/setups.py:228` | 10 | **0** | 11 ↑ | **10** |
-| [`app.data_gaps.align_down`](impacto/app-data_gaps.md) | `app/data_gaps.py:242` | 10 | **0** | 0 | **10** |
+| [`app.data_gaps.align_down`](impacto/app-data_gaps.md) | `app/data_gaps.py:247` | 10 | **0** | 0 | **10** |
 | [`app.scalp_logic._complete_tail_values`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:960` | 10 | **0** | 0 | **10** |
 | [`app.scalp_logic._coverage_status`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:566` | 10 | **0** | 0 | **10** |
 | [`app.scalp_logic._structure_from_swings`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2372` | 10 | **0** | 0 | **10** |
@@ -182,7 +182,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_collector.cleanup_expired_rows`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1575` | 0 | **7** | 20 ↑ | **7** |
 | [`app.api.historical_interval_value`](impacto/app-api.md) | `app/api.py:266` | 7 | **0** | 0 | **7** |
 | [`app.api.mask_gapped_series_rows`](impacto/app-api.md) | `app/api.py:296` | 7 | **0** | 0 | **7** |
-| [`app.data_gaps.declared_gap_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:207` | 7 | **0** | 0 | **7** |
+| [`app.data_gaps.declared_gap_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:212` | 7 | **0** | 0 | **7** |
 | [`app.interpretation._barrier_candidates`](impacto/app-interpretation.md) | `app/interpretation.py:684` | 7 | **0** | 0 | **7** |
 | [`app.interpretation._barrier_zones`](impacto/app-interpretation.md) | `app/interpretation.py:779` | 7 | **0** | 0 | **7** |
 | [`app.interpretation.price_barrier_read`](impacto/app-interpretation.md) | `app/interpretation.py:877` | 7 | **0** | 0 | **7** |
@@ -641,15 +641,15 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.metrics.liquidation_history_observation`](impacto/app-metrics.md) | `app/metrics.py:252` | 0 | **0** | 22 ↑ | **0** |
 | [`app.scalp_collector._write_trade_rows`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:738` | 0 | **0** | 22 ↑ | **0** |
 | [`app.scalp_collector.flush_trades`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:648` | 0 | **0** | 22 ↑ | **0** |
-| [`app.data_gaps.DataGap.from_record`](impacto/app-data_gaps.md) | `app/data_gaps.py:1152` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps._cubierto_por_otro_detector`](impacto/app-data_gaps.md) | `app/data_gaps.py:449` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps._load_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1232` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.missing_cadence_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:388` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.partition_gap_by_source_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:977` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.partition_runs`](impacto/app-data_gaps.md) | `app/data_gaps.py:932` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.record_event_stream_loss`](impacto/app-data_gaps.md) | `app/data_gaps.py:358` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.recover_unresolved_gaps`](impacto/app-data_gaps.md) | `app/data_gaps.py:1345` | 0 | **0** | 21 ↑ | **0** |
-| [`app.data_gaps.validate_recovery`](impacto/app-data_gaps.md) | `app/data_gaps.py:1188` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.DataGap.from_record`](impacto/app-data_gaps.md) | `app/data_gaps.py:1157` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps._cubierto_por_otro_detector`](impacto/app-data_gaps.md) | `app/data_gaps.py:454` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps._load_gap`](impacto/app-data_gaps.md) | `app/data_gaps.py:1237` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.missing_cadence_windows`](impacto/app-data_gaps.md) | `app/data_gaps.py:393` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.partition_gap_by_source_coverage`](impacto/app-data_gaps.md) | `app/data_gaps.py:982` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.partition_runs`](impacto/app-data_gaps.md) | `app/data_gaps.py:937` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.record_event_stream_loss`](impacto/app-data_gaps.md) | `app/data_gaps.py:363` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.recover_unresolved_gaps`](impacto/app-data_gaps.md) | `app/data_gaps.py:1356` | 0 | **0** | 21 ↑ | **0** |
+| [`app.data_gaps.validate_recovery`](impacto/app-data_gaps.md) | `app/data_gaps.py:1193` | 0 | **0** | 21 ↑ | **0** |
 | [`app.db.wait_for_stop_or_lock_loss`](impacto/app-db.md) | `app/db.py:374` | 0 | **0** | 21 ↑ | **0** |
 | [`app.libro._evidencia`](impacto/app-libro.md) | `app/libro.py:834` | 0 | **0** | 21 ↑ | **0** |
 | [`app.libro._olvida`](impacto/app-libro.md) | `app/libro.py:864` | 0 | **0** | 21 ↑ | **0** |

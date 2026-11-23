@@ -67,9 +67,9 @@ Llamadas directas del handler:
 - `app.carry.celda_completa` — `app/carry.py:53`
 - `app.carry.coste_de_carry` — `app/carry.py:71`
 - `app.carry.quien_paga` — `app/carry.py:88`
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
 
 </details>
 

@@ -60,12 +60,12 @@ Llamadas directas del handler:
 
 - `app.api.lo_pedido` — `app/api.py:446`
 - `app.api.minutos_de_las_filas` — `app/api.py:406`
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.align_down` — `app/data_gaps.py:242`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
-- `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:207`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.align_down` — `app/data_gaps.py:247`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
+- `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:212`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
 - `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:986`
 
 </details>
