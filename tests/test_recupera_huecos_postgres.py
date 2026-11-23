@@ -24,7 +24,7 @@ import asyncpg
 import pytest
 
 import scripts.resweep_cadence_gaps as resweep
-from app.data_gaps import reconcile_cadence_coverage
+from app.data_gaps import SOURCE_ABSENCE_REASON, reconcile_cadence_coverage, record_data_gap
 from app.ingest import upsert_ohlcv
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,7 +90,7 @@ class FuenteDoble:
         return None
 
     async def history(self, _endpoint, symbols, *, interval, start_ts, end_ts):
-        assert interval == "1min"
+        paso = {"1min": MIN, "5min": 5 * MIN}[interval]
         ini, fin = datetime.fromtimestamp(start_ts, UTC), datetime.fromtimestamp(end_ts, UTC)
         FuenteDoble.pedidas.append((ini, fin))
         if FuenteDoble.muda:
@@ -99,7 +99,7 @@ class FuenteDoble:
         while t < fin:
             if t not in FuenteDoble.salta:
                 velas.append(_vela(t))
-            t += MIN
+            t += paso
         return {s: list(velas) for s in symbols}
 
 
@@ -292,6 +292,80 @@ async def test_un_salto_de_la_fuente_no_se_archiva_ni_da_reloj(base) -> None:
     assert await _estados(conn) == ["unresolved"]  # falta un bucket: ni recovered ni archivado
     assert await conn.fetchval("SELECT count(*) FROM data_gap WHERE status='unrecoverable'") == 0
     assert resumen["pendientes"] == 0 and resumen["urgente"] is None and resumen["saltados_por_la_fuente"] == 1
+
+
+# --- recupera-r2 (R2b B3): el cupo por vencimiento y el salto aislado, archivado SOLO con prueba en la misma respuesta
+
+
+async def _hueco(conn, feed: str, gran: str, cadencia: timedelta, ini: datetime, fin: datetime) -> int:
+    return await record_data_gap(
+        conn, feed=feed, feed_class="cadence", exchange="binance", market="perpetual", symbol=SYM, granularity=gran,
+        start=ini, end=fin, evidence_type="missing_interval", detection_reason="test", detection_source="plantado_test",
+        expected_cadence=cadencia,
+    )
+
+
+@pytest.mark.asyncio
+async def test_el_cupo_va_a_lo_que_vence_antes_no_a_lo_que_empieza_antes(base) -> None:
+    """Con main el cupo se ordenaba por `lo`: el hueco de ohlcv_5min de hace 100 h (192 h de reloj, le quedan 92)
+    se llevaba la unica peticion y el de ohlcv_1min de hace 23 h (le queda 1 h) se perdia."""
+    conn, _ = base
+    ahora = datetime.now(UTC).replace(second=0, microsecond=0)
+    viejo = ahora - timedelta(hours=100)
+    servible = ahora - timedelta(hours=23)
+    await _hueco(conn, "ohlcv_5min", "5min", 5 * MIN, viejo, viejo + 30 * MIN)
+    await _hueco(conn, "ohlcv_1min", "1min", MIN, servible, servible + 10 * MIN)
+
+    resumen = await _corre(conn, ahora=ahora, limite=1)
+
+    assert FuenteDoble.pedidas == [(servible, servible + 10 * MIN)]
+    assert resumen["cortado_por_tope"] is True
+
+
+@pytest.mark.asyncio
+async def test_el_salto_aislado_se_archiva_con_sus_dos_vecinos_y_no_se_vuelve_a_pedir(base) -> None:
+    """Con main el bucket que la fuente no publica se pedia SOLO, volvia vacio, seguia 'unresolved' y se re-pedia en
+    cada corrida. Ahora se pide con un bucket de margen: la respuesta trae los dos vecinos y no el salto, y eso es la
+    prueba que archive_source_response_absence exige."""
+    conn, _ = base
+    total = 120
+    t0 = _t0(total)
+    await _plantar(conn, t0, total, [(60, 1)])
+    FuenteDoble.salta = {t0 + 60 * MIN}
+
+    resumen = await _corre(conn)
+
+    fila = await conn.fetchrow("SELECT status, resolution_reason, recovery_metadata::text AS m FROM data_gap WHERE symbol=$1", SYM)
+    assert fila["status"] == "unrecoverable" and fila["resolution_reason"] == SOURCE_ABSENCE_REASON
+    meta = json.loads(fila["m"])
+    assert meta["method"] == "source_response_absence" and meta["proof_source"] == "recupera_huecos salto"
+    assert meta["window_returned_rows"] == 0 and meta["response_returned_rows"] == 2
+    assert FuenteDoble.pedidas == [(t0 + 60 * MIN, t0 + 61 * MIN), (t0 + 59 * MIN, t0 + 62 * MIN)]
+    assert resumen["archivados_salto"] == 1 and resumen["pendientes"] == 0 and resumen["urgente"] is None
+    FuenteDoble.pedidas = []
+
+    segunda = await _corre(conn)
+
+    assert FuenteDoble.pedidas == [] and segunda["pedidas"] == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("como", ["muda", "sin_vecino_en_la_respuesta"])
+async def test_el_salto_sin_prueba_en_la_misma_respuesta_no_se_archiva(base, como) -> None:
+    """El control: la fuente muda no prueba nada, y un vecino que esta en NUESTRA base pero no en la respuesta tampoco."""
+    conn, _ = base
+    total = 120
+    t0 = _t0(total)
+    await _plantar(conn, t0, total, [(60, 1)])
+    if como == "muda":
+        FuenteDoble.muda = True
+    else:
+        FuenteDoble.salta = {t0 + 59 * MIN, t0 + 60 * MIN}
+
+    resumen = await _corre(conn)
+
+    assert await _estados(conn) == ["unresolved"]
+    assert resumen["archivados_salto"] == 0
 
 
 def test_el_latido_se_escribe_entero_y_legible(tmp_path) -> None:
