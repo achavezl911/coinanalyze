@@ -365,7 +365,7 @@ async def test_el_salto_sin_prueba_en_la_misma_respuesta_no_se_archiva(base, com
     resumen = await _corre(conn)
 
     assert await _estados(conn) == ["unresolved"]
-    assert resumen["archivados_salto"] == 0
+    assert resumen.get("archivados_salto", 0) == 0  # .get: el control pasa tambien con main, que no archivaba
 
 
 def test_el_latido_se_escribe_entero_y_legible(tmp_path) -> None:
