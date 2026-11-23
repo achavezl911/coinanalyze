@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K43-foto-unica.sh:211` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:352`, `static/js/07-decision-y-ciclos.js:431` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:353`, `static/js/07-decision-y-ciclos.js:432` | — |
 
 **La llama el panel: es superficie de producto.**
 
