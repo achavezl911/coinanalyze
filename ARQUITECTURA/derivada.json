@@ -13813,7 +13813,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:1022",
+        "sitio": "app/entradas/motor.py:1033",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -13840,7 +13840,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:988",
+        "sitio": "app/entradas/motor.py:999",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -13867,7 +13867,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:816",
+        "sitio": "app/entradas/motor.py:827",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -13894,7 +13894,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:443",
+        "sitio": "app/entradas/motor.py:451",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -13922,7 +13922,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:217",
+        "sitio": "app/entradas/motor.py:225",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -13942,6 +13942,7 @@
           "app.entradas.backtest.simular",
           "app.entradas.motor._avanza",
           "app.entradas.motor._base_volumen",
+          "app.entradas.motor._incompleta",
           "app.entradas.motor._ocupaciones",
           "app.entradas.motor._terminal_gatillo",
           "app.entradas.motor.arma",
@@ -13983,7 +13984,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:282",
+        "sitio": "app/entradas/motor.py:290",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -14045,7 +14046,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:436",
+        "sitio": "app/entradas/motor.py:444",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -14075,7 +14076,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:425",
+        "sitio": "app/entradas/motor.py:433",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -14130,7 +14131,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:253",
+        "sitio": "app/entradas/motor.py:261",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -14243,7 +14244,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:861",
+        "sitio": "app/entradas/motor.py:872",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
@@ -14276,7 +14277,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/motor.py:239",
+        "sitio": "app/entradas/motor.py:247",
         "solo_por_tabla": [
           "/api/entradas",
           "/api/mesa/entradas"
