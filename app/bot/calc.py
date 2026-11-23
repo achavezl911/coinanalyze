@@ -35,6 +35,12 @@ def liquidacion(entrada: float, cantidad: float, apalancamiento: float, lado: in
     return entrada - lado * (valor / apalancamiento - mm) / cantidad, float(t["maintenanceMargin"])
 
 
+def perdida_al_stop(cantidad: float, entrada: float, stop: float, lado: int) -> float:
+    """Lo que se pierde al stop con la comision taker de entrada y de stop (la regla de PERDIDA_MAX). Con signo: un
+    stop ya en ganancia da menos. La usan calcula y el auditor (app/bot/auditor.py, A6)."""
+    return cantidad * (entrada - stop) * lado + cantidad * entrada * TAKER + cantidad * stop * TAKER
+
+
 def calcula(
     entrada: float,
     stop: float | None = None,
@@ -79,8 +85,8 @@ def calcula(
     valor = cantidad * entrada
     im = valor / apalancamiento
     liq, mmr = liquidacion(entrada, cantidad, apalancamiento, lado, tramos)
-    com_in, com_stop = valor * TAKER, cantidad * stop * TAKER
-    perdida = cantidad * abs(entrada - stop) + com_in + com_stop
+    com_in = valor * TAKER
+    perdida = perdida_al_stop(cantidad, entrada, stop, lado)
     dist_stop, dist_liq = abs(entrada - stop), (entrada - liq) * lado
     if (stop - liq) * lado <= 0:
         avisos.append(f"la liquidacion ({liq:.6g}) queda ANTES del stop: te liquidan antes; baja el apalancamiento")
