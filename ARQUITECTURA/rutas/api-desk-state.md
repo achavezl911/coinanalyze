@@ -86,7 +86,7 @@ LEE:
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
 - `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`

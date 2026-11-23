@@ -34,7 +34,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 
 ## Funciones que la componen
 

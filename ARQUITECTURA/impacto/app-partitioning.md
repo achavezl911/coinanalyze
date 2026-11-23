@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`apply_temporal_retention`](#apply-temporal-retention) | 34 | 0 | **0** | 56 ↑ | **0** |
+| [`apply_temporal_retention`](#apply-temporal-retention) | 34 | 0 | **0** | 55 ↑ | **0** |
 | [`ensure_temporal_partitions`](#ensure-temporal-partitions) | 29 | 0 | **0** | 28 ↑ | **0** |
 
 ## apply_temporal_retention
 
 `app/partitioning.py:34` · clave completa `app.partitioning.apply_temporal_retention`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 56** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 55** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -28,34 +28,30 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 56 rutas · **cota superior**
+### Por tabla · k<=2 — 55 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (56 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (55 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
 Ella o alguien que la llama hasta k=2 escribe:
 
 - `daily_session_agg` — la escribe `app.daily_agg.apply_retention`
-- `daily_verdict` — la escribe `app.daily_agg.apply_retention`, `app.daily_agg.persist_verdicts`
-- `daily_verdict_outcome` — la escribe `app.daily_agg.materialize_daily_verdict_outcomes`
-- `daily_verdict_snapshot` — la escribe `app.daily_agg.persist_verdicts`
+- `daily_verdict` — la escribe `app.daily_agg.apply_retention`
 - `funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `futures_trades_agg` — la escribe `app.scalp_collector.cleanup_expired_rows`
 - `libro_cobertura` — la escribe `app.libro.poda`
 - `liquidations` — la escribe `app.daily_agg.apply_retention`
 - `long_short_ratio` — la escribe `app.daily_agg.apply_retention`
 - `metrics_snapshot` — la escribe `app.daily_agg.apply_retention`
-- `ohlcv` — la escribe `app.daily_agg.apply_retention`, `app.ingest.rollup_ohlcv_5m`, `app.ingest.upsert_ohlcv`
+- `ohlcv` — la escribe `app.daily_agg.apply_retention`
 - `oi_bybit` — la escribe `app.daily_agg.apply_retention`
 - `open_interest` — la escribe `app.daily_agg.apply_retention`
-- `open_interest_daily` — la escribe `app.daily_agg.rollup_open_interest_daily`
 - `orderflow_celda_hora` — la escribe `app.orderflow.suma_horas`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
 - `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
 - `orderflow_hora_hecha` — la escribe `app.orderflow.poda`, `app.orderflow.suma_horas`
-- `pipeline_heartbeat` — la escribe `app.db.heartbeat`
 - `predicted_funding_rate` — la escribe `app.daily_agg.apply_retention`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 - `spot_trades_agg` — la escribe `app.daily_agg.apply_retention`
@@ -111,7 +107,6 @@ Y esas tablas las leen:
 - [`/api/structure-detail`](../rutas/api-structure-detail.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/verdicts`](../rutas/api-verdicts.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
@@ -119,7 +114,7 @@ Y esas tablas las leen:
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**56 rutas se enteran SOLO por el dato**, sin
+**55 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -171,7 +166,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/structure-detail`](../rutas/api-structure-detail.md)
 - [`/api/swing-score`](../rutas/api-swing-score.md)
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-- [`/api/verdicts`](../rutas/api-verdicts.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
 - [`/api/whale/delta`](../rutas/api-whale-delta.md)
