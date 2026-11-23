@@ -111,8 +111,8 @@ def sin_dato(s: dict, a: int, b: int) -> list[dict]:
         out.append({"desde": a, "hasta": min(dd, b), "motivo": f"antes de la retención ({s['retencion_h']} h): sin dato"})
     if s.get("truncada"):
         ev = s.get("eventos") or []
-        out.append({"desde": ms(ev[-1]["ts"]) if ev else a, "hasta": b,
-                    "motivo": f"la ruta cortó en {len(ev)} eventos: lo de después no está"})
+        out.append({"desde": max(dd, a) if dd is not None else a, "hasta": ms(ev[0]["ts"]) if ev else b,
+                    "motivo": "la ruta cortó por su tope de eventos: lo de antes no está"})
     for h in s.get("huecos") or []:
         if h["estado"] != "recovered":
             out.append({"desde": max(ms(h["desde"]), a), "hasta": min(ms(h["hasta"]), b),
@@ -271,6 +271,14 @@ async def mira(J, pagina: str, vista: str, base_db: str) -> dict:
             n_db = r.stdout.strip()
             if not s.get("truncada") and n_db != str(len(ev)):
                 J.mal("T", pref, f"la tabla tiene {n_db} liquidaciones en la ventana y la ruta sirve {len(ev)}")
+            if s.get("truncada") and s.get("eventos"):
+                # al cortar, la ruta se queda con las MAS RECIENTES (U-04): nada de la tabla despues de su ultimo evento
+                ult = s["eventos"][-1]["ts"]
+                r = subprocess.run(["psql", base_db, "-XAtc", "SELECT count(*) FROM liquidations_realtime WHERE symbol = "
+                                    f"'{d.get('simbolo_coinalyze')}' AND ts >= '{ult}'::timestamptz + interval '1 ms' "
+                                    f"AND ts < '{q['hasta'][0]}'"], capture_output=True, text=True, timeout=60)
+                if r.stdout.strip() != "0":
+                    J.mal("T", pref, f"la ruta corto y faltan {r.stdout.strip()} liquidaciones despues de {ult}")
         # (P)
         if (g["regla"] or {}).get("umbral_usd") != UMBRAL:
             J.mal("P", pref, f"LIQ_REGLA.umbral_usd = {(g['regla'] or {}).get('umbral_usd')}, no {UMBRAL:g}")

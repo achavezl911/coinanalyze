@@ -38379,7 +38379,7 @@
             "tests/test_bot_r3.py:338",
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
-            "tests/test_deploy_health_gate.py:154",
+            "tests/test_deploy_health_gate.py:144",
             "tests/test_deploy_wrapper.py:54",
             "tests/test_ingest_health.py:236",
             "tests/test_smoke_arranque.py:1"
@@ -42092,7 +42092,7 @@
             "harness/checks/K120-banco.py:180",
             "harness/checks/K120-liq.py:248",
             "harness/checks/K120-liq.py:250",
-            "harness/checks/K120-liq.py:433"
+            "harness/checks/K120-liq.py:441"
           ],
           "menciones": [
             "harness/checks/K120-banco.py:15",
@@ -47693,13 +47693,13 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_health_gate.py:180",
+            "tests/test_deploy_health_gate.py:170",
             "tests/test_deploy_wrapper.py:268",
             "tests/test_smoke_arranque.py:40"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
-            "tests/test_deploy_health_gate.py:158",
+            "tests/test_deploy_health_gate.py:148",
             "tests/test_deploy_wrapper.py:72"
           ]
         }
@@ -48949,8 +48949,8 @@
             "harness/checks/K120-control.bash:66",
             "harness/checks/K120-liq.py:207",
             "harness/checks/K120-liq.py:243",
-            "harness/checks/K120-liq.py:383",
-            "harness/checks/K120-liq.py:485",
+            "harness/checks/K120-liq.py:391",
+            "harness/checks/K120-liq.py:493",
             "harness/checks/K121-control.bash:137",
             "harness/checks/K121-trazos.py:376",
             "harness/checks/K121-trazos.py:516",
@@ -49109,7 +49109,7 @@
             "harness/checks/K114-raton-libro.py:773",
             "harness/checks/K120-control.bash:66",
             "harness/checks/K120-liq.py:226",
-            "harness/checks/K120-liq.py:486",
+            "harness/checks/K120-liq.py:494",
             "harness/checks/K123-banco.py:33",
             "harness/checks/K123-espacio.py:320",
             "harness/checks/K44-control.bash:1186",

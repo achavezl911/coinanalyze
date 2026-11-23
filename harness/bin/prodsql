@@ -22,7 +22,7 @@ PAYLOAD
 penc=$(printf '%s' "$payload" | base64 | tr -d '\n')
 
 # EL RC DEL SQL SE PERDIA EN EL PIPE, Y ESO APAGABA EL GUARDIA DE TODOS LOS CHECKS.
-# La version anterior terminaba en `ssh ... 2>&1 | "$B/bin/_corta"`: en un pipe, el rc que
+# La version anterior terminaba en `ssh ... 2>&1 | "$(dirname "$(readlink -f "$0")")/_corta"`: en un pipe, el rc que
 # ve el llamante es el del ULTIMO mandato -_corta, que siempre sale 0-, asi que
 # `prodsql "SELECT no_existe FROM ..."` devolvia 0 igual que `SELECT 1`. Medido por el
 # operador el 2026-09-05. Consecuencia: cualquier guardia `[ "$rc" = 0 ] || NO MEDIDO`
@@ -63,7 +63,7 @@ salida=$(ssh -n -o BatchMode=yes -o ConnectTimeout=8 \
   -i "$PROD_SSH_KEY" -o UserKnownHostsFile="$PROD_KNOWN_HOSTS" \
   "$PROD_SSH_USER@$PROD_HOST" "printf %s $penc | base64 -d | sh" 2>"$err") || rc=$?
 
-printf '%s\n' "$salida" | "$B/bin/_corta"
+printf '%s\n' "$salida" | "$(dirname "$(readlink -f "$0")")/_corta"
 
 # 1 · el rc del transporte y del SQL (ssh caido, clave mala, psql con ON_ERROR_STOP=1)
 if [ "$rc" != "0" ]; then

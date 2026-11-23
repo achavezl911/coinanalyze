@@ -2,7 +2,7 @@
 # dia cerrado y escribe el marcador en /srv/coinanalyze/diario/marcador.txt y en 140, en
 # /var/lib/coinalyze-bot/informes/diario-entradas.txt, por el MISMO camino que el informe semanal (tools/bot/semanal.py:
 # harness/bin/prod con install -m 644 y el sha256 de vuelta). /entradas lo ensena; el bot no avisa de nada.
-# Como root (netrc de api y llave de prod). La instala el OPERADOR (deploy/143/LEEME-diario.txt).
+# Como root (netrc de api y llave de prod), desde la copia congelada de main y sin venv. La instala instala.sh.
 [Unit]
 Description=Coinalyze diario de entradas: rejilla y marcador (diario)
 After=network-online.target
@@ -10,8 +10,8 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/srv/coinanalyze/repo
+WorkingDirectory=/opt/coinalyze-143/current
 Environment=HOME=/root
 Environment=DIARIO_DIR=/srv/coinanalyze/diario
-ExecStart=/srv/coinanalyze/repo/.venv/bin/python -m app.diario diario
+ExecStart=/usr/bin/python3 -E -s -m app.diario diario
 TimeoutStartSec=15min

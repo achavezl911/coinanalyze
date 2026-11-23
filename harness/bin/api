@@ -23,7 +23,7 @@
 #
 # SON DOS DEFECTOS, NO UNO, y copiar el arreglo de prodsql sin pensar solo cura el primero:
 #
-#   1 · EL RC MORIA EN EL PIPE. La linea terminaba en `| "$B/bin/_corta"`, y en un pipe el rc que
+#   1 · EL RC MORIA EN EL PIPE. La linea terminaba en `| "$(dirname "$(readlink -f "$0")")/_corta"`, y en un pipe el rc que
 #       ve el llamante es el del ULTIMO mandato -_corta, que siempre sale 0-. Es literalmente lo
 #       que le pasaba a prodsql con `ssh ... | _corta`. Aqui no se usa PIPESTATUS a proposito:
 #       esto es /bin/sh, no bash. Se captura, se mira, y despues se imprime.
@@ -89,11 +89,11 @@ case "${codigo:-000}" in
   *)
     echo "api: $donde contesto HTTP $codigo" >&2
     cat "$errf" >&2
-    "$B/bin/_corta" < "$cuerpo" >&2
+    "$(dirname "$(readlink -f "$0")")/_corta" < "$cuerpo" >&2
     exit 5 ;;
 esac
 
 # 3 · el cuerpo bueno, cortado igual que siempre.
 cat "$errf" >&2
-"$B/bin/_corta" < "$cuerpo"
+"$(dirname "$(readlink -f "$0")")/_corta" < "$cuerpo"
 exit 0
