@@ -139,7 +139,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
-| `app.db.heartbeat` | 1 | **14** | 58 ↑ | **14** | [impacto](../impacto/app-db.md) |
+| `app.db.heartbeat` | 1 | **14** | 51 ↑ | **14** | [impacto](../impacto/app-db.md) |
 | `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.api.health` | 1 | **0** | 14 ↑ | **1** | [impacto](../impacto/app-api.md) |
 | `app.db.db_identity` | 1 | **0** | 14 ↑ | **1** | [impacto](../impacto/app-db.md) |

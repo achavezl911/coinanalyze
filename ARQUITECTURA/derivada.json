@@ -6419,12 +6419,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -6433,13 +6431,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -6448,7 +6444,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -6457,12 +6452,9 @@
           "/api/reference-levels",
           "/api/scalp/alerts",
           "/api/scalp/basis",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -6479,12 +6471,10 @@
         "por_tabla_k0": [],
         "sitio": "app/config.py:308",
         "solo_por_tabla": [
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -6493,13 +6483,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -6508,7 +6496,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -6517,12 +6504,9 @@
           "/api/reference-levels",
           "/api/scalp/alerts",
           "/api/scalp/basis",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -6537,11 +6521,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -6550,31 +6530,12 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "libro_cobertura": [
             "app.libro.poda"
           ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -6602,21 +6563,15 @@
             "app.db.heartbeat",
             "app.db.heartbeat_component"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ],
           "spot_trades_realtime": [
             "app.ws_collector.flush_realtime"
           ]
         },
         "tablas_k0": [],
-        "total": 59,
+        "total": 51,
         "total_exacto": 3
       },
       "app.cutoffs.ClosedCutoff.at": {
@@ -6911,12 +6866,10 @@
           "/api/ai/context",
           "/api/ai/context/bundle",
           "/api/baselines",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -6925,13 +6878,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -6940,7 +6891,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -6953,8 +6903,6 @@
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -6984,17 +6932,15 @@
           "/api/scalp/execution-cost",
           "/api/scalp/summary"
         ],
-        "sitio": "app/daily_agg.py:745",
+        "sitio": "app/daily_agg.py:771",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
           "/api/baselines",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -7003,13 +6949,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -7018,7 +6962,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7031,8 +6974,6 @@
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7046,11 +6987,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -7059,56 +6996,31 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
           "metric_baseline": [
             "app.daily_agg._store_baseline"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "metric_baseline"
         ],
-        "total": 58,
+        "total": 51,
         "total_exacto": 15
       },
       "app.daily_agg.apply_retention": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
           "app.daily_agg.cycle",
-          "app.daily_agg.run"
+          "app.daily_agg.retencion_o_aplazar"
         ],
         "por_llamada": [],
         "por_tabla": [
@@ -7331,9 +7243,6 @@
           "predicted_funding_rate": [
             "app.daily_agg.apply_retention"
           ],
-          "service_ownership": [
-            "app.db.acquire_service_lock"
-          ],
           "spot_trades_agg": [
             "app.daily_agg.apply_retention"
           ]
@@ -7378,7 +7287,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -7393,7 +7301,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7401,12 +7308,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7438,7 +7343,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -7453,7 +7357,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7461,12 +7364,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7481,11 +7382,9 @@
         ],
         "tablas_escritas": {
           "daily_session_agg": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.compute_session"
           ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -7494,28 +7393,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -7523,18 +7403,12 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 52,
         "total_exacto": 0
       },
       "app.daily_agg.compute_session": {
@@ -7561,7 +7435,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -7576,7 +7449,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7584,12 +7456,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7644,7 +7514,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -7659,7 +7528,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7667,12 +7535,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7687,11 +7553,9 @@
         ],
         "tablas_escritas": {
           "daily_session_agg": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.compute_session"
           ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -7700,46 +7564,21 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "daily_session_agg"
         ],
-        "total": 56,
+        "total": 52,
         "total_exacto": 22
       },
       "app.daily_agg.cycle": {
@@ -7751,12 +7590,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -7765,13 +7602,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -7780,7 +7615,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7788,12 +7622,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7807,16 +7638,14 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/daily_agg.py:817",
+        "sitio": "app/daily_agg.py:843",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -7825,13 +7654,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -7840,7 +7667,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7848,12 +7674,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -7867,11 +7690,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -7880,28 +7699,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -7909,18 +7709,12 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 48,
         "total_exacto": 0
       },
       "app.daily_agg.latest_closed_session_date": {
@@ -7948,7 +7742,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -7963,7 +7756,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -7971,12 +7763,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8008,7 +7798,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -8023,7 +7812,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8031,12 +7819,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8051,11 +7837,9 @@
         ],
         "tablas_escritas": {
           "daily_session_agg": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.compute_session"
           ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -8064,44 +7848,19 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 52,
         "total_exacto": 0
       },
       "app.daily_agg.materialize_daily_verdict_outcomes": {
@@ -8114,12 +7873,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8128,13 +7885,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8143,7 +7898,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8151,12 +7905,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8178,12 +7929,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8192,13 +7941,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8207,7 +7954,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8215,12 +7961,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8234,11 +7977,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -8247,28 +7986,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -8276,20 +7996,14 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "daily_verdict_outcome"
         ],
-        "total": 56,
+        "total": 48,
         "total_exacto": 3
       },
       "app.daily_agg.persist_verdicts": {
@@ -8302,12 +8016,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8316,13 +8028,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8331,7 +8041,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8339,12 +8048,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8366,12 +8072,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8380,13 +8084,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8395,7 +8097,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8403,12 +8104,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8422,11 +8120,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -8435,28 +8129,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -8464,21 +8139,15 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "daily_verdict",
           "daily_verdict_snapshot"
         ],
-        "total": 56,
+        "total": 48,
         "total_exacto": 3
       },
       "app.daily_agg.refresh_baselines": {
@@ -8492,6 +8161,151 @@
           "/api/ai/context",
           "/api/ai/context/bundle",
           "/api/baselines",
+          "/api/cross-asset",
+          "/api/cvd",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/delta-profile",
+          "/api/desk/state",
+          "/api/divergences",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/flow/spot-vs-perp",
+          "/api/healthz",
+          "/api/hypothesis",
+          "/api/level/breakout",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/market-impact",
+          "/api/market-memory",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/oi-context",
+          "/api/passive-flow",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/range/validate",
+          "/api/rango/estructura",
+          "/api/reference-levels",
+          "/api/scalp/absorption",
+          "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/summary",
+          "/api/structure",
+          "/api/structure-detail",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/api/verdicts",
+          "/api/volatility",
+          "/api/volume-profile",
+          "/api/whale/delta",
+          "/api/wyckoff",
+          "/api/zone/analysis",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/daily_agg.py:757",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/baselines",
+          "/api/cross-asset",
+          "/api/cvd",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/delta-profile",
+          "/api/desk/state",
+          "/api/divergences",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/flow/spot-vs-perp",
+          "/api/healthz",
+          "/api/hypothesis",
+          "/api/level/breakout",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/market-impact",
+          "/api/market-memory",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/oi-context",
+          "/api/passive-flow",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/range/validate",
+          "/api/rango/estructura",
+          "/api/reference-levels",
+          "/api/scalp/absorption",
+          "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/summary",
+          "/api/structure",
+          "/api/structure-detail",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/api/verdicts",
+          "/api/volatility",
+          "/api/volume-profile",
+          "/api/whale/delta",
+          "/api/wyckoff",
+          "/api/zone/analysis",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "daily_verdict": [
+            "app.daily_agg.persist_verdicts"
+          ],
+          "daily_verdict_outcome": [
+            "app.daily_agg.materialize_daily_verdict_outcomes"
+          ],
+          "daily_verdict_snapshot": [
+            "app.daily_agg.persist_verdicts"
+          ],
+          "metric_baseline": [
+            "app.daily_agg._store_baseline"
+          ],
+          "ohlcv": [
+            "app.ingest.rollup_ohlcv_5m",
+            "app.ingest.upsert_ohlcv"
+          ],
+          "open_interest_daily": [
+            "app.daily_agg.rollup_open_interest_daily"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 51,
+        "total_exacto": 0
+      },
+      "app.daily_agg.retencion_o_aplazar": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.daily_agg.cycle",
+          "app.daily_agg.run"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
           "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
@@ -8528,7 +8342,6 @@
           "/api/range/validate",
           "/api/rango/estructura",
           "/api/reference-levels",
-          "/api/scalp/absorption",
           "/api/scalp/alerts",
           "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
@@ -8549,11 +8362,10 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/daily_agg.py:731",
+        "sitio": "app/daily_agg.py:698",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/baselines",
           "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
@@ -8590,7 +8402,6 @@
           "/api/range/validate",
           "/api/rango/estructura",
           "/api/reference-levels",
-          "/api/scalp/absorption",
           "/api/scalp/alerts",
           "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
@@ -8632,9 +8443,6 @@
           ],
           "long_short_ratio": [
             "app.daily_agg.apply_retention"
-          ],
-          "metric_baseline": [
-            "app.daily_agg._store_baseline"
           ],
           "metrics_snapshot": [
             "app.daily_agg.apply_retention"
@@ -8667,7 +8475,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 58,
+        "total": 56,
         "total_exacto": 0
       },
       "app.daily_agg.rollup_open_interest_daily": {
@@ -8680,12 +8488,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8694,13 +8500,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8709,7 +8513,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8717,12 +8520,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8740,12 +8540,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8754,13 +8552,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8769,7 +8565,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8777,12 +8572,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8796,11 +8588,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -8809,28 +8597,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -8838,20 +8607,14 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "open_interest_daily"
         ],
-        "total": 56,
+        "total": 48,
         "total_exacto": 0
       },
       "app.daily_agg.ventana_barrido_5m": {
@@ -8864,12 +8627,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8878,13 +8639,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8893,7 +8652,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8901,12 +8659,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8924,12 +8679,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -8938,13 +8691,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -8953,7 +8704,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -8961,12 +8711,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -8980,11 +8727,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -8993,28 +8736,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -9022,18 +8746,12 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 48,
         "total_exacto": 0
       },
       "app.data_gaps.DataGap.from_record": {
@@ -11183,7 +10901,6 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd-matrix",
@@ -11198,13 +10915,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -11230,13 +10945,11 @@
           "/api/scalp/orderbook",
           "/api/scalp/signals",
           "/api/scalp/summary",
-          "/api/setup",
           "/api/signals/execution",
           "/api/signals/ledger",
           "/api/signals/outcomes",
           "/api/signals/replay",
           "/api/signals/visibility",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -11255,7 +10968,6 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd-matrix",
@@ -11270,13 +10982,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -11302,13 +11012,11 @@
           "/api/scalp/orderbook",
           "/api/scalp/signals",
           "/api/scalp/summary",
-          "/api/setup",
           "/api/signals/execution",
           "/api/signals/ledger",
           "/api/signals/outcomes",
           "/api/signals/replay",
           "/api/signals/visibility",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -11323,11 +11031,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -11345,9 +11049,6 @@
           ],
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
-          ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
           ],
           "futures_trades_agg": [
             "app.scalp_collector._write_combined_minute",
@@ -11367,14 +11068,12 @@
             "app.libro_honda.una"
           ],
           "liquidations": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_liquidations"
           ],
           "liquidations_realtime": [
             "app.scalp_collector.flush_liquidations"
           ],
           "long_short_ratio": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_long_short"
           ],
           "macro_event": [
@@ -11389,19 +11088,9 @@
           "market_feed_health_shard": [
             "app.db._mark_feed_shard_health"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -11441,9 +11130,6 @@
             "app.db.heartbeat_component",
             "app.db.heartbeat_shard"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "scalp_signal_snapshot": [
             "app.scalp_collector.persist_scalp_signals"
           ],
@@ -11457,7 +11143,6 @@
             "app.signal_visibility._certify_research_bundles_once"
           ],
           "spot_trades_agg": [
-            "app.daily_agg.apply_retention",
             "app.ws_collector._write_minute"
           ],
           "spot_trades_realtime": [
@@ -11468,7 +11153,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 68,
+        "total": 63,
         "total_exacto": 0
       },
       "app.db.create_pool": {
@@ -11704,7 +11389,6 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd-matrix",
@@ -11719,13 +11403,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -11751,13 +11433,11 @@
           "/api/scalp/orderbook",
           "/api/scalp/signals",
           "/api/scalp/summary",
-          "/api/setup",
           "/api/signals/execution",
           "/api/signals/ledger",
           "/api/signals/outcomes",
           "/api/signals/replay",
           "/api/signals/visibility",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -11776,7 +11456,6 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd-matrix",
@@ -11791,13 +11470,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -11823,13 +11500,11 @@
           "/api/scalp/orderbook",
           "/api/scalp/signals",
           "/api/scalp/summary",
-          "/api/setup",
           "/api/signals/execution",
           "/api/signals/ledger",
           "/api/signals/outcomes",
           "/api/signals/replay",
           "/api/signals/visibility",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -11844,11 +11519,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -11863,9 +11534,6 @@
           ],
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
-          ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
           ],
           "futures_trades_agg": [
             "app.scalp_collector._write_combined_minute",
@@ -11885,14 +11553,12 @@
             "app.libro_honda.una"
           ],
           "liquidations": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_liquidations"
           ],
           "liquidations_realtime": [
             "app.scalp_collector.flush_liquidations"
           ],
           "long_short_ratio": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_long_short"
           ],
           "macro_event": [
@@ -11907,19 +11573,9 @@
           "market_feed_health_shard": [
             "app.db._mark_feed_shard_health"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -11959,9 +11615,6 @@
             "app.db.heartbeat_component",
             "app.db.heartbeat_shard"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "scalp_signal_snapshot": [
             "app.scalp_collector.persist_scalp_signals"
           ],
@@ -11978,7 +11631,6 @@
             "app.signal_visibility._certify_research_bundles_once"
           ],
           "spot_trades_agg": [
-            "app.daily_agg.apply_retention",
             "app.ws_collector._write_minute"
           ],
           "spot_trades_realtime": [
@@ -11989,7 +11641,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 68,
+        "total": 63,
         "total_exacto": 0
       },
       "app.db.heartbeat": {
@@ -12018,12 +11670,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -12032,13 +11682,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -12056,12 +11704,9 @@
           "/api/reference-levels",
           "/api/scalp/alerts",
           "/api/scalp/basis",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -12095,12 +11740,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -12109,12 +11752,10 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -12132,12 +11773,9 @@
           "/api/reference-levels",
           "/api/scalp/alerts",
           "/api/scalp/basis",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -12152,11 +11790,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -12168,33 +11802,18 @@
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "liquidations": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_liquidations"
           ],
           "long_short_ratio": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_long_short"
           ],
           "macro_event": [
             "app.external_macro.refresh_external_macro"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -12204,14 +11823,8 @@
             "app.db.heartbeat_component",
             "app.db.heartbeat_shard"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ],
           "spot_trades_realtime": [
             "app.ws_collector.flush_realtime"
@@ -12220,7 +11833,7 @@
         "tablas_k0": [
           "pipeline_heartbeat"
         ],
-        "total": 58,
+        "total": 51,
         "total_exacto": 14
       },
       "app.db.heartbeat_component": {
@@ -12446,12 +12059,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -12460,13 +12071,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -12475,7 +12084,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -12484,12 +12092,9 @@
           "/api/reference-levels",
           "/api/scalp/alerts",
           "/api/scalp/basis",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -12508,12 +12113,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -12522,13 +12125,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -12537,7 +12138,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -12546,12 +12146,9 @@
           "/api/reference-levels",
           "/api/scalp/alerts",
           "/api/scalp/basis",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/stream",
           "/api/structure",
           "/api/structure-detail",
@@ -12566,11 +12163,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -12579,31 +12172,12 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "libro_cobertura": [
             "app.libro.poda"
           ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -12627,21 +12201,15 @@
             "app.db.heartbeat",
             "app.db.heartbeat_shard"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ],
           "spot_trades_realtime": [
             "app.ws_collector.flush_realtime"
           ]
         },
         "tablas_k0": [],
-        "total": 58,
+        "total": 50,
         "total_exacto": 0
       },
       "app.db.heartbeat_shard": {
@@ -18245,7 +17813,6 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd-matrix",
@@ -18260,13 +17827,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -18275,7 +17840,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -18287,8 +17851,6 @@
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -18306,7 +17868,6 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd-matrix",
@@ -18321,13 +17882,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -18336,7 +17895,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -18348,8 +17906,6 @@
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -18363,11 +17919,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -18379,28 +17931,9 @@
           "data_gap": [
             "app.data_gaps.reconcile_cadence_coverage"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -18409,18 +17942,12 @@
             "app.db.heartbeat",
             "app.db.heartbeat_component"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 57,
+        "total": 51,
         "total_exacto": 0
       },
       "app.ingest._reconcile_response_cadence": {
@@ -18582,12 +18109,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -18596,13 +18121,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -18611,7 +18134,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -18619,12 +18141,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -18642,12 +18161,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -18656,13 +18173,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -18671,7 +18186,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -18679,12 +18193,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -18698,11 +18209,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -18711,28 +18218,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -18740,18 +18228,12 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 48,
         "total_exacto": 0
       },
       "app.ingest.finite": {
@@ -18769,12 +18251,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -18783,13 +18263,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -18806,12 +18284,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -18829,12 +18304,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -18843,13 +18316,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -18866,12 +18337,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -18885,11 +18353,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -18901,33 +18365,18 @@
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "liquidations": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_liquidations"
           ],
           "long_short_ratio": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_long_short"
           ],
           "macro_event": [
             "app.external_macro.refresh_external_macro"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -18935,16 +18384,10 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat",
             "app.db.heartbeat_component"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 49,
         "total_exacto": 0
       },
       "app.ingest.ingest_metrics_cycle": {
@@ -19297,12 +18740,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -19311,13 +18752,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -19326,7 +18765,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -19334,12 +18772,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -19398,12 +18833,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -19412,13 +18845,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -19427,7 +18858,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -19435,12 +18865,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -19454,11 +18881,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -19467,28 +18890,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -19497,20 +18901,14 @@
             "app.db.heartbeat",
             "app.db.heartbeat_component"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "ohlcv"
         ],
-        "total": 56,
+        "total": 48,
         "total_exacto": 40
       },
       "app.ingest.rows_for": {
@@ -19529,12 +18927,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -19543,13 +18939,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -19566,12 +18960,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -19589,12 +18980,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -19603,13 +18992,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -19626,12 +19013,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -19645,11 +19029,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -19661,33 +19041,18 @@
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "liquidations": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_liquidations"
           ],
           "long_short_ratio": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_long_short"
           ],
           "macro_event": [
             "app.external_macro.refresh_external_macro"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -19695,16 +19060,10 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat",
             "app.db.heartbeat_component"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 49,
         "total_exacto": 0
       },
       "app.ingest.run": {
@@ -20190,12 +19549,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20204,13 +19561,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -20219,7 +19574,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -20227,12 +19581,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -20291,12 +19642,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20305,13 +19654,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -20320,7 +19667,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -20328,12 +19674,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -20347,11 +19690,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -20360,28 +19699,9 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -20390,20 +19710,14 @@
             "app.db.heartbeat",
             "app.db.heartbeat_component"
           ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "service_ownership": [
             "app.db.acquire_service_lock"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [
           "ohlcv"
         ],
-        "total": 56,
+        "total": 48,
         "total_exacto": 40
       },
       "app.ingest.valid_ts": {
@@ -20422,12 +19736,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20436,13 +19748,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -20459,12 +19769,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -20482,12 +19789,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20496,13 +19801,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -20519,12 +19822,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -20538,11 +19838,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -20554,33 +19850,18 @@
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
           "liquidations": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_liquidations"
           ],
           "long_short_ratio": [
-            "app.daily_agg.apply_retention",
             "app.ingest.upsert_long_short"
           ],
           "macro_event": [
             "app.external_macro.refresh_external_macro"
           ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
@@ -20588,16 +19869,10 @@
           "pipeline_heartbeat": [
             "app.db.heartbeat",
             "app.db.heartbeat_component"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 49,
         "total_exacto": 0
       },
       "app.ingest.ventana_barrido_cadencia": {
@@ -20610,12 +19885,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20624,13 +19897,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -20639,7 +19910,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -20647,12 +19917,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -20670,12 +19937,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20684,13 +19949,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -20699,7 +19962,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -20707,12 +19969,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -20726,11 +19985,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -20739,44 +19994,19 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 48,
         "total_exacto": 0
       },
       "app.interpretation._barrier_candidates": {
@@ -20976,12 +20206,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -20990,13 +20218,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -21005,7 +20231,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -21013,12 +20238,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -21034,12 +20256,10 @@
         "por_tabla_k0": [],
         "sitio": "app/interpretation.py:139",
         "solo_por_tabla": [
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/data-confidence",
           "/api/delta-profile",
           "/api/desk/state",
@@ -21047,13 +20267,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -21062,7 +20280,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -21070,11 +20287,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -21088,11 +20303,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -21101,44 +20312,19 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 49,
         "total_exacto": 4
       },
       "app.interpretation.market_memory_read": {
@@ -22639,7 +21825,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -22654,7 +21839,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -22662,12 +21846,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -22698,7 +21880,6 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
@@ -22713,7 +21894,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -22721,12 +21901,10 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
           "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -22740,11 +21918,9 @@
         ],
         "tablas_escritas": {
           "daily_session_agg": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.compute_session"
           ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -22753,44 +21929,19 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 52,
         "total_exacto": 2
       },
       "app.metrics.whale_classification": {
@@ -23373,7 +22524,7 @@
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
           "app.daily_agg.apply_retention",
-          "app.daily_agg.cycle",
+          "app.daily_agg.retencion_o_aplazar",
           "app.libro.poda",
           "app.libro.run",
           "app.orderflow.poda",
@@ -23432,7 +22583,6 @@
           "/api/structure-detail",
           "/api/swing-score",
           "/api/trend-matrix",
-          "/api/verdicts",
           "/api/volatility",
           "/api/volume-profile",
           "/api/whale/delta",
@@ -23492,7 +22642,6 @@
           "/api/structure-detail",
           "/api/swing-score",
           "/api/trend-matrix",
-          "/api/verdicts",
           "/api/volatility",
           "/api/volume-profile",
           "/api/whale/delta",
@@ -23505,14 +22654,7 @@
             "app.daily_agg.apply_retention"
           ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
-            "app.daily_agg.persist_verdicts"
-          ],
-          "daily_verdict_outcome": [
-            "app.daily_agg.materialize_daily_verdict_outcomes"
-          ],
-          "daily_verdict_snapshot": [
-            "app.daily_agg.persist_verdicts"
+            "app.daily_agg.apply_retention"
           ],
           "funding_rate": [
             "app.daily_agg.apply_retention"
@@ -23533,18 +22675,13 @@
             "app.daily_agg.apply_retention"
           ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
-            "app.ingest.rollup_ohlcv_5m",
-            "app.ingest.upsert_ohlcv"
+            "app.daily_agg.apply_retention"
           ],
           "oi_bybit": [
             "app.daily_agg.apply_retention"
           ],
           "open_interest": [
             "app.daily_agg.apply_retention"
-          ],
-          "open_interest_daily": [
-            "app.daily_agg.rollup_open_interest_daily"
           ],
           "orderflow_celda_hora": [
             "app.orderflow.suma_horas"
@@ -23565,9 +22702,6 @@
             "app.orderflow.poda",
             "app.orderflow.suma_horas"
           ],
-          "pipeline_heartbeat": [
-            "app.db.heartbeat"
-          ],
           "predicted_funding_rate": [
             "app.daily_agg.apply_retention"
           ],
@@ -23579,7 +22713,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 55,
         "total_exacto": 0
       },
       "app.partitioning.ensure_temporal_partitions": {
@@ -29655,12 +28789,10 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -29669,13 +28801,11 @@
           "/api/entradas",
           "/api/external-macro",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -29684,7 +28814,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -29692,12 +28821,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/swing-score",
@@ -29715,12 +28841,10 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/carry/matriz",
           "/api/cross-asset",
           "/api/cvd",
           "/api/cvd/divergence",
           "/api/cvd/spot",
-          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/delta-profile",
@@ -29728,13 +28852,11 @@
           "/api/divergences",
           "/api/entradas",
           "/api/flow/spot-vs-perp",
-          "/api/funding-context",
           "/api/healthz",
           "/api/hypothesis",
           "/api/level/breakout",
           "/api/liquidation-map",
           "/api/liquidations",
-          "/api/macro-context",
           "/api/market-impact",
           "/api/market-memory",
           "/api/mesa/decide",
@@ -29743,7 +28865,6 @@
           "/api/oi",
           "/api/oi-context",
           "/api/passive-flow",
-          "/api/positioning",
           "/api/price-barriers",
           "/api/profile",
           "/api/quality/feeds",
@@ -29751,12 +28872,9 @@
           "/api/rango/estructura",
           "/api/reference-levels",
           "/api/scalp/alerts",
-          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/summary",
-          "/api/setup",
-          "/api/snapshot",
           "/api/structure",
           "/api/structure-detail",
           "/api/trend-matrix",
@@ -29769,11 +28887,7 @@
           "/metrics"
         ],
         "tablas_escritas": {
-          "daily_session_agg": [
-            "app.daily_agg.apply_retention"
-          ],
           "daily_verdict": [
-            "app.daily_agg.apply_retention",
             "app.daily_agg.persist_verdicts"
           ],
           "daily_verdict_outcome": [
@@ -29782,44 +28896,19 @@
           "daily_verdict_snapshot": [
             "app.daily_agg.persist_verdicts"
           ],
-          "funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "liquidations": [
-            "app.daily_agg.apply_retention"
-          ],
-          "long_short_ratio": [
-            "app.daily_agg.apply_retention"
-          ],
-          "metrics_snapshot": [
-            "app.daily_agg.apply_retention"
-          ],
           "ohlcv": [
-            "app.daily_agg.apply_retention",
             "app.ingest.rollup_ohlcv_5m",
             "app.ingest.upsert_ohlcv"
-          ],
-          "oi_bybit": [
-            "app.daily_agg.apply_retention"
-          ],
-          "open_interest": [
-            "app.daily_agg.apply_retention"
           ],
           "open_interest_daily": [
             "app.daily_agg.rollup_open_interest_daily"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat"
-          ],
-          "predicted_funding_rate": [
-            "app.daily_agg.apply_retention"
-          ],
-          "spot_trades_agg": [
-            "app.daily_agg.apply_retention"
           ]
         },
         "tablas_k0": [],
-        "total": 56,
+        "total": 48,
         "total_exacto": 2
       },
       "app.scalp_logic.trend_matrix": {
@@ -50613,7 +49702,7 @@
         {
           "funcion": "app.daily_agg._store_baseline",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:798",
+          "sitio": "app/daily_agg.py:824",
           "verbo": "INSERT"
         }
       ],
@@ -50792,19 +49881,19 @@
           "sitio": "app/daily_agg.py:655"
         },
         {
+          "funcion": "app.daily_agg.compute_session",
+          "origen": "constante SESSION_QUERY",
+          "sitio": "app/daily_agg.py:78"
+        },
+        {
           "funcion": "app.daily_agg._store_baseline",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/daily_agg.py:759"
+          "sitio": "app/daily_agg.py:785"
         },
         {
           "funcion": "app.daily_agg._store_baseline",
           "origen": "literal",
-          "sitio": "app/daily_agg.py:759"
-        },
-        {
-          "funcion": "app.daily_agg.compute_session",
-          "origen": "constante SESSION_QUERY",
-          "sitio": "app/daily_agg.py:78"
+          "sitio": "app/daily_agg.py:785"
         },
         {
           "funcion": "app.delta_profile.delta_profile",

@@ -133,7 +133,7 @@ LEE:
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
 - `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
@@ -433,8 +433,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.config.get_settings` | 3 | **0** | 58 ↑ | **3** | [impacto](../impacto/app-config.md) |
-| `app.interpretation.evaluate_setups` | 4 | **0** | 56 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
+| `app.config.get_settings` | 3 | **0** | 50 ↑ | **3** | [impacto](../impacto/app-config.md) |
+| `app.interpretation.evaluate_setups` | 4 | **0** | 48 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |

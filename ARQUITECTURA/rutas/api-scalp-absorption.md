@@ -31,7 +31,7 @@ LEE:
 - `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
 - `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
