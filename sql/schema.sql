@@ -3530,3 +3530,49 @@ END
 $$;
 
 COMMIT;
+
+
+-- =========================================================================================
+-- CINTA R1 (V-02) · la poda del borde por tramos. Bloque ADITIVO: una funcion nueva; apply_temporal_retention queda
+-- como estaba, pero la aplicacion ya no la llama. app/partitioning.py tira primero las particiones enteras caducadas
+-- (drop_expired_temporal_partitions, en su transaccion) y recorta despues la del borde con esta funcion, un tramo de
+-- bloques de heap por transaccion. La sentencia unica era la causa: el DELETE del borde de orderflow_cinta agotaba el
+-- tiempo y su ROLLBACK deshacia tambien el DROP (140, 11-22/11-23: ni una particion tirada en 48 h).
+-- =========================================================================================
+BEGIN;
+
+CREATE OR REPLACE FUNCTION podar_temporal_tramo(
+    parent_name text,
+    hija text,
+    cutoff timestamptz,
+    desde bigint,
+    bloques integer
+)
+RETURNS bigint
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    schema_name text := current_schema();
+    borradas bigint;
+BEGIN
+    -- El portero de la lista es el de drop_expired_temporal_partitions: rechaza la madre que no gestiona y con
+    -- -infinity no tira nada. Toma ademas el mismo cerrojo de retencion de la madre hasta el final del tramo.
+    PERFORM drop_expired_temporal_partitions(parent_name, '-infinity');
+    IF desde < 0 OR bloques <= 0 THEN
+        RAISE EXCEPTION 'tramo invalido: desde %, bloques %', desde, bloques;
+    END IF;
+    IF hija !~ ('^' || parent_name || '_p[0-9]{8}$') OR NOT EXISTS (
+        SELECT 1 FROM pg_inherits
+         WHERE inhrelid = to_regclass(format('%I.%I', schema_name, hija))
+           AND inhparent = to_regclass(format('%I.%I', schema_name, parent_name))
+    ) THEN
+        RAISE EXCEPTION '% is not a daily partition of %', hija, parent_name;
+    END IF;
+    EXECUTE format('DELETE FROM %I.%I WHERE ctid >= $1 AND ctid < $2 AND ts < $3', schema_name, hija)
+        USING format('(%s,0)', desde)::tid, format('(%s,0)', desde + bloques)::tid, cutoff;
+    GET DIAGNOSTICS borradas = ROW_COUNT;
+    RETURN borradas;
+END
+$$;
+
+COMMIT;
