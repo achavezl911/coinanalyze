@@ -36,7 +36,7 @@ test('lo que la ruta no cubre se dice: retencion, corte y hueco (no el recuperad
                        { exchange: 'binance', desde: '2026-11-07T11:30:00.000Z', hasta: '2026-11-07T11:40:00.000Z', estado: 'recovered' }] };
   const sin = Q.sinDatoLiq(s, A, B);
   assert.deepStrictEqual(sin.map((x) => [new Date(x.desde).toISOString().slice(11, 16), new Date(x.hasta).toISOString().slice(11, 16)]),
-                         [['10:00', '10:30'], ['11:00', '12:00'], ['11:10', '11:20']]);
+                         [['10:00', '10:30'], ['10:30', '11:00'], ['11:10', '11:20']]);
   assert.deepStrictEqual(Q.sinDatoLiq(null, A, B).length, 1);
   assert.deepStrictEqual(Q.sinDatoLiq({ desde_dato: '2026-11-07T10:00:00.000Z', eventos: [], huecos: [] }, A, B), []);
 });
