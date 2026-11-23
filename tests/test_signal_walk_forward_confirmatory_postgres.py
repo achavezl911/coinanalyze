@@ -1175,13 +1175,11 @@ async def test_confirmatory_baseline_cohort_includes_non_actionable_rows_regardl
     folds = await _insert_backdated_manifest(
         conn, name=options.name, options=options, discovery_start=discovery_start, cutoff_at=cutoff_at
     )
-    test_start = _align_forward_same_utc_day(
-        folds[0]["test_start"], minutes=max(options.horizons), span_hours=2
-    )
+    test_start = _align_forward(folds[0]["test_start"], minutes=max(options.horizons))
 
-    # Single calendar-day block: one actionable long row (default
-    # state/regime) plus one non-actionable neutral row with a DIFFERENT
-    # state/regime_label and a very different market_return_pct.
+    # Two calendar-day blocks: day 0 holds one actionable long row (default
+    # state/regime); day 1 holds only one non-actionable neutral row with a
+    # DIFFERENT state/regime_label and a very different market_return_pct.
     await _insert_confirmatory_bundle(
         conn,
         observed_at=test_start + timedelta(hours=1),
@@ -1190,7 +1188,7 @@ async def test_confirmatory_baseline_cohort_includes_non_actionable_rows_regardl
     )
     await _insert_confirmatory_bundle(
         conn,
-        observed_at=test_start + timedelta(hours=2),
+        observed_at=test_start + timedelta(days=1, hours=1),
         directional_return_pct=-15.0,
         direction="neutral",
         state="Diagnostic Sweep State",
@@ -1207,14 +1205,13 @@ async def test_confirmatory_baseline_cohort_includes_non_actionable_rows_regardl
     # Only the long row is actionable -- the neutral row never becomes a
     # primary row.
     assert result["n_evaluated_actionable"] == 1
+    # Baseline v2 (R-01): a block's baseline is the mean of the OTHER blocks.
     # If the baseline cohort were (incorrectly) restricted to the actionable
-    # row alone, the block's unconditional mean would be the row's own
-    # +5.0% (+500bps), and the sign-matched (long) baseline would be
-    # +500bps. Because the neutral row IS included, the block's true
-    # unconditional mean is (5.0 + -15.0) / 2 = -5.0% (-500bps), and the
-    # long-direction baseline is -500bps -- the opposite sign from what an
-    # actionable-only cohort would have produced.
-    assert result["baseline_mean_bps"] == pytest.approx(-500.0, abs=0.5)
+    # row alone, day 1 would hold no baseline observation and the baseline
+    # would be refused. Because the neutral row IS included, the long row's
+    # baseline is day 1's -15.0% (-1500bps), never its own +500bps.
+    assert result["baseline_refusal_reason"] is None
+    assert result["baseline_mean_bps"] == pytest.approx(-1500.0, abs=0.5)
     assert result["primary_block_count"] == 1
     # Below this contract's minimum_primary_blocks=2 -- inconclusive by
     # construction, but the diagnostic baseline_mean_bps above is computed
