@@ -257,22 +257,32 @@ async def _certify_final_outcomes_once(
     by an evidence_version=6 observation. Never certifies v1-v5 outcomes.
     """
 
+    # The id search touches only signal_outcome_final_certify_idx and the
+    # visibility unique index (index-only anti-join); the heap is read for the
+    # <= batch_size survivors. Selecting status/finalized_at in the search
+    # itself walked the whole signal_outcome heap on every pass and hit the
+    # statement_timeout in 140 (P26).
     candidates = await conn.fetch(
         """
         SELECT out.outcome_id, out.status, out.finalized_at
         FROM signal_outcome AS out
-        JOIN signal_observation AS obs
-          ON obs.observation_id=out.observation_id
-        WHERE out.outcome_version=$1
-          AND out.status IN ('evaluated','not_evaluable')
-          AND obs.evidence_version=$2
-          AND NOT EXISTS (
-            SELECT 1 FROM signal_outcome_final_visibility AS v
-            WHERE v.outcome_id=out.outcome_id
-              AND v.visibility_version=$3
-          )
+        WHERE out.outcome_id IN (
+          SELECT fin.outcome_id
+          FROM signal_outcome AS fin
+          JOIN signal_observation AS obs
+            ON obs.observation_id=fin.observation_id
+          WHERE fin.outcome_version=$1
+            AND fin.status IN ('evaluated','not_evaluable')
+            AND obs.evidence_version=$2
+            AND NOT EXISTS (
+              SELECT 1 FROM signal_outcome_final_visibility AS v
+              WHERE v.outcome_id=fin.outcome_id
+                AND v.visibility_version=$3
+            )
+          ORDER BY fin.outcome_id
+          LIMIT $4
+        )
         ORDER BY out.outcome_id
-        LIMIT $4
         """,
         _CERTIFIED_OUTCOME_VERSION,
         _CERTIFIED_EVIDENCE_VERSION,

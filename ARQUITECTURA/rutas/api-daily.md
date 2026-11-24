@@ -162,7 +162,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.metrics.session_bounds` | 2 | **0** | 56 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.session_bounds` | 2 | **0** | 52 ↑ | **2** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
