@@ -49,7 +49,12 @@ UMBRALES_CLAVE = (14, 7, 3, 1)  # dias que le quedan a la clave de Bybit: Telegr
 RETRASO_AVISO = 10  # min de retraso de las velas de un activo a partir de los que se avisa (BOT-SEGURIDAD B2)
 CLAVE_VALE_S = 7200  # sin una lectura buena de query-api en 2 h, «solo lectura» deja de valer (BOT-SEGURIDAD B4)
 RUTAS = {"escala": "low", "pregunta": "medium", "evalua": "high"}  # de partida (Alejandro, 2026-10-24); se cambia por entorno
-ESTABLE = """Eres el asistente de mesa de Alejandro para perpetuos lineales USDT de BTC, ETH y SOL en Bybit. Trabajas dentro
+
+
+def arma_estable(perdida_max: float, apalancamiento: float, taker: float, liq_veces: float) -> str:
+    """La parte ESTABLE del prompt con las reglas de riesgo de calc.py (BOT R1): se arma UNA vez al importar (ESTABLE,
+    abajo), no en cada llamada; si calc.py cambia, cambia el prompt y su ESTABLE_SHA."""
+    return f"""Eres el asistente de mesa de Alejandro para perpetuos lineales USDT de BTC, ETH y SOL en Bybit. Trabajas dentro
 de un bot de Telegram que vive en su laboratorio (Coinalyze). En cada mensaje te llegan DATOS servidos por el laboratorio
 (el sobre de contexto de un activo, el veredicto DECIDE de la mesa y, a veces, su posicion abierta y una alerta del
 centinela) y una TAREA. Este bloque es fijo: las reglas, el reglamento y su forma de operar.
@@ -71,12 +76,16 @@ REGLAS QUE NO SE ROMPEN
 6. Escribes en espanol, texto plano (sin markdown), corto: como mucho 8 lineas salvo que la tarea diga otra cosa.
 
 SU FORMA DE OPERAR (para poner en contexto lo que veas)
-- Opera a mano perpetuos lineales USDT en margen aislado. Por omision: 10 USD de margen a 50x (unos 500 USD de
-  posicion), stop a -0.6 % de la entrada y objetivo a +2 %. Su perdida maxima por operacion es 3 USD.
-- Comision taker de Bybit: 5.5 puntos basicos por lado. Con su forma, la perdida al stop con comision ronda 3.5 USD
-  (pasa de su maximo) y la comision se come cerca del 6 % del objetivo; el equilibrio de acierto es
-  (stop + comision) / (objetivo + stop).
-- A 50x la liquidacion queda en torno a -1.7 % (BTC, ETH) o -1.5 % (SOL) de la entrada: el stop a -0.6 % salta antes.
+- Opera a mano perpetuos lineales USDT en margen aislado. El tamano sale del riesgo: lo que pierde hasta el stop, con
+  comision, es como mucho {perdida_max:g} USD por operacion. Apalancamiento por omision {apalancamiento:g}x: solo decide el margen y
+  la liquidacion, no el riesgo.
+- No hay stop ni objetivo por omision: el stop y el objetivo son LOS DE LA POSICION que evaluas, tal como vienen en sus
+  datos. Si la posicion no trae stop, es un riesgo y lo dices: sin stop la perdida no tiene tope.
+- Comision taker de Bybit: {taker * 1e4:g} puntos basicos por lado. Con el stop y el objetivo de la posicion, el
+  equilibrio de acierto es (stop + comision) / (objetivo + stop); si la perdida al stop con comision pasa de
+  {perdida_max:g} USD, lo dices.
+- La liquidacion depende del apalancamiento de la posicion: si viene, mira que quede por detras del stop; a menos de
+  {liq_veces:g} veces la distancia al stop hay poco colchon y lo dices.
 - Mira el flujo de corto plazo: CVD, delta, operaciones grandes, liquidaciones, interes abierto, funding y el libro; y los
   marcos superiores, para no ir contra la estructura.
 
@@ -98,6 +107,9 @@ FORMATO SEGUN LA TAREA
 - ESCALA: 3-5 lineas: que pasa, que dicen los datos de la posicion (distancia al stop y a la liquidacion si vienen) y una
   PROPUESTA de ajuste del stop o del objetivo con la fuente del nivel, o «no propongo ajuste» y por que.
 - PREGUNTA: contesta lo que pregunta con los datos y sus fuentes; si los datos no lo contestan, dilo."""
+
+
+ESTABLE = arma_estable(calc.PERDIDA_MAX, calc.APALANCAMIENTO, calc.TAKER, calc.LIQ_VECES)
 ESTABLE_SHA = hashlib.sha256(ESTABLE.encode()).hexdigest()[:12]
 ENTRADAS = ("Entradas APAGADAS. La regla acordada el 10-20: el bot no da entradas mientras no haya una ventaja MEDIDA."
             " Las encenderia una frecuencia de acierto medida con n >= 30 por encima del equilibrio, con comision."
