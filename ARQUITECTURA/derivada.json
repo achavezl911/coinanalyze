@@ -17509,7 +17509,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:688",
+        "sitio": "app/ingest.py:691",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17618,7 +17618,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:650",
+        "sitio": "app/ingest.py:653",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17728,7 +17728,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:454",
+        "sitio": "app/ingest.py:457",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17877,7 +17877,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:620",
+        "sitio": "app/ingest.py:623",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18021,7 +18021,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:569",
+        "sitio": "app/ingest.py:572",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18282,7 +18282,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:815",
+        "sitio": "app/ingest.py:818",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18385,7 +18385,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:747",
+        "sitio": "app/ingest.py:750",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18951,7 +18951,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:1033",
+        "sitio": "app/ingest.py:1036",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -19003,7 +19003,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:1007",
+        "sitio": "app/ingest.py:1010",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -19057,7 +19057,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:998",
+        "sitio": "app/ingest.py:1001",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -19797,7 +19797,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:539",
+        "sitio": "app/ingest.py:542",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21135,6 +21135,142 @@
         "total": 9,
         "total_exacto": 0
       },
+      "app.metrics.certified_metrics_cutoff": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.ingest.ingest_metrics_cycle",
+          "app.ingest.ingest_ohlcv_cycle",
+          "app.ingest.publish_snapshot"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cross-asset",
+          "/api/cvd",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/delta-profile",
+          "/api/desk/state",
+          "/api/divergences",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/flow/spot-vs-perp",
+          "/api/healthz",
+          "/api/hypothesis",
+          "/api/level/breakout",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/market-impact",
+          "/api/market-memory",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/oi-context",
+          "/api/passive-flow",
+          "/api/positioning",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/range/validate",
+          "/api/rango/estructura",
+          "/api/reference-levels",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/summary",
+          "/api/structure",
+          "/api/structure-detail",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/api/volatility",
+          "/api/volume-profile",
+          "/api/whale/delta",
+          "/api/wyckoff",
+          "/api/zone/analysis",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/metrics.py:364",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cross-asset",
+          "/api/cvd",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/delta-profile",
+          "/api/desk/state",
+          "/api/divergences",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/flow/spot-vs-perp",
+          "/api/healthz",
+          "/api/hypothesis",
+          "/api/level/breakout",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/market-impact",
+          "/api/market-memory",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/oi-context",
+          "/api/passive-flow",
+          "/api/positioning",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/range/validate",
+          "/api/rango/estructura",
+          "/api/reference-levels",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/summary",
+          "/api/structure",
+          "/api/structure-detail",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/api/volatility",
+          "/api/volume-profile",
+          "/api/whale/delta",
+          "/api/wyckoff",
+          "/api/zone/analysis",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "external_macro_observation": [
+            "app.external_macro.refresh_external_macro"
+          ],
+          "liquidations": [
+            "app.ingest.upsert_liquidations"
+          ],
+          "long_short_ratio": [
+            "app.ingest.upsert_long_short"
+          ],
+          "macro_event": [
+            "app.external_macro.refresh_external_macro"
+          ],
+          "ohlcv": [
+            "app.ingest.rollup_ohlcv_5m",
+            "app.ingest.upsert_ohlcv"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat",
+            "app.db.heartbeat_component"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 48,
+        "total_exacto": 0
+      },
       "app.metrics.cobertura_suficiente": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -21249,7 +21385,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:740",
+        "sitio": "app/metrics.py:776",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21390,7 +21526,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:464",
+        "sitio": "app/metrics.py:494",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21531,7 +21667,7 @@
           "/api/snapshot",
           "/metrics"
         ],
-        "sitio": "app/metrics.py:705",
+        "sitio": "app/metrics.py:741",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -49838,7 +49974,7 @@
         {
           "funcion": "app.metrics.insert_snapshot",
           "origen": "literal",
-          "sitio": "app/metrics.py:712",
+          "sitio": "app/metrics.py:748",
           "verbo": "INSERT"
         }
       ],
@@ -50552,6 +50688,11 @@
           "funcion": "app.metrics.liquidation_history_observation",
           "origen": "literal",
           "sitio": "app/metrics.py:292"
+        },
+        {
+          "funcion": "app.metrics.certified_metrics_cutoff",
+          "origen": "literal",
+          "sitio": "app/metrics.py:374"
         },
         {
           "funcion": "app.orderflow_lectura._barrido_liquidaciones",

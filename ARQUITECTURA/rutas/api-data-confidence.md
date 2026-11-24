@@ -37,7 +37,7 @@ LEE:
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:712`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`

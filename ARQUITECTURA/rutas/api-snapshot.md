@@ -71,7 +71,7 @@ LEE:
 
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:712`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
 
 ## Funciones que la componen
 
