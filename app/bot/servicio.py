@@ -455,13 +455,15 @@ class Bot:
                 " WHERE tipo IN ('rafaga', 'clase') AND minuto >= now() - interval '2 days'"):
             self.vistos.add((t, a, m))
         # el PRIMER veredicto de cada posicion (el registrado antes del resultado; un /evalua a mano no lo pisa: bug 5)
-        for i, v, p, ms in await self.db.fetch(
-                "SELECT DISTINCT ON (posicion) posicion, veredicto, detalle->'posicion', (extract(epoch FROM ts) * 1000)::bigint"
+        for i, v, p, ms, f, vd, aud, ll in await self.db.fetch(
+                "SELECT DISTINCT ON (posicion) posicion, veredicto, detalle->'posicion', (extract(epoch FROM ts) * 1000)::bigint,"
+                " detalle->>'fuente', veredicto_decide, detalle->'auditor', detalle->>'llamada'"
                 " FROM bot_evaluacion e WHERE tipo = 'veredicto' AND ts >= now() - interval '30 days'"
                 " AND detalle->>'motivo' LIKE 'posicion nueva%'"
                 " AND NOT EXISTS (SELECT 1 FROM bot_evaluacion c WHERE c.tipo = 'cierre' AND c.posicion = e.posicion)"
                 " ORDER BY posicion, ts"):
-            self.evaluadas[i] = {"veredicto": v, "posicion": json.loads(p) if isinstance(p, str) else p, "visto": ms}
+            self.evaluadas[i] = {"veredicto": v, "posicion": json.loads(p) if isinstance(p, str) else p, "visto": ms,
+                                 "apertura": calidad.apertura(v, f, vd, aud, ll)}  # lo que se sabia al abrir (AUDITOR R2)
         # (symbol:side:updatedTime, tipo) de cada aviso de seguridad; los de R5 (sin «visto»), por la posicion que guardaron
         self.avisados = {(i, t) for i, t in await self.db.fetch(
             "SELECT coalesce(detalle->>'visto', (detalle->'entradas'->'posicion'->>'clave') || ':'"
@@ -1073,7 +1075,8 @@ class Bot:
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
         # PRIMER veredicto: es el que se puntua (un /evalua a mano se registra, pero no lo pisa: bug 5)
         if motivo.startswith("posicion nueva"):  # solo la automatica se puntua: un /evalua a mano puede caer en una lectura
-            self.evaluadas.setdefault(p["id"], {"veredicto": v, "posicion": p})  # que aun no es seguro de que vida es (R6)
+            self.evaluadas.setdefault(p["id"], {"veredicto": v, "posicion": p,  # que aun no es seguro de que vida es (R6)
+                                                "apertura": calidad.apertura(v, fuente, v_dec, aud, llamada)})  # (AUDITOR R2)
         self.evaluando.discard(p["id"])
         try:
             await self.db.execute(
@@ -1109,15 +1112,21 @@ class Bot:
         """El resultado de una vida evaluada que el libro ya da por cerrada y segura: con SUS filas, o sin puntuar y el
         porque. Nunca una cifra que no se sabe (I2). Y UNA VEZ (remate 7, punto 10): se escribe en la base ANTES de olvidarla,
         y si ya estaba (un reinicio tras una base que no la apunto) ni se repite la CERRADA ni la cifra; si la base no
-        contesta, sigue pendiente (y en el estado) y se reintenta en el proximo tic."""
-        v, pnl = self.evaluadas[i]["veredicto"], res["pnl"]
+        contesta, sigue pendiente (y en el estado) y se reintenta en el proximo tic.
+        AUDITOR R2: la MISMA fila nueva (nunca un UPDATE) califica tambien a DECIDE con la misma regla, guarda el estado del
+        auditor al abrir y el R (pnl / la perdida al stop de A6 al abrir; sin stop, sin R y el porque): detalle.medicion.
+        `acierto` sigue siendo el del veredicto registrado, como en R1."""
+        ev, pnl = self.evaluadas[i], res["pnl"]
+        v = ev["veredicto"]
         acierto = None if v == "NO EVALUABLE" or pnl is None else (pnl > 0) == (v == "A FAVOR")
+        m = calidad.mide(ev.get("apertura") or calidad.apertura(v, None, None, None), pnl)
         try:
             ya = await self.db.fetchval("SELECT 1 FROM bot_evaluacion WHERE tipo = 'cierre' AND posicion = $1 LIMIT 1", i)
             if not ya:
                 await self.db.execute(
-                    "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
-                    i, v, pnl, acierto, js({"ordenes": res["ordenes"], "nota": res["nota"]}))
+                    "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, veredicto_decide, pnl_usd, acierto, detalle)"
+                    " VALUES ('cierre', $1, $2, $3, $4, $5, $6::jsonb)",
+                    i, v, m["decide"], pnl, acierto, js({"ordenes": res["ordenes"], "nota": res["nota"], "medicion": m}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             return self.anota("BASE", f"no registro el cierre de {i} (lo reintento): {type(e).__name__}", "registro cierre")
         self.bien("registro cierre")
@@ -1129,7 +1138,21 @@ class Bot:
         resultado = "sin puntuar" if pnl is None else f"{pnl:+.2f} USD"
         await self.manda(f"CERRADA {sym} {'LARGO' if lado == 'Buy' else 'CORTO'}: {resultado} · el veredicto era {v}"
                          f" -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}"
-                         + (f"\n{res['nota']}" if res["nota"] else ""))
+                         f"\n{calidad.linea_cierre(m)}" + (f"\n{res['nota']}" if res["nota"] else ""))
+
+    async def apertura_de(self, i: str, v: str) -> dict:
+        """Lo que se sabia al abrir una vida ya cerrada (para su correccion): la medicion de su primer cierre (R2) o, si es
+        de antes, su primer veredicto automatico; sin ninguno, solo el veredicto registrado."""
+        m = await self.db.fetchval("SELECT detalle->'medicion' FROM bot_evaluacion WHERE tipo = 'cierre' AND posicion = $1"
+                                   " ORDER BY ts LIMIT 1", i)
+        m = json.loads(m) if isinstance(m, str) else m
+        if isinstance(m, dict) and m.get("version"):
+            return m
+        f = await self.db.fetchrow(
+            "SELECT veredicto, detalle->>'fuente' fuente, veredicto_decide, detalle->'auditor' auditor, detalle->>'llamada' llamada"
+            " FROM bot_evaluacion WHERE tipo = 'veredicto' AND posicion = $1 AND detalle->>'motivo' LIKE 'posicion nueva%'"
+            " ORDER BY ts LIMIT 1", i)
+        return calidad.apertura(*f) if f else calidad.apertura(v, None, None, None)
 
     async def correccion(self, k: str, c: dict):
         """LA CIFRA TARDIA SE CORRIGE (remate 8, punto 7): una fila de closed-pnl llego DESPUES de puntuada su vida (S2 roto).
@@ -1149,11 +1172,13 @@ class Bot:
                 "SELECT 1 FROM bot_evaluacion WHERE tipo = 'cierre' AND posicion = $1 AND detalle->'correccion'->>'orden' = $2 LIMIT 1",
                 i, c["orden"])
             acierto = None if v in (None, "NO EVALUABLE") or c["pnl"] is None else (c["pnl"] > 0) == (v == "A FAVOR")
-            if not ya:
+            if not ya:  # (AUDITOR R2: la medicion, rehecha con la cifra corregida, en la fila nueva)
+                m = calidad.mide(await self.apertura_de(i, v), c["pnl"])
                 await self.db.execute(
-                    "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, pnl_usd, acierto, detalle) VALUES ('cierre', $1, $2, $3, $4, $5::jsonb)",
-                    i, v, c["pnl"], acierto, js({"ordenes": c["ordenes"], "nota": c["nota"],
-                                                 "correccion": {"orden": c["orden"], "pnl_antes": c["pnl_antes"]}}))
+                    "INSERT INTO bot_evaluacion (tipo, posicion, veredicto, veredicto_decide, pnl_usd, acierto, detalle)"
+                    " VALUES ('cierre', $1, $2, $3, $4, $5, $6::jsonb)",
+                    i, v, m["decide"], c["pnl"], acierto, js({"ordenes": c["ordenes"], "nota": c["nota"], "medicion": m,
+                                                               "correccion": {"orden": c["orden"], "pnl_antes": c["pnl_antes"]}}))
         except (OSError, asyncpg.PostgresError, asyncpg.InterfaceError) as e:
             return self.anota("BASE", f"no registro la correccion de {i} (la reintento): {type(e).__name__}", "registro correccion")
         self.bien("registro correccion")
@@ -1164,7 +1189,7 @@ class Bot:
         nueva = "sin puntuar" if c["pnl"] is None else f"{c['pnl']:+.2f} USD"
         await self.manda(f"CORRECCION {sym} {'LARGO' if lado == 'Buy' else 'CORTO'}: {c['pnl_antes']:+.2f} -> {nueva}"
                          f" · el veredicto era {v} -> {'sin puntuar' if acierto is None else ('ACIERTO' if acierto else 'FALLO')}"
-                         f"\n{c['nota']}")
+                         f"\n{calidad.linea_cierre(m)}\n{c['nota']}")
 
     # ---------- C3, C5 ----------
     async def calcula(self, texto: str) -> str:
@@ -1291,12 +1316,16 @@ class Bot:
             "SELECT DISTINCT ON (posicion) veredicto, acierto, pnl_usd FROM bot_evaluacion WHERE tipo = 'cierre' AND posicion IN"
             " (SELECT posicion FROM bot_evaluacion WHERE tipo = 'cierre' AND detalle->'correccion' IS NULL"
             " AND ts >= to_timestamp($1::bigint * 60)) ORDER BY posicion, ts DESC", desde)]
+        # AUDITOR R2: la medicion es ACUMULADA (las lecturas van en n = 30, 60 y 120, no por semana); las vidas sin
+        # detalle.medicion (de antes de R2) se recalifican en calidad.vida, sin tocar sus filas
+        vidas = [calidad.vida(dict(r)) for r in await self.db.fetch(calidad.SQL_VIDAS, hasta)]
+        a_mano = {v: n for v, n in await self.db.fetch(calidad.SQL_A_MANO, desde, hasta)}
         ops = [dict(r) for r in await self.db.fetch("SELECT pnl_usd FROM bot_operacion WHERE cerrada >= to_timestamp($1::bigint * 60)", desde)]
         ll = [dict(r) for r in await self.db.fetch(
             "SELECT (ts AT TIME ZONE 'UTC')::date dia, coste_usd, tope_usd FROM bot_llamada WHERE ts >= to_timestamp($1::bigint * 60)", desde)]
         partes = [str(r[0]) for r in await self.db.fetch(
             "SELECT DISTINCT (ts AT TIME ZONE 'UTC')::date FROM bot_evento WHERE tipo = 'parte' AND ts >= to_timestamp($1::bigint * 60)", desde)]
-        return calidad.resumen(alertas, velas, ev, ops, ll, partes, desde, hasta)
+        return calidad.resumen(alertas, velas, ev, ops, ll, partes, desde, hasta, vidas, a_mano)
 
     async def informe(self) -> str:
         return "INFORME (cifras, al momento)\n" + calidad.texto(await self.cifras_semana()) + "\n" + await self.gasto()
