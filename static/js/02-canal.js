@@ -30,9 +30,15 @@ async function maybe(path, fallback) {
 // pestanas lo piden a la vez, la segunda espera a la promesa de la primera en vez de abrir
 // otra peticion. Sin esto, "una vez por refresco" seria "una vez por pestana".
 async function pedirSobre(q, force = false) {
+  if (state.sobreDe !== q) {
+    state.sobreDe = q; // otro activo: ni la foto ni la peticion en vuelo del anterior valen
+    state.sobre = null;
+    state.sobrePendiente = null;
+  }
   if (!force && state.sobre && Date.now() - state.sobreAt < 15000) return state.sobre;
   if (state.sobrePendiente) return state.sobrePendiente;
   state.sobrePendiente = maybe(`/api/ai/context?symbol=${q}`, null).then(res => {
+    if (state.sobreDe !== q) return null; // llego tarde, de otro activo
     if (res) { state.sobre = res; state.sobreAt = Date.now(); }
     state.sobrePendiente = null;
     pintarEdadFoto();
@@ -55,7 +61,7 @@ function pintarEdadFoto() {
 // Lee una seccion del sobre. `fallback` es el MISMO que usaba la llamada suelta que
 // sustituye, para que la tarjeta no distinga entre "no hubo sobre" y "no hubo ruta".
 function delSobre(clave, fallback) {
-  const s = state.sobre;
+  const s = state.sobreDe === encodeURIComponent(state.symbol) ? state.sobre : null;
   if (!s || s[clave] === undefined || s[clave] === null) return fallback;
   return s[clave];
 }

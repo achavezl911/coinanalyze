@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_summary` · `app/api.py:1375` (cuerpo hasta la 1379) · decorador en la linea 1374.
+Handler `scalp_summary` · `app/api.py:1480` (cuerpo hasta la 1484) · decorador en la linea 1479.
 
 ## Parametros de entrada
 
@@ -81,7 +81,7 @@ Handler `scalp_summary` · `app/api.py:1375` (cuerpo hasta la 1379) · decorador
 | `spot_price` | literal en app/scalp_logic.py:865 |
 | `spread_bps` | literal en app/scalp_logic.py:872 |
 | `state` | literal en app/scalp_logic.py:845 |
-| `symbol` | literal en app/api.py:1379 |
+| `symbol` | literal en app/api.py:1484 |
 | `vwap_dist_pct` | literal en app/scalp_logic.py:913 |
 | `wall_down_pct` | literal en app/scalp_logic.py:877 |
 | `wall_up_pct` | literal en app/scalp_logic.py:876 |
@@ -94,27 +94,27 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+- `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
@@ -125,7 +125,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
 
@@ -167,7 +167,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

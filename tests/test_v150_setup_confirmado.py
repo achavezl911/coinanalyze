@@ -37,7 +37,7 @@ _VIEW = {"layers": {"contexto": {"bias": "alcista"}, "confirmacion": {"bias": "a
 def _scalp(**over):
     base = {
         "spot_delta_3m": 500.0, "fut_delta_3m": 900.0, "oi_chg_15m_pct": 0.3,
-        "imbalance_l5": 0.62, "price_move_3m_pct": 0.4, "absorption": "Sin señal",
+        "imbalance_l5": 0.62, "price_move_3m_pct": 0.4, "price_move_15m_pct": 0.4, "absorption": "Sin señal",
         "vwap_dist_pct": 0.2, "liquidations_measured": False,
     }
     base.update(over)
