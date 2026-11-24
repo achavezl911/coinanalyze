@@ -30,8 +30,11 @@ BEGIN
         RETURN;
     END IF;
     IF o ~ '^CREATE (UNIQUE )?INDEX IF NOT EXISTS ' THEN
-        m := regexp_match(o, '^CREATE (?:UNIQUE )?INDEX IF NOT EXISTS (\w+) ');
-        IF to_regclass(m[1]) IS NOT NULL THEN RETURN; END IF;
+        -- En el esquema de la TABLA, como IF NOT EXISTS: las pruebas aplican este fichero con
+        -- search_path = <esquema propio>, public, y to_regclass(indice) encontraria el de public.
+        m := regexp_match(o, '^CREATE (?:UNIQUE )?INDEX IF NOT EXISTS (\w+) ON (?:ONLY )?(\w+)');
+        IF EXISTS (SELECT 1 FROM pg_class i JOIN pg_class t ON t.relnamespace = i.relnamespace
+                   WHERE t.oid = to_regclass(m[2]) AND i.relname = m[1]) THEN RETURN; END IF;
     ELSIF o ~ '^COMMENT ON (COLUMN|CONSTRAINT) ' THEN
         m := regexp_match(o, '^COMMENT ON (?:COLUMN (\w+)\.(\w+)|CONSTRAINT (\w+) ON (\w+)) IS ');
         EXECUTE 'SELECT ' || rtrim(substring(orden FROM '\sIS\s(.*)$'), E' \t\n;') INTO nueva;
