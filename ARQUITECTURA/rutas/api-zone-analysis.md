@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `zone_analysis_endpoint` · `app/api.py:2043` (cuerpo hasta la 2065) · decorador en la linea 2042.
+Handler `zone_analysis_endpoint` · `app/api.py:2148` (cuerpo hasta la 2170) · decorador en la linea 2147.
 
 ## Parametros de entrada
 
@@ -23,7 +23,7 @@ Handler `zone_analysis_endpoint` · `app/api.py:2043` (cuerpo hasta la 2065) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:2038 |
+| `as_of` | asignado en app/api.py:2143 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -35,10 +35,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -51,21 +51,21 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1781`
-- `app.api.sella_respuesta` — `app/api.py:2026`
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.api.ventana_pedida` — `app/api.py:1748`
-- `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1433`
+- `app.api.declara_ventana` — `app/api.py:1886`
+- `app.api.sella_respuesta` — `app/api.py:2131`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.api.ventana_pedida` — `app/api.py:1853`
+- `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1438`
 
 <details><summary>Alcanzables de forma indirecta (11)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2494`
+- `app.api._utc_iso` — `app/api.py:2599`
 - `app.interpretation.number` — `app/interpretation.py:10`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.zones._atr_pct` — `app/zones.py:104`
 - `app.zones._clamp` — `app/zones.py:100`
 - `app.zones._effort_result` — `app/zones.py:128`
-- `app.zones._narrative` — `app/zones.py:394`
+- `app.zones._narrative` — `app/zones.py:420`
 - `app.zones._oi_behaviour` — `app/zones.py:208`
 - `app.zones._percentile` — `app/zones.py:121`
 - `app.zones._rejection` — `app/zones.py:194`
@@ -87,14 +87,14 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1765` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1768` | una funcion de su cierre |
-| 422 | — | `app/api.py:1773` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1775` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1777` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:2058` | el propio handler |
-| 422 | zone spans more than 3x; narrow it | `app/api.py:2060` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1870` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1873` | una funcion de su cierre |
+| 422 | — | `app/api.py:1878` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1880` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1882` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:2163` | el propio handler |
+| 422 | zone spans more than 3x; narrow it | `app/api.py:2165` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

@@ -1213,11 +1213,11 @@ def servido_indicadores(e: dict, d: dict) -> list[str]:
                      f"en {isoz(min(borde, b))}")
     filas = sql(f"SELECT to_char(ts AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"'), exchange, side, notional_usd, "
                 f"price, qty FROM liquidations_realtime WHERE symbol = '{simbolo}' AND ts >= '{sw['desde_dato']}' "
-                f"AND ts < '{d['hasta']}' ORDER BY ts, exchange, event_id LIMIT 5001")
-    mias = [(f[0], f[1], f[2], D(f[3]), D(f[4]), D(f[5])) for f in filas]
+                f"AND ts < '{d['hasta']}' ORDER BY ts DESC, exchange DESC, event_id DESC LIMIT 5001")
+    mias = [(f[0], f[1], f[2], D(f[3]), D(f[4]), D(f[5])) for f in reversed(filas)]
     suyas = [(ev["ts"], ev["exchange"], ev["lado"], D(ev["usd"]), D(ev["precio"]), D(ev["cantidad"]))
              for ev in sw["eventos"]]
-    if mias[:5000] != suyas:
+    if mias[-5000:] != suyas:
         dif = next((p for p in zip(suyas, mias, strict=False) if p[0] != p[1]), None)
         malos.append(f"sueltas: {len(suyas)} servidas y {len(mias)} en liquidations_realtime (la primera distinta {dif})")
     return malos

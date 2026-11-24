@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `libro` · `app/api.py:4249` (cuerpo hasta la 4253) · decorador en la linea 4248.
+Handler `libro` · `app/api.py:4354` (cuerpo hasta la 4358) · decorador en la linea 4353.
 
 ## Parametros de entrada
 
@@ -50,11 +50,11 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K111-libro.py:488`, `harness/checks/K111-libro.py:1676`, `harness/checks/K111-libro.py:1681`, `harness/checks/K111-libro.py:1684` _(+14)_ | `harness/checks/K111-banco.py:11`, `harness/checks/K111-banco.py:31`, `harness/checks/K111-banco.py:33`, `harness/checks/K111-banco.py:197` _(+20)_ |
+| **checks** | `harness/checks/K111-libro.py:488`, `harness/checks/K111-libro.py:1676`, `harness/checks/K111-libro.py:1681`, `harness/checks/K111-libro.py:1684` _(+15)_ | `harness/checks/K111-banco.py:11`, `harness/checks/K111-banco.py:31`, `harness/checks/K111-banco.py:33`, `harness/checks/K111-banco.py:197` _(+20)_ |
 | **readme** | — | `README.md:47`, `README.md:52` |
-| **tests** | `tests/js/liq_precio.test.js:99`, `tests/test_espacio_cabeceras.py:62`, `tests/test_libro.py:587` | — |
+| **tests** | `tests/js/liq_precio.test.js:99`, `tests/test_espacio_cabeceras.py:62`, `tests/test_libro.py:587` | `tests/js/libro_hueco_vivo.test.js:2` |
 
-**No la llama el panel**, pero si 21 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 22 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

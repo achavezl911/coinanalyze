@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `macro_context_endpoint` · `app/api.py:2225` (cuerpo hasta la 2228) · decorador en la linea 2224.
+Handler `macro_context_endpoint` · `app/api.py:2330` (cuerpo hasta la 2333) · decorador en la linea 2329.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `macro_context_endpoint` · `app/api.py:2225` (cuerpo hasta la 2228) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:1985 |
-| `conditional_note` | literal en app/scalp_logic.py:1990 |
-| `metrics` | literal en app/scalp_logic.py:1988 |
-| `session_date` | literal en app/scalp_logic.py:1987 |
-| `sessions` | literal en app/scalp_logic.py:1986 |
-| `symbol` | literal en app/scalp_logic.py:1984 |
-| `tension` | literal en app/scalp_logic.py:1989 |
+| `as_of` | literal en app/scalp_logic.py:1990 |
+| `conditional_note` | literal en app/scalp_logic.py:1995 |
+| `metrics` | literal en app/scalp_logic.py:1993 |
+| `session_date` | literal en app/scalp_logic.py:1992 |
+| `sessions` | literal en app/scalp_logic.py:1991 |
+| `symbol` | literal en app/scalp_logic.py:1989 |
+| `tension` | literal en app/scalp_logic.py:1994 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -34,7 +34,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 
@@ -45,19 +45,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1934`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1939`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1894`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1884`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic._regime` — `app/scalp_logic.py:1865`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1899`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1889`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1861`
+- `app.scalp_logic._regime` — `app/scalp_logic.py:1870`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 
@@ -73,7 +73,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -84,7 +84,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:152`, `harness/checks/K43-foto-unica.sh:211` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:352`, `static/js/07-decision-y-ciclos.js:431` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:353`, `static/js/07-decision-y-ciclos.js:432` | — |
 
 **La llama el panel: es superficie de producto.**
 

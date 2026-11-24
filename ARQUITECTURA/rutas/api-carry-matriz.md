@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `carry_matriz` · `app/api.py:1326` (cuerpo hasta la 1341) · decorador en la linea 1325.
+Handler `carry_matriz` · `app/api.py:1431` (cuerpo hasta la 1446) · decorador en la linea 1430.
 
 ## Parametros de entrada
 
@@ -46,7 +46,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 
@@ -57,7 +57,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
 - `app.carry.matriz_de_carry` — `app/carry.py:99`
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
@@ -67,9 +67,9 @@ Llamadas directas del handler:
 - `app.carry.celda_completa` — `app/carry.py:53`
 - `app.carry.coste_de_carry` — `app/carry.py:71`
 - `app.carry.quien_paga` — `app/carry.py:88`
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
 
 </details>
 
@@ -87,7 +87,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2623` | una funcion de su cierre |
+| 422 | — | `app/api.py:2728` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

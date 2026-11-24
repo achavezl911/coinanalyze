@@ -22,7 +22,12 @@ from app.interpretation import (
     market_memory_read,
     price_barrier_read,
 )
-from app.metrics import current_nyse_start
+from app.metrics import (
+    COBERTURA_MINIMA,
+    cobertura_suficiente,
+    current_nyse_start,
+    segundos_cubiertos_sql,
+)
 from app.setups import (
     DIRECTIONS,
     LEGACY_HYPOTHESES,
@@ -2616,7 +2621,7 @@ def _flow_rate(net: object, seconds: int) -> float | None:
     return net_value / (seconds / 60.0)
 
 
-def _flow_coverage_reason(item: dict[str, Any], explicit_gap: bool) -> str:
+def _flow_coverage_reason(item: dict[str, Any]) -> str:
     """Por que una ventana de flujo NO es completa, en el orden en que se descarta.
 
     Los minutos ausentes del agg se cuentan contra los que la ventana pide; un minuto sin
@@ -2624,14 +2629,16 @@ def _flow_coverage_reason(item: dict[str, Any], explicit_gap: bool) -> str:
     activo sin liquidez cuenta como ausente: es la lectura conservadora, porque desde la fila
     no se distingue «nadie opero» de «nadie escuchaba».
     """
-    if explicit_gap:
-        return "data_gap"
     if not int(item.get("source_rows") or 0):
         return "no_rows"
     if item.get("source") == "realtime" or item.get("agg_minutes_expected") is None:
         return "span_incomplete"
     expected = int(item.get("agg_minutes_expected") or 0)
     minutes = int(item.get("agg_minutes") or 0)
+    # La razon solo culpa a los minutos si la CUENTA no llega (metrics.cobertura_suficiente):
+    # un minuto corto suelto dentro del umbral no tumba la ventana (R2b A2).
+    if cobertura_suficiente(item.get("agg_covered_seconds"), expected * 60):
+        return "span_incomplete"
     if minutes < expected:
         return "agg_minutes_missing"
     if int(item.get("agg_minutes_unknown") or 0):
@@ -2639,6 +2646,9 @@ def _flow_coverage_reason(item: dict[str, Any], explicit_gap: bool) -> str:
     if int(item.get("agg_minutes_full") or 0) < minutes:
         return "agg_minutes_short"
     return "span_incomplete"
+
+
+_AGG_CUBIERTOS = segundos_cubiertos_sql("t.covered_seconds")
 
 
 async def _flow_windows(
@@ -2649,8 +2659,6 @@ async def _flow_windows(
     *,
     realtime_table: str = "spot_trades_realtime",
     agg_table: str = "spot_trades_agg",
-    feed: str = "spot_trades",
-    market: str = "spot",
 ) -> dict[str, dict[str, dict[str, Any]]]:
     """Rolling flow with a complete 1-minute history plus a non-overlapping live tail.
 
@@ -2689,15 +2697,11 @@ async def _flow_windows(
         ), choice0 AS (
           SELECT r.horizon,r.seconds,e.exchange,
                  $4::timestamptz-(r.seconds*interval '1 second') AS window_start,
-                 rt.lo AS rt_lo,rt.hi AS rt_hi,agg.lo AS agg_lo,agg.hi AS agg_hi,
-                 COALESCE(
-                   rt.lo <= $4-(r.seconds*interval '1 second')
-                   AND rt.hi >= $4-interval '30 seconds',false
-                 ) AS realtime_complete
+                 rt.lo AS rt_lo,rt.hi AS rt_hi,agg.lo AS agg_lo,agg.hi AS agg_hi
           FROM requested r CROSS JOIN exchanges e
           LEFT JOIN rt_span rt USING(exchange)
           LEFT JOIN agg_span agg USING(exchange)
-        ), choice AS (
+        ), choice1 AS (
           -- minutos de 1 min que el agg DEBE tener: del primer minuto entero >= inicio a agg_hi
           SELECT c0.*,
                  CASE WHEN c0.agg_hi IS NULL THEN 0::bigint ELSE GREATEST(0,
@@ -2705,6 +2709,27 @@ async def _flow_windows(
                      c0.window_start - interval '1 microsecond', timestamptz '2000-01-01 00:00:00+00')
                      + interval '1 minute')) / 60)::bigint + 1) END AS agg_expected
           FROM choice0 c0
+        ), agg_cov AS (
+          -- los segundos que el agg CERTIFICA en esos minutos (metrics.segundos_cubiertos_sql)
+          SELECT c.horizon,c.exchange,{_AGG_CUBIERTOS}::float8 AS agg_covered_seconds
+          FROM choice1 c
+          JOIN {agg_table} t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
+          WHERE (c.exchange <> 'combined' OR t.venue_count=2)
+            AND t.ts >= c.window_start AND t.ts <= c.agg_hi
+            AND t.ts <= $4
+          GROUP BY c.horizon,c.exchange
+        ), choice AS (
+          -- M-02: MIN/MAX del realtime tocan los dos extremos aunque falten horas en medio.
+          -- El realtime no certifica segundos (un segundo sin operaciones no tiene fila);
+          -- sirve la ventana solo si lo de DENTRO, contado en el agg, llega a la cobertura.
+          SELECT c1.*,COALESCE(ac.agg_covered_seconds,0)::float8 AS agg_covered_seconds,
+                 COALESCE(
+                   c1.rt_lo <= c1.window_start
+                   AND c1.rt_hi >= $4-interval '30 seconds'
+                   AND COALESCE(ac.agg_covered_seconds,0) >= $5::float8*c1.agg_expected*60,false
+                 ) AS realtime_complete
+          FROM choice1 c1
+          LEFT JOIN agg_cov ac USING(horizon,exchange)
         ), parts AS (
           SELECT c.horizon,c.exchange,
                  SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
@@ -2768,66 +2793,42 @@ async def _flow_windows(
                    AND c.agg_hi IS NOT NULL
                    AND c.rt_hi >= $4-interval '30 seconds'
                    AND c.rt_lo <= c.agg_hi+interval '1 minute'
-                   -- los extremos no bastan: cada minuto de DENTRO, presente y escuchado entero
-                   AND COALESCE(SUM(p.agg_minutes),0) = c.agg_expected
-                   AND COALESCE(SUM(p.agg_full),0) = COALESCE(SUM(p.agg_minutes),0),false
+                   -- los extremos no bastan: lo de DENTRO se cuenta en segundos cubiertos
+                   AND c.agg_covered_seconds >= $5::float8*c.agg_expected*60,false
                  )
                END AS complete,
                c.agg_expected AS agg_minutes_expected,
                COALESCE(SUM(p.agg_minutes),0)::bigint AS agg_minutes,
                COALESCE(SUM(p.agg_full),0)::bigint AS agg_minutes_full,
                COALESCE(SUM(p.agg_unknown),0)::bigint AS agg_minutes_unknown,
+               c.agg_covered_seconds,
                CASE WHEN c.rt_hi IS NOT NULL
                     THEN EXTRACT(EPOCH FROM $4-c.rt_hi)::float8 END AS end_gap_seconds,
                CASE WHEN c.realtime_complete THEN 1 ELSE 60 END AS precision_seconds
         FROM choice c
         LEFT JOIN parts p ON p.horizon=c.horizon AND p.exchange=c.exchange
         GROUP BY c.horizon,c.seconds,c.exchange,c.window_start,c.rt_lo,c.rt_hi,
-                 c.agg_lo,c.agg_hi,c.realtime_complete,c.agg_expected
+                 c.agg_lo,c.agg_hi,c.realtime_complete,c.agg_expected,c.agg_covered_seconds
         ORDER BY array_position($2::text[],c.horizon),c.exchange
         """,
         symbol,
         labels,
         seconds,
         cutoff,
+        COBERTURA_MINIMA,
     )
-    requirements: list[GapRequirement] = []
-    for label, window_seconds in windows:
-        start = cutoff - timedelta(seconds=window_seconds)
-        for exchange in ("binance", "bybit"):
-            requirements.append(
-                GapRequirement(
-                    f"{label}:{exchange}", feed, exchange, market, symbol,
-                    start, cutoff,
-                )
-            )
-        for exchange in ("binance", "bybit", "combined"):
-            requirements.append(
-                GapRequirement(
-                    f"{label}:combined", feed, exchange, market, symbol,
-                    start, cutoff,
-                )
-            )
-    blocked = await blocking_requirement_keys(conn, requirements)
     result: dict[str, dict[str, dict[str, Any]]] = {label: {} for label in labels}
     for row in rows:
         item = dict(row)
         item["as_of"] = cutoff.isoformat()
-        gap_key = f"{item['horizon']}:{item['exchange']}"
-        explicit_gap = gap_key in blocked
-        complete = bool(item.get("complete")) and not explicit_gap
+        complete = bool(item.get("complete"))
         item["complete"] = complete
-        if explicit_gap:
-            item["delta"] = None
-            item["volume"] = None
-            item["trades"] = None
-            item["gap_reason"] = "data_gap"
         item["coverage_status"] = (
             "complete"
             if complete
             else ("partial" if int(item.get("source_rows") or 0) else "unavailable")
         )
-        item["coverage_reason"] = None if complete else _flow_coverage_reason(item, explicit_gap)
+        item["coverage_reason"] = None if complete else _flow_coverage_reason(item)
         item["delta"] = as_float(item.get("delta"))
         item["volume"] = as_float(item.get("volume"))
         item["trades"] = int(item["trades"]) if item.get("trades") is not None else None
@@ -2927,8 +2928,6 @@ async def futures_flow_windows(
         as_of,
         realtime_table="futures_trades_realtime",
         agg_table="futures_trades_agg",
-        feed="futures_trades",
-        market="perpetual",
     )
 
 

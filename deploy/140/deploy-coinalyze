@@ -227,6 +227,13 @@ do_backup(){
   mkdir -p "$BACKUPDIR"
   chmod 700 "$BACKUPDIR"
 
+  # Poda ANTES del volcado nuevo: se queda el predeploy mas reciente (el del release activo); tras este, quedan 2.
+  local f n=0
+  while IFS= read -r -d '' f; do
+    n=$((n + 1)); [ "$n" -le 1 ] && continue
+    f=${f#* }; rm -f -- "$f" "$f.sha256"; log "pruned pre-deploy backup: $f"
+  done < <(find "$BACKUPDIR" -maxdepth 1 -type f -name 'predeploy-*.sql.gz' -printf '%T@ %p\0' | LC_ALL=C sort -z -rn)
+
   local out="$BACKUPDIR/predeploy-$1-$(date -u +%Y%m%d%H%M%S).sql.gz"
   PGPASSWORD="${PG_PASSWORD:-}" pg_dump \
     -h "${PG_HOST:-127.0.0.1}" \

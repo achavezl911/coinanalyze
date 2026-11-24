@@ -13,7 +13,7 @@ from datetime import datetime
 
 ACTIVOS = ("BTC", "ETH", "SOL")
 SIMBOLO = {"BTC": "BTCUSDT_PERP.A", "ETH": "ETHUSDT_PERP.A", "SOL": "SOLUSDT_PERP.A"}
-H = os.environ.get("DIARIO_HARNESS", "/srv/coinanalyze/harness/bin")
+H = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "harness", "bin")  # los de SU arbol
 COBERTURA_MIN = {"5min": 100.0, "4hour": 99.0}
 GUARDA_5M_S = 40 * 86400  # 5 dias de llenado + 10 de plazo caben de sobra
 

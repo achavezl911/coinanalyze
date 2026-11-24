@@ -41,17 +41,23 @@ _FILA = {
     "oi_old": 100.0,
     "cvd_session": 1234.0,
     "spot_cvd_session": 567.0,
+    "spot_cvd_24h": 89.0,
+    # COBERTURA R1: la pata spot ya no pide «spot_trades» a data_gap; cuenta sus segundos
+    # en la CTE `spot`. Un dia entero escuchado, y el minuto de sesion que hay.
+    "spot_covered_24h": 86400.0,
+    "spot_covered_session": 60.0,
 }
 
 
 class _EspiaDeRequisitos:
     """Conn falsa que anota las claves que llegan a blocking_requirement_keys."""
 
-    def __init__(self) -> None:
+    def __init__(self, fila: dict | None = None) -> None:
         self.claves: list[str] = []
+        self.fila = _FILA if fila is None else fila
 
     async def fetchrow(self, _query, *_args):
-        return dict(_FILA)
+        return dict(self.fila)
 
     async def fetch(self, query, *args):
         # liquidation_history_observation tambien llama a fetch, contra pipeline_heartbeat
@@ -77,7 +83,8 @@ async def test_el_minuto_de_apertura_no_tumba_el_snapshot(apertura):
     assert "spot_session" not in conn.claves
     # Y el resto del snapshot SI se publica. No se tira la foto entera por una pata.
     assert "price" in conn.claves
-    assert conn.claves.count("spot_24h") == 3
+    assert "spot_24h" not in conn.claves  # se cuenta, no se pregunta (M-01)
+    assert snap["cvd_spot_24h"] == 89.0
     assert snap["price"] == 100.0
     # NO MEDIDO, no cero: la sesion no tiene todavia ni un minuto que medir.
     assert snap["cvd_nyse_session"] is None
@@ -95,9 +102,21 @@ async def test_control_el_minuto_siguiente_si_pide_la_sesion(apertura):
     )
 
     assert "fut_session" in conn.claves
-    assert conn.claves.count("spot_session") == 3
     assert snap["cvd_nyse_session"] == 1234.0
     assert snap["cvd_spot_session"] == 567.0
+
+
+@pytest.mark.parametrize("apertura", APERTURAS)
+async def test_control_el_minuto_de_sesion_sin_escuchar_no_se_publica(apertura):
+    """CONTROL. La pata spot de la sesion SI se juzga despues de la apertura: 0 s de 60, None."""
+    conn = _EspiaDeRequisitos(dict(_FILA, spot_covered_session=0.0))
+
+    snap = await compute_snapshot(
+        conn, "BTCUSDT_PERP.A", "BTC", apertura + timedelta(seconds=65)
+    )
+
+    assert snap["cvd_nyse_session"] == 1234.0
+    assert snap["cvd_spot_session"] is None
 
 
 def test_control_el_validador_sigue_rechazando_la_ventana_vacia():

@@ -9,7 +9,9 @@ import asyncpg
 import pytest
 
 from app.signal_outcomes import (
+    DEFAULT_BATCH_LIMIT,
     MISSING_DATA_FINAL_GRACE,
+    MISSING_DATA_RETRY,
     OUTCOME_HORIZONS_MINUTES,
     OUTCOME_SETTLEMENT_LAG,
     materialize_due_signal_outcomes,
@@ -396,5 +398,72 @@ async def test_final_outcome_is_immutable_and_durable() -> None:
             )
         with pytest.raises(asyncpg.PostgresError, match="durable"):
             await conn.execute("TRUNCATE signal_outcome")
+    finally:
+        await _teardown(conn, schema)
+
+
+async def _age_deferred_retries(conn: asyncpg.Connection) -> None:
+    """Simulate MISSING_DATA_RETRY elapsing for every already-deferred outcome."""
+    await conn.execute(
+        """UPDATE signal_outcome SET next_attempt_at=last_attempt_at
+           WHERE status='pending' AND attempts > 0
+             AND next_attempt_at=last_attempt_at+$1::interval""",
+        MISSING_DATA_RETRY,
+    )
+
+
+@pytest.mark.asyncio
+async def test_deferred_missing_paths_do_not_block_later_complete_outcomes() -> None:
+    """V-01: an outage leaves thousands of old outcomes with incomplete bars.
+
+    Each retry re-qualifies them before the batch loop drains the backlog (in
+    140: 33051 rows at 128 per pass). Ordering by due_at kept re-picking the
+    same oldest rows forever; later outcomes with complete bars were never
+    attempted. A deferred outcome must go to the back of the queue.
+    """
+    conn, schema = await _setup()
+    try:
+        outage = datetime.now(UTC) - timedelta(days=3)
+        for i in range(150):
+            observed = outage + timedelta(minutes=i, seconds=7)
+            oid = await _obs(conn, observed)
+            await schedule_signal_outcomes(conn, oid, observed)
+        backlog = await conn.fetchval("SELECT count(*) FROM signal_outcome")
+        assert backlog == 150 * len(OUTCOME_HORIZONS_MINUTES)
+
+        later = (
+            datetime.now(UTC) - timedelta(minutes=240, seconds=17)
+            - OUTCOME_SETTLEMENT_LAG - timedelta(minutes=30)
+        )
+        later_id = await _obs(conn, later)
+        await schedule_signal_outcomes(conn, later_id, later)
+        await conn.executemany(
+            """INSERT INTO ohlcv VALUES(
+            $1,'BTCUSDT_PERP.A','1min',100,101,99,100.5,1,0.5,1,0)""",
+            [(outcome_window(later, 240).start + timedelta(minutes=i),) for i in range(240)],
+        )
+
+        passes = backlog // DEFAULT_BATCH_LIMIT + 2
+        for _ in range(passes):
+            await materialize_due_signal_outcomes(conn)
+            await _age_deferred_retries(conn)
+
+        later_rows = await conn.fetch(
+            """SELECT horizon_minutes,status,bars_found,attempts FROM signal_outcome
+               WHERE observation_id=$1 ORDER BY horizon_minutes""",
+            later_id,
+        )
+        assert [tuple(r) for r in later_rows] == [
+            (h, "evaluated", h, 1) for h in OUTCOME_HORIZONS_MINUTES
+        ]
+        # The outage rows keep their seven-day grace: still pending, retried.
+        old = await conn.fetchrow(
+            """SELECT count(*) FILTER (WHERE status<>'pending') AS finalized,
+                      count(*) FILTER (WHERE attempts=0) AS never_attempted
+               FROM signal_outcome WHERE observation_id<>$1""",
+            later_id,
+        )
+        assert old["finalized"] == 0
+        assert old["never_attempted"] == 0
     finally:
         await _teardown(conn, schema)

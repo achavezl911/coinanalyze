@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_matrix_endpoint` · `app/api.py:2210` (cuerpo hasta la 2214) · decorador en la linea 2209.
+Handler `cvd_matrix_endpoint` · `app/api.py:2315` (cuerpo hasta la 2319) · decorador en la linea 2314.
 
 ## Parametros de entrada
 
@@ -18,24 +18,24 @@ Handler `cvd_matrix_endpoint` · `app/api.py:2210` (cuerpo hasta la 2214) · dec
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3197 |
-| `symbol` | literal en app/scalp_logic.py:3196 |
-| `window_meta` | literal en app/scalp_logic.py:3199 |
-| `window_meta.acceleration_measured` | literal en app/scalp_logic.py:3204 |
-| `window_meta.as_of` | literal en app/scalp_logic.py:3200 |
-| `window_meta.as_of_semantics` | literal en app/scalp_logic.py:3213 |
-| `window_meta.definition` | literal en app/scalp_logic.py:3207 |
-| `window_meta.freshness_rule` | literal en app/scalp_logic.py:3211 |
-| `window_meta.futures_agg_retention_hours` | literal en app/scalp_logic.py:3210 |
-| `window_meta.futures_realtime_retention_hours` | literal en app/scalp_logic.py:3209 |
-| `window_meta.independent_confirmations` | literal en app/scalp_logic.py:3203 |
-| `window_meta.null_reasons` | literal en app/scalp_logic.py:3212 |
-| `window_meta.reset_timezone` | literal en app/scalp_logic.py:3205 |
-| `window_meta.sources` | literal en app/scalp_logic.py:3208 |
-| `window_meta.venues` | literal en app/scalp_logic.py:3206 |
-| `window_meta.window_type` | literal en app/scalp_logic.py:3201 |
-| `window_meta.windows_are_nested` | literal en app/scalp_logic.py:3202 |
-| `windows` | literal en app/scalp_logic.py:3198 |
+| `as_of` | literal en app/scalp_logic.py:3196 |
+| `symbol` | literal en app/scalp_logic.py:3195 |
+| `window_meta` | literal en app/scalp_logic.py:3198 |
+| `window_meta.acceleration_measured` | literal en app/scalp_logic.py:3203 |
+| `window_meta.as_of` | literal en app/scalp_logic.py:3199 |
+| `window_meta.as_of_semantics` | literal en app/scalp_logic.py:3212 |
+| `window_meta.definition` | literal en app/scalp_logic.py:3206 |
+| `window_meta.freshness_rule` | literal en app/scalp_logic.py:3210 |
+| `window_meta.futures_agg_retention_hours` | literal en app/scalp_logic.py:3209 |
+| `window_meta.futures_realtime_retention_hours` | literal en app/scalp_logic.py:3208 |
+| `window_meta.independent_confirmations` | literal en app/scalp_logic.py:3202 |
+| `window_meta.null_reasons` | literal en app/scalp_logic.py:3211 |
+| `window_meta.reset_timezone` | literal en app/scalp_logic.py:3204 |
+| `window_meta.sources` | literal en app/scalp_logic.py:3207 |
+| `window_meta.venues` | literal en app/scalp_logic.py:3205 |
+| `window_meta.window_type` | literal en app/scalp_logic.py:3200 |
+| `window_meta.windows_are_nested` | literal en app/scalp_logic.py:3201 |
+| `windows` | literal en app/scalp_logic.py:3197 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -45,28 +45,30 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
+- `agg_cov`
 - `agg_span`
 - `c0.agg_hi`
 - `choice`
+- `choice1`
 - `edges`
 - `exchanges`
 - `parts`
@@ -77,32 +79,34 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-18 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+20 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2994`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2993`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
-<details><summary>Alcanzables de forma indirecta (15)</summary>
+<details><summary>Alcanzables de forma indirecta (17)</summary>
 
 - `app.config.get_settings` — `app/config.py:308`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
-- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2935`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2619`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2604`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2612`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2644`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4445`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4415`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4427`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2914`
-- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2853`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2843`
+- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
+- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2934`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2609`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2617`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2915`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2854`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
 
 </details>
 
@@ -118,7 +122,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -179,11 +183,13 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.config.get_settings` | 3 | **0** | 58 ↑ | **3** | [impacto](../impacto/app-config.md) |
+| `app.config.get_settings` | 3 | **0** | 50 ↑ | **3** | [impacto](../impacto/app-config.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.metrics.cobertura_suficiente` | 12 | **0** | 9 ↑ | **12** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.optional_finite` | 12 | **0** | 9 ↑ | **12** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._flow_coverage_reason` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._gap_and_baseline` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |

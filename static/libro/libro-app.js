@@ -262,11 +262,16 @@ function programaColumna() {
       });
     const suma = sumaFamilia(vivos, MODELO.N);
     const ultima = MODELO.columnas[MODELO.columnas.length - 1];
-    if (!ultima || t > ultima.ts) {
-      MODELO.columnas.push({ ts: t, estado: suma ? 'foto' : 'hueco', origen: 'vivo', suma, libros: vivos });
-      const sobra = MODELO.columnas.length - 2 * Math.ceil((LIBRO_VENTANAS[VISTA.ventana] * 60) / MODELO.cada);
+    const tope = 2 * Math.ceil((LIBRO_VENTANAS[VISTA.ventana] * 60) / MODELO.cada);
+    const tl = Math.max(t, Math.floor(ahora() / c) * c); // (libro r1, M1) el instante de rejilla en que SE LEE el libro
+    if (!ultima || tl > ultima.ts) {
+      // lo que un despertar tardio se salto entra como HUECO: el indice (xDe) y el tiempo (xT) vuelven a coincidir
+      const x0 = ultima ? Math.max(ultima.ts + c, tl - tope * c) : tl;
+      for (let x = x0; x < tl; x += c) MODELO.columnas.push({ ts: x, estado: 'hueco', origen: 'vivo', suma: null, libros: [] });
+      MODELO.columnas.push({ ts: tl, estado: suma ? 'foto' : 'hueco', origen: 'vivo', suma, libros: vivos });
+      const sobra = MODELO.columnas.length - tope;
       if (sobra > 0) MODELO.columnas.splice(0, sobra);
-      if (HONDA_EN_VIVO && MODELO.honda && MODELO.honda.pinta) MODELO.honda = rejuntaHonda(t);
+      if (HONDA_EN_VIVO && MODELO.honda && MODELO.honda.pinta) MODELO.honda = rejuntaHonda(x0);
       EL_MAPA.actualiza();
     }
     programaColumna();
@@ -297,6 +302,7 @@ async function lateHuella(mia, t) {
   window.LIBRO_HITOS.recibidos.huella += 1;
   if (!sobre.ok) {
     MODELO.huellaFallo = 'el footprint respondió ' + (sobre.http || 'nada');
+    EL_MAPA.actualiza(); // (libro r1, M2) el aviso se pinta aunque quede la huella de antes
     return;
   }
   const primera = MODELO.columnas.length ? Math.floor(MODELO.columnas[0].ts / 60000) * 60000 : desde;

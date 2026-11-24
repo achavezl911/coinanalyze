@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure_detail_endpoint` · `app/api.py:2218` (cuerpo hasta la 2221) · decorador en la linea 2217.
+Handler `structure_detail_endpoint` · `app/api.py:2323` (cuerpo hasta la 2326) · decorador en la linea 2322.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `structure_detail_endpoint` · `app/api.py:2218` (cuerpo hasta la 2221) 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:2479 |
-| `canonical_for` | literal en app/scalp_logic.py:2505 |
-| `closed_bar_rule` | literal en app/scalp_logic.py:2488 |
-| `distinct_from` | literal en app/scalp_logic.py:2496 |
-| `horizons` | literal en app/scalp_logic.py:2480 |
-| `state_method` | literal en app/scalp_logic.py:2484 |
-| `symbol` | literal en app/scalp_logic.py:2478 |
+| `as_of` | literal en app/scalp_logic.py:2484 |
+| `canonical_for` | literal en app/scalp_logic.py:2510 |
+| `closed_bar_rule` | literal en app/scalp_logic.py:2493 |
+| `distinct_from` | literal en app/scalp_logic.py:2501 |
+| `horizons` | literal en app/scalp_logic.py:2485 |
+| `state_method` | literal en app/scalp_logic.py:2489 |
+| `symbol` | literal en app/scalp_logic.py:2483 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -34,10 +34,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -50,21 +50,21 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1298`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2426`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2377`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2363`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1303`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 
@@ -80,7 +80,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -91,7 +91,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:155`, `harness/checks/K43-foto-unica.sh:218` | `harness/checks/K31-eslabon5.sh:29` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:217`, `static/js/07-decision-y-ciclos.js:356` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:217`, `static/js/07-decision-y-ciclos.js:357` | — |
 
 **La llama el panel: es superficie de producto.**
 

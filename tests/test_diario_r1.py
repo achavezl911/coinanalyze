@@ -163,9 +163,11 @@ def test_r1_mercado_que_abre_mas_alla_del_stop_sale_a_la_apertura():
     x = rs.resuelve(p, {D0 + 300: (98.0, 98.5, 97.5, 98.2)}, D0 + 86400)["resultado"]
     assert x["px_llenado"] == 98.0 and x["salida"] == "stop" and x["px_salida"] == pytest.approx(98 * 0.999)
     assert x["r_neto"] == pytest.approx((-0.001 - 2 * 0.00055) / 0.01) and x["r_neto"] < 0
-    # limite: la vela que la llena abre bajo el stop -> sale a la apertura, no en el stop declarado
+    # limite: la PRIMERA vela abre bajo el stop -> llega cruzada (llenado-r1): tomador a 96.5 y sale a la apertura
     x = rs.resuelve(_prop(sello=D0 + 10), {D0 + 300: (96.5, 96.8, 96.0, 96.6)}, D0 + 86400)["resultado"]
-    assert x["px_llenado"] == 100.0 and x["px_salida"] == pytest.approx(96.5 * 0.999)
+    assert x["px_llenado"] == 96.5 and x["px_salida"] == pytest.approx(96.5 * 0.999)
+    assert x["regla"] == rs.REGLA_CRUZADA and x["coste"]["com_entrada_pb"] == pytest.approx(5.5)
+    assert x["r_neto"] == pytest.approx((-0.001 - 2 * 0.00055) / 0.03)
 
 
 def test_valida_exige_un_stop_minimo():

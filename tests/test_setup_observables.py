@@ -190,21 +190,24 @@ def test_sin_impulso_identificable_pullback_none() -> None:
 
 
 def test_nivel_defendido() -> None:
-    # nivel = swing low 100 (t=0); el precio baja a tocarlo (low 100.05) y reacciona arriba.
-    pivots = {"highs": [], "lows": [(0, 100.0)]}
-    bars = _bars(0, [(100.05, 100.4, 100.02), (100.3, 100.5, 100.1), (101.0, 101.2, 100.6)])
+    # nivel = origen del impulso, swing low 100 (t=0) -> 103 (t=TF); el retroceso vuelve a
+    # tocarlo (low 100.02) y reacciona arriba. La vela del pivote NO cuenta (Z-04): solo el tramo.
+    pivots = {"highs": [(TF, 103.0)], "lows": [(0, 100.0)]}
+    bars = _bars(0, [(100.2, 100.4, 100.0), (103.0, 103.0, 102.5),
+                     (100.3, 100.5, 100.02), (101.0, 101.2, 100.6)])
     obs = setup_observables(direction="long", setup="continuacion", zone=ZONE,
                             bundle=_bundle(bars, pivots=pivots, atr=1.0))
     d = obs["level_defended"]
     assert d["value"] is True
     assert d["defended_level_type"] == "swing_low"
     assert d["defended_level_price"] == 100.0
+    assert d["defended_level_ts"] == 0 and d["defense_from_ts"] == TF
 
 
 def test_nivel_perdido() -> None:
-    # nivel = swing low 100; dos cierres claramente por debajo -> perdido (False).
-    pivots = {"highs": [], "lows": [(0, 100.0)]}
-    bars = _bars(0, [(98.5, 99.0, 98.3), (98.0, 98.5, 97.8)])
+    # nivel = origen del impulso 100 -> 101; dos cierres claramente por debajo -> perdido (False).
+    pivots = {"highs": [(TF, 101.0)], "lows": [(0, 100.0)]}
+    bars = _bars(0, [(100.2, 100.4, 100.0), (101.0, 101.0, 100.5), (98.5, 99.0, 98.3), (98.0, 98.5, 97.8)])
     obs = setup_observables(direction="long", setup="continuacion", zone=ZONE,
                             bundle=_bundle(bars, pivots=pivots, atr=0.5))
     assert obs["level_defended"]["value"] is False

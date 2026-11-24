@@ -33,14 +33,13 @@ BACKUP = RAIZ / "scripts" / "backup.sh"
 DIAS = 86400
 # nombre, edad en dias, sobrevive
 CASOS = [
-    # 1 · pre-despliegue pasado de su vida (3 dias) -> desaparece
+    # 1 · pre-despliegue fuera de los 2 mas nuevos -> desaparece
     ("predeploy-aaaa1111-20260901000000.sql.gz", 10, False),
     ("predeploy-cccc3333-20260904000000.sql.gz", 4, False),
-    # 2 · pre-despliegue dentro de su vida -> sobrevive
+    # 2 · los 2 pre-despliegue mas nuevos -> sobreviven
     ("predeploy-bbbb2222-20260907000000.sql.gz", 1, True),
     ("predeploy-dddd4444-20260908000000.sql.gz", 0, True),
-    # 3 · cifrado dentro de SU vida, que son 4 y no 3: dos vidas distintas a proposito (a los 4 dias
-    #     el pre-despliegue ya cae y el cifrado no)
+    # 3 · cifrado dentro de SU vida (4 dias): los cifrados se podan por edad, no por cuenta
     ("coinalyze-full-20260906T031500Z.tar.gz.enc", 4, True),
     ("coinalyze-full-20260906T031500Z.tar.gz.enc.sha256", 4, True),
     ("coinalyze-full-20260801T031500Z.tar.gz.enc", 40, False),
@@ -75,7 +74,7 @@ def podar(directorio: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["bash", str(BACKUP), "--solo-podar"],
         env={**os.environ, "BACKUP_DIR": str(directorio),
-             "PREDEPLOY_RETENTION_DAYS": "3", "BACKUP_RETENTION_DAYS": "4"},
+             "PREDEPLOY_KEEP": "2", "BACKUP_RETENTION_DAYS": "4"},
         capture_output=True, text=True, check=False,
     )
 
@@ -105,25 +104,36 @@ def test_la_poda_no_baja_de_directorio(directorio: Path):
     assert (directorio / "subdir" / "predeploy-eeee5555-2026.sql.gz").exists()
 
 
-def test_la_vida_es_un_DATO_y_se_puede_cambiar_sin_tocar_la_logica(directorio: Path):
-    """CONTROL QUE SE MUEVE. Con la vida en 30 dias, el de 10 sobrevive; con 3, no. Si la vida
-    estuviera incrustada en la linea del `find`, este test no podria moverla."""
+def test_la_cuenta_es_un_DATO_y_se_puede_cambiar_sin_tocar_la_logica(directorio: Path):
+    """CONTROL QUE SE MUEVE. Con PREDEPLOY_KEEP=3 el tercero mas nuevo (4 d) sobrevive; con 2, no.
+    Si la cuenta estuviera incrustada en el bucle, este test no podria moverla."""
     r = subprocess.run(
         ["bash", str(BACKUP), "--solo-podar"],
-        env={**os.environ, "BACKUP_DIR": str(directorio), "PREDEPLOY_RETENTION_DAYS": "30"},
+        env={**os.environ, "BACKUP_DIR": str(directorio), "PREDEPLOY_KEEP": "3"},
         capture_output=True, text=True, check=False,
     )
     assert r.returncode == 0, r.stderr
-    assert (directorio / "predeploy-aaaa1111-20260901000000.sql.gz").exists(), (
-        "con la vida en 30 dias el de 10 tenia que sobrevivir: la vida no se esta leyendo"
+    assert (directorio / "predeploy-cccc3333-20260904000000.sql.gz").exists(), (
+        "con la cuenta en 3 el tercero tenia que sobrevivir: la cuenta no se esta leyendo"
     )
+    assert not (directorio / "predeploy-aaaa1111-20260901000000.sql.gz").exists()
 
 
-def test_las_dos_vidas_estan_declaradas_por_separado():
-    """Son dos vidas distintas y tienen que verse como dos. Un solo numero para las dos clases
-    fue lo que dejo a los pre-despliegue sin podar."""
+def test_cuenta_cero_se_niega_y_no_borra(directorio: Path):
+    """Con 0 la poda se llevaria el volcado del release que corre: el guion se niega."""
+    r = subprocess.run(
+        ["bash", str(BACKUP), "--solo-podar"],
+        env={**os.environ, "BACKUP_DIR": str(directorio), "PREDEPLOY_KEEP": "0"},
+        capture_output=True, text=True, check=False,
+    )
+    assert r.returncode != 0
+    assert len(list(directorio.glob("predeploy-*.sql.gz"))) == 4
+
+
+def test_las_dos_reglas_estan_declaradas_por_separado():
+    """Los cifrados por edad y los pre-despliegue por cuenta, cada uno con su numero."""
     fuente = BACKUP.read_text(encoding="utf-8")
-    assert "PREDEPLOY_RETENTION_DAYS=${PREDEPLOY_RETENTION_DAYS:-3}" in fuente
+    assert "PREDEPLOY_KEEP=${PREDEPLOY_KEEP:-2}" in fuente
     assert "BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-4}" in fuente
 
 
@@ -169,3 +179,72 @@ def test_antes_del_stage_solo_predeploy_y_los_cifrados_tras_el_respaldo():
     assert [i for i in llamadas("podar_respaldos") if i > stage], (
         "falta la poda de cifrados tras el respaldo"
     )
+
+
+# ---------------------------------------------------------------------------------------------
+# MANT R2 · LOS PRE-DESPLIEGUE SE QUEDAN EN LOS 2 MAS NUEVOS. El 2026-11-23 el disco de 140 llego
+# al 100 %: 11 `predeploy-*.sql.gz` de ~3.6 GB, todos DENTRO de la vida de 3 dias, asi que la poda
+# por edad no borraba ninguno. Contra el backup.sh de main caen los dos tests de abajo: el primero
+# porque los 5 estan dentro de los 3 dias y main no borra nada; el segundo porque main borra
+# TODOS, tambien el del release activo.
+# ---------------------------------------------------------------------------------------------
+
+def _planta(d: Path, edades_h: list[float]) -> list[str]:
+    ahora = time.time()
+    nombres = []
+    for k, h in enumerate(edades_h):
+        nombre = f"predeploy-{k:04x}beef-2026112{k}T000000Z.sql.gz"
+        for f in (d / nombre, d / f"{nombre}.sha256"):
+            f.write_bytes(b"x")
+            os.utime(f, (ahora - h * 3600, ahora - h * 3600))
+        nombres.append(nombre)
+    return nombres
+
+
+def _cifrados(d: Path) -> list[str]:
+    ahora = time.time()
+    casos = {"coinalyze-full-20261122T031500Z.tar.gz.enc": 1, "coinalyze-full-20261101T031500Z.tar.gz.enc": 20}
+    for nombre, dias in casos.items():
+        for f in (d / nombre, d / f"{nombre}.sha256"):
+            f.write_bytes(b"x")
+            os.utime(f, (ahora - dias * DIAS, ahora - dias * DIAS))
+    return sorted(casos)
+
+
+def _poda_por_defecto(d: Path) -> subprocess.CompletedProcess:
+    env = {k: v for k, v in os.environ.items() if k not in ("PREDEPLOY_KEEP", "PREDEPLOY_RETENTION_DAYS",
+                                                         "BACKUP_RETENTION_DAYS")}
+    return subprocess.run(["bash", str(BACKUP), "--solo-podar"], env={**env, "BACKUP_DIR": str(d)},
+                          capture_output=True, text=True, check=False)
+
+
+def test_cinco_predeploy_quedan_los_dos_mas_nuevos_y_los_cifrados_igual(tmp_path: Path):
+    # Edades en horas, desordenadas a proposito: el orden sale del mtime, no del nombre.
+    nombres = _planta(tmp_path, [30, 2, 50, 10, 70])
+    viejo, nuevo = _cifrados(tmp_path)  # orden por nombre: 1101 (20 d) antes que 1122 (1 d)
+    r = _poda_por_defecto(tmp_path)
+    assert r.returncode == 0, r.stderr
+    quedan = sorted(p.name for p in tmp_path.glob("predeploy-*"))
+    assert quedan == sorted([nombres[1], f"{nombres[1]}.sha256", nombres[3], f"{nombres[3]}.sha256"]), quedan
+    # Los cifrados, con su poda de siempre: el de 1 dia vive, el de 20 cae, cada uno con su .sha256.
+    assert sorted(p.name for p in tmp_path.glob("coinalyze-full-*")) == [nuevo, f"{nuevo}.sha256"]
+    assert viejo.endswith("1101T031500Z.tar.gz.enc")
+    # Su log: una linea por volcado borrado.
+    assert r.stderr.count("poda predeploy: borro predeploy-") == 3, r.stderr
+
+
+def test_los_dos_mas_nuevos_viven_aunque_pasen_de_tres_dias(tmp_path: Path):
+    """Una semana sin desplegar: el volcado del release activo sigue siendo el que revierte."""
+    nombres = _planta(tmp_path, [24 * 9, 24 * 5, 24 * 7, 24 * 6, 24 * 8])
+    r = _poda_por_defecto(tmp_path)
+    assert r.returncode == 0, r.stderr
+    assert sorted(p.name for p in tmp_path.glob("predeploy-*.sql.gz")) == sorted([nombres[1], nombres[3]])
+
+
+def test_sha256_huerfano_se_poda(tmp_path: Path):
+    nombres = _planta(tmp_path, [1, 2])
+    huerfano = tmp_path / "predeploy-dead0000-20261101T000000Z.sql.gz.sha256"
+    huerfano.write_bytes(b"x")
+    assert _poda_por_defecto(tmp_path).returncode == 0
+    assert not huerfano.exists()
+    assert all((tmp_path / f"{n}.sha256").exists() for n in nombres)

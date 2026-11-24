@@ -28,7 +28,7 @@ def ctx_rico(**overrides: object) -> dict[str, object]:
         "price": 101.0, "barrier_level": 100.0, "breakout_boundary": 100.0, "touched_level": True,
         "volume_multiple": 1.4, "spot_delta": 500.0, "fut_delta": 900.0,
         "oi_chg_pct": 0.3, "book_bid_share": 0.62, "absorption": "Absorción de ventas",
-        "reaction_pct": 0.4, "vwap_dist_pct": 0.2, "prior_trend": "alcista",
+        "reaction_pct": 0.4, "oi_price_pct": 0.4, "vwap_dist_pct": 0.2, "prior_trend": "alcista",
         "structure_event": "BOS", "structure_direction": "alcista", "liq_skew": 250_000.0,
         "multi_tf_aligned": True, "bars_closed_beyond": 3, "retest_done": True,
         "returned_inside": False, "pullback_pct": -0.8, "level_defended": True,
@@ -214,10 +214,10 @@ def test_los_setups_ya_no_tratan_el_oi_como_un_delta() -> None:
 
 def test_en_un_setup_el_oi_que_solo_sube_no_cumple_por_si_mismo() -> None:
     """OI expandiendo pero precio cayendo: no confirma un long, y tampoco lo invalida."""
-    out = evaluate_setup("ruptura", "long", ctx_rico(oi_chg_pct=2.0, reaction_pct=-0.6))
+    out = evaluate_setup("ruptura", "long", ctx_rico(oi_chg_pct=2.0, oi_price_pct=-0.6))
     oi = next(r for r in out["requisitos"] if r["requisito"] == "open interest")
     assert oi["estado"] == "no_cumple"
     # Y con el precio subiendo mientras el OI cae, queda PENDIENTE: es un cierre, no una tesis.
-    out2 = evaluate_setup("ruptura", "long", ctx_rico(oi_chg_pct=-2.0, reaction_pct=0.6))
+    out2 = evaluate_setup("ruptura", "long", ctx_rico(oi_chg_pct=-2.0, oi_price_pct=0.6))
     oi2 = next(r for r in out2["requisitos"] if r["requisito"] == "open interest")
     assert oi2["estado"] == "pendiente"

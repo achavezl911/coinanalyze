@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `price_barriers_endpoint` · `app/api.py:2020` (cuerpo hasta la 2023) · decorador en la linea 2019.
+Handler `price_barriers_endpoint` · `app/api.py:2125` (cuerpo hasta la 2128) · decorador en la linea 2124.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `price_barriers_endpoint` · `app/api.py:2020` (cuerpo hasta la 2023) ·
 | `available` | literal en app/interpretation.py:998 |
 | `current_price` | literal en app/interpretation.py:999 |
 | `decision` | literal en app/interpretation.py:1000 |
-| `intraday_source_interval` | literal en app/scalp_logic.py:1423 |
+| `intraday_source_interval` | literal en app/scalp_logic.py:1428 |
 | `live_pressure` | literal en app/interpretation.py:1004 |
 | `long_case` | literal en app/interpretation.py:1021 |
 | `method` | literal en app/interpretation.py:1035 |
@@ -30,7 +30,7 @@ Handler `price_barriers_endpoint` · `app/api.py:2020` (cuerpo hasta la 2023) ·
 | `nearest_support` | literal en app/interpretation.py:1002 |
 | `reason` | literal en app/interpretation.py:886 |
 | `short_case` | literal en app/interpretation.py:1028 |
-| `symbol` | literal en app/scalp_logic.py:1422 |
+| `symbol` | literal en app/scalp_logic.py:1427 |
 | `warning` | literal en app/interpretation.py:1057 |
 | `warnings` | literal en app/interpretation.py:1048 |
 
@@ -42,21 +42,21 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1629`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:875`
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
@@ -68,8 +68,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1304`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1309`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
@@ -77,8 +77,8 @@ Llamadas directas del handler:
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 
@@ -94,7 +94,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ohlcv` · `app/api.py:734` (cuerpo hasta la 797) · decorador en la linea 733.
+Handler `ohlcv` · `app/api.py:832` (cuerpo hasta la 896) · decorador en la linea 831.
 
 ## Parametros de entrada
 
@@ -16,26 +16,29 @@ Handler `ohlcv` · `app/api.py:734` (cuerpo hasta la 797) · decorador en la lin
 
 ## Campos que publica
 
-16 campos derivados. La procedencia dice de donde sale cada uno.
+19 campos derivados. La procedencia dice de donde sale cada uno.
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:527 |
-| `coverage.served_window` | literal en app/api.py:528 |
-| `coverage.unit` | literal en app/api.py:473 |
-| `data_gaps` | literal en app/api.py:533 |
-| `data_gaps.declared` | literal en app/api.py:541 |
-| `data_gaps.exchanges` | literal en app/api.py:535 |
-| `data_gaps.feed` | literal en app/api.py:534 |
-| `data_gaps.market` | literal en app/api.py:536 |
-| `data_gaps.status` | literal en app/api.py:540 |
-| `data_gaps.symbol` | literal en app/api.py:537 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:542 |
-| `data_gaps.window_end` | literal en app/api.py:539 |
-| `data_gaps.window_start` | literal en app/api.py:538 |
-| `interval` | literal en app/api.py:525 |
-| `rows` | literal en app/api.py:526 |
-| `symbol` | literal en app/api.py:524 |
+| `coverage` | literal en app/api.py:622 |
+| `coverage.served_window` | literal en app/api.py:623 |
+| `coverage.unit` | literal en app/api.py:565 |
+| `data_gaps` | literal en app/api.py:628 |
+| `data_gaps.age_seconds` | literal en app/api.py:639 |
+| `data_gaps.as_of` | literal en app/api.py:638 |
+| `data_gaps.declared` | literal en app/api.py:636 |
+| `data_gaps.exchanges` | literal en app/api.py:630 |
+| `data_gaps.feed` | literal en app/api.py:629 |
+| `data_gaps.market` | literal en app/api.py:631 |
+| `data_gaps.requested_window` | literal en app/api.py:640 |
+| `data_gaps.status` | literal en app/api.py:635 |
+| `data_gaps.symbol` | literal en app/api.py:632 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:637 |
+| `data_gaps.window_end` | literal en app/api.py:634 |
+| `data_gaps.window_start` | literal en app/api.py:633 |
+| `interval` | literal en app/api.py:620 |
+| `rows` | literal en app/api.py:621 |
+| `symbol` | literal en app/api.py:619 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -45,26 +48,30 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
+- `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
+  - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
+  - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
+  - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
@@ -73,27 +80,30 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-13 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+16 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:445`
-- `app.api.historical_interval_value` — `app/api.py:265`
-- `app.api.mask_gapped_series_rows` — `app/api.py:295`
-- `app.api.records` — `app/api.py:272`
-- `app.api.unpriced_candles_are_not_covered` — `app/api.py:279`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.declared_series_response` — `app/api.py:519`
+- `app.api.historical_interval_value` — `app/api.py:266`
+- `app.api.mask_gapped_series_rows` — `app/api.py:296`
+- `app.api.records` — `app/api.py:273`
+- `app.api.unpriced_candles_are_not_covered` — `app/api.py:280`
+- `app.api.validate_symbol` — `app/api.py:260`
 
-<details><summary>Alcanzables de forma indirecta (7)</summary>
+<details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.api.minutos_de_las_filas` — `app/api.py:405`
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
-- `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:207`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
+- `app.api.lo_pedido` — `app/api.py:446`
+- `app.api.minutos_de_las_filas` — `app/api.py:406`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.align_down` — `app/data_gaps.py:247`
+- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
+- `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:212`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
+- `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:986`
 
 </details>
 
@@ -113,8 +123,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | Invalid interval for historical endpoint | `app/api.py:268` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | Invalid interval for historical endpoint | `app/api.py:269` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -143,6 +153,7 @@ en el fichero de la capa declarada y puede corregirla con cita.
 Claves temporales entre los campos que publica:
 
 - `coverage.served_window`
+- `data_gaps.requested_window`
 - `data_gaps.window_end`
 - `data_gaps.window_start`
 
@@ -164,16 +175,19 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps._aware_utc` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.align_down` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.api.lo_pedido` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
+| `app.orderflow_lectura._barrido_liquidaciones` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-orderflow_lectura.md) |
 | `app.api.ohlcv` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 | `app.api.unpriced_candles_are_not_covered` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 
