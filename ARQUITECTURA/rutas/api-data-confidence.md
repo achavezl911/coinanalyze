@@ -33,19 +33,19 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
-- `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
+- `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
+- `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
+- `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 

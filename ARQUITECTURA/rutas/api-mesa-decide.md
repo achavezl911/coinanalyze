@@ -33,48 +33,48 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
+- `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
   - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
   - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
-- `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
+- `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `pipeline_heartbeat` — `sql/schema.sql:1291`, 4 columnas
+- `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
-- `scalp_signal_snapshot` — `sql/schema.sql:388`, 16 columnas
+- `scalp_signal_snapshot` — `sql/schema.sql:487`, 16 columnas
   - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1453`
-- `signal_observation` — `sql/schema.sql:422`, 34 columnas
+- `signal_observation` — `sql/schema.sql:521`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
+- `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 

@@ -42,10 +42,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
   - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
   - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
   - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
