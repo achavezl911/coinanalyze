@@ -121,6 +121,10 @@ class _CycleConnection:
     async def execute(self, *_args, **_kwargs):
         return None
 
+    async def fetch(self, *_args, **_kwargs):
+        # publish_snapshot lee el certificado de liquidaciones (EDAD R1): sin latido, el suelo.
+        return []
+
 
 class _CyclePool:
     def __init__(self):
@@ -245,6 +249,8 @@ class _StatefulMetricsConnection(_CycleConnection):
         }
 
     async def fetch(self, query, *_args):
+        if "pipeline_heartbeat" in query:
+            return []  # sin certificado de liquidaciones: el corte se queda en el suelo
         assert "data_gap" in query
         return []
 
