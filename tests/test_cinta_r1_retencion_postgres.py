@@ -70,7 +70,11 @@ def _montaje() -> tuple[datetime, datetime, list[datetime]]:
 
 
 async def _existe(conn: asyncpg.Connection, dia: datetime) -> bool:
-    return await conn.fetchval("SELECT to_regclass($1)", f"orderflow_cinta_p{dia:%Y%m%d}") is not None
+    # En el esquema de la prueba y no por el search_path: con -n, otra prueba del mismo proceso (test_liq_retencion)
+    # deja en public las hijas de orderflow_cinta del ultimo mes, y un to_regclass a secas encontraba la de public (CI 45268118240).
+    return await conn.fetchval(
+        "SELECT to_regclass(format('%I.%I', current_schema(), $1::text))", f"orderflow_cinta_p{dia:%Y%m%d}"
+    ) is not None
 
 
 async def test_un_tramo_que_cae_no_deshace_el_drop(base) -> None:
