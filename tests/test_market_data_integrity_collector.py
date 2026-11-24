@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from datetime import UTC, datetime
 from typing import Any
@@ -250,6 +251,7 @@ async def test_monitor_persists_queue_loss_then_restores_connected_status(
     loss_at = datetime(2026, 8, 9, 12, 0, tzinfo=UTC)
     monkeypatch.setattr(scalp, "LIQ_FEED_CONNECTED", {"binance": True, "bybit": False})
     monkeypatch.setattr(scalp, "LIQ_LOSS_PENDING", {"binance": loss_at})
+    monkeypatch.setattr(scalp, "LIQ_HEARTBEAT_BROKEN", {"binance": False, "bybit": False})
 
     async def degraded(_conn, _feed, exchange, *_args, data_loss=False):
         calls.append((exchange, "degraded", data_loss))
@@ -276,15 +278,32 @@ async def test_collector_startup_breaks_persisted_liquidation_continuity(
 ) -> None:
     calls: list[tuple[str, str]] = []
     connected = {"binance": True, "bybit": True}
+    broken = {"binance": False, "bybit": False}
     monkeypatch.setattr(scalp, "LIQ_FEED_CONNECTED", connected)
+    monkeypatch.setattr(scalp, "LIQ_HEARTBEAT_BROKEN", broken)
+
+    @contextlib.asynccontextmanager
+    async def no_transaction(_conn, _ownership):
+        yield
+
+    async def declare(_conn, exchange, source):
+        calls.append((source, exchange))
+        return 0
 
     async def degraded(_conn, feed, exchange, *_args, data_loss=False):
         assert data_loss is False
         calls.append((feed, exchange))
 
+    monkeypatch.setattr(scalp, "fenced_transaction", no_transaction)
+    monkeypatch.setattr(scalp, "declare_liquidation_silence", declare)
     monkeypatch.setattr(scalp, "mark_feed_shard_degraded", degraded)
 
     await reset_liquidation_feed_health(object())  # type: ignore[arg-type]
 
     assert connected == {"binance": False, "bybit": False}
-    assert calls == [("liquidations", "binance"), ("liquidations", "bybit")]
+    # H-03: el silencio anterior se declara ANTES de que el reset pise el latido
+    assert calls == [
+        ("scalp_collector.startup", "binance"), ("liquidations", "binance"),
+        ("scalp_collector.startup", "bybit"), ("liquidations", "bybit"),
+    ]
+    assert broken == {"binance": True, "bybit": True}
