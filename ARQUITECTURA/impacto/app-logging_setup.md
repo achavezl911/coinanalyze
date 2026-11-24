@@ -37,9 +37,8 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 - `libro_cobertura` — la escribe `app.libro.poda`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
-- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.vuelca`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat_component`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 - `spot_trades_realtime` — la escribe `app.ws_collector.flush_realtime`

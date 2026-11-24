@@ -958,11 +958,11 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
 - `orderflow_celda` — la escriben 2: `app/orderflow.py:562`, `app/orderflow.py:565`
-- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:860`
+- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:902`
 - `orderflow_cinta` — la escriben 1: `app/orderflow.py:603`
-- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:808`
-- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:805`
-- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:812`
+- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:868`
+- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:865`
+- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:873`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`
