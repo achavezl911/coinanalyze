@@ -383,9 +383,10 @@ def test_cambiar_una_convencion_es_una_version_nueva():
     de desplegar y sin cambiar lo que el codigo hace: la de d9f4520 (717a69038e1b...) no tenia el «corte», que ya se
     aplicaba desde 8b33125; la de 8fb7c20 (d3f41674d65d...) no decia todo lo que resolver() aplica. Ninguna de las
     dos llego a guardar un resultado en produccion."""
-    registradas = {"entradas-resolutor-1": HUELLA_V1}
+    registradas = {"entradas-resolutor-1": HUELLA_V1, "entradas-resolutor-2": HUELLA_V2}
     assert RES.RESOLUTOR_VERSION in registradas
     assert registradas[RES.RESOLUTOR_VERSION] == RES.HUELLA_CONVENCIONES
 
 
 HUELLA_V1 = "eb6248f2b29207c053d17e7fd6c97db4edf8d6c38b17616dfe74095ee2cea66f"
+HUELLA_V2 = "d758ad1de77b88c3bb06600cb23b71f8c1700e825827683ae4f70b780675d8c8"  # llenado-r1: la limite cruzada
