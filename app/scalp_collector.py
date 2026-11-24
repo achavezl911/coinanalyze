@@ -469,6 +469,95 @@ LIQ_DROPPED = 0
 LIQ_FEED_CONNECTED = {"binance": False, "bybit": False}
 LIQ_LOSS_PENDING: dict[str, datetime] = {}
 LIQ_GAP_PENDING: set[tuple[str, str, datetime]] = set()
+# H-03/P12. El latido de liquidaciones es market_feed_health_shard.updated_at y significa «hasta aqui el
+# feed estaba sano, o su silencio ya esta declarado»: lo pisan la conexion buena (y cada vuelta de monitor()
+# mientras siga conectada), el cierre de una conexion que estaba buena y, tras declarar [latido, ahora),
+# el arranque y la reconexion. Un intento fallido tras otro NO lo pisa: en 140 el colector estuvo vivo 21 h
+# (11-16 18:41Z .. 11-17 15:32Z) con todas sus conexiones en TimeoutError, y cada intento lo refrescaba.
+# TOPE: monitor() refresca el latido cada 30 s; 90 s son tres vueltas, una perdida (scalp_heartbeat_failed)
+# y la latencia de la base. Un latido de hace 20 s no es una parada.
+LIQ_OUTAGE_TOPE = timedelta(seconds=90)
+LIQ_HEARTBEAT_BROKEN = {"binance": False, "bybit": False}
+LIQ_HEALTH_LOCK = asyncio.Lock()
+
+
+async def declare_liquidation_silence(
+    conn: asyncpg.Connection,
+    exchange: str,
+    source: str,
+) -> int:
+    """H-03/P12: write [heartbeat, now) as collector_outage per symbol when it passes the TOPE.
+
+    Run it in the transaction that then refreshes the heartbeat: the next one starts where this ends.
+    """
+    row = await conn.fetchrow(
+        "SELECT updated_at, now() AS now FROM market_feed_health_shard "
+        "WHERE feed='liquidations' AND exchange=$1 AND shard_index=$2 AND shard_count=$3",
+        exchange,
+        SETTINGS.COLLECTOR_SHARD_INDEX,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+    )
+    # sin latido previo no hay nada que declarar: no se inventa un inicio
+    if row is None or row["now"] - row["updated_at"] <= LIQ_OUTAGE_TOPE:
+        return 0
+    for symbol in ACTIVE_SYMBOLS:
+        await record_event_stream_loss(
+            conn,
+            feed="liquidations",
+            exchange=exchange,
+            market="perpetual",
+            symbol=symbol,
+            start=row["updated_at"],
+            end=row["now"],
+            evidence_type="collector_outage",
+            detection_reason=(
+                "no healthy liquidation heartbeat for more than "
+                f"{LIQ_OUTAGE_TOPE.total_seconds():.0f}s (collector stopped or every connection failing)"
+            ),
+            detection_source=source,
+        )
+    return len(ACTIVE_SYMBOLS)
+
+
+async def _write_liquidation_health(
+    conn: asyncpg.Connection,
+    exchange: str,
+    status: str,
+    detail: str | None,
+    *,
+    data_loss: bool = False,
+    ownership: ServiceOwnership | None = None,
+) -> None:
+    """The only writer of the liquidations heartbeat besides the startup reset."""
+    fence = {"ownership": ownership} if ownership is not None else {}
+    shard = (
+        conn,
+        "liquidations",
+        exchange,
+        SETTINGS.COLLECTOR_SHARD_INDEX,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+        LIQUIDATION_HEALTH_SHARDS,
+        detail,
+    )
+    async with LIQ_HEALTH_LOCK:
+        if status == "ok":
+            if LIQ_HEARTBEAT_BROKEN.get(exchange):
+                async with fenced_transaction(conn, ownership):
+                    await declare_liquidation_silence(conn, exchange, "scalp_collector.reconnect")
+                    await mark_feed_shard_connected(*shard, **fence)
+            else:
+                await mark_feed_shard_connected(*shard, **fence)
+            LIQ_HEARTBEAT_BROKEN[exchange] = False
+            return
+        mark = mark_feed_shard_error if status == "error" else mark_feed_shard_degraded
+        if data_loss:
+            await mark(*shard, data_loss=True, **fence)
+            return
+        # sigue caido: otro intento fallido no pisa el latido (el status ya dice que no esta sano)
+        if LIQ_HEARTBEAT_BROKEN.get(exchange):
+            return
+        await mark(*shard, **fence)
+        LIQ_HEARTBEAT_BROKEN[exchange] = True
 
 
 async def persist_liquidation_feed_state(
@@ -483,44 +572,11 @@ async def persist_liquidation_feed_state(
     """Persist low-frequency feed state; event handlers only mutate in-memory flags."""
     if pool is None:
         return False
-    fence = {"ownership": ownership} if ownership is not None else {}
     try:
         async with pool.acquire() as conn:
-            if status == "ok":
-                await mark_feed_shard_connected(
-                    conn,
-                    "liquidations",
-                    exchange,
-                    SETTINGS.COLLECTOR_SHARD_INDEX,
-                    SETTINGS.COLLECTOR_SHARD_COUNT,
-                    LIQUIDATION_HEALTH_SHARDS,
-                    detail,
-                    **fence,
-                )
-            elif status == "error":
-                await mark_feed_shard_error(
-                    conn,
-                    "liquidations",
-                    exchange,
-                    SETTINGS.COLLECTOR_SHARD_INDEX,
-                    SETTINGS.COLLECTOR_SHARD_COUNT,
-                    LIQUIDATION_HEALTH_SHARDS,
-                    detail,
-                    data_loss=data_loss,
-                    **fence,
-                )
-            else:
-                await mark_feed_shard_degraded(
-                    conn,
-                    "liquidations",
-                    exchange,
-                    SETTINGS.COLLECTOR_SHARD_INDEX,
-                    SETTINGS.COLLECTOR_SHARD_COUNT,
-                    LIQUIDATION_HEALTH_SHARDS,
-                    detail,
-                    data_loss=data_loss,
-                    **fence,
-                )
+            await _write_liquidation_health(
+                conn, exchange, status, detail, data_loss=data_loss, ownership=ownership,
+            )
         return True
     except ServiceOwnershipLost:
         raise
@@ -538,20 +594,16 @@ async def persist_liquidation_health_snapshot(
     ownership: ServiceOwnership | None = None,
 ) -> None:
     """Flush connection and loss flags from memory without doing DB I/O per event."""
-    fence = {"ownership": ownership} if ownership is not None else {}
     for exchange, connected in LIQ_FEED_CONNECTED.items():
         loss_at = LIQ_LOSS_PENDING.get(exchange)
         if loss_at is not None:
-            await mark_feed_shard_degraded(
+            await _write_liquidation_health(
                 conn,
-                "liquidations",
                 exchange,
-                SETTINGS.COLLECTOR_SHARD_INDEX,
-                SETTINGS.COLLECTOR_SHARD_COUNT,
-                LIQUIDATION_HEALTH_SHARDS,
+                "degraded",
                 f"queue overflow detected at {loss_at.isoformat()}",
                 data_loss=True,
-                **fence,
+                ownership=ownership,
             )
             pending_gaps = sorted(
                 (item for item in LIQ_GAP_PENDING if item[1] == exchange),
@@ -563,26 +615,12 @@ async def persist_liquidation_health_snapshot(
                 )
                 LIQ_GAP_PENDING.discard((symbol, gap_exchange, event_at))
         if connected:
-            await mark_feed_shard_connected(
-                conn,
-                "liquidations",
-                exchange,
-                SETTINGS.COLLECTOR_SHARD_INDEX,
-                SETTINGS.COLLECTOR_SHARD_COUNT,
-                LIQUIDATION_HEALTH_SHARDS,
-                "subscription active",
-                **fence,
+            await _write_liquidation_health(
+                conn, exchange, "ok", "subscription active", ownership=ownership,
             )
         else:
-            await mark_feed_shard_degraded(
-                conn,
-                "liquidations",
-                exchange,
-                SETTINGS.COLLECTOR_SHARD_INDEX,
-                SETTINGS.COLLECTOR_SHARD_COUNT,
-                LIQUIDATION_HEALTH_SHARDS,
-                "stream disconnected",
-                **fence,
+            await _write_liquidation_health(
+                conn, exchange, "degraded", "stream disconnected", ownership=ownership,
             )
         if loss_at is not None and LIQ_LOSS_PENDING.get(exchange) == loss_at:
             LIQ_LOSS_PENDING.pop(exchange, None)
@@ -616,20 +654,26 @@ async def reset_liquidation_feed_health(
     conn: asyncpg.Connection,
     ownership: ServiceOwnership | None = None,
 ) -> None:
-    """Break persisted continuity before any stream can reconnect after process start."""
+    """Break persisted continuity before any stream can reconnect after process start.
+
+    Before the reset overwrites the heartbeat, a stop longer than the TOPE is declared (H-03).
+    """
     fence = {"ownership": ownership} if ownership is not None else {}
     for exchange in LIQ_FEED_CONNECTED:
         LIQ_FEED_CONNECTED[exchange] = False
-        await mark_feed_shard_degraded(
-            conn,
-            "liquidations",
-            exchange,
-            SETTINGS.COLLECTOR_SHARD_INDEX,
-            SETTINGS.COLLECTOR_SHARD_COUNT,
-            LIQUIDATION_HEALTH_SHARDS,
-            "scalp collector starting; awaiting stream confirmation",
-            **fence,
-        )
+        async with fenced_transaction(conn, ownership):
+            await declare_liquidation_silence(conn, exchange, "scalp_collector.startup")
+            await mark_feed_shard_degraded(
+                conn,
+                "liquidations",
+                exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+                LIQUIDATION_HEALTH_SHARDS,
+                "scalp collector starting; awaiting stream confirmation",
+                **fence,
+            )
+        LIQ_HEARTBEAT_BROKEN[exchange] = True
 
 
 def mark_exchange_disconnected(exchange: str) -> None:

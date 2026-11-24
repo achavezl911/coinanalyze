@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `symbols` · `app/api.py:709` (cuerpo hasta la 710) · decorador en la linea 708.
+Handler `symbols` · `app/api.py:807` (cuerpo hasta la 808) · decorador en la linea 806.
 
 ## Parametros de entrada
 
@@ -16,8 +16,8 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `asset` | literal en app/api.py:710 |
-| `symbol` | literal en app/api.py:710 |
+| `asset` | literal en app/api.py:808 |
+| `symbol` | literal en app/api.py:808 |
 
 Forma de la respuesta segun el AST: lista, lista de objetos.
 
@@ -46,7 +46,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:170`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:745`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:749` | — |
 | **panel** | `static/js/08-arranque.js:160` | — |
-| **tests** | `tests/test_deploy_health_gate.py:180`, `tests/test_deploy_wrapper.py:268`, `tests/test_smoke_arranque.py:40` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:158`, `tests/test_deploy_wrapper.py:72` |
+| **tests** | `tests/test_deploy_health_gate.py:170`, `tests/test_deploy_wrapper.py:268`, `tests/test_smoke_arranque.py:40` | `tests/test_deploy_health_gate.py:42`, `tests/test_deploy_health_gate.py:148`, `tests/test_deploy_wrapper.py:72` |
 
 **La llama el panel: es superficie de producto.**
 

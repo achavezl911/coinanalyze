@@ -142,8 +142,8 @@ los 4096 caracteres de Telegram (límite de documento: 50 MB).
 
 ## 5. Trampas ya pisadas — no las repitas
 
-1. **`update.sh` que se ejecuta es el de `/opt/coinalyze`, no el del paquete.** Cualquier
-   corrección al propio `update.sh` surte efecto **una versión después**. Esto ya borró
+1. **`scripts/update.sh` se retiró (D-03): se despliega solo con `gh workflow run
+   deploy-production.yml`.** El que se ejecutaba era el de `/opt/coinalyze`. Ese guion ya borró
    `.deploy-backups` una vez (se recuperó del backup cifrado).
 2. **Editar `.py` desde Windows con Python los convierte a CRLF.** Normaliza a LF antes de
    empaquetar o el diff sale de miles de líneas.
@@ -196,13 +196,13 @@ los 4096 caracteres de Telegram (límite de documento: 50 MB).
 ## 8. Cómo desplegar y verificar
 
 ```bash
-# desde un árbol COMPLETO (update.sh aborta si falta algo: REQUIRED_PATHS)
-sudo /opt/coinalyze/scripts/update.sh /ruta/al/arbol
+# con el cambio mergeado a main y la CI verde; scripts/update.sh se retiró (D-03)
+gh workflow run deploy-production.yml -f action=deploy -f confirm="deploy production" --ref main
 ```
 
-Hace backup cifrado, para servicios, rsync `--delete` (excluye `.venv`, `.env`,
-`.deploy-backups`), reinstala deps, aplica `sql/schema.sql`, instala units y nginx,
-reinicia y **no da por bueno el despliegue hasta que pasa `scripts/smoke_test.sh`**.
+El envoltorio de 140 respalda la base, aplica `sql/schema.sql` antes de mover `current`,
+reinicia, prueba humo y revierte solo si falla (detalle en `docs/DEPLOYMENT.md`). Units y
+nginx NO los instala: es un paso a mano del dueño, también en `docs/DEPLOYMENT.md`.
 
 Comprobación rápida:
 

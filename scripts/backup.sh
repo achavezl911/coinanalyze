@@ -18,12 +18,16 @@ fi
 BACKUP_KEY_FILE=${BACKUP_ENCRYPTION_KEY_FILE:-/etc/coinalyze/backup.key}
 # 4 y no 14: la historia larga vive en el nodo, que copia cada dia los cifrados con sha256 y manifiesto.
 BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-4}
-# LOS VOLCADOS PRE-DESPLIEGUE VIVEN MENOS QUE LOS CIFRADOS, y son dos vidas distintas a
-# proposito. El cifrado es la copia de seguridad de verdad y se guarda cuatro dias aqui. El
-# pre-despliegue solo sirve para revertir EL despliegue que acaba de pasar, asi que a los tres
-# dias ya no lo va a usar nadie -y pesa 419 MB de media, con ~2.8 despliegues al dia medidos el
-# 2026-09-08: 1.17 GB diarios si nadie los borra-. Decision de Alejandro, 2026-09-08.
-PREDEPLOY_RETENTION_DAYS=${PREDEPLOY_RETENTION_DAYS:-3}
+# LOS VOLCADOS PRE-DESPLIEGUE SE PODAN POR CUENTA, NO POR EDAD. El cifrado es la copia de
+# seguridad de verdad y se guarda cuatro dias aqui. El pre-despliegue solo sirve para revertir
+# el despliegue reciente, asi que basta con el del release activo y el del ultimo intento: los 2
+# MAS RECIENTES por mtime. La vida de 3 dias (Alejandro, 2026-09-08) no acotaba nada: con varios
+# intentos al dia de ~3.6 GB cada uno, 11 volcados dentro de su vida llenaron el disco de 140 al
+# 100 % el 2026-11-23 y un despliegue revirtio por «No space left on device». Y por edad, una
+# semana sin desplegar borraba tambien el del release activo.
+PREDEPLOY_KEEP=${PREDEPLOY_KEEP:-2}
+# Al menos 1: con 0 la poda se llevaria el volcado del release que corre.
+[[ $PREDEPLOY_KEEP =~ ^[1-9][0-9]*$ ]] || { echo "PREDEPLOY_KEEP invalido: $PREDEPLOY_KEEP" >&2; exit 1; }
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 FINAL_NAME="coinalyze-full-${STAMP}.tar.gz.enc"
 FINAL_PATH="$BACKUP_DIR/$FINAL_NAME"
@@ -43,15 +47,30 @@ podar_clase() {
 
 # Los volcados PRE-DESPLIEGUE, solos. Separada porque es la unica poda que puede correr antes de
 # saber si el respaldo de hoy sale: estos no los escribe este script y no son el respaldo diario.
+# Quedan los $PREDEPLOY_KEEP mas nuevos por mtime; cada borrado deja su linea en stderr (journal).
 podar_predeploy() {
-  # El `.sha256` va aunque hoy el wrapper no lo escriba: si algun dia lo escribe, se poda con su
-  # volcado en vez de quedarse huerfano acumulandose, que es como empezo este defecto.
-  podar_clase "$PREDEPLOY_RETENTION_DAYS" \
-    'predeploy-*.sql.gz' \
-    'predeploy-*.sql.gz.sha256'
+  local n=0 linea f
+  while IFS= read -r -d '' linea; do
+    f=${linea#* }
+    n=$((n + 1))
+    if ((n <= PREDEPLOY_KEEP)); then
+      continue
+    fi
+    echo "poda predeploy: borro $(basename -- "$f") (puesto $n, se quedan $PREDEPLOY_KEEP)" >&2
+    # El `.sha256` va aunque hoy el wrapper no lo escriba: si algun dia lo escribe, se poda con su
+    # volcado en vez de quedarse huerfano acumulandose, que es como empezo este defecto.
+    rm -f -- "$f" "$f.sha256"
+  done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'predeploy-*.sql.gz' -printf '%T@ %p\0' | LC_ALL=C sort -z -rn)
+  # Un `.sha256` cuyo volcado ya no esta no protege nada.
+  while IFS= read -r -d '' f; do
+    if [[ ! -e ${f%.sha256} ]]; then
+      echo "poda predeploy: borro $(basename -- "$f") (huerfano)" >&2
+      rm -f -- "$f"
+    fi
+  done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'predeploy-*.sql.gz.sha256' -print0)
 }
 
-# LAS DOS CLASES Y SUS DOS VIDAS. Añadir una tercera es añadir una llamada, no tocar logica.
+# LAS DOS CLASES: los cifrados por edad, los pre-despliegue por cuenta.
 podar_respaldos() {
   podar_clase "$BACKUP_RETENTION_DAYS" \
     'coinalyze-full-*.tar.gz.enc' \

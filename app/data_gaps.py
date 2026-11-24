@@ -39,6 +39,11 @@ SOURCE_ABSENCE_REASON = (
     "source does not publish this bucket: absent from a source response covering it"
 )
 
+# Y el motivo de NO archivar: una serie de cadencia sin adaptador registrado (H-02).
+NO_CADENCE_ADAPTER_REASON = (
+    "refused: no recovery adapter registered for this cadence series; not archived"
+)
+
 # OTRO hecho distinto, y por eso otro motivo: aqui la fuente no se salta un bucket,
 # es que ya no sirve esa ventana entera. Medido el 2026-08-25: long_short_ratio 5min
 # se sirve hasta 200 h atras y ni un bucket mas. La trampa es que "ya no lo sirve" y
@@ -1292,6 +1297,12 @@ async def recover_gap(
         raise LookupError(f"data gap {gap_id} does not exist")
     if gap.status != "unresolved":
         return gap.status
+    # Sin adaptador, un flujo de sucesos no tiene fuente historica y se archiva. Una serie de
+    # CADENCIA si la tiene -la fuente la sirve-: lo que falta es nuestro adaptador, y archivar
+    # eso esconde el hueco (H-02). Se niega: la fila queda 'unresolved' con el motivo.
+    if adapter is None and gap.feed_class == "cadence":
+        await _record_recovery_failure(conn, gap_id, NO_CADENCE_ADAPTER_REASON)
+        return "unresolved"
     if adapter is None:
         return await _mark_unrecoverable(conn, gap_id, "no exact historical source available")
 

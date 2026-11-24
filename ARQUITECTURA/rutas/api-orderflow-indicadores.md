@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `orderflow_indicadores` · `app/api.py:3908` (cuerpo hasta la 3918) · decorador en la linea 3907.
+Handler `orderflow_indicadores` · `app/api.py:4013` (cuerpo hasta la 4023) · decorador en la linea 4012.
 
 ## Parametros de entrada
 
@@ -22,7 +22,7 @@ Handler `orderflow_indicadores` · `app/api.py:3908` (cuerpo hasta la 3918) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3760 |
+| `as_of` | literal en app/api.py:3865 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -43,12 +43,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._orderflow` — `app/api.py:3751`
+- `app.api._orderflow` — `app/api.py:3856`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2494`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
+- `app.api._utc_iso` — `app/api.py:2599`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
 
 </details>
 
@@ -56,8 +56,8 @@ Llamadas directas del handler:
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 422 | — | `app/api.py:2623` | una funcion de su cierre |
-| 422 | — | `app/api.py:3759` | una funcion de su cierre |
+| 422 | — | `app/api.py:2728` | una funcion de su cierre |
+| 422 | — | `app/api.py:3864` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -67,9 +67,10 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K108-orderflow.py:984`, `harness/checks/K112-banco.py:152`, `harness/checks/K112-control.bash:176`, `harness/checks/K112-control.bash:249` _(+5)_ | `harness/checks/K120-banco.py:15`, `harness/checks/K120-las-liquidaciones-en-el-precio.sh:7`, `harness/checks/K120-liq.py:4` |
+| **checks** | `harness/checks/K108-orderflow.py:984`, `harness/checks/K112-banco.py:152`, `harness/checks/K112-control.bash:176`, `harness/checks/K112-control.bash:249` _(+5)_ | `harness/checks/K120-banco.py:20`, `harness/checks/K120-las-liquidaciones-en-el-precio.sh:7`, `harness/checks/K120-liq.py:4` |
+| **tests** | `tests/js/flujo_ind_refresco.test.js:16` | — |
 
-**No la llama el panel**, pero si 9 linea(s) de codigo fuera de el.
+**No la llama el panel**, pero si 10 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
 
 ## Ventana · con que clave la declara (derivado)

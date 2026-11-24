@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `rango_estructura` · `app/api.py:2134` (cuerpo hasta la 2157) · decorador en la linea 2133.
+Handler `rango_estructura` · `app/api.py:2239` (cuerpo hasta la 2262) · decorador en la linea 2238.
 
 ## Parametros de entrada
 
@@ -81,19 +81,19 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `funding_rate` — `sql/schema.sql:146`, 7 columnas
+- `funding_rate` — `sql/schema.sql:247`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
-- `liquidations` — `sql/schema.sql:174`, 5 columnas
+- `liquidations` — `sql/schema.sql:275`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
@@ -105,9 +105,9 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.api.ventana_pedida` — `app/api.py:1748`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.api.ventana_pedida` — `app/api.py:1853`
 - `app.rango.estructura_de_rango` — `app/rango.py:268`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -134,13 +134,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1765` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1768` | una funcion de su cierre |
-| 422 | — | `app/api.py:1773` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1775` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1777` | una funcion de su cierre |
-| 422 | — | `app/api.py:2623` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | hace falta «desde» | `app/api.py:1870` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1873` | una funcion de su cierre |
+| 422 | — | `app/api.py:1878` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1880` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1882` | una funcion de su cierre |
+| 422 | — | `app/api.py:2728` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

@@ -42,9 +42,8 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `data_gap` — la escribe `app.orderflow.declara_hueco`
 - `orderflow_celda` — la escribe `app.orderflow.escribe_minutos`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
-- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.vuelca`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -145,9 +144,8 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `data_gap` — la escribe `app.orderflow.declara_hueco`
 - `orderflow_celda` — la escribe `app.orderflow.escribe_minutos`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
-- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.vuelca`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -231,9 +229,8 @@ Ella o alguien que la llama hasta k=2 escribe:
 
 - `data_gap` — la escribe `app.orderflow.declara_hueco`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
-- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.vuelca`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:
@@ -318,9 +315,8 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `data_gap` — la escribe `app.orderflow.declara_hueco`
 - `orderflow_celda` — la escribe `app.orderflow.escribe_minutos`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
-- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`
+- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.escribe_minutos`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow.vuelca`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 
 Y esas tablas las leen:

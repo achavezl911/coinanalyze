@@ -14,6 +14,25 @@ ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = (ROOT / "sql/migrations/20260809_temporal_partitioning.sql").read_text(
     encoding="utf-8"
 )
+
+
+def migracion_en_linea(migracion: str) -> str:
+    """La copia en linea de schema.sql: la migracion byte a byte, salvo el DROP/CREATE del trigger de evento
+    unico, que va por esquema_ddl() para que re-aplicarla sobre una base al dia no bloquee (V-03)."""
+    for viejo, nuevo in (
+        (
+            "DROP TRIGGER IF EXISTS liquidations_realtime_event_unique_trigger\n    ON liquidations_realtime;\n"
+            "CREATE TRIGGER liquidations_realtime_event_unique_trigger",
+            "SELECT esquema_ddl($ddl$CREATE TRIGGER liquidations_realtime_event_unique_trigger",
+        ),
+        (
+            "FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();",
+            "FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique()$ddl$);",
+        ),
+    ):
+        assert migracion.count(viejo) == 1, viejo
+        migracion = migracion.replace(viejo, nuevo)
+    return migracion
 ROLLBACK = (
     ROOT / "sql/migrations/20260809_temporal_partitioning.down.sql"
 ).read_text(encoding="utf-8")
@@ -251,15 +270,13 @@ def test_supported_deployment_path_includes_the_real_partition_migration() -> No
     # make the deploy wrapper report success while the real partition
     # migration never ran. The migration is inlined directly instead.
     schema = (ROOT / "sql/schema.sql").read_text(encoding="utf-8")
-    update = (ROOT / "scripts/update.sh").read_text(encoding="utf-8")
 
     assert r"\ir migrations/20260809_temporal_partitioning.sql" not in schema
-    assert MIGRATION.strip() in schema
+    en_linea = migracion_en_linea(MIGRATION).strip()
+    assert en_linea in schema
     assert schema.index(
         "SELECT ensure_temporal_partitions();"
-    ) < schema.index(MIGRATION.strip())
-    assert "sql/migrations/20260809_temporal_partitioning.sql" in update
-    assert "sql/migrations/20260809_temporal_partitioning.down.sql" in update
+    ) < schema.index(en_linea)
 
 
 @pytest.mark.asyncio

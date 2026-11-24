@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_execution_cost` · `app/api.py:1674` (cuerpo hasta la 1727) · decorador en la linea 1673.
+Handler `scalp_execution_cost` · `app/api.py:1779` (cuerpo hasta la 1832) · decorador en la linea 1778.
 
 ## Parametros de entrada
 
@@ -29,9 +29,9 @@ Handler `scalp_execution_cost` · `app/api.py:1674` (cuerpo hasta la 1727) · de
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:5610 |
-| `assessment` | asignado en app/api.py:1713 |
+| `assessment` | asignado en app/api.py:1818 |
 | `note` | literal en app/scalp_logic.py:5612 |
-| `profiles` | asignado en app/api.py:1726 |
+| `profiles` | asignado en app/api.py:1831 |
 | `sizes_usd` | literal en app/scalp_logic.py:5609 |
 | `stale_after_seconds` | literal en app/scalp_logic.py:5611 |
 | `status` | literal en app/scalp_logic.py:5614 |
@@ -47,29 +47,29 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-- `orderbook_depth` — `sql/schema.sql:329`, 6 columnas
-  - la llena `app.scalp_collector._write_ladders` (INSERT) — `app/scalp_collector.py:906`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
+- `orderbook_depth` — `sql/schema.sql:430`, 6 columnas
+  - la llena `app.scalp_collector._write_ladders` (INSERT) — `app/scalp_collector.py:950`
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+- `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
@@ -85,8 +85,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._slippage_para` — `app/api.py:1730`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api._slippage_para` — `app/api.py:1835`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
 - `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5413`
@@ -142,10 +142,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:1695` | el propio handler |
-| 422 | sizes debe ser una lista de numeros | `app/api.py:1701` | el propio handler |
-| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1703` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:1800` | el propio handler |
+| 422 | sizes debe ser una lista de numeros | `app/api.py:1806` | el propio handler |
+| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1808` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 
@@ -156,7 +156,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:165` | — |
-| **panel** | `static/js/07-decision-y-ciclos.js:341` | — |
+| **panel** | `static/js/07-decision-y-ciclos.js:342` | — |
 
 **La llama el panel: es superficie de producto.**
 

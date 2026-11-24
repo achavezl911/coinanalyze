@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `hypothesis` · `app/api.py:1428` (cuerpo hasta la 1505) · decorador en la linea 1427.
+Handler `hypothesis` · `app/api.py:1533` (cuerpo hasta la 1610) · decorador en la linea 1532.
 
 ## Parametros de entrada
 
@@ -31,7 +31,7 @@ Handler `hypothesis` · `app/api.py:1428` (cuerpo hasta la 1505) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1480 |
+| `as_of` | literal en app/api.py:1585 |
 | `context` | literal en app/scalp_logic.py:5224 |
 | `counts` | literal en app/scalp_logic.py:5235 |
 | `data_coverage_pct` | literal en app/scalp_logic.py:5226 |
@@ -76,33 +76,33 @@ Handler `hypothesis` · `app/api.py:1428` (cuerpo hasta la 1505) · decorador en
 | `profile_coverage_pct` | literal en app/scalp_logic.py:5227 |
 | `setup` | literal en app/scalp_logic.py:5214 |
 | `setup_evaluation` | literal en app/scalp_logic.py:5217 |
-| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1402 |
-| `setup_evaluation.confirmation_met` | literal en app/setups.py:1403 |
-| `setup_evaluation.confirmation_total` | literal en app/setups.py:1401 |
-| `setup_evaluation.coverage_pct` | literal en app/setups.py:1397 |
-| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1399 |
-| `setup_evaluation.critical_met` | literal en app/setups.py:1400 |
-| `setup_evaluation.critical_total` | literal en app/setups.py:1398 |
-| `setup_evaluation.cumplidos` | literal en app/setups.py:1392 |
-| `setup_evaluation.direction` | literal en app/setups.py:1384 |
-| `setup_evaluation.direction_label` | literal en app/setups.py:1385 |
-| `setup_evaluation.episodio` | literal en app/setups.py:1409 |
-| `setup_evaluation.faltantes` | literal en app/setups.py:1393 |
-| `setup_evaluation.invalidaciones` | literal en app/setups.py:1390 |
-| `setup_evaluation.label` | literal en app/setups.py:1383 |
-| `setup_evaluation.min_confirmations` | literal en app/setups.py:1406 |
-| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1407 |
-| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1405 |
-| `setup_evaluation.missing_critical` | literal en app/setups.py:1404 |
-| `setup_evaluation.no_evaluables` | literal en app/setups.py:1391 |
-| `setup_evaluation.note` | literal en app/setups.py:1410 |
-| `setup_evaluation.pendientes` | literal en app/setups.py:1389 |
-| `setup_evaluation.requisitos` | literal en app/setups.py:1388 |
-| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1395 |
-| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1394 |
-| `setup_evaluation.setup` | literal en app/setups.py:1382 |
-| `setup_evaluation.state` | literal en app/setups.py:1387 |
-| `setup_evaluation.thesis` | literal en app/setups.py:1386 |
+| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1422 |
+| `setup_evaluation.confirmation_met` | literal en app/setups.py:1423 |
+| `setup_evaluation.confirmation_total` | literal en app/setups.py:1421 |
+| `setup_evaluation.coverage_pct` | literal en app/setups.py:1417 |
+| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1419 |
+| `setup_evaluation.critical_met` | literal en app/setups.py:1420 |
+| `setup_evaluation.critical_total` | literal en app/setups.py:1418 |
+| `setup_evaluation.cumplidos` | literal en app/setups.py:1412 |
+| `setup_evaluation.direction` | literal en app/setups.py:1404 |
+| `setup_evaluation.direction_label` | literal en app/setups.py:1405 |
+| `setup_evaluation.episodio` | literal en app/setups.py:1429 |
+| `setup_evaluation.faltantes` | literal en app/setups.py:1413 |
+| `setup_evaluation.invalidaciones` | literal en app/setups.py:1410 |
+| `setup_evaluation.label` | literal en app/setups.py:1403 |
+| `setup_evaluation.min_confirmations` | literal en app/setups.py:1426 |
+| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1427 |
+| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1425 |
+| `setup_evaluation.missing_critical` | literal en app/setups.py:1424 |
+| `setup_evaluation.no_evaluables` | literal en app/setups.py:1411 |
+| `setup_evaluation.note` | literal en app/setups.py:1430 |
+| `setup_evaluation.pendientes` | literal en app/setups.py:1409 |
+| `setup_evaluation.requisitos` | literal en app/setups.py:1408 |
+| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1415 |
+| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1414 |
+| `setup_evaluation.setup` | literal en app/setups.py:1402 |
+| `setup_evaluation.state` | literal en app/setups.py:1407 |
+| `setup_evaluation.thesis` | literal en app/setups.py:1406 |
 | `setup_label` | literal en app/scalp_logic.py:5215 |
 | `setup_observables` | literal en app/scalp_logic.py:5238 |
 | `setup_state` | literal en app/scalp_logic.py:5216 |
@@ -112,7 +112,7 @@ Handler `hypothesis` · `app/api.py:1428` (cuerpo hasta la 1505) · decorador en
 | `setup_zone.zone_high` | literal en app/scalp_logic.py:5241 |
 | `setup_zone.zone_low` | literal en app/scalp_logic.py:5240 |
 | `spread_bps` | literal en app/scalp_logic.py:5233 |
-| `symbol` | literal en app/api.py:1479 |
+| `symbol` | literal en app/api.py:1584 |
 | `timing` | literal en app/scalp_logic.py:5225 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -123,52 +123,52 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
-- `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1629`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:875`
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
+- `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
@@ -196,7 +196,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
 - `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4657`
 - `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:5064`
@@ -207,12 +207,12 @@ Llamadas directas del handler:
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2523`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
 - `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6319`
-- `app.setups.build_setup_context` — `app/setups.py:1156`
+- `app.setups.build_setup_context` — `app/setups.py:1174`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
 <details><summary>Alcanzables de forma indirecta (70)</summary>
 
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
+- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
@@ -263,25 +263,25 @@ Llamadas directas del handler:
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
 - `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2854`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
-- `app.setups._apertura` — `app/setups.py:805`
-- `app.setups._bars_closed_beyond` — `app/setups.py:863`
-- `app.setups._breakout_frontier` — `app/setups.py:748`
-- `app.setups._gap_in` — `app/setups.py:856`
-- `app.setups._last_pivots` — `app/setups.py:982`
-- `app.setups._level_defended` — `app/setups.py:1058`
-- `app.setups._norm_bars` — `app/setups.py:784`
-- `app.setups._obs` — `app/setups.py:723`
-- `app.setups._pullback` — `app/setups.py:989`
-- `app.setups._retest_done` — `app/setups.py:946`
-- `app.setups._returned_inside` — `app/setups.py:902`
+- `app.setups._apertura` — `app/setups.py:814`
+- `app.setups._bars_closed_beyond` — `app/setups.py:872`
+- `app.setups._breakout_frontier` — `app/setups.py:757`
+- `app.setups._gap_in` — `app/setups.py:865`
+- `app.setups._last_pivots` — `app/setups.py:991`
+- `app.setups._level_defended` — `app/setups.py:1067`
+- `app.setups._norm_bars` — `app/setups.py:793`
+- `app.setups._obs` — `app/setups.py:732`
+- `app.setups._pullback` — `app/setups.py:998`
+- `app.setups._retest_done` — `app/setups.py:955`
+- `app.setups._returned_inside` — `app/setups.py:911`
 - `app.setups._sign` — `app/setups.py:95`
-- `app.setups._structure_event` — `app/setups.py:665`
-- `app.setups._tolerance` — `app/setups.py:769`
+- `app.setups._structure_event` — `app/setups.py:674`
+- `app.setups._tolerance` — `app/setups.py:778`
 - `app.setups.classify_oi` — `app/setups.py:162`
-- `app.setups.episodio` — `app/setups.py:833`
-- `app.setups.evaluate_setup` — `app/setups.py:1292`
+- `app.setups.episodio` — `app/setups.py:842`
+- `app.setups.evaluate_setup` — `app/setups.py:1312`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
-- `app.setups.setup_observables` — `app/setups.py:1112`
+- `app.setups.setup_observables` — `app/setups.py:1130`
 
 </details>
 
@@ -300,11 +300,11 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:1451` | el propio handler |
-| 422 | — | `app/api.py:1455` | el propio handler |
-| 422 | — | `app/api.py:1459` | el propio handler |
-| 422 | — | `app/api.py:1463` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:1556` | el propio handler |
+| 422 | — | `app/api.py:1560` | el propio handler |
+| 422 | — | `app/api.py:1564` | el propio handler |
+| 422 | — | `app/api.py:1568` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

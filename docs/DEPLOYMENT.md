@@ -64,6 +64,29 @@ El workflow (en el runner self-hosted) hace:
 10. Si el smoke pasa: escribe `deployment.json`, conserva los últimos 5 releases (nunca borra
     `legacy-*`). Si falla: **rollback automático** al release anterior.
 
+## Units systemd y nginx: paso a mano del dueño
+
+El despliegue **no** instala units ni la configuración de nginx. Lo hacía `scripts/update.sh`,
+retirado en D-03 (su `rsync --delete` borraba `releases/` y `current`). Si un cambio toca
+`deploy/systemd/` o `deploy/nginx/`, como root en 140:
+
+```bash
+R=/opt/coinalyze/current
+install -m 0644 $R/deploy/systemd/coinalyze-*.service /etc/systemd/system/
+install -m 0644 $R/deploy/systemd/coinalyze-backup.timer /etc/systemd/system/
+install -m 0644 $R/deploy/nginx/coinalyze.conf /etc/nginx/sites-available/coinalyze
+# el token interno es API_INTERNAL_TOKEN de /etc/coinalyze/coinalyze.env
+sed -i "s|__API_INTERNAL_TOKEN__|$API_INTERNAL_TOKEN|g" /etc/nginx/sites-available/coinalyze
+# lista blanca: una línea `allow <cidr>;` por red y `deny all;` al final
+editor /etc/nginx/snippets/coinalyze-allowlist.conf
+nginx -t && systemctl reload nginx
+systemctl daemon-reload
+```
+
+OJO: los units del repo apuntan a `/opt/coinalyze` (el árbol LEGACY); el wrapper los repunta a
+`current` al desplegar. Tras instalarlos, despliega antes de reiniciar nada y comprueba
+`systemctl cat coinalyze-api | grep WorkingDirectory`.
+
 ## Seguridad clave
 
 - Los agentes IA pueden editar el repo, **pero no** el wrapper ni el sudoers (root, fuera del repo).

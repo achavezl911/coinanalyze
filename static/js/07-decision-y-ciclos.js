@@ -247,7 +247,8 @@ async function refreshOverview(forceContext = false) {
   const confidence = sobreConfianza({ rows: [] });
   const context = contextRequest ? await contextRequest : null;
   if (symbol !== state.symbol) return;
-  if (requestId !== state.refreshSeq) return;
+  if (requestId < (state.pintadoSeq || 0)) return;
+  state.pintadoSeq = requestId;
   if (context) {
     let desk;
     let carry, tramo;
