@@ -294,6 +294,9 @@ def zone_character_read(visit: dict[str, Any], baseline: dict[str, Any]) -> dict
         else 0.0
     )
     coverage = measured_weight / total_weight * 100 if total_weight else 0.0
+    # La renormalizacion reparte el score, no la certeza: «clara» y «alta» exigen TODOS los
+    # componentes medidos. Con alguno ausente, como mucho «indicios» y confianza «media» (Z-02).
+    missing = [c["key"] for c in components if c["value"] is None]
 
     if not measurable:
         character, strength = "sin_datos", "sin datos"
@@ -307,6 +310,9 @@ def zone_character_read(visit: dict[str, Any], baseline: dict[str, Any]) -> dict
         character, strength = "distribucion", "indicios"
     else:
         character, strength = "sin_caracter", "rotación neutra"
+    label_capped_by = missing if strength == "clara" and missing else []
+    if label_capped_by:
+        strength = "indicios"
 
     positives = [c for c in measurable if c["value"] > 0]
     negatives = [c for c in measurable if c["value"] < 0]
@@ -316,7 +322,7 @@ def zone_character_read(visit: dict[str, Any], baseline: dict[str, Any]) -> dict
     if coverage < 50 or not measurable:
         confidence = "baja"
     elif agreement >= 75 and abs(score) >= STRONG_SCORE:
-        confidence = "alta"
+        confidence = "media" if missing else "alta"
     elif agreement >= 60:
         confidence = "media"
     else:
@@ -375,18 +381,38 @@ def zone_character_read(visit: dict[str, Any], baseline: dict[str, Any]) -> dict
             "funding_percentil": funding_pct,
             "volumen_relativo": significance,
         },
-        "narrative": _narrative(character, strength, effort, spot_value, oi_change_pct, funding_pct),
+        # al narrador, la fuerza sin capar: su frase de «indicios» dice «sin la fuerza suficiente»
+        "narrative": _narrative(
+            character,
+            "clara" if label_capped_by else strength,
+            effort,
+            spot_value,
+            oi_change_pct,
+            funding_pct,
+        )
+        + (
+            [
+                f"Con {len(label_capped_by)} de {len(components)} componentes sin medir la "
+                "lectura no pasa de «indicios» ni de confianza «media», aunque el score "
+                "renormalizado llegue al umbral fuerte."
+            ]
+            if label_capped_by
+            else []
+        ),
         "method": {
             "weights": {c["key"]: c["weight"] for c in components},
             "weights_basis": "heurísticos, sin calibrar contra resultado realizado",
             "renormalised_over": [c["key"] for c in measurable],
-            "unavailable": [c["key"] for c in components if c["value"] is None],
+            "unavailable": missing,
+            "label_capped_by": label_capped_by,
             "clocks": "delta de futuros en UTC de 4 h; CVD spot en sesión NYSE. No se suman.",
         },
         "warning": (
             "La absorción se infiere de esfuerzo agresivo contra desplazamiento de precio, no "
             "se observa en el libro: sin profundidad histórica no hay forma de verla directa. "
-            "El score es un balance de evidencia, no una probabilidad."
+            "El score es un balance de evidencia, no una probabilidad. El recorrido de la zona "
+            "se compara con umbrales medidos en ventanas contiguas de n velas, y la zona es un "
+            "rango de precio elegido después: no es comparable, es una referencia."
         ),
     }
 

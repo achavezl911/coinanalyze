@@ -40,7 +40,7 @@ from typing import Any
 from app.entradas import reglamento as R
 from app.interpretation import BARRIER_PIVOT_WIDTH, _barrier_candidates, _barrier_zones
 
-CODIGO_VERSION = "entradas-motor-2"
+CODIGO_VERSION = "entradas-motor-3"
 ESQUEMA_FOTO = "entradas.foto.v1"
 ESTADOS = ("VIGILANDO", "DISPARADO", "SOMBRA", "CERRADO_SIN_DISPARO")
 LADOS = R.LADOS
@@ -212,6 +212,14 @@ def dist_pct(borde: float, precio: float) -> float:
 def completa(vela: dict[str, Any]) -> bool:
     """VELA CERRADA DE VERDAD: todos sus minutos de 1 min presentes."""
     return vela["minutos"] == vela["esperados"]
+
+
+def _incompleta(velas: list[dict[str, Any]]) -> str | None:
+    """La primera vela incompleta de un episodio, escrita como la razon de `paso`; None si no hay."""
+    for v in velas:
+        if not completa(v):
+            return f"{v['inicio']} incompleta: {v['minutos']} de {v['esperados']} minutos de ohlcv 1min"
+    return None
 
 
 def atr_mediana(velas: list[dict[str, Any]], n: int) -> float | None:
@@ -511,6 +519,9 @@ def decidir(foto: dict[str, Any]) -> dict[str, Any]:
     velas = foto["episodio"]["velas"]
     atr_perfil = foto["atr"]["perfil"]
     hecho = estructura(foto["familia"], zona, lado, velas, atr_perfil, p)
+    incompleta = _incompleta(velas)
+    if incompleta:
+        raise FotoIncoherente(f"la foto trae una vela del episodio {incompleta}")
     if hecho["estado"] != "GATILLO" or hecho["i"] != len(velas) - 1:
         raise FotoIncoherente("la foto no trae un gatillo en su ultima vela")
 
@@ -1025,9 +1036,14 @@ def _avanza(ep: dict, T: datetime, velas: list[dict], indices: dict, insumos: di
     congelado = ep["congelado"]
     inicio = vig["inicio_episodio"]
     del_episodio = [v for v in velas if de_iso(v["inicio"]) >= inicio and de_iso(v["fin"]) <= T]
+    clave, episodio = vig["clave"], vig["episodio"]
+    incompleta = _incompleta(del_episodio)
+    if incompleta:
+        # N-01: la estructura no se decide sin una de sus velas; esperar al minuto no tiene diseno.
+        return [_terminal_cerrado(congelado, del_episodio, T, f"no_evaluable: vela {incompleta}", base,
+                                  clave, episodio, inicio)]
     hecho = estructura(base["familia"], congelado["zona"], base["lado"], del_episodio,
                        congelado["atr"]["perfil"], p)
-    clave, episodio = vig["clave"], vig["episodio"]
     if hecho["estado"] == "GATILLO":
         hasta = del_episodio[: hecho["i"] + 1]
         cierre = de_iso(hasta[-1]["fin"])

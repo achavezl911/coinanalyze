@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1977` (cuerpo hasta la 1980) · decorador en la linea 1976.
+Handler `liquidation_map_endpoint` · `app/api.py:2082` (cuerpo hasta la 2085) · decorador en la linea 2081.
 
 ## Parametros de entrada
 
@@ -46,13 +46,13 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -65,7 +65,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3771`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -91,7 +91,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -104,7 +104,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:224` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
 | **panel-html** | — | `static/index.html:245` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:308` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:309` | — |
 | **tests** | — | `tests/test_liquidation_map_ventana.py:1` |
 
 **La llama el panel: es superficie de producto.**

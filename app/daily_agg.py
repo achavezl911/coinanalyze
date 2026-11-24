@@ -695,6 +695,32 @@ async def apply_retention(
     await apply_temporal_retention(conn, "spot_trades_realtime", rt_hours)
 
 
+async def retencion_o_aplazar(
+    conn: asyncpg.Connection,
+    hard_days: int,
+    htf_days: int,
+    snapshot_days: int,
+    rt_hours: int,
+    daily_days: int,
+) -> str:
+    """apply_retention en un SAVEPOINT: un bloqueo momentaneo la aplaza al ciclo siguiente.
+
+    apply_temporal_retention tira particiones con DDL, que pide ACCESS EXCLUSIVE sobre la madre;
+    basta una consulta con la tabla abierta para que salte el lock_timeout de 3 s (app/db.py).
+    Sin SAVEPOINT el error aborta la transaccion entera del ciclo y el diario queda en 'error'
+    (el despliegue 45129996802 revirtio por eso). Solo LockNotAvailableError se aplaza: borrar
+    tarde una hora no rompe nada; cualquier otro fallo sigue siendo un error del ciclo. No se
+    toca el lock_timeout: esperar mas bloquearia tras de si a todos los que leen la tabla.
+    """
+    try:
+        async with conn.transaction():
+            await apply_retention(conn, hard_days, htf_days, snapshot_days, rt_hours, daily_days)
+    except asyncpg.exceptions.LockNotAvailableError as exc:
+        LOGGER.warning("daily_retention_deferred reason=lock_timeout detail=%s", exc)
+        return "aplazada_bloqueo"
+    return "aplicada"
+
+
 # Ventanas con baseline y de que intervalo se construyen. 1min cubre hasta 1 h; por encima el
 # muestreo se queda corto (a 4 h saldrian ~80 observaciones sobre 14 dias) y se usa el 4hour,
 # que tiene 300 dias. Son las mismas etiquetas que publica delta_matrix.
@@ -818,6 +844,8 @@ async def cycle(
     pool: asyncpg.Pool,
     client: CoinalyzeClient,
     ownership: ServiceOwnership | None = None,
+    *,
+    aplicar_retencion: bool = True,
 ) -> None:
     settings = get_settings()
     end_ts = int(datetime.now(UTC).timestamp())
@@ -917,14 +945,18 @@ async def cycle(
                 hard_days=settings.HARD_DATA_RETENTION_DAYS,
                 ahora=datetime.now(UTC),
             )
-            await apply_retention(
-                conn,
-                settings.HARD_DATA_RETENTION_DAYS,
-                settings.HTF_DATA_RETENTION_DAYS,
-                settings.SNAPSHOT_RETENTION_DAYS,
-                settings.REALTIME_RETENTION_HOURS,
-                settings.DAILY_SESSION_RETENTION_DAYS,
-            )
+            if aplicar_retencion:
+                retencion = await retencion_o_aplazar(
+                    conn,
+                    settings.HARD_DATA_RETENTION_DAYS,
+                    settings.HTF_DATA_RETENTION_DAYS,
+                    settings.SNAPSHOT_RETENTION_DAYS,
+                    settings.REALTIME_RETENTION_HOURS,
+                    settings.DAILY_SESSION_RETENTION_DAYS,
+                )
+            else:
+                retencion = "primer_ciclo"
+                LOGGER.info("daily_retention_deferred reason=first_cycle_after_start")
         heartbeat_detail = (
             f"daily_candles={daily_candles},h4_candles={h4_candles},"
             f"spot_candles={spot_candles},baselines={baselines},"
@@ -932,7 +964,8 @@ async def cycle(
             f"oi_daily={oi_daily},rolled_5m={rolled_5m},"
             f"cadencia_declarada={barrido['ventanas']},"
             f"cadencia_omitida={barrido['omitidas']},"
-            f"cadencia_recuperada={barrido['recuperadas']}"
+            f"cadencia_recuperada={barrido['recuperadas']},"
+            f"retencion={retencion}"
         )
         if ownership is None:
             await heartbeat(conn, "daily", detail=heartbeat_detail)
@@ -994,6 +1027,10 @@ async def run() -> None:
                     if first_run
                     else seconds_until_aligned_run(datetime.now(UTC).timestamp(), 3600, 45)
                 )
+                # El primer ciclo va a los 45 s del arranque: en un despliegue, con los demas
+                # servicios reiniciando y la prueba de humo leyendo. La retencion (DDL) espera al
+                # ciclo alineado siguiente, como mucho una hora: borrar tarde no rompe nada.
+                primer_ciclo = first_run
                 first_run = False
                 if await wait_for_stop_or_lock_loss(
                     stop,
@@ -1001,7 +1038,9 @@ async def run() -> None:
                     timeout=timeout,
                 ):
                     continue
-                cycle_task = asyncio.create_task(cycle(pool, client, service_lock))
+                cycle_task = asyncio.create_task(
+                    cycle(pool, client, service_lock, aplicar_retencion=not primer_ciclo)
+                )
                 done, _ = await asyncio.wait(
                     (cycle_task, lock_monitor),
                     return_when=asyncio.FIRST_COMPLETED,

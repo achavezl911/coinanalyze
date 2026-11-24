@@ -32,6 +32,7 @@ def ctx_rico(**overrides: object) -> dict[str, object]:
         "book_bid_share": 0.62,
         "absorption": "Absorción de ventas",
         "reaction_pct": 0.4,
+        "oi_price_pct": 0.4,
         "vwap_dist_pct": 0.2,
         "prior_trend": "alcista",
         "structure_event": "BOS",

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cross_asset_endpoint` · `app/api.py:2168` (cuerpo hasta la 2171) · decorador en la linea 2167.
+Handler `cross_asset_endpoint` · `app/api.py:2273` (cuerpo hasta la 2276) · decorador en la linea 2272.
 
 ## Parametros de entrada
 
@@ -35,7 +35,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -48,7 +48,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3655`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
@@ -75,7 +75,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

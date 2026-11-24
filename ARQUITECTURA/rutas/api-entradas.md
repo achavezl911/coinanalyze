@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `entradas` · `app/api.py:1345` (cuerpo hasta la 1371) · decorador en la linea 1344.
+Handler `entradas` · `app/api.py:1450` (cuerpo hasta la 1476) · decorador en la linea 1449.
 
 ## Parametros de entrada
 
@@ -57,32 +57,32 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
-- `entrada_latido` — `sql/schema.sql:2719`, 8 columnas
+- `entrada_latido` — `sql/schema.sql:2772`, 8 columnas
   - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
-- `entrada_registro` — `sql/schema.sql:2682`, 26 columnas
+- `entrada_registro` — `sql/schema.sql:2735`, 26 columnas
   - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
-- `entrada_reglamento` — `sql/schema.sql:2672`, 6 columnas
+- `entrada_reglamento` — `sql/schema.sql:2725`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
-- `entrada_resultado` — `sql/schema.sql:2860`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2904`, 12 columnas
   - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
-- `funding_rate` — `sql/schema.sql:146`, 7 columnas
+- `funding_rate` — `sql/schema.sql:247`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -90,7 +90,7 @@ LEE:
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
-- `entrada_resultado` — `sql/schema.sql:2860`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2904`, 12 columnas
 
 ## Funciones que la componen
 
@@ -99,8 +99,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2614`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.entradas.ruta.construir` — `app/entradas/ruta.py:199`
 
 <details><summary>Alcanzables de forma indirecta (47)</summary>
@@ -168,8 +168,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | — | `app/api.py:2623` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | — | `app/api.py:2728` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -179,7 +179,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:70`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
+| **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:73`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
 | **readme** | — | `README.md:59` |
 | **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:248`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
@@ -221,9 +221,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
 | `app.api.rechaza_parametros_desconocidos` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-api.md) |
-| `app.entradas.reglamento.cargar_valido` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.valores` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
-| `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 10 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.cargar_valido` | 2 | **0** | 16 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.valores` | 2 | **0** | 16 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
+| `app.entradas.reglamento.versiones_en_curso` | 2 | **0** | 16 ↑ | **2** | [impacto](../impacto/app-entradas-reglamento.md) |
 | `app.entradas.papel._pendiente` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._sin_resultado` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
 | `app.entradas.papel._usd` | 2 | **0** | 0 | **2** | [impacto](../impacto/app-entradas-papel.md) |
