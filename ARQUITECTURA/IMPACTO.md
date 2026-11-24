@@ -604,7 +604,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.db.assert_service_ownership`](impacto/app-db.md) | `app/db.py:301` | 0 | **0** | 63 ↑ | **0** |
 | [`app.db.fenced_transaction`](impacto/app-db.md) | `app/db.py:333` | 0 | **0** | 63 ↑ | **0** |
 | [`app.daily_agg.retencion_o_aplazar`](impacto/app-daily_agg.md) | `app/daily_agg.py:698` | 0 | **0** | 56 ↑ | **0** |
-| [`app.partitioning.apply_temporal_retention`](impacto/app-partitioning.md) | `app/partitioning.py:34` | 0 | **0** | 55 ↑ | **0** |
+| [`app.partitioning.apply_temporal_retention`](impacto/app-partitioning.md) | `app/partitioning.py:77` | 0 | **0** | 55 ↑ | **0** |
 | [`app.daily_agg.backfill`](impacto/app-daily_agg.md) | `app/daily_agg.py:299` | 0 | **0** | 52 ↑ | **0** |
 | [`app.daily_agg.latest_closed_session_date`](impacto/app-daily_agg.md) | `app/daily_agg.py:45` | 0 | **0** | 52 ↑ | **0** |
 | [`app.daily_agg.refresh_baselines`](impacto/app-daily_agg.md) | `app/daily_agg.py:757` | 0 | **0** | 51 ↑ | **0** |
@@ -630,7 +630,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.db.monitor_service_lock`](impacto/app-db.md) | `app/db.py:343` | 0 | **0** | 28 ↑ | **0** |
 | [`app.db.read_db_identity`](impacto/app-db.md) | `app/db.py:69` | 0 | **0** | 28 ↑ | **0** |
 | [`app.db.sync_market_catalog`](impacto/app-db.md) | `app/db.py:235` | 0 | **0** | 28 ↑ | **0** |
-| [`app.partitioning.ensure_temporal_partitions`](impacto/app-partitioning.md) | `app/partitioning.py:29` | 0 | **0** | 28 ↑ | **0** |
+| [`app.partitioning.ensure_temporal_partitions`](impacto/app-partitioning.md) | `app/partitioning.py:72` | 0 | **0** | 28 ↑ | **0** |
 | [`app.db.mark_feed_shard_degraded`](impacto/app-db.md) | `app/db.py:792` | 0 | **0** | 27 ↑ | **0** |
 | [`app.scalp_collector.all_expected_fresh`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:640` | 0 | **0** | 27 ↑ | **0** |
 | [`app.scalp_collector.monitor`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1499` | 0 | **0** | 27 ↑ | **0** |

@@ -45,9 +45,9 @@ Ella o alguien que la llama hasta k=2 escribe:
 - `open_interest_daily` — la escribe `app.daily_agg.rollup_open_interest_daily`
 - `orderflow_celda_hora` — la escribe `app.orderflow.suma_horas`
 - `orderflow_cinta` — la escribe `app.orderflow.vuelca`
-- `orderflow_cobertura` — la escribe `app.orderflow.declara_parada_anterior`, `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_grande` — la escribe `app.orderflow.poda`, `app.orderflow.vuelca`
-- `orderflow_hora_hecha` — la escribe `app.orderflow.poda`, `app.orderflow.suma_horas`
+- `orderflow_cobertura` — la escribe `app.orderflow._poda_vuelta`, `app.orderflow.declara_parada_anterior`, `app.orderflow.vuelca`
+- `orderflow_grande` — la escribe `app.orderflow._poda_vuelta`, `app.orderflow.vuelca`
+- `orderflow_hora_hecha` — la escribe `app.orderflow._poda_vuelta`, `app.orderflow.suma_horas`
 - `pipeline_heartbeat` — la escribe `app.db.heartbeat`, `app.db.heartbeat_component`
 - `service_ownership` — la escribe `app.db.acquire_service_lock`
 - `spot_trades_realtime` — la escribe `app.ws_collector.flush_realtime`

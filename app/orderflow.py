@@ -790,27 +790,16 @@ async def latido(pool: asyncpg.Pool, own: ServiceOwnership, alm: Almacen, salud:
 
 
 async def poda(pool: asyncpg.Pool, own: ServiceOwnership) -> None:
-    """La retencion, cada hora, por el mecanismo que ya existe: las dos tablas particionadas por
-    apply_temporal_retention (tira particiones enteras y recorta la del borde); las dos planas con DELETE.
+    """La retencion, cada hora: las tres tablas particionadas por apply_temporal_retention (tira las particiones
+    enteras en su transaccion y recorta la del borde por tramos acotados: CINTA R1) y las planas con DELETE. Cada
+    paso en su transaccion y con su propio fallo: uno que cae no deshace ni para a los otros (V-02).
     La cobertura INCOMPLETA no se poda: es la prueba que K04 re-deriva para los huecos declarados."""
     s = get_settings()
     while True:
         await asyncio.sleep(60)
         try:
             async with pool.acquire() as conn:
-                async with fenced_transaction(conn, own):
-                    await conn.execute("SET LOCAL statement_timeout = '300s'")
-                    await apply_temporal_retention(conn, "orderflow_cinta", s.ORDERFLOW_TAPE_RETENTION_HOURS)
-                    await apply_temporal_retention(conn, "orderflow_celda", s.ORDERFLOW_CELL_RETENTION_DAYS * 24)
-                    await conn.execute("DELETE FROM orderflow_grande WHERE ts < now() - make_interval(days => $1)",
-                                       s.ORDERFLOW_LARGE_RETENTION_DAYS)
-                    await conn.execute(
-                        "DELETE FROM orderflow_cobertura WHERE segundos = 60 AND ts < now() - make_interval(days => $1)",
-                        s.ORDERFLOW_CELL_RETENTION_DAYS)
-                    await apply_temporal_retention(conn, "orderflow_celda_hora",
-                                                   s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS * 24)
-                    await conn.execute("DELETE FROM orderflow_hora_hecha WHERE ts < now() - make_interval(days => $1)",
-                                       s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS)
+                await _poda_vuelta(conn, own, s)
         except ServiceOwnershipLost:
             raise
         except Exception:
@@ -838,6 +827,59 @@ async def _particion_hora(conn: asyncpg.Connection, own: ServiceOwnership | None
         await conn.execute(
             f"CREATE TABLE IF NOT EXISTS {nombre} PARTITION OF orderflow_celda_hora "
             f"FOR VALUES FROM ('{dia.isoformat()} 00:00:00+00') TO ('{(dia + timedelta(days=1)).isoformat()} 00:00:00+00')")
+
+
+# V-02, requisito 3: las horas de orderflow_celda (los MINUTOS de los que suma suma_horas, SUMA_HORA_SQL) que caducan
+# sin la marca de los nueve venues mientras orderflow_celda_hora aun las guardaria no se tiran: el corte se adelanta a la
+# primera y apply_temporal_retention lo dice en el log (temporal_retention_tope). La cinta NO lleva esta guarda:
+# suma_horas no la lee, y retenerla por una hora sin sumar no salvaria nada y volveria a llenar el disco.
+SIN_SUMAR_SQL = f"""
+SELECT min(h.ts)
+  FROM generate_series(date_bin(interval '1 hour', now() - make_interval(days => $2), {HORA_ORIGEN}) + interval '1 hour',
+                       now() - make_interval(hours => $1) - interval '1 hour', interval '1 hour') AS h(ts),
+       unnest($3::text[]) AS s(symbol)
+ WHERE (SELECT count(*) FROM orderflow_hora_hecha d WHERE d.symbol = s.symbol AND d.ts = h.ts) < $4"""
+
+
+async def _poda_vuelta(conn: asyncpg.Connection, own: ServiceOwnership | None, s: Any) -> None:
+    def tx() -> Any:
+        return fenced_transaction(conn, own)
+
+    async def particionada(tabla: str, horas: int, tope: datetime | None = None) -> None:
+        r = await apply_temporal_retention(conn, tabla, horas, tope=tope, transaccion=tx)
+        LOGGER.info("orderflow_retention table=%s tiradas=%d borradas=%d completa=%s", tabla, r.tiradas,
+                    r.borradas, r.completa)
+
+    async def plana(sql: str, dias: int) -> None:
+        async with tx():
+            await conn.execute(sql, dias)
+
+    async def celda() -> None:
+        tope = await conn.fetchval(SIN_SUMAR_SQL, s.ORDERFLOW_CELL_RETENTION_DAYS * 24,
+                                   s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS, list(ACTIVOS), len(VENUES_CELDA))
+        await particionada("orderflow_celda", s.ORDERFLOW_CELL_RETENTION_DAYS * 24, tope)
+
+    pasos = (
+        ("orderflow_cinta", lambda: particionada("orderflow_cinta", s.ORDERFLOW_TAPE_RETENTION_HOURS)),
+        ("orderflow_celda", celda),
+        ("orderflow_grande", lambda: plana("DELETE FROM orderflow_grande WHERE ts < now() - make_interval(days => $1)",
+                                           s.ORDERFLOW_LARGE_RETENTION_DAYS)),
+        ("orderflow_cobertura", lambda: plana(
+            "DELETE FROM orderflow_cobertura WHERE segundos = 60 AND ts < now() - make_interval(days => $1)",
+            s.ORDERFLOW_CELL_RETENTION_DAYS)),
+        ("orderflow_celda_hora", lambda: particionada("orderflow_celda_hora",
+                                                      s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS * 24)),
+        ("orderflow_hora_hecha", lambda: plana(
+            "DELETE FROM orderflow_hora_hecha WHERE ts < now() - make_interval(days => $1)",
+            s.ORDERFLOW_CELL_HOUR_RETENTION_DAYS)),
+    )
+    for nombre, paso in pasos:
+        try:
+            await paso()
+        except ServiceOwnershipLost:
+            raise
+        except Exception:
+            LOGGER.exception("orderflow_retention_failed paso=%s", nombre)
 
 
 async def suma_horas(pool: asyncpg.Pool, own: ServiceOwnership | None, tope: int,
