@@ -161,9 +161,9 @@ Y que bucle duerme con cual:
 
 | funcion | constante | valor | sitio |
 |---|---|---|---|
-| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:855` |
-| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:653` |
-| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1399` |
+| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:899` |
+| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:697` |
+| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1443` |
 
 ## Detalle · quien escribe cada una
 
@@ -366,8 +366,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1585`
-- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:831`
+- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1629`
+- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:875`
 
 **Si cambia el contenido o el esquema de `futures_trades_agg`, estas 7 rutas lo notan:**
 
@@ -385,7 +385,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:802`
+- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:846`
 
 **Si cambia el contenido o el esquema de `futures_trades_realtime`, estas 17 rutas lo notan:**
 
@@ -656,7 +656,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:906`
+- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:950`
 
 **Si cambia el contenido o el esquema de `orderbook_depth`, estas 1 rutas lo notan:**
 
@@ -668,8 +668,8 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:874`
-- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:930`
+- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:918`
+- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:974`
 
 **Si cambia el contenido o el esquema de `orderbook_snapshot`, estas 15 rutas lo notan:**
 
@@ -749,7 +749,7 @@ La escriben:
 
 La escriben:
 
-- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1453`
+- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1497`
 
 **Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 5 rutas lo notan:**
 

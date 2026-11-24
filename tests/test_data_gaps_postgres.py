@@ -545,6 +545,7 @@ async def test_postgres_liquidation_silence_creates_no_gap_but_queue_loss_does(
         monkeypatch.setattr(scalp, "mark_feed_shard_connected", no_health_write)
         monkeypatch.setattr(scalp, "mark_feed_shard_degraded", no_health_write)
         monkeypatch.setattr(scalp, "LIQ_FEED_CONNECTED", {"binance": True})
+        monkeypatch.setattr(scalp, "LIQ_HEARTBEAT_BROKEN", {"binance": False})
         monkeypatch.setattr(scalp, "LIQ_LOSS_PENDING", {})
         monkeypatch.setattr(scalp, "LIQ_GAP_PENDING", set())
         queue: asyncio.Queue = asyncio.Queue(maxsize=1)

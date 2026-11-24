@@ -4,21 +4,21 @@
       "app.scalp_collector.flush_books": [
         {
           "constante": "SCALP_ORDERBOOK_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:855",
+          "sitio": "app/scalp_collector.py:899",
           "valor": "2"
         }
       ],
       "app.scalp_collector.flush_trades": [
         {
           "constante": "SCALP_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:653",
+          "sitio": "app/scalp_collector.py:697",
           "valor": "2"
         }
       ],
       "app.scalp_collector.persist_scalp_signals": [
         {
           "constante": "SCALP_SIGNAL_INTERVAL_SECONDS",
-          "sitio": "app/scalp_collector.py:1399",
+          "sitio": "app/scalp_collector.py:1443",
           "valor": "10"
         }
       ]
@@ -10177,6 +10177,7 @@
           "app.data_gaps.record_event_stream_loss",
           "app.ingest._reconcile_persisted_cadence",
           "app.ingest._reconcile_response_cadence",
+          "app.scalp_collector.declare_liquidation_silence",
           "app.scalp_collector.persist_liquidation_event_loss"
         ],
         "por_llamada": [],
@@ -10265,8 +10266,11 @@
       "app.data_gaps.record_event_stream_loss": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.scalp_collector._write_liquidation_health",
+          "app.scalp_collector.declare_liquidation_silence",
           "app.scalp_collector.persist_liquidation_event_loss",
-          "app.scalp_collector.persist_liquidation_health_snapshot"
+          "app.scalp_collector.persist_liquidation_health_snapshot",
+          "app.scalp_collector.reset_liquidation_feed_health"
         ],
         "por_llamada": [],
         "por_tabla": [
@@ -10548,8 +10552,7 @@
           "app.db.mark_feed_shard_connected",
           "app.db.mark_feed_shard_degraded",
           "app.db.mark_feed_shard_error",
-          "app.scalp_collector.persist_liquidation_feed_state",
-          "app.scalp_collector.persist_liquidation_health_snapshot",
+          "app.scalp_collector._write_liquidation_health",
           "app.scalp_collector.reset_liquidation_feed_health"
         ],
         "por_llamada": [],
@@ -10803,6 +10806,7 @@
           "app.orderflow.declara_parada_anterior",
           "app.orderflow.suma_horas",
           "app.orderflow.vuelca",
+          "app.scalp_collector._write_liquidation_health",
           "app.scalp_collector.cleanup",
           "app.scalp_collector.drenar_minutos",
           "app.scalp_collector.flush_books",
@@ -10810,6 +10814,7 @@
           "app.scalp_collector.flush_trades",
           "app.scalp_collector.persist_liquidation_event_loss",
           "app.scalp_collector.persist_scalp_signals",
+          "app.scalp_collector.reset_liquidation_feed_health",
           "app.signal_visibility.certify_final_outcomes",
           "app.signal_visibility.certify_research_bundles",
           "app.ws_collector._write_minute",
@@ -11280,6 +11285,7 @@
           "app.orderflow.run",
           "app.orderflow.suma_horas",
           "app.orderflow.vuelca",
+          "app.scalp_collector._write_liquidation_health",
           "app.scalp_collector.cleanup",
           "app.scalp_collector.drenar_minutos",
           "app.scalp_collector.flush_books",
@@ -11288,8 +11294,10 @@
           "app.scalp_collector.main",
           "app.scalp_collector.monitor",
           "app.scalp_collector.persist_liquidation_event_loss",
+          "app.scalp_collector.persist_liquidation_feed_state",
           "app.scalp_collector.persist_liquidation_health_snapshot",
           "app.scalp_collector.persist_scalp_signals",
+          "app.scalp_collector.reset_liquidation_feed_health",
           "app.signal_visibility.certify_final_outcomes",
           "app.signal_visibility.certify_research_bundles",
           "app.signal_visibility.run_certification_cycle",
@@ -12375,9 +12383,7 @@
       "app.db.mark_feed_shard_connected": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
-          "app.scalp_collector.binance_market_loop",
-          "app.scalp_collector.bybit_loop",
-          "app.scalp_collector.monitor",
+          "app.scalp_collector._write_liquidation_health",
           "app.scalp_collector.persist_liquidation_feed_state",
           "app.scalp_collector.persist_liquidation_health_snapshot"
         ],
@@ -12385,48 +12391,30 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/cvd",
-          "/api/cvd/spot",
           "/api/dashboard/state",
-          "/api/data-confidence",
           "/api/desk/state",
-          "/api/healthz",
           "/api/hypothesis",
           "/api/liquidation-map",
-          "/api/liquidations",
           "/api/mesa/decide",
-          "/api/ohlcv",
-          "/api/oi",
           "/api/quality/feeds",
           "/api/scalp/alerts",
           "/api/scalp/execution-cost",
-          "/api/scalp/summary",
-          "/api/whale/delta",
-          "/metrics"
+          "/api/scalp/summary"
         ],
         "por_tabla_k0": [],
         "sitio": "app/db.py:768",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/cvd",
-          "/api/cvd/spot",
           "/api/dashboard/state",
-          "/api/data-confidence",
           "/api/desk/state",
-          "/api/healthz",
           "/api/hypothesis",
           "/api/liquidation-map",
-          "/api/liquidations",
           "/api/mesa/decide",
-          "/api/ohlcv",
-          "/api/oi",
           "/api/quality/feeds",
           "/api/scalp/alerts",
           "/api/scalp/execution-cost",
-          "/api/scalp/summary",
-          "/api/whale/delta",
-          "/metrics"
+          "/api/scalp/summary"
         ],
         "tablas_escritas": {
           "market_feed_health": [
@@ -12434,42 +12422,28 @@
           ],
           "market_feed_health_shard": [
             "app.db._mark_feed_shard_health"
-          ],
-          "pipeline_heartbeat": [
-            "app.db.heartbeat_shard"
           ]
         },
         "tablas_k0": [],
-        "total": 20,
+        "total": 11,
         "total_exacto": 0
       },
       "app.db.mark_feed_shard_degraded": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
-          "app.scalp_collector.binance_market_loop",
-          "app.scalp_collector.bybit_loop",
           "app.scalp_collector.main",
-          "app.scalp_collector.monitor",
-          "app.scalp_collector.persist_liquidation_feed_state",
-          "app.scalp_collector.persist_liquidation_health_snapshot",
           "app.scalp_collector.reset_liquidation_feed_health"
         ],
         "por_llamada": [],
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/cvd",
-          "/api/cvd/spot",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
-          "/api/healthz",
           "/api/hypothesis",
           "/api/liquidation-map",
-          "/api/liquidations",
           "/api/mesa/decide",
-          "/api/ohlcv",
-          "/api/oi",
           "/api/price-barriers",
           "/api/quality/feeds",
           "/api/scalp/alerts",
@@ -12481,7 +12455,6 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
-          "/api/whale/delta",
           "/metrics"
         ],
         "por_tabla_k0": [],
@@ -12489,18 +12462,12 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
-          "/api/cvd",
-          "/api/cvd/spot",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
-          "/api/healthz",
           "/api/hypothesis",
           "/api/liquidation-map",
-          "/api/liquidations",
           "/api/mesa/decide",
-          "/api/ohlcv",
-          "/api/oi",
           "/api/price-barriers",
           "/api/quality/feeds",
           "/api/scalp/alerts",
@@ -12512,7 +12479,6 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
-          "/api/whale/delta",
           "/metrics"
         ],
         "tablas_escritas": {
@@ -12528,9 +12494,6 @@
           "orderbook_snapshot": [
             "app.scalp_collector.flush_books"
           ],
-          "pipeline_heartbeat": [
-            "app.db.heartbeat_shard"
-          ],
           "scalp_signal_snapshot": [
             "app.scalp_collector.persist_scalp_signals"
           ],
@@ -12539,16 +12502,12 @@
           ]
         },
         "tablas_k0": [],
-        "total": 27,
+        "total": 20,
         "total_exacto": 0
       },
       "app.db.mark_feed_shard_error": {
         "cota_mas_ancha_que_k0": true,
-        "llamadores_hasta_k": [
-          "app.scalp_collector.binance_market_loop",
-          "app.scalp_collector.bybit_loop",
-          "app.scalp_collector.persist_liquidation_feed_state"
-        ],
+        "llamadores_hasta_k": [],
         "por_llamada": [],
         "por_tabla": [
           "/api/ai/context",
@@ -22848,7 +22807,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:925",
+        "sitio": "app/scalp_collector.py:969",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22936,7 +22895,7 @@
           "/api/mesa/decide",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:824",
+        "sitio": "app/scalp_collector.py:868",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23037,7 +22996,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:795",
+        "sitio": "app/scalp_collector.py:839",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23120,7 +23079,7 @@
         "por_tabla_k0": [
           "/api/scalp/execution-cost"
         ],
-        "sitio": "app/scalp_collector.py:893",
+        "sitio": "app/scalp_collector.py:937",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23167,6 +23126,59 @@
         "total": 20,
         "total_exacto": 1
       },
+      "app.scalp_collector._write_liquidation_health": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.scalp_collector.binance_market_loop",
+          "app.scalp_collector.bybit_loop",
+          "app.scalp_collector.monitor",
+          "app.scalp_collector.persist_liquidation_feed_state",
+          "app.scalp_collector.persist_liquidation_health_snapshot"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd/spot",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/liquidations",
+          "/api/mesa/decide",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/quality/feeds",
+          "/api/whale/delta",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/scalp_collector.py:522",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd/spot",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/healthz",
+          "/api/liquidations",
+          "/api/mesa/decide",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/quality/feeds",
+          "/api/whale/delta",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "pipeline_heartbeat": [
+            "app.db.heartbeat_shard"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 14,
+        "total_exacto": 0
+      },
       "app.scalp_collector._write_trade_rows": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -23200,7 +23212,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:738",
+        "sitio": "app/scalp_collector.py:782",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23286,7 +23298,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:640",
+        "sitio": "app/scalp_collector.py:684",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23366,7 +23378,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1017",
+        "sitio": "app/scalp_collector.py:1061",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23436,7 +23448,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1137",
+        "sitio": "app/scalp_collector.py:1181",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23506,7 +23518,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1189",
+        "sitio": "app/scalp_collector.py:1233",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23576,7 +23588,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1606",
+        "sitio": "app/scalp_collector.py:1650",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23658,7 +23670,7 @@
           "/api/mesa/decide",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:1575",
+        "sitio": "app/scalp_collector.py:1619",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23704,6 +23716,80 @@
         "total": 20,
         "total_exacto": 7
       },
+      "app.scalp_collector.declare_liquidation_silence": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.scalp_collector._write_liquidation_health",
+          "app.scalp_collector.main",
+          "app.scalp_collector.persist_liquidation_feed_state",
+          "app.scalp_collector.persist_liquidation_health_snapshot",
+          "app.scalp_collector.reset_liquidation_feed_health"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/hypothesis",
+          "/api/liquidation-map",
+          "/api/mesa/decide",
+          "/api/price-barriers",
+          "/api/quality/feeds",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/liquidations",
+          "/api/scalp/orderbook",
+          "/api/scalp/signals",
+          "/api/scalp/summary",
+          "/api/stream",
+          "/api/structure",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/scalp_collector.py:484",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/hypothesis",
+          "/api/liquidation-map",
+          "/api/mesa/decide",
+          "/api/price-barriers",
+          "/api/quality/feeds",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/liquidations",
+          "/api/scalp/orderbook",
+          "/api/scalp/signals",
+          "/api/scalp/summary",
+          "/api/stream",
+          "/api/structure",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "liquidations_realtime": [
+            "app.scalp_collector.flush_liquidations"
+          ],
+          "orderbook_snapshot": [
+            "app.scalp_collector.flush_books"
+          ],
+          "scalp_signal_snapshot": [
+            "app.scalp_collector.persist_scalp_signals"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 20,
+        "total_exacto": 0
+      },
       "app.scalp_collector.drenar_minutos": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -23733,7 +23819,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:709",
+        "sitio": "app/scalp_collector.py:753",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23822,7 +23908,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:850",
+        "sitio": "app/scalp_collector.py:894",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23914,7 +24000,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:983",
+        "sitio": "app/scalp_collector.py:1027",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23988,7 +24074,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:648",
+        "sitio": "app/scalp_collector.py:692",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24068,7 +24154,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1076",
+        "sitio": "app/scalp_collector.py:1120",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24139,7 +24225,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1278",
+        "sitio": "app/scalp_collector.py:1322",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24207,7 +24293,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1622",
+        "sitio": "app/scalp_collector.py:1666",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24279,7 +24365,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:635",
+        "sitio": "app/scalp_collector.py:679",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24356,7 +24442,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1499",
+        "sitio": "app/scalp_collector.py:1543",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24450,7 +24536,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1571",
+        "sitio": "app/scalp_collector.py:1615",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24533,7 +24619,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:591",
+        "sitio": "app/scalp_collector.py:629",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24590,7 +24676,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:474",
+        "sitio": "app/scalp_collector.py:563",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24668,7 +24754,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:536",
+        "sitio": "app/scalp_collector.py:592",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24759,7 +24845,7 @@
           "/api/scalp/signals",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:1394",
+        "sitio": "app/scalp_collector.py:1438",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24839,7 +24925,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:615",
+        "sitio": "app/scalp_collector.py:653",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24909,7 +24995,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:686",
+        "sitio": "app/scalp_collector.py:730",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -40751,6 +40837,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/libro_hueco_vivo.test.js:89",
             "tests/test_espacio_cabeceras.py:62"
           ],
           "menciones": []
@@ -40758,7 +40845,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 11,
+        "n_llamadas": 12,
         "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48112,13 +48199,15 @@
             "tests/test_espacio_cabeceras.py:62",
             "tests/test_libro.py:587"
           ],
-          "menciones": []
+          "menciones": [
+            "tests/js/libro_hueco_vivo.test.js:2"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 22,
-        "n_menciones": 26,
+        "n_menciones": 27,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -49163,13 +49252,13 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1585",
+          "sitio": "app/scalp_collector.py:1629",
           "verbo": "DELETE"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:831",
+          "sitio": "app/scalp_collector.py:875",
           "verbo": "INSERT"
         }
       ],
@@ -49182,12 +49271,12 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1585"
+          "sitio": "app/scalp_collector.py:1629"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:831"
+          "sitio": "app/scalp_collector.py:875"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -49211,7 +49300,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:802",
+          "sitio": "app/scalp_collector.py:846",
           "verbo": "INSERT"
         }
       ],
@@ -49244,7 +49333,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:802"
+          "sitio": "app/scalp_collector.py:846"
         },
         {
           "funcion": "app.scalp_logic._cvd_fut_window",
@@ -50146,7 +50235,7 @@
         {
           "funcion": "app.scalp_collector._write_ladders",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:906",
+          "sitio": "app/scalp_collector.py:950",
           "verbo": "INSERT"
         }
       ],
@@ -50172,13 +50261,13 @@
         {
           "funcion": "app.scalp_collector.flush_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:874",
+          "sitio": "app/scalp_collector.py:918",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:930",
+          "sitio": "app/scalp_collector.py:974",
           "verbo": "INSERT"
         }
       ],
@@ -50226,7 +50315,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:930"
+          "sitio": "app/scalp_collector.py:974"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -50408,7 +50497,7 @@
         {
           "funcion": "app.scalp_collector.persist_scalp_signals",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1453",
+          "sitio": "app/scalp_collector.py:1497",
           "verbo": "INSERT"
         }
       ],
@@ -51630,6 +51719,11 @@
           "funcion": "app.db._mark_feed_shard_health",
           "origen": "literal",
           "sitio": "app/db.py:706"
+        },
+        {
+          "funcion": "app.scalp_collector.declare_liquidation_silence",
+          "origen": "literal",
+          "sitio": "app/scalp_collector.py:494"
         }
       ]
     },
