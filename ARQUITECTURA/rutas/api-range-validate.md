@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:2069` (cuerpo hasta la 2099) · decorador en la linea 2068.
+Handler `range_validate_endpoint` · `app/api.py:2174` (cuerpo hasta la 2204) · decorador en la linea 2173.
 
 ## Parametros de entrada
 
@@ -24,7 +24,7 @@ Handler `range_validate_endpoint` · `app/api.py:2069` (cuerpo hasta la 2099) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:2038 |
+| `as_of` | asignado en app/api.py:2143 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -36,7 +36,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -49,19 +49,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.sella_respuesta` — `app/api.py:2026`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.sella_respuesta` — `app/api.py:2131`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.range_validate` — `app/scalp_logic.py:1581`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2494`
+- `app.api._utc_iso` — `app/api.py:2599`
 - `app.interpretation.number` — `app/interpretation.py:10`
-- `app.zones._atr_abs` — `app/zones.py:519`
-- `app.zones._edge_episodes` — `app/zones.py:499`
-- `app.zones._ols_slope` — `app/zones.py:471`
-- `app.zones._rotations` — `app/zones.py:483`
-- `app.zones.range_validate_read` — `app/zones.py:535`
+- `app.zones._atr_abs` — `app/zones.py:545`
+- `app.zones._edge_episodes` — `app/zones.py:525`
+- `app.zones._ols_slope` — `app/zones.py:497`
+- `app.zones._rotations` — `app/zones.py:509`
+- `app.zones.range_validate_read` — `app/zones.py:561`
 
 </details>
 
@@ -79,13 +79,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:2084` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:2086` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:2088` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:2091` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:2093` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:2095` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:2189` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:2191` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:2193` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:2196` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:2198` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:2200` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

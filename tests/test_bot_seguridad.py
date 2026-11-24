@@ -77,6 +77,11 @@ class DB:
 
 
 def test_b2_un_activo_parado_no_deja_ciegos_a_los_otros(monkeypatch):
+    # Reloj FIJO a mediodia UTC, el mismo para las velas y para tic_centinela (que lee time.time). Con el reloj de
+    # pared, entre ~00:15Z y 02:01Z la ventana del bot (desde el inicio del dia - CALIENTA) deja fuera las velas de
+    # SOL y el retraso sale menor: `assert 269 == 300` en la CI de 7cb8abe (run 45090265424).
+    reloj = 1_795_176_000.0  # 2026-11-20T12:00:00Z
+    monkeypatch.setattr(time, "time", lambda: reloj)
     ahora = int(time.time() // 60)
     b = bot(monkeypatch, [True])
     b.db = DB(velas({"SOLUSDT": 300}, ahora, rafaga_btc=ahora - 3))

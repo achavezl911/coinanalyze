@@ -165,7 +165,12 @@ def test_overview_is_light_and_stale_responses_are_rejected():
     assert "scalp/signals" not in refresh
     loader = JS[JS.index("async function loadSection") : JS.index("function connectStream")]
     assert "scalp/signals" in loader
-    assert "requestId !== state.refreshSeq" in refresh
+    # La respuesta vieja se rechaza: antes «solo pinta la ULTIMA pedida» (`!== refreshSeq`), y
+    # una vuelta lenta adelantada por otra que tardaba mas dejaba el panel sin pintar (f12b S2).
+    # Hoy «no pinta si ya se pinto una MAS NUEVA», y la guarda va antes del primer efecto.
+    guarda = refresh.index("requestId < (state.pintadoSeq || 0)) return;")
+    assert refresh.index("if (symbol !== state.symbol) return;") < guarda
+    assert guarda < refresh.index("state.pintadoSeq = requestId;") < refresh.index("if (context)")
 
 
 def test_sections_are_hidden_and_loaded_on_demand():

@@ -1286,7 +1286,7 @@ def test_confirmatory_contract_forbidden_under_spec_v2() -> None:
         {"primary_exchange": "okx"},
         {"primary_size_usd": 123.0},
         {"primary_taker_fee_bps": 3.0},  # diverges from frozen fee_bps_per_side
-        {"baseline_version": 2},
+        {"baseline_version": 3},
         {"unmodeled_execution_stress_bps": -0.1},
         {"unmodeled_execution_stress_bps": float("nan")},
         {"inference_version": 2},
@@ -1321,6 +1321,15 @@ def test_confirmatory_contract_invalid_fields_fail_closed(kwargs_override: dict)
     with pytest.raises((ValueError, TypeError)):
         validate_manifest_options(WalkForwardManifestOptions(**kwargs))
 
+
+def test_confirmatory_baseline_v1_is_rejected_with_its_reason() -> None:
+    """R-01: a v1 (own-block, row-included) baseline is rejected, never reinterpreted."""
+    kwargs = _spec_v3_kwargs()
+    contract_kwargs = _confirmatory_contract_kwargs()
+    contract_kwargs["baseline_version"] = 1
+    kwargs["confirmatory_contract"] = ConfirmatoryContract(**contract_kwargs)
+    with pytest.raises(ValueError, match=r"baseline_version=1 is retired: .*R-01"):
+        validate_manifest_options(WalkForwardManifestOptions(**kwargs))
 
 def test_confirmatory_primary_fee_missing_fails_closed() -> None:
     kwargs = _spec_v3_kwargs()

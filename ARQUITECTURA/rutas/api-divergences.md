@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `divergences_endpoint` · `app/api.py:2242` (cuerpo hasta la 2245) · decorador en la linea 2241.
+Handler `divergences_endpoint` · `app/api.py:2347` (cuerpo hasta la 2350) · decorador en la linea 2346.
 
 ## Parametros de entrada
 
@@ -42,15 +42,15 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
@@ -67,7 +67,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2200`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
@@ -92,7 +92,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -103,7 +103,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:151`, `harness/checks/K43-foto-unica.sh:208` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:433` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:434` | — |
 
 **La llama el panel: es superficie de producto.**
 

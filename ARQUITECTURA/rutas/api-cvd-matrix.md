@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_matrix_endpoint` · `app/api.py:2210` (cuerpo hasta la 2214) · decorador en la linea 2209.
+Handler `cvd_matrix_endpoint` · `app/api.py:2315` (cuerpo hasta la 2319) · decorador en la linea 2314.
 
 ## Parametros de entrada
 
@@ -45,19 +45,19 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 
@@ -82,14 +82,14 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2994`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
 
 <details><summary>Alcanzables de forma indirecta (15)</summary>
 
 - `app.config.get_settings` — `app/config.py:308`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
+- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
 - `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2935`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
 - `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2619`
@@ -118,7 +118,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -179,7 +179,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.config.get_settings` | 3 | **0** | 58 ↑ | **3** | [impacto](../impacto/app-config.md) |
+| `app.config.get_settings` | 3 | **0** | 50 ↑ | **3** | [impacto](../impacto/app-config.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.data_gaps.blocking_requirement_keys` | 19 | **0** | 15 ↑ | **19** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |

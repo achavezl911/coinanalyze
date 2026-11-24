@@ -8,26 +8,26 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_avanza`](#-avanza) | 1022 | 0 | **0** | 2 ↑ | **0** |
-| [`_nuevo_episodio`](#-nuevo-episodio) | 988 | 0 | **0** | 2 ↑ | **0** |
-| [`_ocupaciones`](#-ocupaciones) | 816 | 0 | **0** | 2 ↑ | **0** |
-| [`arma`](#arma) | 443 | 0 | **0** | 2 ↑ | **0** |
-| [`atr_mediana`](#atr-mediana) | 217 | 0 | **0** | 2 ↑ | **0** |
+| [`_avanza`](#-avanza) | 1033 | 0 | **0** | 2 ↑ | **0** |
+| [`_nuevo_episodio`](#-nuevo-episodio) | 999 | 0 | **0** | 2 ↑ | **0** |
+| [`_ocupaciones`](#-ocupaciones) | 827 | 0 | **0** | 2 ↑ | **0** |
+| [`arma`](#arma) | 451 | 0 | **0** | 2 ↑ | **0** |
+| [`atr_mediana`](#atr-mediana) | 225 | 0 | **0** | 2 ↑ | **0** |
 | [`completa`](#completa) | 212 | 0 | **0** | 2 ↑ | **0** |
-| [`construir_zonas`](#construir-zonas) | 282 | 0 | **0** | 2 ↑ | **0** |
+| [`construir_zonas`](#construir-zonas) | 290 | 0 | **0** | 2 ↑ | **0** |
 | [`de_iso`](#de-iso) | 176 | 0 | **0** | 2 ↑ | **0** |
-| [`elegible`](#elegible) | 436 | 0 | **0** | 2 ↑ | **0** |
-| [`estructura`](#estructura) | 425 | 0 | **0** | 2 ↑ | **0** |
+| [`elegible`](#elegible) | 444 | 0 | **0** | 2 ↑ | **0** |
+| [`estructura`](#estructura) | 433 | 0 | **0** | 2 ↑ | **0** |
 | [`foto_canonica`](#foto-canonica) | 184 | 0 | **0** | 2 ↑ | **0** |
-| [`grupos_por_comun`](#grupos-por-comun) | 253 | 0 | **0** | 2 ↑ | **0** |
+| [`grupos_por_comun`](#grupos-por-comun) | 261 | 0 | **0** | 2 ↑ | **0** |
 | [`incompatibilidades`](#incompatibilidades) | 131 | 0 | **0** | 2 ↑ | **0** |
 | [`iso`](#iso) | 171 | 0 | **0** | 2 ↑ | **0** |
-| [`paso`](#paso) | 861 | 0 | **0** | 2 ↑ | **0** |
-| [`solapan`](#solapan) | 239 | 0 | **0** | 2 ↑ | **0** |
+| [`paso`](#paso) | 872 | 0 | **0** | 2 ↑ | **0** |
+| [`solapan`](#solapan) | 247 | 0 | **0** | 2 ↑ | **0** |
 
 ## _avanza
 
-`app/entradas/motor.py:1022` · clave completa `app.entradas.motor._avanza`
+`app/entradas/motor.py:1033` · clave completa `app.entradas.motor._avanza`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -67,7 +67,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _nuevo_episodio
 
-`app/entradas/motor.py:988` · clave completa `app.entradas.motor._nuevo_episodio`
+`app/entradas/motor.py:999` · clave completa `app.entradas.motor._nuevo_episodio`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -107,7 +107,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _ocupaciones
 
-`app/entradas/motor.py:816` · clave completa `app.entradas.motor._ocupaciones`
+`app/entradas/motor.py:827` · clave completa `app.entradas.motor._ocupaciones`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -147,7 +147,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## arma
 
-`app/entradas/motor.py:443` · clave completa `app.entradas.motor.arma`
+`app/entradas/motor.py:451` · clave completa `app.entradas.motor.arma`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -187,7 +187,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## atr_mediana
 
-`app/entradas/motor.py:217` · clave completa `app.entradas.motor.atr_mediana`
+`app/entradas/motor.py:225` · clave completa `app.entradas.motor.atr_mediana`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -263,11 +263,11 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/entradas`](../rutas/api-entradas.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 
-<sub>k=0 es exacto. La cota k<=2 sube por 10 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+<sub>k=0 es exacto. La cota k<=2 sube por 11 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## construir_zonas
 
-`app/entradas/motor.py:282` · clave completa `app.entradas.motor.construir_zonas`
+`app/entradas/motor.py:290` · clave completa `app.entradas.motor.construir_zonas`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -347,7 +347,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## elegible
 
-`app/entradas/motor.py:436` · clave completa `app.entradas.motor.elegible`
+`app/entradas/motor.py:444` · clave completa `app.entradas.motor.elegible`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -387,7 +387,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## estructura
 
-`app/entradas/motor.py:425` · clave completa `app.entradas.motor.estructura`
+`app/entradas/motor.py:433` · clave completa `app.entradas.motor.estructura`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -467,7 +467,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## grupos_por_comun
 
-`app/entradas/motor.py:253` · clave completa `app.entradas.motor.grupos_por_comun`
+`app/entradas/motor.py:261` · clave completa `app.entradas.motor.grupos_por_comun`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -591,7 +591,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## paso
 
-`app/entradas/motor.py:861` · clave completa `app.entradas.motor.paso`
+`app/entradas/motor.py:872` · clave completa `app.entradas.motor.paso`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 
@@ -633,7 +633,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## solapan
 
-`app/entradas/motor.py:239` · clave completa `app.entradas.motor.solapan`
+`app/entradas/motor.py:247` · clave completa `app.entradas.motor.solapan`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 2** (mas ancha)
 

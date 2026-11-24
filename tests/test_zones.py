@@ -183,6 +183,33 @@ def test_missing_components_renormalise_instead_of_scoring_zero() -> None:
     assert partial["score"] > 0
 
 
+def test_label_needs_every_component_measured() -> None:
+    """Z-02: la renormalizacion sobre lo medible no puede ascender la etiqueta. En 140 la
+    visita SOL 2026-07-12 -> 08-18 salia «acumulacion · clara · alta» sin cvd_spot."""
+    bars = _bars(40, start_px=60000, end_px=60050, buy_share=0.46, close_pos=0.75)
+    oi = {"oi_first": 6.0e9, "oi_last": 6.2e9, "funding": -0.0055}
+    full = zone_character_read(_visit(bars, cvd_spot=+440_000_000, **oi), BASELINE)
+    assert (full["strength"], full["confidence"]) == ("clara", "alta")
+
+    partial = zone_character_read(_visit(bars, cvd_spot=None, **oi), BASELINE)
+    assert partial["score"] >= 60, "el caso debe cruzar el umbral fuerte para morder"
+    assert partial["character"] == "acumulacion"
+    assert partial["strength"] == "indicios"
+    assert partial["confidence"] == "media"
+    assert full["method"]["label_capped_by"] == []
+    assert partial["method"]["label_capped_by"] == ["cvd_spot"]
+    assert any("cvd_spot" not in line and "sin medir" in line for line in partial["narrative"])
+
+
+def test_zone_displacement_is_labelled_not_comparable() -> None:
+    """F11b Z4: los umbrales de recorrido salen de ventanas contiguas; la zona es un
+    rango de precio elegido despues. Solo el rotulo, el calculo no cambia."""
+    bars = _bars(40, start_px=60000, end_px=60050, buy_share=0.46)
+    result = zone_character_read(_visit(bars, cvd_spot=1.0), BASELINE)
+    assert "ventanas contiguas" in result["warning"]
+    assert "infiere" in result["warning"]
+
+
 def test_low_coverage_forces_low_confidence() -> None:
     bars = _bars(40, start_px=60000, end_px=60050, buy_share=0.46, close_pos=0.75)
     result = zone_character_read(_visit(bars, cvd_spot=None, funding=None), BASELINE)
