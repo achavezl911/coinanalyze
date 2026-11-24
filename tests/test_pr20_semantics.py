@@ -8,6 +8,7 @@ import pytest
 # El panel puede ser N modulos: la fuente se descubre, no se supone. Ver
 # tests/panel_fuentes.py — con UN fichero, FUENTE es byte a byte static/app.js.
 from panel_fuentes import FUENTE as PANEL_FUENTE
+from test_partitioning_postgres import migracion_en_linea
 
 import app.daily_agg as daily_agg
 import app.metrics as metrics
@@ -207,7 +208,9 @@ def test_pr20_schema_marks_old_coverage_as_unknown_and_allows_partial_values() -
 
 def test_pr20_schema_preserves_inline_partition_migration_as_exact_prior_transaction() -> None:
     schema = (ROOT / "sql" / "schema.sql").read_text(encoding="utf-8")
-    partition = (ROOT / "sql" / "migrations" / "20260809_temporal_partitioning.sql").read_text(encoding="utf-8").strip()
+    partition = migracion_en_linea(
+        (ROOT / "sql" / "migrations" / "20260809_temporal_partitioning.sql").read_text(encoding="utf-8")
+    ).strip()
     assert partition in schema
     partition_start = schema.index(partition)
     partition_end = partition_start + len(partition)
@@ -235,7 +238,8 @@ def test_pr20_f4_schema_accepts_unmeasurable_price_direction() -> None:
     nullable = "ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h DROP NOT NULL;"
     restore = "ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h SET NOT NULL;"
 
-    assert nullable in schema
+    # en schema.sql va por esquema_ddl() (V-03): solo se ejecuta si la columna aun es NOT NULL
+    assert f"SELECT esquema_ddl($ddl${nullable.removesuffix(';')}$ddl$);" in schema
     assert nullable in up
     assert "SELECT 1 FROM metrics_snapshot WHERE price_dir_1h IS NULL" in down
     assert restore in down
