@@ -383,3 +383,29 @@ def test_una_firma_que_no_es_ninguna_de_las_dos_no_se_acepta(tmp_path):
                            capture_output=True, timeout=60, check=False)
         assert r.returncode == 2 and "usage: deploy <commit>" in r.stderr, args
     assert _log(b, "curl.argv") == "" and _current(b) == VIEJO
+
+
+def test_el_volcado_nuevo_poda_los_predeploy_previos_y_deja_el_mas_reciente(tmp_path):
+    """PODA R1: un dia con 9 despliegues llenaba el disco de 140 (3.3 GB por volcado, podados solo de madrugada)."""
+    b = _banco(tmp_path, smoke_max=30)
+    bk = b["sb"] / "backups"
+    bk.mkdir()
+    ahora = time.time()
+    previos = []
+    for i, dias in enumerate((4, 3, 2, 1)):  # 4 volcados previos, el de hace 1 dia es el del release activo
+        f = bk / f"predeploy-{'c' * 39}{i}-2026112{i}000000.sql.gz"
+        f.write_text("x", encoding="utf-8")
+        os.utime(f, (ahora - dias * 86400, ahora - dias * 86400))
+        previos.append(f)
+    (bk / f"{previos[0].name}.sha256").write_text("h", encoding="utf-8")
+    ajenos = [bk / "coinalyze-full-20261120.sql.gz.enc", bk / "coinalyze-full-20261123.sql.gz.enc"]
+    for f in ajenos:
+        f.write_text("y", encoding="utf-8")
+        os.utime(f, (ahora - 5 * 86400, ahora - 5 * 86400))
+    r = _despliega(b)
+    assert r.returncode == 0, r.stderr[-2000:]
+    quedan = sorted(p.name for p in bk.glob("predeploy-*"))
+    nuevo = [n for n in quedan if n.startswith(f"predeploy-{NUEVO}-")]
+    assert len(quedan) == 2 and len(nuevo) == 1 and previos[-1].name in quedan, quedan
+    assert all(f.exists() for f in ajenos) and not (bk / f"{previos[0].name}.sha256").exists()
+    assert r.stderr.count("pruned pre-deploy backup:") == 3
