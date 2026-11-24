@@ -2953,6 +2953,7 @@ def _confirmatory_not_ready_result(contract: ConfirmatoryContract) -> dict[str, 
         },
         "primary_block_count": 0,
         "baseline_mean_bps": None,
+        "baseline_refusal_reason": None,
         "primary_excess_mean_bps": None,
         "bootstrap_repetitions": contract.bootstrap_repetitions,
         "confidence_level": contract.confidence_level,
@@ -3098,11 +3099,11 @@ async def _compute_confirmatory_result(
     }
     result["coverage_characteristics"] = _confirmatory_coverage_characteristics(primary_rows)
 
-    # Per-block, direction-agnostic, unconditional control mean -- built from
-    # the BROADER baseline cohort (actionable or not), pooled across every
-    # fold exactly like cost_rows below. Every cost_row's own block is
-    # structurally guaranteed to appear here too, since the actionable rows
-    # are themselves a subset of the baseline cohort's source rows.
+    # Per-block, direction-agnostic, unconditional control mean (baseline v2,
+    # R-01) -- built from the BROADER baseline cohort (actionable or not),
+    # pooled across every fold exactly like cost_rows below, but for each
+    # block ONLY from the OTHER blocks: the row itself and the returns that
+    # chose its direction never enter its own baseline.
     baseline_block_values: dict[str, list[float]] = {}
     for row in baseline_rows:
         key = confirmatory_block_key(
@@ -3111,8 +3112,14 @@ async def _compute_confirmatory_result(
             block_length=contract.block_length,
         )
         baseline_block_values.setdefault(key, []).append(row["market_return_bps"])
-    block_unconditional_market_mean_bps = {
-        key: statistics.fmean(values) for key, values in baseline_block_values.items()
+    baseline_total_bps = math.fsum(
+        value for values in baseline_block_values.values() for value in values
+    )
+    baseline_total_n = sum(len(values) for values in baseline_block_values.values())
+    other_blocks_market_mean_bps = {
+        key: (baseline_total_bps - math.fsum(values)) / (baseline_total_n - len(values))
+        for key, values in baseline_block_values.items()
+        if baseline_total_n > len(values)
     }
 
     block_values: dict[str, list[float]] = {}
@@ -3123,16 +3130,17 @@ async def _compute_confirmatory_result(
             block_unit=contract.block_unit,
             block_length=contract.block_length,
         )
-        block_mean = block_unconditional_market_mean_bps.get(key)
+        block_mean = other_blocks_market_mean_bps.get(key)
         if block_mean is None:
-            # Structurally unreachable: every actionable+evaluated row is
-            # itself part of the broader baseline cohort (see
-            # _all_periodic_evaluated), so its own block always has at least
-            # one baseline observation -- itself, at minimum.
-            raise ValueError(
-                f"confirmatory block {key!r} has a primary row but no baseline "
-                "cohort observation; baseline cohort construction is broken"
+            # No other block has a baseline observation (one block only):
+            # refuse instead of inventing a baseline.
+            result["baseline_refusal_reason"] = (
+                f"confirmatory block {key!r} has a primary row but no OTHER block "
+                f"has a baseline observation ({len(baseline_block_values)} baseline "
+                "block(s)); baseline v2 needs >= 2 blocks"
             )
+            result["confirmatory_state"] = CONFIRMATORY_STATE_INCONCLUSIVE
+            return result
         baseline_bps = block_unconditional_direction_matched_baseline_bps(
             block_mean, direction=row["direction"]
         )

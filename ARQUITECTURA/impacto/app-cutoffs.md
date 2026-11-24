@@ -8,13 +8,13 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`at`](#at) | 22 | 0 | **0** | 47 ↑ | **0** |
+| [`at`](#at) | 22 | 0 | **0** | 50 ↑ | **0** |
 
 ## at
 
 `app/cutoffs.py:22` · clave completa `app.cutoffs.ClosedCutoff.at`
 
-**Radio exacto: 0 rutas** de 94 · **cota superior: 47** (mas ancha)
+**Radio exacto: 0 rutas** de 94 · **cota superior: 50** (mas ancha)
 
 ### Por llamada — 0 rutas
 
@@ -27,9 +27,9 @@ _ninguna ruta la ejecuta._
 _no escribe ninguna tabla ella misma._ Si es una funcion pura, su
 impacto por dato viaja por quien la llama: mira la cota de abajo.
 
-### Por tabla · k<=2 — 47 rutas · **cota superior**
+### Por tabla · k<=2 — 50 rutas · **cota superior**
 
-**Esta cota es MAS ANCHA que el dato exacto** (47 contra 0). Parte de la diferencia puede entrar por un bucle
+**Esta cota es MAS ANCHA que el dato exacto** (50 contra 0). Parte de la diferencia puede entrar por un bucle
 de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
 **de afectadas.**
 
@@ -51,6 +51,7 @@ Y esas tablas las leen:
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
@@ -69,6 +70,7 @@ Y esas tablas las leen:
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/positioning`](../rutas/api-positioning.md)
@@ -90,11 +92,12 @@ Y esas tablas las leen:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)
 
-**47 rutas se enteran SOLO por el dato**, sin
+**50 rutas se enteran SOLO por el dato**, sin
 ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 - [`/api/ai/context`](../rutas/api-ai-context.md)
@@ -102,6 +105,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/cross-asset`](../rutas/api-cross-asset.md)
 - [`/api/cvd`](../rutas/api-cvd.md)
 - [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
 - [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
 - [`/api/data-confidence`](../rutas/api-data-confidence.md)
 - [`/api/delta-profile`](../rutas/api-delta-profile.md)
@@ -120,6 +124,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
 - [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
 - [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
 - [`/api/oi-context`](../rutas/api-oi-context.md)
 - [`/api/passive-flow`](../rutas/api-passive-flow.md)
 - [`/api/positioning`](../rutas/api-positioning.md)
@@ -141,6 +146,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 - [`/api/volatility`](../rutas/api-volatility.md)
 - [`/api/volume-profile`](../rutas/api-volume-profile.md)
+- [`/api/whale/delta`](../rutas/api-whale-delta.md)
 - [`/api/wyckoff`](../rutas/api-wyckoff.md)
 - [`/api/zone/analysis`](../rutas/api-zone-analysis.md)
 - [`/metrics`](../rutas/metrics.md)

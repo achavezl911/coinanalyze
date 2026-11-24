@@ -29,7 +29,10 @@
 #       frecuencia de resultados escrita y otra servida en la cuenta de papel. Y C5 · sobre una COPIA DEL
 #       REGISTRO de produccion (K107-copia.json, con el reloj de su base plantado a las 2026-10-15T06:00Z:
 #       3945 toco su stop a las 05:16Z y su reloj caduca a las 08:45Z), la pantalla del arbol no lo pinta
-#       vivo y la de main si, y la red la condena por E10 con la verdad de la base; sin esa verdad, no.
+#       vivo y, sobre la respuesta del arbol con 3945 plantado VIVO (en su celda, resultado vivo, reloj a un
+#       dia de ahora), si; la red la condena por E10 con la verdad de la base y sin esa verdad no la ve: E11 y
+#       E4 juzgan contra la respuesta, y la pantalla le es fiel. Hasta mant-r2 el malo era `git archive main`
+#       y caduco cuando main trajo #204; un malo de static/ no sirve, porque lo condena E11 antes que E10.
 #   y el check: sus tres invocaciones (A56), los dos modos de SIGPIPE (A89), y una mesa sin la vista
 #   (NO MEDIDO, ni ROJO ni VERDE). Y el lector de cifras de la propia red: «63.385» son sesenta y
 #   tres mil, y una variante de la sonda que lo lea como K102 tiene que condenar una pagina fiel.
@@ -126,9 +129,25 @@ RELOJ=2026-10-15T06:00:00Z
 psql -h "$H" -d postgres -qc "CREATE DATABASE \"$COPIADB\"" > /dev/null
 "$PY" "$AQUI/K107-resultado.py" carga "$AQUI/K107-copia.json" "postgresql:///$COPIADB?host=$H" "$REPO/sql/schema.sql" > /dev/null
 "$PY" "$AQUI/K107-resultado.py" verdad --dsn "postgresql:///$COPIADB?host=$H" --esquema copia --reloj "$RELOJ" > "$T/verdad.json"
-mkdir -p "$T/main"; git -C "$REPO" archive main app config static | tar -x -C "$T/main"
 "$PY" -S "$PLANTA" copia "$REPO" "postgresql:///$COPIADB?host=$H" copia "$RELOJ" SOLUSDT_PERP.A "$T/c5-arbol.json" > /dev/null
-"$PY" -S "$PLANTA" copia "$T/main" "postgresql:///$COPIADB?host=$H" copia "$RELOJ" SOLUSDT_PERP.A "$T/c5-main.json" > /dev/null
+# EL MALO: la respuesta del arbol con 3945 servido VIVO -en su celda, con su resultado diciendo vivo y su
+# reloj a un dia de AHORA-, como la serviria una ruta que da por vivo lo acabado. La pantalla, fiel a esa
+# respuesta, lo pinta VIVO y ni E11 ni E4 pueden verlo: solo la verdad de la base (E10).
+"$PY" -S - "$T/c5-arbol.json" "$T/c5-malo.json" <<'PLANTA_C5' || { echo "control: el plantado de la respuesta (C5) no mordio"; exit 2; }
+import json, sys
+from datetime import UTC, datetime, timedelta
+d = json.load(open(sys.argv[1]))
+r = next(v for v in d["reciente"]["por_version"] if any(x["registro_id"] == 3945 for x in v["disparados"]))
+p = next(x for x in r["disparados"] if x["registro_id"] == 3945)
+r["disparados"].remove(p)   # lo vivo no esta en lo reciente: si siguiera alli, acabado, E11 lo veria
+p["resultado"] = dict(p["resultado"], vivo=True, rotulo=None, firmeza="PROVISIONAL")
+p.update(vivo=True, caducado=False, caduca_en=(datetime.now(UTC) + timedelta(days=1)).isoformat())
+celda = next(c for c in d["vivo"]["celdas"] if (c["perfil"], c["lado"]) == (p["perfil"], p["lado"]))
+v = next(v for v in celda["por_version"] if v["version"] == p["version"])
+v["disparados"].append(p)
+v.pop("sin_planes", None)
+json.dump(d, open(sys.argv[2], "w"))
+PLANTA_C5
 c5() {  # respuesta sobre(o -) verdad(si|no) -> rc de la sonda sobre SOL
   cp "$1" "$T/b/respuesta.json"; rm -rf "$T/b/sobre"; mkdir -p "$T/b/sobre/mesa"
   [ "$2" != "-" ] && cp -a "$2/." "$T/b/sobre/"
@@ -139,11 +158,11 @@ hv() { cat "$T/b/respuesta.json" $(find "$T/b/sobre" -type f | sort) | sha256sum
 h0=$(hv); rc=$(c5 "$T/c5-arbol.json" - si); h1=$(hv)
 comprueba c5_el_arbol_no_lo_pinta_vivo "$([ "$rc" = 0 ] && grep -q 'E10 contrasta 2 DISPARADO' "$T/sal" && grep -q '"3945": {"acabado": true' "$T/verdad.json" && echo 0 || echo 1)" \
   "rc=$rc · $h0 -> $h1 · verdad 3945 $(grep -o '"3945": {[^}]*}' "$T/verdad.json" | cut -c1-80)"
-rc=$(c5 "$T/c5-main.json" "$T/main/static" si); h2=$(hv)
+rc=$(c5 "$T/c5-malo.json" - si); h2=$(hv)
 visto=$(hallazgo "E10 el DISPARADO 3945 acabo segun la base \(stop a las 05:16Z\) y la pantalla lo pinta VIVO")
-comprueba c5_main_lo_pinta_vivo "$([ "$rc" = 1 ] && [ -n "$visto" ] && [ "$h1" != "$h2" ] && echo 0 || echo 1)" "rc=$rc · $h1 -> $h2 · ${visto:-NO SALE: $(grep -m1 '^   - ' "$T/sal" | cut -c1-110)}"
-rc=$(c5 "$T/c5-main.json" "$T/main/static" no)
-comprueba c5_sin_verdad_no_lo_ve "$([ "$rc" = 0 ] && grep -q 'E10 SIN JUZGAR' "$T/sal" && echo 0 || echo 1)" "rc=$rc · sin --verdad la pantalla de main pasa: la condena es de E10 y de nada mas"
+comprueba c5_respuesta_plantada_lo_pinta_vivo "$([ "$rc" = 1 ] && [ -n "$visto" ] && [ "$h1" != "$h2" ] && echo 0 || echo 1)" "rc=$rc · $h1 -> $h2 · ${visto:-NO SALE: $(grep -m1 '^   - ' "$T/sal" | cut -c1-110)}"
+rc=$(c5 "$T/c5-malo.json" - no)
+comprueba c5_sin_verdad_no_lo_ve "$([ "$rc" = 0 ] && grep -q 'E10 SIN JUZGAR' "$T/sal" && echo 0 || echo 1)" "rc=$rc · sin --verdad la respuesta plantada pasa: la condena es de E10 y de nada mas"
 
 echo "== el lector de cifras: en es-ES «63.385» son sesenta y tres mil. La variante que lo lee como K102 tiene que CONDENAR una pagina fiel"
 # Una copia de la sonda con UNA linea cambiada: compara las cifras con K102.casan_valores, que solo

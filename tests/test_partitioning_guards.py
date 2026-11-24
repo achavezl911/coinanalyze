@@ -12,6 +12,9 @@ tests/test_partitioning_postgres.py.
 
 from __future__ import annotations
 
+import contextlib
+from datetime import UTC, datetime
+
 import pytest
 
 from app.partitioning import (
@@ -19,6 +22,8 @@ from app.partitioning import (
     apply_temporal_retention,
     ensure_temporal_partitions,
 )
+
+_CORTE = datetime(2026, 11, 21, 12, tzinfo=UTC)
 
 
 class _RecordingConnection:
@@ -31,6 +36,17 @@ class _RecordingConnection:
     async def execute(self, query: str, *args: object) -> str:
         self.calls.append((query, args))
         return "SELECT 1"
+
+    async def fetchval(self, query: str, *args: object) -> object:
+        self.calls.append((query, args))
+        return _CORTE if "statement_timestamp" in query else 0
+
+    async def fetch(self, query: str, *args: object) -> list[object]:
+        self.calls.append((query, args))
+        return []
+
+    def transaction(self) -> contextlib.AbstractAsyncContextManager[None]:
+        return contextlib.nullcontext()
 
 
 def test_managed_table_set_is_exactly_the_partitioned_tables() -> None:
@@ -107,11 +123,16 @@ async def test_retention_passes_table_and_horizon_as_parameters_not_as_text() ->
 
     conn = _RecordingConnection()
     await apply_temporal_retention(conn, "orderbook_snapshot", 48)
-    assert len(conn.calls) == 1
-    query, args = conn.calls[0]
-    assert args == ("orderbook_snapshot", 48)
-    assert "orderbook_snapshot" not in query
-    assert "48" not in query
+    # CINTA R1: el corte, las particiones, el DROP y la lista de hijas del borde; ninguna lleva el texto dentro.
+    assert [args for _query, args in conn.calls] == [
+        (48,),
+        (),
+        ("orderbook_snapshot", _CORTE),
+        ("orderbook_snapshot", _CORTE),
+    ]
+    for query, _args in conn.calls:
+        assert "orderbook_snapshot" not in query
+        assert "48" not in query
 
 
 @pytest.mark.asyncio

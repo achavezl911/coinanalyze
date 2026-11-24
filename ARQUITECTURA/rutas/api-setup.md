@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `setup` · `app/api.py:2438` (cuerpo hasta la 2449) · decorador en la linea 2437.
+Handler `setup` · `app/api.py:2543` (cuerpo hasta la 2554) · decorador en la linea 2542.
 
 ## Parametros de entrada
 
@@ -23,8 +23,8 @@ Handler `setup` · `app/api.py:2438` (cuerpo hasta la 2449) · decorador en la l
 | `daily_streak` | literal en app/interpretation.py:199 |
 | `primary` | literal en app/interpretation.py:202 |
 | `setups` | literal en app/interpretation.py:203 |
-| `snapshot_ts` | literal en app/api.py:2447 |
-| `symbol` | literal en app/api.py:2446 |
+| `snapshot_ts` | literal en app/api.py:2552 |
+| `symbol` | literal en app/api.py:2551 |
 | `warning` | literal en app/interpretation.py:204 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -35,10 +35,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
+- `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
 
@@ -49,14 +49,14 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.daily_data` — `app/api.py:593`
-- `app.api.latest_snapshot` — `app/api.py:566`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.daily_data` — `app/api.py:691`
+- `app.api.latest_snapshot` — `app/api.py:664`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.api.records` — `app/api.py:272`
+- `app.api.records` — `app/api.py:273`
 - `app.interpretation.daily_flow_read` — `app/interpretation.py:208`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
@@ -76,8 +76,8 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | No data | `app/api.py:2443` | el propio handler |
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | No data | `app/api.py:2548` | el propio handler |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -124,9 +124,9 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.evaluate_setups` | 4 | **0** | 56 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
+| `app.interpretation.evaluate_setups` | 4 | **0** | 48 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.interpretation.number` | 14 | **0** | 3 ↑ | **14** | [impacto](../impacto/app-interpretation.md) |
 | `app.api.daily_data` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |
 | `app.api.latest_snapshot` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-api.md) |

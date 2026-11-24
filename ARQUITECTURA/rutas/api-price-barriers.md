@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `price_barriers_endpoint` · `app/api.py:2020` (cuerpo hasta la 2023) · decorador en la linea 2019.
+Handler `price_barriers_endpoint` · `app/api.py:2125` (cuerpo hasta la 2128) · decorador en la linea 2124.
 
 ## Parametros de entrada
 
@@ -42,21 +42,21 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1629`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:875`
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
@@ -68,7 +68,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1304`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
@@ -94,7 +94,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

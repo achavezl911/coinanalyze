@@ -82,6 +82,9 @@ function seriesSegments(rows, timeOf, valueOf) {
   let ultimoPresente = null;
   let ausentesSeguidos = 0;
   let primerAusente = null;
+  const ts = safeArray(rows).map(timeOf).filter(Number.isFinite);
+  const saltos = ts.slice(1).map((t, i) => t - ts[i]).filter(d => d > 0).sort((a, b) => a - b);
+  const paso = saltos.length ? saltos[Math.floor(saltos.length / 2)] : null;
 
   const cerrarHueco = (hasta) => {
     if (!ausentesSeguidos) return;
@@ -107,6 +110,11 @@ function seriesSegments(rows, timeOf, valueOf) {
       ausentesSeguidos += 1;
       actual = null;
       return;
+    }
+    if (paso && ultimoPresente !== null && !ausentesSeguidos && time - ultimoPresente > 2.5 * paso) {
+      primerAusente = ultimoPresente + paso;
+      ausentesSeguidos = Math.round((time - ultimoPresente) / paso) - 1;
+      actual = null;
     }
     cerrarHueco(time);
     if (actual === null) { actual = []; segments.push(actual); }

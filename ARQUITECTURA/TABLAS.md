@@ -42,7 +42,7 @@ Un grafo de llamadas no ve esa arista porque no es una llamada. Esta tabla si.
 | [`orderbook_depth`](#orderbook-depth) | 1 | 1 | 0 |
 | [`orderbook_snapshot`](#orderbook-snapshot) | 2 | 15 | 0 |
 | [`orderflow_paso`](#orderflow-paso) | **0 · PENDIENTE** | 1 | 0 |
-| [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 8 | 1 |
+| [`pipeline_heartbeat`](#pipeline-heartbeat) | 3 | 14 | 1 |
 | [`predicted_funding_rate`](#predicted-funding-rate) | 1 | 3 | 0 |
 | [`scalp_signal_snapshot`](#scalp-signal-snapshot) | 1 | 5 | 0 |
 | [`signal_execution_snapshot`](#signal-execution-snapshot) | 1 | 1 | 0 |
@@ -70,20 +70,14 @@ Definiciones, escritas antes del recuento:
 | | de 62 tablas del esquema |
 |---|---|
 | de SERIE | **38** |
-| de serie que DECLARAN cobertura cuantitativa | **7** |
-| de serie que NO declaran ninguna | **31** |
+| de serie que DECLARAN cobertura cuantitativa | **1** |
+| de serie que NO declaran ninguna | **37** |
 
 | tabla | columnas de cobertura |
 |---|---|
-| `daily_session_agg` | `cvd_fut_2v_minutes`, `session_expected_minutes`, `futures_ohlcv_minutes`, `spot_2v_minutes`, `session_expected_5m_samples`, `oi_5m_samples`, `funding_5m_samples` |
-| `futures_trades_agg` | `covered_seconds`, `venue_count` |
-| `futures_trades_realtime` | `venue_count` |
-| `orderbook_snapshot` | `venue_count` |
 | `signal_observation` | `evidence_coverage_pct` |
-| `spot_trades_agg` | `covered_seconds`, `venue_count` |
-| `spot_trades_realtime` | `venue_count` |
 
-**Las 31 de serie SIN cobertura declarada.** No es un defecto por si mismo
+**Las 37 de serie SIN cobertura declarada.** No es un defecto por si mismo
 —una tabla de eventos periodicos puede no necesitarla—, pero es lo que impide
 distinguir un periodo vacio de uno no medido:
 
@@ -94,10 +88,13 @@ distinguir un periodo vacio de uno no medido:
 - `bot_llamada`
 - `bot_operacion`
 - `bot_sombra_candidata`
+- `daily_session_agg`
 - `daily_verdict`
 - `daily_verdict_snapshot`
 - `external_api_rate_event`
 - `funding_rate`
+- `futures_trades_agg`
+- `futures_trades_realtime`
 - `libro_cobertura`
 - `libro_foto`
 - `libro_honda`
@@ -110,6 +107,7 @@ distinguir un periodo vacio de uno no medido:
 - `open_interest`
 - `open_interest_daily`
 - `orderbook_depth`
+- `orderbook_snapshot`
 - `orderflow_celda`
 - `orderflow_celda_hora`
 - `orderflow_cinta`
@@ -118,21 +116,8 @@ distinguir un periodo vacio de uno no medido:
 - `orderflow_hora_hecha`
 - `predicted_funding_rate`
 - `scalp_signal_snapshot`
-
-### Columnas que NO estan en su `CREATE TABLE`
-
-**30 columnas en 6 tablas** se añaden con
-`ALTER TABLE ... ADD COLUMN`. Un instrumento que lea solo los `CREATE` no las ve — y
-**este generador no las veia hasta F4**: `daily_session_agg` figuraba con 14 columnas
-y tiene 37, y entre las que faltaban estaba **`covered_seconds`**, que es justamente
-la columna con la que el sistema declara si un minuto se midio entero.
-
-- `daily_session_agg` — 23: `cvd_fut_2v_usd`, `cvd_fut_2v_minutes`, `cvd_diff_2v_usd`, `volume_usd`, `price_high`, `price_low` _(+17)_
-- `futures_trades_agg` — 2: `covered_seconds`, `venue_count`
-- `futures_trades_realtime` — 1: `venue_count`
-- `orderbook_snapshot` — 1: `venue_count`
-- `spot_trades_agg` — 2: `covered_seconds`, `venue_count`
-- `spot_trades_realtime` — 1: `venue_count`
+- `spot_trades_agg`
+- `spot_trades_realtime`
 
 ## LA CADENCIA · cada cuanto escribe quien escribe
 
@@ -176,54 +161,15 @@ Y que bucle duerme con cual:
 
 | funcion | constante | valor | sitio |
 |---|---|---|---|
-| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:855` |
-| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:653` |
-| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1399` |
-
-## EL BUCKET CORTO DEL LADO DE LA PARADA · el mismo patron en DOS tablas
-
-**Defecto abierto y medido, y aparece en dos sitios.** Va con su reproduccion y
-**no se abre desde aqui**: el sujeto es de produccion.
-
-```
-spot_trades_agg, minuto 17:17  ->  covered_seconds = 45   correcto (60 - 15)
-spot_trades_agg, minuto 17:16  ->  covered_seconds = 60   y el colector estuvo
-                                                          parado sus ultimos 5 s
-```
-
-El bucket **AUSENTE** ya se arreglo. El bucket **CORTO del lado de la PARADA** se
-sigue escribiendo como completo, y **ese es el caso peor**: la fila existe, K37 la
-cuenta como presente, y las derivadas de ese minuto no saben que van cortas. Un
-hueco que se ve es un hueco; un minuto que miente que esta completo no lo ve nadie.
-
-**Y afecta a las 2 tablas que declaran cobertura por segundo**: `futures_trades_agg`, `spot_trades_agg`.
-
-`_write_combined_minute` (`app/scalp_collector.py:801-812`) construye la fila
-`combined` con **`MIN(covered_seconds)`** de sus dos patas, y `ws_collector.py:284`
-hace lo mismo para spot. **El `MIN` es la eleccion correcta** —el minuto combinado
-no puede estar mejor cubierto que su peor pata— pero **hereda el defecto**: si una
-pata escribe 60 cuando fueron 55, el combinado escribe 60.
-
-**No se arregla en el agregador: se arregla en quien escribe la pata.**
-
-**Reproduccion:** cualquier reinicio cuya **parada** caiga en un minuto distinto al
-del **arranque**. El minuto del arranque se cubre bien; el de la parada no.
-
-**Criterio ejecutable, si se decide abrirlo:**
-
-> ROJO si existe algun minuto con `covered_seconds = 60` cuyo intervalo contenga el
-> instante de una parada del colector.
-> **Control en la misma consulta**: el minuto *siguiente* a esa parada tiene que
-> estar ausente o con cobertura baja. Si los dos salieran completos, el sujeto seria
-> el registro de paradas y no la cobertura.
-> El elegible sale de un instrumento externo: los `Stopped` del journal, no de la
-> propia tabla.
+| `app.scalp_collector.flush_books` | `SCALP_ORDERBOOK_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:899` |
+| `app.scalp_collector.flush_trades` | `SCALP_FLUSH_SECONDS` | 2 | `app/scalp_collector.py:697` |
+| `app.scalp_collector.persist_scalp_signals` | `SCALP_SIGNAL_INTERVAL_SECONDS` | 10 | `app/scalp_collector.py:1443` |
 
 ## Detalle · quien escribe cada una
 
 ### daily_session_agg
 
-`sql/schema.sql:1039`, 37 columnas.
+`sql/schema.sql:1123`, 14 columnas.
 
 La escriben:
 
@@ -257,7 +203,7 @@ La escriben:
 
 ### daily_verdict_outcome
 
-`sql/schema.sql:2307`, 10 columnas.
+`sql/schema.sql:2378`, 10 columnas.
 
 La escriben:
 
@@ -271,7 +217,7 @@ La escriben:
 
 ### daily_verdict_snapshot
 
-`sql/schema.sql:1106`, 26 columnas.
+`sql/schema.sql:1190`, 26 columnas.
 
 La escriben:
 
@@ -285,22 +231,22 @@ La escriben:
 
 ### data_gap
 
-`sql/schema.sql:1419`, 22 columnas.
+`sql/schema.sql:1496`, 22 columnas.
 
 La escriben:
 
-- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1104`
-- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1255`
-- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1274`
-- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1323`
-- `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:332`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:594`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:673`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:697`
-- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:774`
-- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:774`
-- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:872`
-- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:872`
+- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1109`
+- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1260`
+- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1279`
+- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1334`
+- `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:337`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:599`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:678`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:702`
+- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:779`
+- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:779`
+- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:877`
+- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:877`
 - `app.libro.declara_hueco` — **UPDATE** en `app/libro.py:792`
 - `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:508`
 
@@ -330,7 +276,7 @@ La escriben:
 
 ### entrada_latido
 
-`sql/schema.sql:2719`, 8 columnas.
+`sql/schema.sql:2772`, 8 columnas.
 
 La escriben:
 
@@ -343,7 +289,7 @@ La escriben:
 
 ### entrada_registro
 
-`sql/schema.sql:2682`, 26 columnas.
+`sql/schema.sql:2735`, 26 columnas.
 
 La escriben:
 
@@ -356,7 +302,7 @@ La escriben:
 
 ### entrada_reglamento
 
-`sql/schema.sql:2672`, 6 columnas.
+`sql/schema.sql:2725`, 6 columnas.
 
 La escriben:
 
@@ -369,7 +315,7 @@ La escriben:
 
 ### entrada_resultado
 
-`sql/schema.sql:2860`, 12 columnas.
+`sql/schema.sql:2904`, 12 columnas.
 
 La escriben:
 
@@ -384,7 +330,7 @@ Rutas que ESCRIBEN en `entrada_resultado`: `/api/entradas`, `/api/mesa/entradas`
 
 ### external_macro_observation
 
-`sql/schema.sql:1241`, 5 columnas.
+`sql/schema.sql:1320`, 5 columnas.
 
 La escriben:
 
@@ -399,7 +345,7 @@ La escriben:
 
 ### funding_rate
 
-`sql/schema.sql:146`, 7 columnas.
+`sql/schema.sql:247`, 7 columnas.
 
 La escriben:
 
@@ -416,12 +362,12 @@ La escriben:
 
 ### futures_trades_agg
 
-`sql/schema.sql:273`, 11 columnas.
+`sql/schema.sql:374`, 9 columnas.
 
 La escriben:
 
-- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1585`
-- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:831`
+- `app.scalp_collector.cleanup_expired_rows` — **DELETE** en `app/scalp_collector.py:1629`
+- `app.scalp_collector._write_combined_minute` — **INSERT** en `app/scalp_collector.py:875`
 
 **Si cambia el contenido o el esquema de `futures_trades_agg`, estas 7 rutas lo notan:**
 
@@ -435,11 +381,11 @@ La escriben:
 
 ### futures_trades_realtime
 
-`sql/schema.sql:256`, 11 columnas.
+`sql/schema.sql:357`, 10 columnas.
 
 La escriben:
 
-- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:802`
+- `app.scalp_collector._write_combined_realtime` — **INSERT** en `app/scalp_collector.py:846`
 
 **Si cambia el contenido o el esquema de `futures_trades_realtime`, estas 17 rutas lo notan:**
 
@@ -463,7 +409,7 @@ La escriben:
 
 ### liquidations
 
-`sql/schema.sql:174`, 5 columnas.
+`sql/schema.sql:275`, 5 columnas.
 
 La escriben:
 
@@ -480,7 +426,7 @@ La escriben:
 
 ### liquidations_realtime
 
-`sql/schema.sql:339`, 9 columnas.
+`sql/schema.sql:440`, 9 columnas.
 
 La escriben:
 
@@ -506,7 +452,7 @@ La escriben:
 
 ### long_short_ratio
 
-`sql/schema.sql:187`, 6 columnas.
+`sql/schema.sql:288`, 6 columnas.
 
 La escriben:
 
@@ -521,7 +467,7 @@ La escriben:
 
 ### macro_event
 
-`sql/schema.sql:1252`, 6 columnas.
+`sql/schema.sql:1331`, 6 columnas.
 
 La escriben:
 
@@ -536,7 +482,7 @@ La escriben:
 
 ### market_feed_health
 
-`sql/schema.sql:1325`, 7 columnas.
+`sql/schema.sql:1402`, 7 columnas.
 
 La escriben:
 
@@ -560,11 +506,11 @@ La escriben:
 
 ### metric_baseline
 
-`sql/schema.sql:1272`, 14 columnas.
+`sql/schema.sql:1351`, 14 columnas.
 
 La escriben:
 
-- `app.daily_agg._store_baseline` — **INSERT** en `app/daily_agg.py:798`
+- `app.daily_agg._store_baseline` — **INSERT** en `app/daily_agg.py:824`
 
 **Si cambia el contenido o el esquema de `metric_baseline`, estas 15 rutas lo notan:**
 
@@ -586,7 +532,7 @@ La escriben:
 
 ### metrics_snapshot
 
-`sql/schema.sql:952`, 35 columnas.
+`sql/schema.sql:1036`, 35 columnas.
 
 La escriben:
 
@@ -607,7 +553,7 @@ La escriben:
 
 ### ohlcv
 
-`sql/schema.sql:54`, 13 columnas.
+`sql/schema.sql:156`, 13 columnas.
 
 La escriben:
 
@@ -661,7 +607,7 @@ La escriben:
 
 ### oi_bybit
 
-`sql/schema.sql:97`, 7 columnas.
+`sql/schema.sql:198`, 7 columnas.
 
 La escriben:
 
@@ -675,7 +621,7 @@ La escriben:
 
 ### open_interest
 
-`sql/schema.sql:83`, 7 columnas.
+`sql/schema.sql:184`, 7 columnas.
 
 La escriben:
 
@@ -706,11 +652,11 @@ La escriben:
 
 ### orderbook_depth
 
-`sql/schema.sql:329`, 6 columnas.
+`sql/schema.sql:430`, 6 columnas.
 
 La escriben:
 
-- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:906`
+- `app.scalp_collector._write_ladders` — **INSERT** en `app/scalp_collector.py:950`
 
 **Si cambia el contenido o el esquema de `orderbook_depth`, estas 1 rutas lo notan:**
 
@@ -718,12 +664,12 @@ La escriben:
 
 ### orderbook_snapshot
 
-`sql/schema.sql:287`, 19 columnas.
+`sql/schema.sql:388`, 18 columnas.
 
 La escriben:
 
-- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:874`
-- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:930`
+- `app.scalp_collector.flush_books` — **INSERT** en `app/scalp_collector.py:918`
+- `app.scalp_collector._write_combined_books` — **INSERT** en `app/scalp_collector.py:974`
 
 **Si cambia el contenido o el esquema de `orderbook_snapshot`, estas 15 rutas lo notan:**
 
@@ -745,7 +691,7 @@ La escriben:
 
 ### orderflow_paso
 
-`sql/schema.sql:2945`, 2 columnas.
+`sql/schema.sql:2986`, 2 columnas.
 
 **PENDIENTE · ninguna funcion de `app/` la escribe con SQL literal.** O la llena
 algo fuera del paquete analizado, o el SQL se arma en ejecucion.
@@ -756,7 +702,7 @@ algo fuera del paquete analizado, o el SQL se arma en ejecucion.
 
 ### pipeline_heartbeat
 
-`sql/schema.sql:1291`, 4 columnas.
+`sql/schema.sql:1370`, 4 columnas.
 
 La escriben:
 
@@ -764,22 +710,28 @@ La escriben:
 - `app.db.heartbeat_component` — **INSERT** en `app/db.py:472`
 - `app.db.heartbeat_shard` — **INSERT** en `app/db.py:542`
 
-**Si cambia el contenido o el esquema de `pipeline_heartbeat`, estas 8 rutas lo notan:**
+**Si cambia el contenido o el esquema de `pipeline_heartbeat`, estas 14 rutas lo notan:**
 
 - [`/api/ai/context`](rutas/api-ai-context.md)
 - [`/api/ai/context/bundle`](rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](rutas/api-cvd.md)
+- [`/api/cvd/spot`](rutas/api-cvd-spot.md)
 - [`/api/data-confidence`](rutas/api-data-confidence.md)
 - [`/api/desk/state`](rutas/api-desk-state.md)
 - [`/api/healthz`](rutas/api-healthz.md)
+- [`/api/liquidations`](rutas/api-liquidations.md)
 - [`/api/mesa/decide`](rutas/api-mesa-decide.md)
+- [`/api/ohlcv`](rutas/api-ohlcv.md)
+- [`/api/oi`](rutas/api-oi.md)
 - [`/api/quality/feeds`](rutas/api-quality-feeds.md)
+- [`/api/whale/delta`](rutas/api-whale-delta.md)
 - [`/metrics`](rutas/metrics.md)
 
 Rutas que ESCRIBEN en `pipeline_heartbeat`: `/api/healthz`
 
 ### predicted_funding_rate
 
-`sql/schema.sql:160`, 7 columnas.
+`sql/schema.sql:261`, 7 columnas.
 
 La escriben:
 
@@ -793,11 +745,11 @@ La escriben:
 
 ### scalp_signal_snapshot
 
-`sql/schema.sql:388`, 16 columnas.
+`sql/schema.sql:487`, 16 columnas.
 
 La escriben:
 
-- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1453`
+- `app.scalp_collector.persist_scalp_signals` — **INSERT** en `app/scalp_collector.py:1497`
 
 **Si cambia el contenido o el esquema de `scalp_signal_snapshot`, estas 5 rutas lo notan:**
 
@@ -809,7 +761,7 @@ La escriben:
 
 ### signal_execution_snapshot
 
-`sql/schema.sql:800`, 21 columnas.
+`sql/schema.sql:892`, 21 columnas.
 
 La escriben:
 
@@ -821,7 +773,7 @@ La escriben:
 
 ### signal_observation
 
-`sql/schema.sql:422`, 34 columnas.
+`sql/schema.sql:521`, 34 columnas.
 
 La escriben:
 
@@ -839,7 +791,7 @@ La escriben:
 
 ### signal_outcome
 
-`sql/schema.sql:572`, 27 columnas.
+`sql/schema.sql:668`, 27 columnas.
 
 La escriben:
 
@@ -856,11 +808,11 @@ La escriben:
 
 ### signal_outcome_final_visibility
 
-`sql/schema.sql:2494`, 8 columnas.
+`sql/schema.sql:2553`, 8 columnas.
 
 La escriben:
 
-- `app.signal_visibility._certify_final_outcomes_once` — **INSERT** en `app/signal_visibility.py:308`
+- `app.signal_visibility._certify_final_outcomes_once` — **INSERT** en `app/signal_visibility.py:318`
 
 **Si cambia el contenido o el esquema de `signal_outcome_final_visibility`, estas 1 rutas lo notan:**
 
@@ -868,7 +820,7 @@ La escriben:
 
 ### signal_replay_frame
 
-`sql/schema.sql:758`, 7 columnas.
+`sql/schema.sql:852`, 7 columnas.
 
 La escriben:
 
@@ -880,7 +832,7 @@ La escriben:
 
 ### spot_trades_agg
 
-`sql/schema.sql:198`, 15 columnas.
+`sql/schema.sql:299`, 13 columnas.
 
 La escriben:
 
@@ -905,7 +857,7 @@ La escriben:
 
 ### spot_trades_realtime
 
-`sql/schema.sql:228`, 11 columnas.
+`sql/schema.sql:329`, 10 columnas.
 
 La escriben:
 
@@ -952,11 +904,11 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
 - `orderflow_celda` — la escriben 2: `app/orderflow.py:562`, `app/orderflow.py:565`
-- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:860`
+- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:902`
 - `orderflow_cinta` — la escriben 1: `app/orderflow.py:603`
-- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:808`
-- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:805`
-- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:812`
+- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:868`
+- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:865`
+- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:873`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`
