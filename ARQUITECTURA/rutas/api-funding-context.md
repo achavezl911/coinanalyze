@@ -54,11 +54,11 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.align_down` — `app/data_gaps.py:242`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.align_down` — `app/data_gaps.py:247`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
 
 </details>

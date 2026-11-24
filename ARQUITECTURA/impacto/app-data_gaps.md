@@ -8,34 +8,34 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 484 | 0 | **21** | 51 ↑ | **21** |
-| [`blocking_requirement_keys`](#blocking-requirement-keys) | 118 | 19 | **0** | 15 ↑ | **19** |
-| [`_aware_utc`](#-aware-utc) | 67 | 15 | **0** | 21 ↑ | **15** |
-| [`_validated_window`](#-validated-window) | 73 | 15 | **0** | 21 ↑ | **15** |
-| [`expected_buckets`](#expected-buckets) | 255 | 12 | **0** | 21 ↑ | **12** |
-| [`from_record`](#from-record) | 1152 | 0 | **0** | 21 ↑ | **0** |
-| [`_cubierto_por_otro_detector`](#-cubierto-por-otro-detector) | 449 | 0 | **0** | 21 ↑ | **0** |
-| [`_load_gap`](#-load-gap) | 1232 | 0 | **0** | 21 ↑ | **0** |
-| [`_mark_unrecoverable`](#-mark-unrecoverable) | 1242 | 0 | **21** | 21 | **21** |
-| [`_record_recovery_failure`](#-record-recovery-failure) | 1267 | 0 | **21** | 21 | **21** |
-| [`archive_beyond_source_horizon`](#archive-beyond-source-horizon) | 732 | 0 | **21** | 21 | **21** |
-| [`archive_source_response_absence`](#archive-source-response-absence) | 802 | 0 | **21** | 21 | **21** |
-| [`close_partitioned_gap`](#close-partitioned-gap) | 1055 | 0 | **21** | 21 | **21** |
-| [`missing_cadence_windows`](#missing-cadence-windows) | 388 | 0 | **0** | 21 ↑ | **0** |
-| [`partition_gap_by_source_coverage`](#partition-gap-by-source-coverage) | 977 | 0 | **0** | 21 ↑ | **0** |
-| [`partition_runs`](#partition-runs) | 932 | 0 | **0** | 21 ↑ | **0** |
-| [`record_data_gap`](#record-data-gap) | 297 | 0 | **21** | 21 | **21** |
-| [`record_event_stream_loss`](#record-event-stream-loss) | 358 | 0 | **0** | 21 ↑ | **0** |
-| [`recover_gap`](#recover-gap) | 1284 | 0 | **21** | 21 | **21** |
-| [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1345 | 0 | **0** | 21 ↑ | **0** |
-| [`validate_recovery`](#validate-recovery) | 1188 | 0 | **0** | 21 ↑ | **0** |
-| [`coverage_entry`](#coverage-entry) | 263 | 14 | **0** | 0 | **14** |
-| [`align_down`](#align-down) | 242 | 10 | **0** | 0 | **10** |
-| [`declared_gap_windows`](#declared-gap-windows) | 207 | 7 | **0** | 0 | **7** |
+| [`reconcile_cadence_coverage`](#reconcile-cadence-coverage) | 489 | 0 | **21** | 51 ↑ | **21** |
+| [`blocking_requirement_keys`](#blocking-requirement-keys) | 123 | 19 | **0** | 15 ↑ | **19** |
+| [`_aware_utc`](#-aware-utc) | 72 | 15 | **0** | 21 ↑ | **15** |
+| [`_validated_window`](#-validated-window) | 78 | 15 | **0** | 21 ↑ | **15** |
+| [`expected_buckets`](#expected-buckets) | 260 | 12 | **0** | 21 ↑ | **12** |
+| [`from_record`](#from-record) | 1157 | 0 | **0** | 21 ↑ | **0** |
+| [`_cubierto_por_otro_detector`](#-cubierto-por-otro-detector) | 454 | 0 | **0** | 21 ↑ | **0** |
+| [`_load_gap`](#-load-gap) | 1237 | 0 | **0** | 21 ↑ | **0** |
+| [`_mark_unrecoverable`](#-mark-unrecoverable) | 1247 | 0 | **21** | 21 | **21** |
+| [`_record_recovery_failure`](#-record-recovery-failure) | 1272 | 0 | **21** | 21 | **21** |
+| [`archive_beyond_source_horizon`](#archive-beyond-source-horizon) | 737 | 0 | **21** | 21 | **21** |
+| [`archive_source_response_absence`](#archive-source-response-absence) | 807 | 0 | **21** | 21 | **21** |
+| [`close_partitioned_gap`](#close-partitioned-gap) | 1060 | 0 | **21** | 21 | **21** |
+| [`missing_cadence_windows`](#missing-cadence-windows) | 393 | 0 | **0** | 21 ↑ | **0** |
+| [`partition_gap_by_source_coverage`](#partition-gap-by-source-coverage) | 982 | 0 | **0** | 21 ↑ | **0** |
+| [`partition_runs`](#partition-runs) | 937 | 0 | **0** | 21 ↑ | **0** |
+| [`record_data_gap`](#record-data-gap) | 302 | 0 | **21** | 21 | **21** |
+| [`record_event_stream_loss`](#record-event-stream-loss) | 363 | 0 | **0** | 21 ↑ | **0** |
+| [`recover_gap`](#recover-gap) | 1289 | 0 | **21** | 21 | **21** |
+| [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1356 | 0 | **0** | 21 ↑ | **0** |
+| [`validate_recovery`](#validate-recovery) | 1193 | 0 | **0** | 21 ↑ | **0** |
+| [`coverage_entry`](#coverage-entry) | 268 | 14 | **0** | 0 | **14** |
+| [`align_down`](#align-down) | 247 | 10 | **0** | 0 | **10** |
+| [`declared_gap_windows`](#declared-gap-windows) | 212 | 7 | **0** | 0 | **7** |
 
 ## reconcile_cadence_coverage
 
-`app/data_gaps.py:484` · clave completa `app.data_gaps.reconcile_cadence_coverage`
+`app/data_gaps.py:489` · clave completa `app.data_gaps.reconcile_cadence_coverage`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 51** (mas ancha)
 
@@ -202,7 +202,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## blocking_requirement_keys
 
-`app/data_gaps.py:118` · clave completa `app.data_gaps.blocking_requirement_keys`
+`app/data_gaps.py:123` · clave completa `app.data_gaps.blocking_requirement_keys`
 
 **Radio exacto: 19 rutas** de 94 · **cota superior: 32** (mas ancha)
 
@@ -287,7 +287,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _aware_utc
 
-`app/data_gaps.py:67` · clave completa `app.data_gaps._aware_utc`
+`app/data_gaps.py:72` · clave completa `app.data_gaps._aware_utc`
 
 **Radio exacto: 15 rutas** de 94 · **cota superior: 27** (mas ancha)
 
@@ -370,7 +370,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _validated_window
 
-`app/data_gaps.py:73` · clave completa `app.data_gaps._validated_window`
+`app/data_gaps.py:78` · clave completa `app.data_gaps._validated_window`
 
 **Radio exacto: 15 rutas** de 94 · **cota superior: 27** (mas ancha)
 
@@ -453,7 +453,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## expected_buckets
 
-`app/data_gaps.py:255` · clave completa `app.data_gaps.expected_buckets`
+`app/data_gaps.py:260` · clave completa `app.data_gaps.expected_buckets`
 
 **Radio exacto: 12 rutas** de 94 · **cota superior: 25** (mas ancha)
 
@@ -534,7 +534,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## from_record
 
-`app/data_gaps.py:1152` · clave completa `app.data_gaps.DataGap.from_record`
+`app/data_gaps.py:1157` · clave completa `app.data_gaps.DataGap.from_record`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -612,7 +612,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _cubierto_por_otro_detector
 
-`app/data_gaps.py:449` · clave completa `app.data_gaps._cubierto_por_otro_detector`
+`app/data_gaps.py:454` · clave completa `app.data_gaps._cubierto_por_otro_detector`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -690,7 +690,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _load_gap
 
-`app/data_gaps.py:1232` · clave completa `app.data_gaps._load_gap`
+`app/data_gaps.py:1237` · clave completa `app.data_gaps._load_gap`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -768,7 +768,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _mark_unrecoverable
 
-`app/data_gaps.py:1242` · clave completa `app.data_gaps._mark_unrecoverable`
+`app/data_gaps.py:1247` · clave completa `app.data_gaps._mark_unrecoverable`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -865,7 +865,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _record_recovery_failure
 
-`app/data_gaps.py:1267` · clave completa `app.data_gaps._record_recovery_failure`
+`app/data_gaps.py:1272` · clave completa `app.data_gaps._record_recovery_failure`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -962,7 +962,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## archive_beyond_source_horizon
 
-`app/data_gaps.py:732` · clave completa `app.data_gaps.archive_beyond_source_horizon`
+`app/data_gaps.py:737` · clave completa `app.data_gaps.archive_beyond_source_horizon`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -1059,7 +1059,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## archive_source_response_absence
 
-`app/data_gaps.py:802` · clave completa `app.data_gaps.archive_source_response_absence`
+`app/data_gaps.py:807` · clave completa `app.data_gaps.archive_source_response_absence`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -1156,7 +1156,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## close_partitioned_gap
 
-`app/data_gaps.py:1055` · clave completa `app.data_gaps.close_partitioned_gap`
+`app/data_gaps.py:1060` · clave completa `app.data_gaps.close_partitioned_gap`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -1253,7 +1253,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## missing_cadence_windows
 
-`app/data_gaps.py:388` · clave completa `app.data_gaps.missing_cadence_windows`
+`app/data_gaps.py:393` · clave completa `app.data_gaps.missing_cadence_windows`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -1331,7 +1331,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## partition_gap_by_source_coverage
 
-`app/data_gaps.py:977` · clave completa `app.data_gaps.partition_gap_by_source_coverage`
+`app/data_gaps.py:982` · clave completa `app.data_gaps.partition_gap_by_source_coverage`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -1409,7 +1409,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## partition_runs
 
-`app/data_gaps.py:932` · clave completa `app.data_gaps.partition_runs`
+`app/data_gaps.py:937` · clave completa `app.data_gaps.partition_runs`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -1487,7 +1487,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## record_data_gap
 
-`app/data_gaps.py:297` · clave completa `app.data_gaps.record_data_gap`
+`app/data_gaps.py:302` · clave completa `app.data_gaps.record_data_gap`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -1584,7 +1584,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## record_event_stream_loss
 
-`app/data_gaps.py:358` · clave completa `app.data_gaps.record_event_stream_loss`
+`app/data_gaps.py:363` · clave completa `app.data_gaps.record_event_stream_loss`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -1662,7 +1662,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## recover_gap
 
-`app/data_gaps.py:1284` · clave completa `app.data_gaps.recover_gap`
+`app/data_gaps.py:1289` · clave completa `app.data_gaps.recover_gap`
 
 **Radio exacto: 21 rutas** de 94 · **cota superior: 21** (igual al exacto)
 
@@ -1759,7 +1759,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## recover_unresolved_gaps
 
-`app/data_gaps.py:1345` · clave completa `app.data_gaps.recover_unresolved_gaps`
+`app/data_gaps.py:1356` · clave completa `app.data_gaps.recover_unresolved_gaps`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -1837,7 +1837,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## validate_recovery
 
-`app/data_gaps.py:1188` · clave completa `app.data_gaps.validate_recovery`
+`app/data_gaps.py:1193` · clave completa `app.data_gaps.validate_recovery`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
 
@@ -1915,7 +1915,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## coverage_entry
 
-`app/data_gaps.py:263` · clave completa `app.data_gaps.coverage_entry`
+`app/data_gaps.py:268` · clave completa `app.data_gaps.coverage_entry`
 
 **Radio exacto: 14 rutas** de 94 · **cota superior: 14** (igual al exacto)
 
@@ -1951,7 +1951,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## align_down
 
-`app/data_gaps.py:242` · clave completa `app.data_gaps.align_down`
+`app/data_gaps.py:247` · clave completa `app.data_gaps.align_down`
 
 **Radio exacto: 10 rutas** de 94 · **cota superior: 10** (igual al exacto)
 
@@ -1983,7 +1983,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## declared_gap_windows
 
-`app/data_gaps.py:207` · clave completa `app.data_gaps.declared_gap_windows`
+`app/data_gaps.py:212` · clave completa `app.data_gaps.declared_gap_windows`
 
 **Radio exacto: 7 rutas** de 94 · **cota superior: 7** (igual al exacto)
 

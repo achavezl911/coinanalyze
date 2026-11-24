@@ -18,7 +18,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.config import BYBIT_SYMBOL_MAP
-from app.data_gaps import DataGap, RecoveryValidationError
+from app.data_gaps import DataGap, RecoveryValidationError, validate_recovery
+from app.ingest import BARRIDO_CADENCIA
 from scripts.recover_gaps import (
     PLANES_METRICA,
     CoinalyzeLongShortAdapter,
@@ -187,13 +188,41 @@ def test_un_simbolo_fuera_de_los_configurados_no_se_recupera():
     assert exact_adapter_for(_gap(), adaptadores, frozenset({"ETHUSDT_PERP.A"})) is None
 
 
+def test_toda_serie_del_barrido_de_cadencia_tiene_adaptador():
+    """H-02 (recupera-r2): BARRIDO_CADENCIA declara huecos y recover_gap solo los recupera
+    con un adaptador de la identidad exacta. Con main faltaba ohlcv_5min: --gap-id sobre
+    esa fila la archivaba 'unrecoverable' aunque la fuente la sirve."""
+    adaptadores = construir_adaptadores(ClienteFalso())
+    con_adaptador = {(feed, exch, gran) for feed, exch, _mercado, gran in adaptadores}
+    barrido = {(feed, exch, gran) for _t, feed, exch, gran, _c, _m in BARRIDO_CADENCIA}
+
+    assert sorted(barrido - con_adaptador) == []
+
+
+@pytest.mark.asyncio
+async def test_ohlcv_5min_se_pide_a_5min_y_valida_contra_su_hueco():
+    cliente = ClienteFalso()
+    gap = _gap(feed="ohlcv_5min")
+    adaptador = exact_adapter_for(gap, construir_adaptadores(cliente), frozenset({CANON}))
+
+    assert adaptador is not None and adaptador.granularity == "5min"
+    observaciones = await adaptador.fetch(gap)
+    validate_recovery(gap, adaptador, observaciones)
+    assert cliente.llamadas[0]["endpoint"] == "ohlcv-history"
+    assert cliente.llamadas[0]["interval"] == "5min"
+    assert [o.key for o in observaciones] == [
+        f"{CANON}:5min:{int(INICIO.timestamp())}",
+        f"{CANON}:5min:{int((INICIO + timedelta(minutes=5)).timestamp())}",
+    ]
+
+
 def test_el_registro_no_admite_dos_adaptadores_para_la_misma_identidad():
     """Guarda contra el crecimiento distraido de PLANES_METRICA: dos planes con la misma
     identidad dejarian que el ultimo pisara al primero en silencio."""
     adaptadores = construir_adaptadores(ClienteFalso())
 
-    # +2: el de ohlcv 1min y el de long_short, que tienen escritor propio
-    assert len(adaptadores) == len(PLANES_METRICA) + 2
+    # +3: los de ohlcv 1min y 5min y el de long_short, que tienen escritor propio
+    assert len(adaptadores) == len(PLANES_METRICA) + 3
     identidades = [(p.feed, p.exchange) for p in PLANES_METRICA]
     assert len(identidades) == len(set(identidades))
 
