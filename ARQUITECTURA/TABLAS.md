@@ -889,7 +889,7 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 
 - `bot_crudo` — la escriben 2: `app/bot/servicio.py:964`, `app/bot/servicio.py:972`
 - `bot_estado` — la escriben 2: `app/bot/servicio.py:555`, `app/bot/vigia.py:340`
-- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1062`, `app/bot/servicio.py:1097`, `app/bot/servicio.py:1132`
+- `bot_evaluacion` — la escriben 3: `app/bot/servicio.py:1080`, `app/bot/servicio.py:1119`, `app/bot/servicio.py:1154`
 - `bot_evento` — la escriben 2: `app/bot/servicio.py:437`, `app/bot/vigia.py:333`
 - `bot_llamada` — la escriben 1: `app/bot/servicio.py:610`
 - `bot_operacion` — la escriben 1: `app/bot/servicio.py:999`

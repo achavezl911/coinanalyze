@@ -14508,6 +14508,7 @@
       "app.entradas.reglamento.cargar": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.backtest.main",
           "app.entradas.backtest.main._corre",
           "app.entradas.reglamento.cargar_valido",
@@ -14545,6 +14546,7 @@
         "llamadores_hasta_k": [
           "app.api.entradas",
           "app.api.mesa_entradas",
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.backtest.main",
           "app.entradas.backtest.main._corre",
           "app.entradas.ruta.construir",
@@ -14636,6 +14638,7 @@
       "app.entradas.reglamento.contenido_bloque": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.backtest.correr",
           "app.entradas.motor.grupos_por_comun",
           "app.entradas.motor.incompatibilidades",
@@ -14927,6 +14930,7 @@
       "app.entradas.reglamento.validar": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.backtest.main",
           "app.entradas.backtest.main._corre",
           "app.entradas.reglamento.cargar_valido",
@@ -14962,6 +14966,7 @@
       "app.entradas.reglamento.valores": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.backtest.correr",
           "app.entradas.backtest.main",
           "app.entradas.backtest.main._corre",
@@ -15073,6 +15078,7 @@
       "app.entradas.reglamento.version_activa": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.ruta._reglamento",
           "app.entradas.ruta.construir",
           "app.entradas.vista._muestra",
@@ -15096,6 +15102,7 @@
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
           "app.api.entradas",
+          "app.bot.auditor._carga_umbrales",
           "app.entradas.backtest.correr",
           "app.entradas.backtest.main",
           "app.entradas.backtest.main._corre",
@@ -51314,19 +51321,19 @@
         {
           "funcion": "app.bot.servicio.Bot.evalua",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1062",
+          "sitio": "app/bot/servicio.py:1080",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.bot.servicio.Bot.cierre",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1097",
+          "sitio": "app/bot/servicio.py:1119",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.bot.servicio.Bot.correccion",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1132",
+          "sitio": "app/bot/servicio.py:1154",
           "verbo": "INSERT"
         }
       ],
@@ -51334,22 +51341,22 @@
         {
           "funcion": "app.bot.servicio.Bot.cierre",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1094"
+          "sitio": "app/bot/servicio.py:1116"
         },
         {
           "funcion": "app.bot.servicio.Bot.correccion",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1125"
+          "sitio": "app/bot/servicio.py:1147"
         },
         {
           "funcion": "app.bot.servicio.Bot.correccion",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1127"
+          "sitio": "app/bot/servicio.py:1149"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1269"
+          "sitio": "app/bot/servicio.py:1291"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
@@ -51382,22 +51389,22 @@
         {
           "funcion": "app.bot.servicio.Bot.salud",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1194"
+          "sitio": "app/bot/servicio.py:1216"
         },
         {
           "funcion": "app.bot.servicio.Bot.alertas_24h",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1202"
+          "sitio": "app/bot/servicio.py:1224"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1261"
+          "sitio": "app/bot/servicio.py:1283"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1276"
+          "sitio": "app/bot/servicio.py:1298"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
@@ -51464,17 +51471,17 @@
         {
           "funcion": "app.bot.servicio.Bot.salud",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1192"
+          "sitio": "app/bot/servicio.py:1214"
         },
         {
           "funcion": "app.bot.servicio.Bot.gasto",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1251"
+          "sitio": "app/bot/servicio.py:1273"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1274"
+          "sitio": "app/bot/servicio.py:1296"
         },
         {
           "funcion": "app.bot.servicio.Bot.gastado_hoy",
@@ -51496,7 +51503,7 @@
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1272"
+          "sitio": "app/bot/servicio.py:1294"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
