@@ -28,9 +28,9 @@ Tipo declarado en la firma: `list[dict[str, Any]]`.
 
 LEE:
 
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
