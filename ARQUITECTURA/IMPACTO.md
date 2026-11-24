@@ -358,18 +358,18 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.entradas.reglamento.validar`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:357` | 2 | **0** | 2 ↑ | **2** |
 | [`app.entradas.reglamento.version`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:405` | 2 | **0** | 0 | **2** |
 | [`app.entradas.reglamento.version_activa`](impacto/app-entradas-reglamento.md) | `app/entradas/reglamento.py:400` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor._cero`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:488` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor._cobros`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:473` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor._minuto`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:182` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor._pata`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:212` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor._t`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:170` | 2 | **0** | 2 ↑ | **2** |
-| [`app.entradas.resolutor._t23`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:466` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor.cobros_funding`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:202` | 2 | **0** | 2 ↑ | **2** |
-| [`app.entradas.resolutor.entrada_t`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:191` | 2 | **0** | 2 ↑ | **2** |
-| [`app.entradas.resolutor.foto_de`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:186` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor.iso`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:178` | 2 | **0** | 0 | **2** |
-| [`app.entradas.resolutor.resolver`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:223` | 2 | **0** | 2 ↑ | **2** |
-| [`app.entradas.resolutor.ventana`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:196` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor._cero`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:503` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._cobros`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:488` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._minuto`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:187` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._pata`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:217` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor._t`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:175` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor._t23`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:481` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor.cobros_funding`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:207` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor.entrada_t`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:196` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor.foto_de`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:191` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor.iso`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:183` | 2 | **0** | 0 | **2** |
+| [`app.entradas.resolutor.resolver`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:228` | 2 | **0** | 2 ↑ | **2** |
+| [`app.entradas.resolutor.ventana`](impacto/app-entradas-resolutor.md) | `app/entradas/resolutor.py:201` | 2 | **0** | 2 ↑ | **2** |
 | [`app.entradas.resultados.barrido`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:138` | 2 | **0** | 0 | **2** |
 | [`app.entradas.resultados.de_filas`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:119` | 2 | **0** | 2 ↑ | **2** |
 | [`app.entradas.resultados.guardar`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:104` | 2 | **2** | 2 | **2** |

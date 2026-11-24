@@ -1698,63 +1698,63 @@
     },
     "app.entradas.resolutor._cero": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 488,
-      "sitio": "`app/entradas/resolutor.py:488`"
+      "linea": 503,
+      "sitio": "`app/entradas/resolutor.py:503`"
     },
     "app.entradas.resolutor._cobros": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 473,
-      "sitio": "`app/entradas/resolutor.py:473`"
+      "linea": 488,
+      "sitio": "`app/entradas/resolutor.py:488`"
     },
     "app.entradas.resolutor._minuto": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 182,
-      "sitio": "`app/entradas/resolutor.py:182`"
+      "linea": 187,
+      "sitio": "`app/entradas/resolutor.py:187`"
     },
     "app.entradas.resolutor._pata": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 212,
-      "sitio": "`app/entradas/resolutor.py:212`"
+      "linea": 217,
+      "sitio": "`app/entradas/resolutor.py:217`"
     },
     "app.entradas.resolutor._t": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 170,
-      "sitio": "`app/entradas/resolutor.py:170`"
+      "linea": 175,
+      "sitio": "`app/entradas/resolutor.py:175`"
     },
     "app.entradas.resolutor._t23": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 466,
-      "sitio": "`app/entradas/resolutor.py:466`"
+      "linea": 481,
+      "sitio": "`app/entradas/resolutor.py:481`"
     },
     "app.entradas.resolutor.cobros_funding": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 202,
-      "sitio": "`app/entradas/resolutor.py:202`"
+      "linea": 207,
+      "sitio": "`app/entradas/resolutor.py:207`"
     },
     "app.entradas.resolutor.entrada_t": {
+      "fichero": "app/entradas/resolutor.py",
+      "linea": 196,
+      "sitio": "`app/entradas/resolutor.py:196`"
+    },
+    "app.entradas.resolutor.foto_de": {
       "fichero": "app/entradas/resolutor.py",
       "linea": 191,
       "sitio": "`app/entradas/resolutor.py:191`"
     },
-    "app.entradas.resolutor.foto_de": {
-      "fichero": "app/entradas/resolutor.py",
-      "linea": 186,
-      "sitio": "`app/entradas/resolutor.py:186`"
-    },
     "app.entradas.resolutor.iso": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 178,
-      "sitio": "`app/entradas/resolutor.py:178`"
+      "linea": 183,
+      "sitio": "`app/entradas/resolutor.py:183`"
     },
     "app.entradas.resolutor.resolver": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 223,
-      "sitio": "`app/entradas/resolutor.py:223`"
+      "linea": 228,
+      "sitio": "`app/entradas/resolutor.py:228`"
     },
     "app.entradas.resolutor.ventana": {
       "fichero": "app/entradas/resolutor.py",
-      "linea": 196,
-      "sitio": "`app/entradas/resolutor.py:196`"
+      "linea": 201,
+      "sitio": "`app/entradas/resolutor.py:201`"
     },
     "app.entradas.resultados.barrido": {
       "fichero": "app/entradas/resultados.py",
@@ -15193,7 +15193,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:488",
+        "sitio": "app/entradas/resolutor.py:503",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15212,7 +15212,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:473",
+        "sitio": "app/entradas/resolutor.py:488",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15232,7 +15232,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:182",
+        "sitio": "app/entradas/resolutor.py:187",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15251,7 +15251,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:212",
+        "sitio": "app/entradas/resolutor.py:217",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15282,7 +15282,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:170",
+        "sitio": "app/entradas/resolutor.py:175",
         "solo_por_tabla": [],
         "tablas_escritas": {
           "entrada_resultado": [
@@ -15305,7 +15305,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:466",
+        "sitio": "app/entradas/resolutor.py:481",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15329,7 +15329,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:202",
+        "sitio": "app/entradas/resolutor.py:207",
         "solo_por_tabla": [],
         "tablas_escritas": {
           "entrada_resultado": [
@@ -15356,7 +15356,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:191",
+        "sitio": "app/entradas/resolutor.py:196",
         "solo_por_tabla": [],
         "tablas_escritas": {
           "entrada_resultado": [
@@ -15380,7 +15380,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:186",
+        "sitio": "app/entradas/resolutor.py:191",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15409,7 +15409,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:178",
+        "sitio": "app/entradas/resolutor.py:183",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -15431,7 +15431,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:223",
+        "sitio": "app/entradas/resolutor.py:228",
         "solo_por_tabla": [],
         "tablas_escritas": {
           "entrada_resultado": [
@@ -15458,7 +15458,7 @@
           "/api/mesa/entradas"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/entradas/resolutor.py:196",
+        "sitio": "app/entradas/resolutor.py:201",
         "solo_por_tabla": [],
         "tablas_escritas": {
           "entrada_resultado": [
