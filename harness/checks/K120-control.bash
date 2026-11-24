@@ -3,7 +3,9 @@
 #
 # EL SUJETO BUENO ES DE VERDAD: las paginas del ARBOL servidas sobre dos bases desechables k120_ctl_{f,l}_<pid>:
 #   /flujo  K112-banco.py carga + K120-banco.py siembra flujo <K112_HASTA>, servido por K112-banco.py sirve (puerto 8120)
-#   /libro  K111-banco.py carga + K120-banco.py siembra libro 2026-10-18T04:00:00Z, servido por K120-banco.py libro (8121)
+#   /libro  K111-banco.py carga + K120-banco.py acerca (el fixture de 2026-10-18T04:00:00Z, corrido por dias enteros a
+#           1-2 dias de ahora) + siembra libro en ese hasta, servido por K120-banco.py libro (8121). Con la fecha fija, la
+#           ventana de 720 h lo dejo atras hacia el 11-17 y el caso base salia ROJO con cualquier codigo.
 # Cada plantado cambia UNA linea de una copia de static/ (--sobre) o el fichero --plantado, y K120 tiene que salir ROJO por
 # su brazo con la ultima linea de su condena; la base VERDE antes y despues; el arbol intacto. El brazo de 140 (D) no entra
 # (K120_SIN_PROD=1): es de produccion y aqui el sujeto es el banco. Corre solo (flock); salidas en $K120_CTL_GUARDA.
@@ -14,7 +16,7 @@ REPO=$(cd -- "$AQUI/../.." && pwd -P)
 CHK="$AQUI/K120-las-liquidaciones-en-el-precio.sh"
 PY="$REPO/.venv/bin/python"
 H=/var/run/postgresql
-HL=2026-10-18T04:00:00Z
+HL_FIXTURE=2026-10-18T04:00:00Z
 for f in "$CHK" "$AQUI/K120-liq.py" "$AQUI/K120-banco.py" "$AQUI/K112-banco.py" "$AQUI/K111-banco.py" "$AQUI/K114-raton-libro.py" \
          "$AQUI/K113-raton.py" "$AQUI/K111-libro.py" "$AQUI/K102-mesa.py" "$PY"; do
   [ -r "$f" ] || { echo "control: falta $f"; exit 2; }
@@ -70,6 +72,8 @@ createdb -h "$H" "$DBL" || exit 2
 HF=$(grep -o 'K112_HASTA=[^ ]*' "$T/carga_f" | head -1 | cut -d= -f2)
 [ -n "$HF" ] || { echo "control: la carga de flujo no dio K112_HASTA"; exit 2; }
 "$PY" "$AQUI/K111-banco.py" carga "$(dsn "$DBL")" > "$T/carga_l" 2>&1 || { echo "control: carga libro: $(tail -1 "$T/carga_l")"; exit 2; }
+HL=$("$PY" "$AQUI/K120-banco.py" acerca "$(dsn "$DBL")" "$HL_FIXTURE") || { echo "control: acerca libro: $HL"; exit 2; }
+echo "   /libro: el fixture de $HL_FIXTURE corrido a $HL"
 "$PY" "$AQUI/K120-banco.py" siembra "$(dsn "$DBF")" "$HF" flujo || exit 2
 "$PY" "$AQUI/K120-banco.py" siembra "$(dsn "$DBL")" "$HL" libro || exit 2
 mkdir -p "$T/sobre/flujo" "$T/sobre/libro"

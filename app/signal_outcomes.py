@@ -295,6 +295,11 @@ async def materialize_due_signal_outcomes(
 
     Missing bars are never interpolated/zero-filled. They remain pending for
     seven days so delayed exact ingest/recovery can complete the path.
+
+    The batch is taken in next_attempt_at order (signal_outcome_due_idx), so a
+    deferred outcome goes to the back of the queue: after an outage, thousands
+    of incomplete paths re-qualify every MISSING_DATA_RETRY and, ordered by
+    due_at, they starved every later outcome (V-01).
     """
 
     if limit <= 0 or limit > 10_000:
@@ -317,7 +322,7 @@ async def materialize_due_signal_outcomes(
         WHERE out.status='pending'
           AND out.due_at <= $1
           AND out.next_attempt_at <= $1
-        ORDER BY out.due_at,out.outcome_id
+        ORDER BY out.next_attempt_at,out.due_at,out.outcome_id
         FOR UPDATE OF out SKIP LOCKED
         LIMIT $2
         """,
