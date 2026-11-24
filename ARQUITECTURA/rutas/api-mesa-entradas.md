@@ -40,7 +40,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `data_gap` — `sql/schema.sql:1419`, 22 columnas
+- `data_gap` — `sql/schema.sql:1496`, 22 columnas
   - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
   - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
   - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
@@ -55,17 +55,17 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
-- `entrada_latido` — `sql/schema.sql:2725`, 8 columnas
+- `entrada_latido` — `sql/schema.sql:2772`, 8 columnas
   - la llena `app.entradas.registro.latir` (INSERT) — `app/entradas/registro.py:222`
-- `entrada_registro` — `sql/schema.sql:2688`, 26 columnas
+- `entrada_registro` — `sql/schema.sql:2735`, 26 columnas
   - la llena `app.entradas.registro.insertar` (INSERT) — `app/entradas/registro.py:31`
-- `entrada_reglamento` — `sql/schema.sql:2678`, 6 columnas
+- `entrada_reglamento` — `sql/schema.sql:2725`, 6 columnas
   - la llena `app.entradas.registro.registrar_reglamento` (INSERT) — `app/entradas/registro.py:85`
-- `entrada_resultado` — `sql/schema.sql:2866`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2904`, 12 columnas
   - la llena `app.entradas.resultados.guardar` (INSERT) — `app/entradas/resultados.py:62`
-- `funding_rate` — `sql/schema.sql:146`, 7 columnas
+- `funding_rate` — `sql/schema.sql:247`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -73,7 +73,7 @@ LEE:
 
 **ESCRIBE** (una ruta de lectura que escribe merece mirarse):
 
-- `entrada_resultado` — `sql/schema.sql:2866`, 12 columnas
+- `entrada_resultado` — `sql/schema.sql:2904`, 12 columnas
 
 ## Funciones que la componen
 
