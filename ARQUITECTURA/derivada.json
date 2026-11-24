@@ -36653,7 +36653,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K106-banco.py:52",
-            "harness/checks/K107-control.bash:70",
+            "harness/checks/K107-control.bash:73",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37",
             "harness/checks/K107-resultado.py:204",
@@ -41111,14 +41111,14 @@
             "harness/checks/K112-banco.py:152",
             "harness/checks/K112-control.bash:176",
             "harness/checks/K112-control.bash:249",
-            "harness/checks/K120-banco.py:171",
-            "harness/checks/K120-banco.py:180",
+            "harness/checks/K120-banco.py:185",
+            "harness/checks/K120-banco.py:194",
             "harness/checks/K120-liq.py:248",
             "harness/checks/K120-liq.py:250",
             "harness/checks/K120-liq.py:441"
           ],
           "menciones": [
-            "harness/checks/K120-banco.py:15",
+            "harness/checks/K120-banco.py:20",
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:7",
             "harness/checks/K120-liq.py:4"
           ]
@@ -47975,7 +47975,7 @@
             "harness/checks/K113-raton.py:1614",
             "harness/checks/K113-raton.py:1661",
             "harness/checks/K113-raton.py:1666",
-            "harness/checks/K120-control.bash:66",
+            "harness/checks/K120-control.bash:68",
             "harness/checks/K120-liq.py:207",
             "harness/checks/K120-liq.py:243",
             "harness/checks/K120-liq.py:391",
@@ -48020,7 +48020,7 @@
             "harness/checks/K113-raton.py:1",
             "harness/checks/K114-el-raton-del-libro.sh:16",
             "harness/checks/K114-raton-libro.py:19",
-            "harness/checks/K120-banco.py:73",
+            "harness/checks/K120-banco.py:78",
             "harness/checks/K120-control.bash:5",
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
             "harness/checks/K120-liq.py:4",
@@ -48137,7 +48137,8 @@
             "harness/checks/K114-raton-libro.py:154",
             "harness/checks/K114-raton-libro.py:768",
             "harness/checks/K114-raton-libro.py:773",
-            "harness/checks/K120-control.bash:66",
+            "harness/checks/K120-control.bash:68",
+            "harness/checks/K120-control.bash:76",
             "harness/checks/K120-liq.py:226",
             "harness/checks/K120-liq.py:494",
             "harness/checks/K123-banco.py:33",
@@ -48162,7 +48163,7 @@
             "harness/checks/K114-raton-libro.py:1",
             "harness/checks/K114-raton-libro.py:100",
             "harness/checks/K120-banco.py:2",
-            "harness/checks/K120-banco.py:73",
+            "harness/checks/K120-banco.py:78",
             "harness/checks/K120-control.bash:6",
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
             "harness/checks/K120-liq.py:4",
@@ -48194,7 +48195,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 21,
+        "n_llamadas": 22,
         "n_menciones": 26,
         "sin_ninguno": false,
         "solo_mencion": false
