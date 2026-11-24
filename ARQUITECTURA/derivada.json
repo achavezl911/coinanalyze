@@ -40915,6 +40915,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/libro_hueco_vivo.test.js:89",
             "tests/test_espacio_cabeceras.py:62"
           ],
           "menciones": []
@@ -40922,7 +40923,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 11,
+        "n_llamadas": 12,
         "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48276,13 +48277,15 @@
             "tests/test_espacio_cabeceras.py:62",
             "tests/test_libro.py:587"
           ],
-          "menciones": []
+          "menciones": [
+            "tests/js/libro_hueco_vivo.test.js:2"
+          ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 22,
-        "n_menciones": 26,
+        "n_menciones": 27,
         "sin_ninguno": false,
         "solo_mencion": false
       },
