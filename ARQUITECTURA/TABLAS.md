@@ -289,18 +289,18 @@ La escriben:
 
 La escriben:
 
-- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1104`
-- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1255`
-- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1274`
-- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1323`
-- `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:332`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:594`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:673`
-- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:697`
-- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:774`
-- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:774`
-- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:872`
-- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:872`
+- `app.data_gaps.close_partitioned_gap` — **UPDATE** en `app/data_gaps.py:1109`
+- `app.data_gaps._mark_unrecoverable` — **UPDATE** en `app/data_gaps.py:1260`
+- `app.data_gaps._record_recovery_failure` — **UPDATE** en `app/data_gaps.py:1279`
+- `app.data_gaps.recover_gap` — **UPDATE** en `app/data_gaps.py:1334`
+- `app.data_gaps.record_data_gap` — **INSERT** en `app/data_gaps.py:337`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:599`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:678`
+- `app.data_gaps.reconcile_cadence_coverage` — **UPDATE** en `app/data_gaps.py:702`
+- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:779`
+- `app.data_gaps.archive_beyond_source_horizon` — **UPDATE** en `app/data_gaps.py:779`
+- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:877`
+- `app.data_gaps.archive_source_response_absence` — **UPDATE** en `app/data_gaps.py:877`
 - `app.libro.declara_hueco` — **UPDATE** en `app/libro.py:792`
 - `app.orderflow.declara_hueco` — **UPDATE** en `app/orderflow.py:508`
 
@@ -958,11 +958,11 @@ completo, y no esta conectado a nada. Merece una mirada, no una conclusion.
 - `market_feed_health_shard` — la escriben 1: `app/db.py:672`
 - `open_interest_daily` — la escriben 2: `app/daily_agg.py:600`, `app/daily_agg.py:600`
 - `orderflow_celda` — la escriben 2: `app/orderflow.py:562`, `app/orderflow.py:565`
-- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:860`
+- `orderflow_celda_hora` — la escriben 2: `app/orderflow.py:102`, `app/orderflow.py:902`
 - `orderflow_cinta` — la escriben 1: `app/orderflow.py:603`
-- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:808`
-- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:805`
-- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:812`
+- `orderflow_cobertura` — la escriben 4: `app/orderflow.py:571`, `app/orderflow.py:621`, `app/orderflow.py:665`, `app/orderflow.py:868`
+- `orderflow_grande` — la escriben 2: `app/orderflow.py:609`, `app/orderflow.py:865`
+- `orderflow_hora_hecha` — la escriben 2: `app/orderflow.py:109`, `app/orderflow.py:873`
 - `service_ownership` — la escriben 1: `app/db.py:283`
 - `signal_research_bundle_visibility` — la escriben 1: `app/signal_visibility.py:229`
 - `signal_walk_forward_manifest` — la escriben 1: `app/signal_walk_forward.py:596`

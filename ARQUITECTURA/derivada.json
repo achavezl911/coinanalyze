@@ -1551,38 +1551,38 @@
     },
     "app.data_gaps._aware_utc": {
       "fichero": "app/data_gaps.py",
-      "linea": 67,
-      "sitio": "`app/data_gaps.py:67`"
+      "linea": 72,
+      "sitio": "`app/data_gaps.py:72`"
     },
     "app.data_gaps._validated_window": {
       "fichero": "app/data_gaps.py",
-      "linea": 73,
-      "sitio": "`app/data_gaps.py:73`"
+      "linea": 78,
+      "sitio": "`app/data_gaps.py:78`"
     },
     "app.data_gaps.align_down": {
       "fichero": "app/data_gaps.py",
-      "linea": 242,
-      "sitio": "`app/data_gaps.py:242`"
+      "linea": 247,
+      "sitio": "`app/data_gaps.py:247`"
     },
     "app.data_gaps.blocking_requirement_keys": {
       "fichero": "app/data_gaps.py",
-      "linea": 118,
-      "sitio": "`app/data_gaps.py:118`"
+      "linea": 123,
+      "sitio": "`app/data_gaps.py:123`"
     },
     "app.data_gaps.coverage_entry": {
       "fichero": "app/data_gaps.py",
-      "linea": 263,
-      "sitio": "`app/data_gaps.py:263`"
+      "linea": 268,
+      "sitio": "`app/data_gaps.py:268`"
     },
     "app.data_gaps.declared_gap_windows": {
       "fichero": "app/data_gaps.py",
-      "linea": 207,
-      "sitio": "`app/data_gaps.py:207`"
+      "linea": 212,
+      "sitio": "`app/data_gaps.py:212`"
     },
     "app.data_gaps.expected_buckets": {
       "fichero": "app/data_gaps.py",
-      "linea": 255,
-      "sitio": "`app/data_gaps.py:255`"
+      "linea": 260,
+      "sitio": "`app/data_gaps.py:260`"
     },
     "app.db.db_identity": {
       "fichero": "app/db.py",
@@ -6547,16 +6547,16 @@
             "app.orderflow.vuelca"
           ],
           "orderflow_cobertura": [
+            "app.orderflow._poda_vuelta",
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.vuelca"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "pipeline_heartbeat": [
@@ -8789,7 +8789,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1152",
+        "sitio": "app/data_gaps.py:1157",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -8892,7 +8892,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:67",
+        "sitio": "app/data_gaps.py:72",
         "solo_por_tabla": [
           "/api/cvd-matrix",
           "/api/desk/state",
@@ -8954,7 +8954,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:449",
+        "sitio": "app/data_gaps.py:454",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9022,7 +9022,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1232",
+        "sitio": "app/data_gaps.py:1237",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9112,7 +9112,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1242",
+        "sitio": "app/data_gaps.py:1247",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9202,7 +9202,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1267",
+        "sitio": "app/data_gaps.py:1272",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9307,7 +9307,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:73",
+        "sitio": "app/data_gaps.py:78",
         "solo_por_tabla": [
           "/api/cvd-matrix",
           "/api/desk/state",
@@ -9361,7 +9361,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:242",
+        "sitio": "app/data_gaps.py:247",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -9418,7 +9418,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:732",
+        "sitio": "app/data_gaps.py:737",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9503,7 +9503,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:802",
+        "sitio": "app/data_gaps.py:807",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9603,7 +9603,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:118",
+        "sitio": "app/data_gaps.py:123",
         "solo_por_tabla": [
           "/api/dashboard/state",
           "/api/data-confidence",
@@ -9689,7 +9689,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1055",
+        "sitio": "app/data_gaps.py:1060",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9764,7 +9764,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:263",
+        "sitio": "app/data_gaps.py:268",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -9795,7 +9795,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:207",
+        "sitio": "app/data_gaps.py:212",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -9860,7 +9860,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:255",
+        "sitio": "app/data_gaps.py:260",
         "solo_por_tabla": [
           "/api/cvd-matrix",
           "/api/daily",
@@ -9917,7 +9917,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:388",
+        "sitio": "app/data_gaps.py:393",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -9979,7 +9979,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:977",
+        "sitio": "app/data_gaps.py:982",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10042,7 +10042,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:932",
+        "sitio": "app/data_gaps.py:937",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10161,7 +10161,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:484",
+        "sitio": "app/data_gaps.py:489",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10304,7 +10304,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:297",
+        "sitio": "app/data_gaps.py:302",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10371,7 +10371,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:358",
+        "sitio": "app/data_gaps.py:363",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10456,7 +10456,7 @@
           "/api/swing-score",
           "/api/trend-matrix"
         ],
-        "sitio": "app/data_gaps.py:1284",
+        "sitio": "app/data_gaps.py:1289",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10521,7 +10521,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1345",
+        "sitio": "app/data_gaps.py:1356",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10585,7 +10585,7 @@
           "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/data_gaps.py:1188",
+        "sitio": "app/data_gaps.py:1193",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -10832,15 +10832,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -10881,8 +10876,9 @@
           "app.libro.vuelca",
           "app.libro_honda.una",
           "app.orderflow._particion_hora",
+          "app.orderflow._poda_vuelta",
+          "app.orderflow._poda_vuelta.tx",
           "app.orderflow.declara_parada_anterior",
-          "app.orderflow.poda",
           "app.orderflow.suma_horas",
           "app.orderflow.vuelca",
           "app.scalp_collector.cleanup",
@@ -11112,17 +11108,17 @@
             "app.orderflow.vuelca"
           ],
           "orderflow_cobertura": [
+            "app.orderflow._poda_vuelta",
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.vuelca"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "pipeline_heartbeat": [
@@ -11248,15 +11244,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -11358,6 +11349,8 @@
           "app.libro_honda.honda",
           "app.libro_honda.una",
           "app.orderflow._particion_hora",
+          "app.orderflow._poda_vuelta",
+          "app.orderflow._poda_vuelta.tx",
           "app.orderflow.declara_parada_anterior",
           "app.orderflow.escritor",
           "app.orderflow.latido",
@@ -11597,17 +11590,17 @@
             "app.orderflow.vuelca"
           ],
           "orderflow_cobertura": [
+            "app.orderflow._poda_vuelta",
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.vuelca"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "pipeline_heartbeat": [
@@ -12187,15 +12180,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -12768,15 +12756,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -12888,15 +12871,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -13066,15 +13044,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -13167,15 +13140,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -21212,15 +21180,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_component"
@@ -22056,15 +22019,10 @@
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22166,15 +22124,10 @@
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22249,15 +22202,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22338,15 +22286,10 @@
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
             "app.orderflow.escribe_minutos",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "service_ownership": [
             "app.db.acquire_service_lock"
@@ -22527,8 +22470,9 @@
           "app.daily_agg.retencion_o_aplazar",
           "app.libro.poda",
           "app.libro.run",
+          "app.orderflow._poda_vuelta",
+          "app.orderflow._poda_vuelta.particionada",
           "app.orderflow.poda",
-          "app.orderflow.run",
           "app.scalp_collector.cleanup",
           "app.scalp_collector.cleanup_expired_rows"
         ],
@@ -22591,7 +22535,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/partitioning.py:34",
+        "sitio": "app/partitioning.py:77",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22686,20 +22630,14 @@
           "orderflow_celda_hora": [
             "app.orderflow.suma_horas"
           ],
-          "orderflow_cinta": [
-            "app.orderflow.vuelca"
-          ],
           "orderflow_cobertura": [
-            "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
-            "app.orderflow.vuelca"
+            "app.orderflow._poda_vuelta"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
-            "app.orderflow.vuelca"
+            "app.orderflow._poda_vuelta"
           ],
           "orderflow_hora_hecha": [
-            "app.orderflow.poda",
+            "app.orderflow._poda_vuelta",
             "app.orderflow.suma_horas"
           ],
           "predicted_funding_rate": [
@@ -22760,7 +22698,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/partitioning.py:29",
+        "sitio": "app/partitioning.py:72",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22809,15 +22747,10 @@
           ],
           "orderflow_cobertura": [
             "app.orderflow.declara_parada_anterior",
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
           ],
           "orderflow_grande": [
-            "app.orderflow.poda",
             "app.orderflow.vuelca"
-          ],
-          "orderflow_hora_hecha": [
-            "app.orderflow.poda"
           ],
           "pipeline_heartbeat": [
             "app.db.heartbeat",
@@ -34842,12 +34775,12 @@
       "campos": {
         "coverage": "literal en app/api.py:1177",
         "coverage.served_window": "literal en app/api.py:1177",
-        "coverage.served_window.complete": "literal en app/data_gaps.py:289",
-        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:287",
-        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:288",
-        "coverage.served_window.sources": "literal en app/data_gaps.py:290",
-        "coverage.served_window.window_end": "literal en app/data_gaps.py:286",
-        "coverage.served_window.window_start": "literal en app/data_gaps.py:285",
+        "coverage.served_window.complete": "literal en app/data_gaps.py:294",
+        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:292",
+        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:293",
+        "coverage.served_window.sources": "literal en app/data_gaps.py:295",
+        "coverage.served_window.window_end": "literal en app/data_gaps.py:291",
+        "coverage.served_window.window_start": "literal en app/data_gaps.py:290",
         "coverage.status": "literal en app/api.py:1177",
         "interval": "literal en app/api.py:1175",
         "rows": "literal en app/api.py:1176",
@@ -36720,7 +36653,7 @@
         "checks": {
           "llamadas": [
             "harness/checks/K106-banco.py:52",
-            "harness/checks/K107-control.bash:70",
+            "harness/checks/K107-control.bash:73",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35",
             "harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37",
             "harness/checks/K107-resultado.py:204",
@@ -41179,14 +41112,14 @@
             "harness/checks/K112-banco.py:152",
             "harness/checks/K112-control.bash:176",
             "harness/checks/K112-control.bash:249",
-            "harness/checks/K120-banco.py:171",
-            "harness/checks/K120-banco.py:180",
+            "harness/checks/K120-banco.py:185",
+            "harness/checks/K120-banco.py:194",
             "harness/checks/K120-liq.py:248",
             "harness/checks/K120-liq.py:250",
             "harness/checks/K120-liq.py:441"
           ],
           "menciones": [
-            "harness/checks/K120-banco.py:15",
+            "harness/checks/K120-banco.py:20",
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:7",
             "harness/checks/K120-liq.py:4"
           ]
@@ -47016,12 +46949,12 @@
       "campos": {
         "coverage": "literal en app/api.py:2440",
         "coverage.served_window": "literal en app/api.py:2440",
-        "coverage.served_window.complete": "literal en app/data_gaps.py:289",
-        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:287",
-        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:288",
-        "coverage.served_window.sources": "literal en app/data_gaps.py:290",
-        "coverage.served_window.window_end": "literal en app/data_gaps.py:286",
-        "coverage.served_window.window_start": "literal en app/data_gaps.py:285",
+        "coverage.served_window.complete": "literal en app/data_gaps.py:294",
+        "coverage.served_window.expected_buckets": "literal en app/data_gaps.py:292",
+        "coverage.served_window.observed_buckets": "literal en app/data_gaps.py:293",
+        "coverage.served_window.sources": "literal en app/data_gaps.py:295",
+        "coverage.served_window.window_end": "literal en app/data_gaps.py:291",
+        "coverage.served_window.window_start": "literal en app/data_gaps.py:290",
         "logic_version": "literal en app/api.py:2438",
         "note": "literal en app/api.py:2441",
         "rows": "literal en app/api.py:2439",
@@ -48043,7 +47976,7 @@
             "harness/checks/K113-raton.py:1614",
             "harness/checks/K113-raton.py:1661",
             "harness/checks/K113-raton.py:1666",
-            "harness/checks/K120-control.bash:66",
+            "harness/checks/K120-control.bash:68",
             "harness/checks/K120-liq.py:207",
             "harness/checks/K120-liq.py:243",
             "harness/checks/K120-liq.py:391",
@@ -48088,7 +48021,7 @@
             "harness/checks/K113-raton.py:1",
             "harness/checks/K114-el-raton-del-libro.sh:16",
             "harness/checks/K114-raton-libro.py:19",
-            "harness/checks/K120-banco.py:73",
+            "harness/checks/K120-banco.py:78",
             "harness/checks/K120-control.bash:5",
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
             "harness/checks/K120-liq.py:4",
@@ -48205,7 +48138,8 @@
             "harness/checks/K114-raton-libro.py:154",
             "harness/checks/K114-raton-libro.py:768",
             "harness/checks/K114-raton-libro.py:773",
-            "harness/checks/K120-control.bash:66",
+            "harness/checks/K120-control.bash:68",
+            "harness/checks/K120-control.bash:76",
             "harness/checks/K120-liq.py:226",
             "harness/checks/K120-liq.py:494",
             "harness/checks/K123-banco.py:33",
@@ -48230,7 +48164,7 @@
             "harness/checks/K114-raton-libro.py:1",
             "harness/checks/K114-raton-libro.py:100",
             "harness/checks/K120-banco.py:2",
-            "harness/checks/K120-banco.py:73",
+            "harness/checks/K120-banco.py:78",
             "harness/checks/K120-control.bash:6",
             "harness/checks/K120-las-liquidaciones-en-el-precio.sh:4",
             "harness/checks/K120-liq.py:4",
@@ -48264,7 +48198,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 21,
+        "n_llamadas": 22,
         "n_menciones": 27,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -48870,73 +48804,73 @@
         {
           "funcion": "app.data_gaps.close_partitioned_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1104",
+          "sitio": "app/data_gaps.py:1109",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps._mark_unrecoverable",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1255",
+          "sitio": "app/data_gaps.py:1260",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps._record_recovery_failure",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1274",
+          "sitio": "app/data_gaps.py:1279",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.recover_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1323",
+          "sitio": "app/data_gaps.py:1334",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.record_data_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:332",
+          "sitio": "app/data_gaps.py:337",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:594",
+          "sitio": "app/data_gaps.py:599",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:673",
+          "sitio": "app/data_gaps.py:678",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:697",
+          "sitio": "app/data_gaps.py:702",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_beyond_source_horizon",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/data_gaps.py:774",
+          "sitio": "app/data_gaps.py:779",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_beyond_source_horizon",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:774",
+          "sitio": "app/data_gaps.py:779",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_source_response_absence",
           "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/data_gaps.py:872",
+          "sitio": "app/data_gaps.py:877",
           "verbo": "UPDATE"
         },
         {
           "funcion": "app.data_gaps.archive_source_response_absence",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:872",
+          "sitio": "app/data_gaps.py:877",
           "verbo": "UPDATE"
         },
         {
@@ -48956,37 +48890,37 @@
         {
           "funcion": "app.data_gaps.close_partitioned_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1077"
+          "sitio": "app/data_gaps.py:1082"
         },
         {
           "funcion": "app.data_gaps._load_gap",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1235"
-        },
-        {
-          "funcion": "app.data_gaps.blocking_requirement_keys",
-          "origen": "f-string (los huecos van como {?})",
-          "sitio": "app/data_gaps.py:133"
-        },
-        {
-          "funcion": "app.data_gaps.blocking_requirement_keys",
-          "origen": "literal",
-          "sitio": "app/data_gaps.py:133"
+          "sitio": "app/data_gaps.py:1240"
         },
         {
           "funcion": "app.data_gaps.recover_unresolved_gaps",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:1356"
+          "sitio": "app/data_gaps.py:1367"
+        },
+        {
+          "funcion": "app.data_gaps.blocking_requirement_keys",
+          "origen": "f-string (los huecos van como {?})",
+          "sitio": "app/data_gaps.py:138"
+        },
+        {
+          "funcion": "app.data_gaps.blocking_requirement_keys",
+          "origen": "literal",
+          "sitio": "app/data_gaps.py:138"
         },
         {
           "funcion": "app.data_gaps._cubierto_por_otro_detector",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:471"
+          "sitio": "app/data_gaps.py:476"
         },
         {
           "funcion": "app.data_gaps.reconcile_cadence_coverage",
           "origen": "literal",
-          "sitio": "app/data_gaps.py:627"
+          "sitio": "app/data_gaps.py:632"
         },
         {
           "funcion": "app.entradas.resultados.resolver_fila",
@@ -50416,7 +50350,7 @@
         {
           "funcion": "app.orderflow.run",
           "origen": "literal",
-          "sitio": "app/orderflow.py:877"
+          "sitio": "app/orderflow.py:919"
         },
         {
           "funcion": "app.orderflow_lectura.pasos",
@@ -51836,7 +51770,7 @@
         {
           "funcion": "app.orderflow.suma_horas",
           "origen": "literal",
-          "sitio": "app/orderflow.py:860",
+          "sitio": "app/orderflow.py:902",
           "verbo": "DELETE"
         }
       ],
@@ -51849,7 +51783,7 @@
         {
           "funcion": "app.orderflow.suma_horas",
           "origen": "literal",
-          "sitio": "app/orderflow.py:860"
+          "sitio": "app/orderflow.py:902"
         }
       ]
     },
@@ -51911,9 +51845,9 @@
           "verbo": "UPDATE"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:808",
+          "sitio": "app/orderflow.py:868",
           "verbo": "DELETE"
         }
       ],
@@ -51924,9 +51858,9 @@
           "sitio": "app/orderflow.py:676"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:808"
+          "sitio": "app/orderflow.py:868"
         },
         {
           "funcion": "app.orderflow_lectura.cobertura",
@@ -51944,17 +51878,17 @@
           "verbo": "INSERT"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:805",
+          "sitio": "app/orderflow.py:865",
           "verbo": "DELETE"
         }
       ],
       "lectores": [
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:805"
+          "sitio": "app/orderflow.py:865"
         },
         {
           "funcion": "app.orderflow_lectura.grandes",
@@ -51972,17 +51906,17 @@
           "verbo": "INSERT"
         },
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:812",
+          "sitio": "app/orderflow.py:873",
           "verbo": "DELETE"
         }
       ],
       "lectores": [
         {
-          "funcion": "app.orderflow.poda",
+          "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
-          "sitio": "app/orderflow.py:812"
+          "sitio": "app/orderflow.py:873"
         },
         {
           "funcion": "app.orderflow_lectura.footprint",

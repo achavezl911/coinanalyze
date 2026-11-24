@@ -48,7 +48,7 @@ _CONFIRMATORY_FLAGS = {
     "--primary-exchange": "binance",
     "--primary-size-usd": "1000",
     "--primary-taker-fee-bps": "2.0",
-    "--confirmatory-baseline-version": "1",
+    "--confirmatory-baseline-version": "2",
     "--unmodeled-execution-stress-bps": "1.5",
     "--confirmatory-inference-version": "1",
     "--confirmatory-block-unit": "day",

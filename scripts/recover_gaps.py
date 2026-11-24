@@ -4,7 +4,8 @@
 Solo puede recuperar una fila el adaptador registrado para su
 feed/exchange/market/granularity exactos. Para los flujos de sucesos en tiempo real y
 para el libro no hay fuente historica con la misma semantica, asi que esos huecos se
-clasifican como irrecuperables en vez de sintetizarlos o sustituirlos de otra bolsa.
+clasifican como irrecuperables en vez de sintetizarlos o sustituirlos de otra bolsa. Una
+serie de CADENCIA sin adaptador no: se niega y queda 'unresolved' (H-02, recupera-r2).
 
 NO HAY --limit NI --all, Y ES LA LECCION MAS CARA DE ESTE FICHERO. La cabecera de
 harness/checks/K04-huecos.sh ya lo decia: un simple `recover_gaps.py --limit 1000` habria
@@ -52,23 +53,31 @@ from app.ingest import upsert_long_short, upsert_ohlc_metric, upsert_ohlcv
 from scripts.archive_beyond_horizon import simbolo_de_proveedor
 
 
-class CoinalyzeOhlcv1mAdapter:
-    """Exact Binance perpetual 1-minute OHLCV recovery from the existing provider."""
+class CoinalyzeOhlcvAdapter:
+    """Exact Binance perpetual OHLCV recovery (1min o 5min) from the existing provider.
+
+    El de 5min es H-02 (recupera-r2): BARRIDO_CADENCIA declara huecos de ohlcv_5min y sin
+    adaptador no habia quien los pidiera. La fuente sirve la vela de 5min ella misma
+    (ohlcv-history interval=5min, la misma via que scripts/backfill_ohlcv_5m.py), y esa es
+    la identidad exacta: no se construye de las de 1min.
+    """
 
     name = "coinalyze.ohlcv-history"
-    feed = "ohlcv_1min"
     exchange = "binance"
     market = "perpetual"
-    granularity = "1min"
 
-    def __init__(self, client: CoinalyzeClient) -> None:
+    def __init__(self, client: CoinalyzeClient, granularity: str = "1min") -> None:
+        if granularity not in ("1min", "5min"):
+            raise ValueError(f"unsupported OHLCV recovery granularity: {granularity}")
         self.client = client
+        self.granularity = granularity
+        self.feed = f"ohlcv_{granularity}"
 
     async def fetch(self, gap: DataGap) -> list[RecoveryObservation]:
         payload = await self.client.history(
             "ohlcv-history",
             [gap.symbol],
-            interval="1min",
+            interval=self.granularity,
             start_ts=int(gap.start.timestamp()),
             end_ts=int(gap.end.timestamp()) - 1,
         )
@@ -81,7 +90,7 @@ class CoinalyzeOhlcv1mAdapter:
             observations.append(
                 RecoveryObservation(
                     timestamp=timestamp,
-                    key=f"{gap.symbol}:1min:{int(timestamp.timestamp())}",
+                    key=f"{gap.symbol}:{self.granularity}:{int(timestamp.timestamp())}",
                     feed=self.feed,
                     exchange=self.exchange,
                     market=self.market,
@@ -103,7 +112,7 @@ class CoinalyzeOhlcv1mAdapter:
             {symbol: symbol},
             int(observations[0].timestamp.timestamp()),
             int(observations[-1].timestamp.timestamp()),
-            "1min",
+            self.granularity,
         )
         if count != len(observations):
             raise RecoveryValidationError("validated OHLCV rows were not all persistable")
@@ -293,8 +302,9 @@ class CoinalyzeLongShortAdapter:
 def construir_adaptadores(client: CoinalyzeClient) -> dict[tuple[str, ...], RecoveryAdapter]:
     """Registro indexado por la identidad EXACTA que compara validate_recovery."""
     adaptadores: dict[tuple[str, ...], RecoveryAdapter] = {}
-    ohlcv = CoinalyzeOhlcv1mAdapter(client)
-    adaptadores[(ohlcv.feed, ohlcv.exchange, ohlcv.market, ohlcv.granularity)] = ohlcv
+    for granularidad in ("1min", "5min"):
+        ohlcv = CoinalyzeOhlcvAdapter(client, granularidad)
+        adaptadores[(ohlcv.feed, ohlcv.exchange, ohlcv.market, ohlcv.granularity)] = ohlcv
     ls = CoinalyzeLongShortAdapter(client)
     adaptadores[(ls.feed, ls.exchange, ls.market, ls.granularity)] = ls
     for plan in PLANES_METRICA:
@@ -313,8 +323,9 @@ def exact_adapter_for(
 ) -> RecoveryAdapter | None:
     """Devolver SOLO un adaptador con la misma semantica de fuente y el mismo simbolo.
 
-    Caer a ``None`` marca el hueco irrecuperable; nunca sustituye OHLCV por trades, ni
-    otra bolsa, ni otro mercado, ni otra granularidad, ni sintetiza el libro.
+    Caer a ``None`` archiva un flujo de sucesos y NIEGA una serie de cadencia (recover_gap,
+    H-02); nunca sustituye OHLCV por trades, ni otra bolsa, ni otro mercado, ni otra
+    granularidad, ni sintetiza el libro.
     """
     if gap.symbol not in allowed_symbols:
         return None

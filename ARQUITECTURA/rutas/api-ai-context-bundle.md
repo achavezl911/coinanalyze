@@ -50,18 +50,18 @@ LEE:
 - `daily_verdict_snapshot` — `sql/schema.sql:1106`, 26 columnas
   - la llena `app.daily_agg.persist_verdicts` (INSERT) — `app/daily_agg.py:436`
 - `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `external_macro_observation` — `sql/schema.sql:1241`, 5 columnas
@@ -174,12 +174,12 @@ Llamadas directas del handler:
 - `app.ai_context.sin_perder_los_nulos` — `app/ai_context.py:265`
 - `app.ai_context.verdict_history` — `app/ai_context.py:487`
 - `app.config.get_settings` — `app/config.py:308`
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.align_down` — `app/data_gaps.py:242`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.align_down` — `app/data_gaps.py:247`
+- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
 - `app.external_macro._direction` — `app/external_macro.py:190`
 - `app.external_macro._metric` — `app/external_macro.py:205`

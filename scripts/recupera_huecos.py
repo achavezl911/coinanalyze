@@ -41,6 +41,7 @@ from app.data_gaps import (  # noqa: E402
     BLOQUEA_SQL,
     PARTITION_DETECTION_SOURCE,
     archive_beyond_source_horizon,
+    archive_source_response_absence,
     close_partitioned_gap,
     expected_buckets,
     missing_cadence_windows,
@@ -68,6 +69,7 @@ HORIZONTE: dict[tuple[str, str], timedelta] = {
 FRESCO = timedelta(minutes=10)
 LIMITE_PETICIONES = 60
 LATIDO = Path(os.environ.get("RECUPERA_LATIDO", "/var/lib/coinalyze-recupera/latido.json"))
+SALTO_PROOF = "recupera_huecos salto"
 
 
 def _techo(t: datetime, cadence: timedelta) -> datetime:
@@ -132,8 +134,36 @@ async def cierra_padres_teselados(conn, permitidos, ids: list[int] | None = None
     return {"padres_cerrados": cerrados, "padres_abiertos": abiertos}
 
 
+async def _archiva_saltos(conn, plan, ident, devueltos: set[datetime], ini: datetime, fin: datetime, saltados: set) -> int:
+    """Los buckets de [ini, fin) que la respuesta no trajo van a `saltados` (no dan reloj). Cada tramo seguido de ellos
+    con sus DOS vecinos en esa misma respuesta es ausencia probada: se archivan las filas que caben enteras en el tramo,
+    con archive_source_response_absence, que vuelve a exigir el straddle. Un tramo en el borde de la respuesta no.
+    Una respuesta VACIA no es un salto -la fuente muda contesta igual-: ni se apunta ni se archiva."""
+    if not devueltos:
+        return 0
+    tramos: list[list[datetime]] = []
+    t = ini
+    while t < fin:
+        if t not in devueltos:
+            saltados.add((tuple(ident.values()), t))
+            if tramos and tramos[-1][1] == t:
+                tramos[-1][1] = t + plan.cadence
+            else:
+                tramos.append([t, t + plan.cadence])
+        t += plan.cadence
+    archivadas = 0
+    for r0, r1 in tramos:
+        if r0 - plan.cadence in devueltos and r1 in devueltos:
+            archivadas += await archive_source_response_absence(
+                conn, **ident, window_start=r0, window_end=r1,
+                response_first_bucket=min(devueltos), response_last_bucket=max(devueltos),
+                window_returned_rows=0, response_returned_rows=len(devueltos), proof_source=SALTO_PROOF,
+            )
+    return archivadas
+
+
 async def recupera(conn, client, *, ahora: datetime, permitidos, limite: int = LIMITE_PETICIONES) -> dict:
-    resumen: dict = {"pedidas": 0, "filas": 0, "recuperados": 0, "cortado_por_tope": False}
+    resumen: dict = {"pedidas": 0, "filas": 0, "recuperados": 0, "archivados_salto": 0, "cortado_por_tope": False}
     resumen.update(await cierra_padres_teselados(conn, permitidos))
     # Buckets que la fuente NO trae en una respuesta que SI trae otros: es su salto, no un pendiente nuestro. No se
     # archivan (eso pide la prueba del repaso), pero tampoco cuentan como recuperables para el reloj de la vigia.
@@ -147,14 +177,16 @@ async def recupera(conn, client, *, ahora: datetime, permitidos, limite: int = L
         for u in await _huecos(conn, key, desde, permitidos):
             u.update(plan=plan, horizonte=h, lo=max(u["ini"], desde), hi=min(u["fin"], ahora - FRESCO))
             uniones.append(u)
-    uniones.sort(key=lambda u: u["lo"])  # lo mas viejo se pierde antes
+    # El cupo, por lo que le QUEDA a cada union antes de su horizonte (R2b B3): por `lo` a secas, una union de 200 h de
+    # reloj se llevaba el cupo de una de 24 h que vence antes, aunque empezase mas tarde.
+    uniones.sort(key=lambda u: u["lo"] + u["horizonte"])
 
     for u in uniones:
         plan, ident = u["plan"], u["ident"]
         mapa = {ident["symbol"]: ident["symbol"]}
         guardo = False
         for a, b in await _faltan(conn, plan, u):
-            cursor = a
+            cursor, vino = a, False
             while cursor < b:
                 if resumen["pedidas"] >= limite:
                     resumen["cortado_por_tope"] = True
@@ -166,15 +198,26 @@ async def recupera(conn, client, *, ahora: datetime, permitidos, limite: int = L
                 devueltos = source_response_buckets(payload, mapa, s, e).get(ident["symbol"], set())
                 if devueltos:
                     resumen["filas"] += await plan.store(conn, payload, mapa, s, e, {})
-                    guardo = True
-                    t = cursor
-                    while t < fin:
-                        if t not in devueltos:
-                            saltados.add((tuple(ident.values()), t))
-                        t += plan.cadence
+                    guardo = vino = True
+                    resumen["archivados_salto"] += await _archiva_saltos(conn, plan, ident, devueltos, cursor, fin, saltados)
                 cursor = fin
             if resumen["cortado_por_tope"]:
                 break
+            # El salto AISLADO: pedido solo, vuelve vacio y no prueba nada (la fuente muda contesta igual), y se re-pedia
+            # en cada corrida (R2b B3). Se pide UNA vez con un bucket de margen a cada lado: si la MISMA respuesta trae los
+            # dos vecinos y no el salto, la fuente lo cubrio y no lo publica, y se archiva con esa prueba. Si no, nada.
+            if not vino and b - a + 2 * plan.cadence <= plan.chunk:
+                if resumen["pedidas"] >= limite:
+                    resumen["cortado_por_tope"] = True
+                    break
+                s, e = int((a - plan.cadence).timestamp()), int((b + plan.cadence).timestamp())
+                resumen["pedidas"] += 1
+                payload = await client.history(plan.endpoint, [ident["symbol"]], interval=plan.interval, start_ts=s, end_ts=e)
+                devueltos = source_response_buckets(payload, mapa, s, e).get(ident["symbol"], set())
+                if any(a <= t < b for t in devueltos):
+                    resumen["filas"] += await plan.store(conn, payload, mapa, s, e, {})
+                    guardo = True
+                resumen["archivados_salto"] += await _archiva_saltos(conn, plan, ident, devueltos, a, b, saltados)
         if guardo:
             cobertura = await reconcilia_hueco_entero(conn, plan, ident, u["ini"], u["fin"], RECUPERA_DETECTION_SOURCE)
             resumen["recuperados"] += cobertura.recovered_gaps

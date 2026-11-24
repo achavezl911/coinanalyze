@@ -15,6 +15,7 @@ import app.scalp_collector as scalp
 from app.api import mask_gapped_series_rows
 from app.config import Settings
 from app.data_gaps import (
+    NO_CADENCE_ADAPTER_REASON,
     GapRequirement,
     RecoveryObservation,
     RecoveryValidationError,
@@ -24,6 +25,7 @@ from app.data_gaps import (
     declared_gap_windows,
     reconcile_cadence_coverage,
     record_data_gap,
+    record_event_stream_loss,
     recover_gap,
 )
 from app.db import ServiceOwnershipLost, acquire_service_lock
@@ -499,10 +501,31 @@ async def test_postgres_incomplete_recovery_stays_unresolved_and_unavailable_is_
             start=start + timedelta(hours=1),
             end=start + timedelta(hours=1, minutes=1),
         )
-        assert await recover_gap(conn, unavailable_id, None) == "unrecoverable"
-        assert await conn.fetchval(
-            "SELECT status FROM data_gap WHERE id=$1", unavailable_id
-        ) == "unrecoverable"
+        # H-02 (recupera-r2): una serie de CADENCIA sin adaptador no se archiva; se niega,
+        # la fila queda 'unresolved' y el motivo lo dice. Con main salia 'unrecoverable'.
+        assert await recover_gap(conn, unavailable_id, None) == "unresolved"
+        fila = await conn.fetchrow(
+            "SELECT status,resolution_reason,recovery_attempts FROM data_gap WHERE id=$1",
+            unavailable_id,
+        )
+        assert fila["status"] == "unresolved"
+        assert fila["resolution_reason"] == NO_CADENCE_ADAPTER_REASON
+        assert fila["recovery_attempts"] == 1
+
+        # El control: un flujo de sucesos sin fuente historica se sigue archivando.
+        flujo_id = await record_event_stream_loss(
+            conn,
+            feed="liquidations",
+            exchange="binance",
+            market="perpetual",
+            symbol="BTCUSDT_PERP.A",
+            start=start + timedelta(hours=2),
+            end=start + timedelta(hours=2, minutes=1),
+            evidence_type="queue_full",
+            detection_reason="test queue overflow",
+            detection_source="test event stream",
+        )
+        assert await recover_gap(conn, flujo_id, None) == "unrecoverable"
     finally:
         await tx.rollback()
         await conn.close()

@@ -22,12 +22,12 @@ Handler `cvd_divergence` · `app/api.py:1064` (cuerpo hasta la 1178) · decorado
 |---|---|
 | `coverage` | literal en app/api.py:1177 |
 | `coverage.served_window` | literal en app/api.py:1177 |
-| `coverage.served_window.complete` | literal en app/data_gaps.py:289 |
-| `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:287 |
-| `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:288 |
-| `coverage.served_window.sources` | literal en app/data_gaps.py:290 |
-| `coverage.served_window.window_end` | literal en app/data_gaps.py:286 |
-| `coverage.served_window.window_start` | literal en app/data_gaps.py:285 |
+| `coverage.served_window.complete` | literal en app/data_gaps.py:294 |
+| `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:292 |
+| `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:293 |
+| `coverage.served_window.sources` | literal en app/data_gaps.py:295 |
+| `coverage.served_window.window_end` | literal en app/data_gaps.py:291 |
+| `coverage.served_window.window_start` | literal en app/data_gaps.py:290 |
 | `coverage.status` | literal en app/api.py:1177 |
 | `interval` | literal en app/api.py:1175 |
 | `rows` | literal en app/api.py:1176 |
@@ -42,18 +42,18 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `data_gap` — `sql/schema.sql:1419`, 22 columnas
-  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1104`
-  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1255`
-  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1274`
-  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1323`
-  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:332`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:594`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:673`
-  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:697`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:774`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
-  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:872`
+  - la llena `app.data_gaps.close_partitioned_gap` (UPDATE) — `app/data_gaps.py:1109`
+  - la llena `app.data_gaps._mark_unrecoverable` (UPDATE) — `app/data_gaps.py:1260`
+  - la llena `app.data_gaps._record_recovery_failure` (UPDATE) — `app/data_gaps.py:1279`
+  - la llena `app.data_gaps.recover_gap` (UPDATE) — `app/data_gaps.py:1334`
+  - la llena `app.data_gaps.record_data_gap` (INSERT) — `app/data_gaps.py:337`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:599`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:678`
+  - la llena `app.data_gaps.reconcile_cadence_coverage` (UPDATE) — `app/data_gaps.py:702`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_beyond_source_horizon` (UPDATE) — `app/data_gaps.py:779`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
+  - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `ohlcv` — `sql/schema.sql:54`, 13 columnas
@@ -82,14 +82,14 @@ Llamadas directas del handler:
 - `app.api.mask_gapped_series_rows` — `app/api.py:296`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
 
 <details><summary>Alcanzables de forma indirecta (3)</summary>
 
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:118`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
 
 </details>
 
