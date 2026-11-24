@@ -18,21 +18,21 @@ Handler `divergences_endpoint` · `app/api.py:2347` (cuerpo hasta la 2350) · de
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:2322 |
-| `distinct_from` | literal en app/scalp_logic.py:2348 |
-| `divergence_method` | literal en app/scalp_logic.py:2344 |
-| `intraday` | literal en app/scalp_logic.py:2328 |
-| `intraday.available` | literal en app/scalp_logic.py:2213 |
-| `intraday.omitted` | literal en app/scalp_logic.py:2213 |
-| `intraday.windows` | literal en app/scalp_logic.py:2213 |
-| `note` | literal en app/scalp_logic.py:2329 |
-| `sessions` | literal en app/scalp_logic.py:2323 |
-| `summary` | literal en app/scalp_logic.py:2325 |
-| `sustained_windows_evaluated` | literal en app/scalp_logic.py:2327 |
-| `symbol` | literal en app/scalp_logic.py:2321 |
-| `window_label_note` | literal en app/scalp_logic.py:2340 |
-| `windows` | literal en app/scalp_logic.py:2324 |
-| `windows_confirming` | literal en app/scalp_logic.py:2326 |
+| `available` | literal en app/scalp_logic.py:2327 |
+| `distinct_from` | literal en app/scalp_logic.py:2353 |
+| `divergence_method` | literal en app/scalp_logic.py:2349 |
+| `intraday` | literal en app/scalp_logic.py:2333 |
+| `intraday.available` | literal en app/scalp_logic.py:2218 |
+| `intraday.omitted` | literal en app/scalp_logic.py:2218 |
+| `intraday.windows` | literal en app/scalp_logic.py:2218 |
+| `note` | literal en app/scalp_logic.py:2334 |
+| `sessions` | literal en app/scalp_logic.py:2328 |
+| `summary` | literal en app/scalp_logic.py:2330 |
+| `sustained_windows_evaluated` | literal en app/scalp_logic.py:2332 |
+| `symbol` | literal en app/scalp_logic.py:2326 |
+| `window_label_note` | literal en app/scalp_logic.py:2345 |
+| `windows` | literal en app/scalp_logic.py:2329 |
+| `windows_confirming` | literal en app/scalp_logic.py:2331 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -68,15 +68,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2200`
+- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2205`
 
 <details><summary>Alcanzables de forma indirecta (5)</summary>
 
-- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:2072`
-- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:2059`
-- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:2027`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:965`
+- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:2077`
+- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:2064`
+- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:2032`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 

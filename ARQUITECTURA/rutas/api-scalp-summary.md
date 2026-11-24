@@ -18,73 +18,73 @@ Handler `scalp_summary` · `app/api.py:1480` (cuerpo hasta la 1484) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `absorption` | literal en app/scalp_logic.py:914 |
-| `absorption_context` | literal en app/scalp_logic.py:916 |
-| `absorption_context.band` | literal en app/scalp_logic.py:150 |
-| `absorption_context.reference` | literal en app/scalp_logic.py:154 |
-| `absorption_context.robust_z` | literal en app/scalp_logic.py:151 |
-| `absorption_context.sample_count` | literal en app/scalp_logic.py:153 |
-| `absorption_context.status` | literal en app/scalp_logic.py:152 |
-| `absorption_context.threshold_source` | asignado en app/scalp_logic.py:719 |
-| `absorption_delta_ratio` | literal en app/scalp_logic.py:915 |
-| `basis_bps` | literal en app/scalp_logic.py:866 |
-| `basis_detail` | literal en app/scalp_logic.py:868 |
-| `basis_detail.basis_bps` | asignado en app/scalp_logic.py:287 |
-| `basis_detail.reason` | asignado en app/scalp_logic.py:282 |
-| `basis_detail.status` | asignado en app/scalp_logic.py:281 |
-| `basis_status` | literal en app/scalp_logic.py:867 |
-| `book_lag_seconds` | literal en app/scalp_logic.py:870 |
-| `book_status` | literal en app/scalp_logic.py:869 |
-| `confidence` | literal en app/scalp_logic.py:846 |
-| `diff_3m` | literal en app/scalp_logic.py:854 |
-| `evidence_coverage_pct` | literal en app/scalp_logic.py:862 |
-| `expected_weight` | literal en app/scalp_logic.py:861 |
-| `fut_delta_1m` | literal en app/scalp_logic.py:848 |
-| `fut_delta_3m` | literal en app/scalp_logic.py:849 |
-| `fut_price` | literal en app/scalp_logic.py:864 |
-| `fut_volume_1m` | literal en app/scalp_logic.py:850 |
-| `imbalance_l1` | literal en app/scalp_logic.py:873 |
-| `imbalance_l10` | literal en app/scalp_logic.py:875 |
-| `imbalance_l5` | literal en app/scalp_logic.py:874 |
-| `liquidation_feed_health` | literal en app/scalp_logic.py:884 |
-| `liquidations_measured` | literal en app/scalp_logic.py:882 |
-| `liquidations_window` | literal en app/scalp_logic.py:883 |
-| `long_liq_5m` | literal en app/scalp_logic.py:878 |
-| `long_score` | literal en app/scalp_logic.py:843 |
-| `measured_weight` | literal en app/scalp_logic.py:860 |
-| `missing_components` | literal en app/scalp_logic.py:863 |
-| `oi_chg_15m_pct` | literal en app/scalp_logic.py:893 |
-| `oi_contributes_direction` | literal en app/scalp_logic.py:907 |
-| `oi_directional_support` | literal en app/scalp_logic.py:904 |
-| `oi_new_positioning` | literal en app/scalp_logic.py:905 |
-| `oi_now` | literal en app/scalp_logic.py:895 |
-| `oi_price_quadrant` | literal en app/scalp_logic.py:902 |
-| `oi_price_status` | literal en app/scalp_logic.py:911 |
-| `oi_reading` | literal en app/scalp_logic.py:903 |
-| `oi_start` | literal en app/scalp_logic.py:894 |
-| `oi_state` | literal en app/scalp_logic.py:901 |
-| `oi_timeframe` | literal en app/scalp_logic.py:906 |
-| `oi_window_end` | literal en app/scalp_logic.py:897 |
-| `oi_window_samples` | literal en app/scalp_logic.py:898 |
-| `oi_window_start` | literal en app/scalp_logic.py:896 |
-| `oi_window_status` | literal en app/scalp_logic.py:899 |
-| `price_move_15m_coverage` | literal en app/scalp_logic.py:910 |
-| `price_move_15m_pct` | literal en app/scalp_logic.py:908 |
-| `price_move_15m_status` | literal en app/scalp_logic.py:909 |
-| `price_move_3m_pct` | literal en app/scalp_logic.py:871 |
-| `reason` | literal en app/scalp_logic.py:847 |
-| `session_vwap` | literal en app/scalp_logic.py:912 |
-| `short_liq_5m` | literal en app/scalp_logic.py:879 |
-| `short_score` | literal en app/scalp_logic.py:844 |
-| `spot_delta_3m` | literal en app/scalp_logic.py:851 |
-| `spot_fut_divergence_norm` | literal en app/scalp_logic.py:859 |
-| `spot_price` | literal en app/scalp_logic.py:865 |
-| `spread_bps` | literal en app/scalp_logic.py:872 |
-| `state` | literal en app/scalp_logic.py:845 |
+| `absorption` | literal en app/scalp_logic.py:919 |
+| `absorption_context` | literal en app/scalp_logic.py:921 |
+| `absorption_context.band` | literal en app/scalp_logic.py:155 |
+| `absorption_context.reference` | literal en app/scalp_logic.py:159 |
+| `absorption_context.robust_z` | literal en app/scalp_logic.py:156 |
+| `absorption_context.sample_count` | literal en app/scalp_logic.py:158 |
+| `absorption_context.status` | literal en app/scalp_logic.py:157 |
+| `absorption_context.threshold_source` | asignado en app/scalp_logic.py:724 |
+| `absorption_delta_ratio` | literal en app/scalp_logic.py:920 |
+| `basis_bps` | literal en app/scalp_logic.py:871 |
+| `basis_detail` | literal en app/scalp_logic.py:873 |
+| `basis_detail.basis_bps` | asignado en app/scalp_logic.py:292 |
+| `basis_detail.reason` | asignado en app/scalp_logic.py:287 |
+| `basis_detail.status` | asignado en app/scalp_logic.py:286 |
+| `basis_status` | literal en app/scalp_logic.py:872 |
+| `book_lag_seconds` | literal en app/scalp_logic.py:875 |
+| `book_status` | literal en app/scalp_logic.py:874 |
+| `confidence` | literal en app/scalp_logic.py:851 |
+| `diff_3m` | literal en app/scalp_logic.py:859 |
+| `evidence_coverage_pct` | literal en app/scalp_logic.py:867 |
+| `expected_weight` | literal en app/scalp_logic.py:866 |
+| `fut_delta_1m` | literal en app/scalp_logic.py:853 |
+| `fut_delta_3m` | literal en app/scalp_logic.py:854 |
+| `fut_price` | literal en app/scalp_logic.py:869 |
+| `fut_volume_1m` | literal en app/scalp_logic.py:855 |
+| `imbalance_l1` | literal en app/scalp_logic.py:878 |
+| `imbalance_l10` | literal en app/scalp_logic.py:880 |
+| `imbalance_l5` | literal en app/scalp_logic.py:879 |
+| `liquidation_feed_health` | literal en app/scalp_logic.py:889 |
+| `liquidations_measured` | literal en app/scalp_logic.py:887 |
+| `liquidations_window` | literal en app/scalp_logic.py:888 |
+| `long_liq_5m` | literal en app/scalp_logic.py:883 |
+| `long_score` | literal en app/scalp_logic.py:848 |
+| `measured_weight` | literal en app/scalp_logic.py:865 |
+| `missing_components` | literal en app/scalp_logic.py:868 |
+| `oi_chg_15m_pct` | literal en app/scalp_logic.py:898 |
+| `oi_contributes_direction` | literal en app/scalp_logic.py:912 |
+| `oi_directional_support` | literal en app/scalp_logic.py:909 |
+| `oi_new_positioning` | literal en app/scalp_logic.py:910 |
+| `oi_now` | literal en app/scalp_logic.py:900 |
+| `oi_price_quadrant` | literal en app/scalp_logic.py:907 |
+| `oi_price_status` | literal en app/scalp_logic.py:916 |
+| `oi_reading` | literal en app/scalp_logic.py:908 |
+| `oi_start` | literal en app/scalp_logic.py:899 |
+| `oi_state` | literal en app/scalp_logic.py:906 |
+| `oi_timeframe` | literal en app/scalp_logic.py:911 |
+| `oi_window_end` | literal en app/scalp_logic.py:902 |
+| `oi_window_samples` | literal en app/scalp_logic.py:903 |
+| `oi_window_start` | literal en app/scalp_logic.py:901 |
+| `oi_window_status` | literal en app/scalp_logic.py:904 |
+| `price_move_15m_coverage` | literal en app/scalp_logic.py:915 |
+| `price_move_15m_pct` | literal en app/scalp_logic.py:913 |
+| `price_move_15m_status` | literal en app/scalp_logic.py:914 |
+| `price_move_3m_pct` | literal en app/scalp_logic.py:876 |
+| `reason` | literal en app/scalp_logic.py:852 |
+| `session_vwap` | literal en app/scalp_logic.py:917 |
+| `short_liq_5m` | literal en app/scalp_logic.py:884 |
+| `short_score` | literal en app/scalp_logic.py:849 |
+| `spot_delta_3m` | literal en app/scalp_logic.py:856 |
+| `spot_fut_divergence_norm` | literal en app/scalp_logic.py:864 |
+| `spot_price` | literal en app/scalp_logic.py:870 |
+| `spread_bps` | literal en app/scalp_logic.py:877 |
+| `state` | literal en app/scalp_logic.py:850 |
 | `symbol` | literal en app/api.py:1484 |
-| `vwap_dist_pct` | literal en app/scalp_logic.py:913 |
-| `wall_down_pct` | literal en app/scalp_logic.py:877 |
-| `wall_up_pct` | literal en app/scalp_logic.py:876 |
+| `vwap_dist_pct` | literal en app/scalp_logic.py:918 |
+| `wall_down_pct` | literal en app/scalp_logic.py:882 |
+| `wall_up_pct` | literal en app/scalp_logic.py:881 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -126,29 +126,29 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
+- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
+- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
 
 <details><summary>Alcanzables de forma indirecta (21)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
-- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
-- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
-- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
-- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
-- `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
+- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
+- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
+- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:571`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._first_present` — `app/scalp_logic.py:507`
+- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:519`
+- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:563`
+- `app.scalp_logic._utc_now` — `app/scalp_logic.py:73`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
+- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
+- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
+- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
+- `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`

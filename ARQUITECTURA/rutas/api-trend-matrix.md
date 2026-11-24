@@ -18,14 +18,14 @@ Handler `trend_matrix_endpoint` · `app/api.py:2301` (cuerpo hasta la 2304) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:6464 |
-| `bias_method` | literal en app/scalp_logic.py:6473 |
-| `distinct_from` | literal en app/scalp_logic.py:6482 |
-| `medium_term_alignment` | literal en app/scalp_logic.py:6466 |
-| `note` | literal en app/scalp_logic.py:6467 |
-| `structure_method` | literal en app/scalp_logic.py:6478 |
-| `symbol` | literal en app/scalp_logic.py:6463 |
-| `timeframes` | literal en app/scalp_logic.py:6465 |
+| `as_of` | literal en app/scalp_logic.py:6463 |
+| `bias_method` | literal en app/scalp_logic.py:6472 |
+| `distinct_from` | literal en app/scalp_logic.py:6481 |
+| `medium_term_alignment` | literal en app/scalp_logic.py:6465 |
+| `note` | literal en app/scalp_logic.py:6466 |
+| `structure_method` | literal en app/scalp_logic.py:6477 |
+| `symbol` | literal en app/scalp_logic.py:6462 |
+| `timeframes` | literal en app/scalp_logic.py:6464 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -64,9 +64,11 @@ LEE:
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
+- `agg_cov`
 - `agg_span`
 - `c0.agg_hi`
 - `choice`
+- `choice1`
 - `edges`
 - `exchanges`
 - `parts`
@@ -78,35 +80,37 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-21 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+23 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6320`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6319`
 
-<details><summary>Alcanzables de forma indirecta (19)</summary>
+<details><summary>Alcanzables de forma indirecta (21)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2619`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2644`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4445`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4415`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4427`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4626`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4542`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4794`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2843`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:965`
+- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4625`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4541`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2377`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2363`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4793`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
 
 </details>
 
@@ -180,6 +184,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.metrics.current_nyse_start` | 16 | **0** | 15 ↑ | **16** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.metrics.cobertura_suficiente` | 12 | **0** | 9 ↑ | **12** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.optional_finite` | 12 | **0** | 9 ↑ | **12** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._resample_highs_lows` | 15 | **0** | 0 | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_coverage_reason` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._flow_windows` | 12 | **0** | 0 | **12** | [impacto](../impacto/app-scalp_logic.md) |

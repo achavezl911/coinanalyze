@@ -55,13 +55,13 @@ Llamadas directas del handler:
 - `app.api.sella_respuesta` — `app/api.py:2131`
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.api.ventana_pedida` — `app/api.py:1853`
-- `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1433`
+- `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1438`
 
 <details><summary>Alcanzables de forma indirecta (11)</summary>
 
 - `app.api._utc_iso` — `app/api.py:2599`
 - `app.interpretation.number` — `app/interpretation.py:10`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.zones._atr_pct` — `app/zones.py:104`
 - `app.zones._clamp` — `app/zones.py:100`
 - `app.zones._effort_result` — `app/zones.py:128`

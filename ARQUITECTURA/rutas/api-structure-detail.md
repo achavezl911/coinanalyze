@@ -18,13 +18,13 @@ Handler `structure_detail_endpoint` · `app/api.py:2323` (cuerpo hasta la 2326) 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:2479 |
-| `canonical_for` | literal en app/scalp_logic.py:2505 |
-| `closed_bar_rule` | literal en app/scalp_logic.py:2488 |
-| `distinct_from` | literal en app/scalp_logic.py:2496 |
-| `horizons` | literal en app/scalp_logic.py:2480 |
-| `state_method` | literal en app/scalp_logic.py:2484 |
-| `symbol` | literal en app/scalp_logic.py:2478 |
+| `as_of` | literal en app/scalp_logic.py:2484 |
+| `canonical_for` | literal en app/scalp_logic.py:2510 |
+| `closed_bar_rule` | literal en app/scalp_logic.py:2493 |
+| `distinct_from` | literal en app/scalp_logic.py:2501 |
+| `horizons` | literal en app/scalp_logic.py:2485 |
+| `state_method` | literal en app/scalp_logic.py:2489 |
+| `symbol` | literal en app/scalp_logic.py:2483 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -51,20 +51,20 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1298`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2426`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2377`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2363`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1303`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 

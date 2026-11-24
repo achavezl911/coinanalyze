@@ -18,12 +18,12 @@ Handler `structure` · `app/api.py:2451` (cuerpo hasta la 2454) · decorador en 
 
 | campo | de donde sale |
 |---|---|
-| `alignment` | literal en app/scalp_logic.py:1196 |
-| `as_of` | literal en app/scalp_logic.py:1194 |
-| `bias_method` | literal en app/scalp_logic.py:1201 |
-| `distinct_from` | literal en app/scalp_logic.py:1205 |
-| `layers` | literal en app/scalp_logic.py:1195 |
-| `symbol` | literal en app/scalp_logic.py:1193 |
+| `alignment` | literal en app/scalp_logic.py:1201 |
+| `as_of` | literal en app/scalp_logic.py:1199 |
+| `bias_method` | literal en app/scalp_logic.py:1206 |
+| `distinct_from` | literal en app/scalp_logic.py:1210 |
+| `layers` | literal en app/scalp_logic.py:1200 |
+| `symbol` | literal en app/scalp_logic.py:1198 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -59,19 +59,19 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.market_structure` — `app/scalp_logic.py:1041`
+- `app.scalp_logic.market_structure` — `app/scalp_logic.py:1046`
 
 <details><summary>Alcanzables de forma indirecta (9)</summary>
 
-- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1021`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:936`
-- `app.scalp_logic._sign_vote` — `app/scalp_logic.py:954`
-- `app.scalp_logic._structure_layer` — `app/scalp_logic.py:989`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:965`
+- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
+- `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1026`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:941`
+- `app.scalp_logic._sign_vote` — `app/scalp_logic.py:959`
+- `app.scalp_logic._structure_layer` — `app/scalp_logic.py:994`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 

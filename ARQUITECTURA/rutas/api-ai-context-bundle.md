@@ -93,7 +93,7 @@ LEE:
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:712`
 - `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -125,9 +125,11 @@ LEE:
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
+- `agg_cov`
 - `agg_span`
 - `c0.agg_hi`
 - `choice`
+- `choice1`
 - `edges`
 - `exchanges`
 - `max`
@@ -141,7 +143,7 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-173 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+175 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
@@ -150,7 +152,7 @@ Llamadas directas del handler:
 - `app.ai_context.normalize_profile` — `app/ai_context.py:220`
 - `app.api.validate_symbol` — `app/api.py:260`
 
-<details><summary>Alcanzables de forma indirecta (170)</summary>
+<details><summary>Alcanzables de forma indirecta (172)</summary>
 
 - `app.ai_context._armar_sobre` — `app/ai_context.py:913`
 - `app.ai_context._corte_unico` — `app/ai_context.py:859`
@@ -201,105 +203,107 @@ Llamadas directas del handler:
 - `app.interpretation.market_memory_read` — `app/interpretation.py:400`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3620`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3634`
-- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3292`
-- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:6159`
-- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
-- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
-- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3219`
-- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:960`
-- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1894`
-- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:970`
-- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1021`
-- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2935`
-- `app.scalp_logic._dsr` — `app/scalp_logic.py:2421`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4224`
-- `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2619`
-- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2604`
-- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2612`
-- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2644`
-- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1884`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4445`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4415`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4427`
-- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:2072`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4189`
-- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
-- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4626`
-- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3304`
-- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3262`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3607`
-- `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:936`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3876`
-- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3248`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4542`
-- `app.scalp_logic._regime` — `app/scalp_logic.py:1865`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:2059`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3599`
-- `app.scalp_logic._sign_vote` — `app/scalp_logic.py:954`
-- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:2027`
-- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2372`
-- `app.scalp_logic._structure_layer` — `app/scalp_logic.py:989`
-- `app.scalp_logic._swings` — `app/scalp_logic.py:2358`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3229`
-- `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1298`
-- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
-- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6494`
-- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3973`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3655`
-- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2994`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4347`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4658`
-- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2200`
-- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:4064`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5640`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4794`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3698`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2914`
-- `app.scalp_logic.horizon_structure` — `app/scalp_logic.py:1753`
-- `app.scalp_logic.liquidation_burst` — `app/scalp_logic.py:1810`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3771`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1934`
-- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5877`
-- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1734`
-- `app.scalp_logic.market_structure` — `app/scalp_logic.py:1041`
-- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4498`
-- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4253`
-- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3335`
-- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6192`
-- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5982`
-- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1304`
-- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3505`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5683`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5839`
-- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
-- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
-- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5778`
-- `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
-- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2853`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2843`
-- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2429`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6320`
-- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3455`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3913`
-- `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1680`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3619`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3633`
+- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3291`
+- `app.scalp_logic._classify_passive` — `app/scalp_logic.py:6158`
+- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
+- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
+- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3218`
+- `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:965`
+- `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1899`
+- `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
+- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:571`
+- `app.scalp_logic._cvd_fut_window` — `app/scalp_logic.py:1026`
+- `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2934`
+- `app.scalp_logic._dsr` — `app/scalp_logic.py:2426`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4223`
+- `app.scalp_logic._first_present` — `app/scalp_logic.py:507`
+- `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
+- `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2609`
+- `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2617`
+- `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
+- `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1889`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
+- `app.scalp_logic._intraday_divergences` — `app/scalp_logic.py:2077`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4188`
+- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:519`
+- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:563`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4625`
+- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3303`
+- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3261`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1861`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3606`
+- `app.scalp_logic._pivot_structure` — `app/scalp_logic.py:941`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3875`
+- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3247`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4541`
+- `app.scalp_logic._regime` — `app/scalp_logic.py:1870`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._return_stdev_pct` — `app/scalp_logic.py:2064`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3598`
+- `app.scalp_logic._sign_vote` — `app/scalp_logic.py:959`
+- `app.scalp_logic._slope_pct` — `app/scalp_logic.py:2032`
+- `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2377`
+- `app.scalp_logic._structure_layer` — `app/scalp_logic.py:994`
+- `app.scalp_logic._swings` — `app/scalp_logic.py:2363`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3228`
+- `app.scalp_logic._utc_now` — `app/scalp_logic.py:73`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1303`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
+- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
+- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
+- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
+- `app.scalp_logic.compute_swing_score` — `app/scalp_logic.py:6493`
+- `app.scalp_logic.context_metadata` — `app/scalp_logic.py:3972`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3654`
+- `app.scalp_logic.cvd_matrix` — `app/scalp_logic.py:2993`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4346`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4657`
+- `app.scalp_logic.divergence_scan` — `app/scalp_logic.py:2205`
+- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:4063`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5639`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4793`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3697`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2915`
+- `app.scalp_logic.horizon_structure` — `app/scalp_logic.py:1758`
+- `app.scalp_logic.liquidation_burst` — `app/scalp_logic.py:1815`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3770`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
+- `app.scalp_logic.macro_context` — `app/scalp_logic.py:1939`
+- `app.scalp_logic.market_impact` — `app/scalp_logic.py:5876`
+- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1739`
+- `app.scalp_logic.market_structure` — `app/scalp_logic.py:1046`
+- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4497`
+- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4252`
+- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3334`
+- `app.scalp_logic.passive_flow` — `app/scalp_logic.py:6191`
+- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5981`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1309`
+- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3504`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5682`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5838`
+- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
+- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
+- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5777`
+- `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2854`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
+- `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6319`
+- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3454`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3912`
+- `app.scalp_logic.wyckoff_context` — `app/scalp_logic.py:1685`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
@@ -406,6 +410,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic.scalp_context` | 10 | **0** | 25 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.load_baselines` | 15 | **0** | 11 ↑ | **15** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.baseline_band` | 14 | **0** | 11 ↑ | **14** | [impacto](../impacto/app-scalp_logic.md) |
+| `app.metrics.cobertura_suficiente` | 12 | **0** | 9 ↑ | **12** | [impacto](../impacto/app-metrics.md) |
+| `app.metrics.optional_finite` | 12 | **0** | 9 ↑ | **12** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic.basis_quality` | 11 | **0** | 11 ↑ | **11** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.classify_absorption` | 11 | **0** | 11 ↑ | **11** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._closed_5m_oi_bounds` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
@@ -414,9 +420,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.scalp_logic._liquidation_window_measured` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._measured_event_sum` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.scalp_bias_label` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.scalp_logic.score_component` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.setups.classify_oi` | 10 | **0** | 11 ↑ | **10** | [impacto](../impacto/app-setups.md) |
-| _… y 149 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
+| _… y 151 mas_ | | | | | [IMPACTO.md](../IMPACTO.md) |
 
 **El inverso completo -si toco X, que rutas cambian- esta en**
 [`IMPACTO.md`](../IMPACTO.md), con X funcion o tabla.

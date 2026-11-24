@@ -16,6 +16,35 @@ from app.db import INGEST_COMPONENT_MAX_AGES
 NY = ZoneInfo("America/New_York")
 WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
 
+# LA COBERTURA DEL FLUJO SE CUENTA, NO SE PREGUNTA (M-01, M-02, R2b A2). Cada fila de
+# 1 min de *_trades_agg certifica cuantos segundos del minuto escucho el colector
+# (covered_seconds); la cobertura de una ventana es la suma de esos segundos -un minuto
+# ausente cuenta 0, uno con covered_seconds NULL (legado, app/api.py:1253) tambien- entre
+# los segundos que la ventana pide. Ni los extremos de la tabla ni un feed de data_gap que
+# nadie escribe («spot_trades»: 0 filas en 140) ven un hueco de dentro.
+# UMBRAL 0.99, DECISION DEL OPERADOR medida en 140 el 2026-11-22 sobre spot_trades_agg
+# combined venue_count=2, por dia y simbolo, 11-08..11-21: dias normales 0.99696-0.9995,
+# dias con caida 0.643 (11-16), 0.892 (11-18), 0.915 (11-13). Deja pasar todo dia normal
+# con margen y bloquea toda caida de mas de ~14 min en 24 h.
+COBERTURA_MINIMA = 0.99
+
+
+def segundos_cubiertos_sql(columna: str = "covered_seconds", filtro: str = "") -> str:
+    """SUM(LEAST(covered_seconds, 60)) con el NULL contado como 0.
+
+    El COALESCE no sobra: en PostgreSQL LEAST ignora los NULL, y LEAST(NULL, 60) vale 60.
+    """
+    donde = f" FILTER (WHERE {filtro})" if filtro else ""
+    return f"COALESCE(SUM(LEAST(COALESCE({columna}, 0), 60)){donde}, 0)"
+
+
+def cobertura_suficiente(cubiertos: object, esperados: float) -> bool:
+    """Segundos cubiertos contra segundos pedidos, con COBERTURA_MINIMA. Nada pedido, nada falta."""
+    if esperados <= 0:
+        return True
+    valor = optional_finite(cubiertos)
+    return valor is not None and valor >= COBERTURA_MINIMA * esperados
+
 
 def current_nyse_start(now_utc: datetime | None = None) -> datetime:
     now_utc = now_utc or datetime.now(UTC)
@@ -332,7 +361,10 @@ async def _liquidation_history_observed(
     return observation is not None
 
 
-SNAPSHOT_QUERY = """
+_SPOT_CUBIERTOS_24H = segundos_cubiertos_sql(filtro="ts >= $4 - interval '24 hours'")
+_SPOT_CUBIERTOS_SESION = segundos_cubiertos_sql(filtro="ts >= $3")
+
+SNAPSHOT_QUERY = f"""
 WITH
 fut AS (
     SELECT
@@ -369,7 +401,9 @@ spot AS (
       SUM(buy_vol_usd + sell_vol_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS vol_24h,
       SUM(buy_vol_usd - sell_vol_usd) FILTER (WHERE ts >= $3) AS cvd_session,
       SUM(inst_buy_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_buy,
-      SUM(inst_sell_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_sell
+      SUM(inst_sell_usd) FILTER (WHERE ts >= $4 - interval '24 hours') AS inst_sell,
+      {_SPOT_CUBIERTOS_24H} AS covered_24h,
+      {_SPOT_CUBIERTOS_SESION} AS covered_session
     FROM spot_trades_agg
     WHERE symbol = $2 AND exchange = 'combined' AND venue_count = 2 AND interval = '1min'
       AND ts >= $4 - interval '25 hours' AND ts < $4
@@ -410,6 +444,7 @@ SELECT
   spot.cvd_24h AS spot_cvd_24h, spot.vol_24h AS spot_vol_24h,
   spot.cvd_session AS spot_cvd_session,
   spot.inst_buy, spot.inst_sell,
+  spot.covered_24h AS spot_covered_24h, spot.covered_session AS spot_covered_session,
   oi_now.value AS oi_now, oi_now.ts AS oi_ts, oi_old.value AS oi_old,
   oi_b.value AS oi_bybit,
   fund.value AS fr_avg, pfund.value AS pfr_avg,
@@ -517,21 +552,15 @@ async def compute_snapshot(
                 session_start, price_cutoff,
             )
         )
-    for exchange in ("binance", "bybit", "combined"):
-        requirements.append(
-            GapRequirement(
-                "spot_24h", "spot_trades", exchange, "spot", ws_symbol,
-                price_cutoff - timedelta(hours=24), price_cutoff,
-            )
-        )
-        if sesion_con_minuto_cerrado:
-            requirements.append(
-                GapRequirement(
-                    "spot_session", "spot_trades", exchange, "spot", ws_symbol,
-                    session_start, price_cutoff,
-                )
-            )
     blocked = await blocking_requirement_keys(conn, requirements)
+    # La pata spot no pregunta a data_gap: el feed «spot_trades» no lo escribe nadie (M-01).
+    # Se CUENTA en la CTE `spot`, minuto a minuto, contra los segundos de la ventana.
+    if not cobertura_suficiente(data.get("spot_covered_24h"), 24 * 3600):
+        blocked.add("spot_24h")
+    if sesion_con_minuto_cerrado and not cobertura_suficiente(
+        data.get("spot_covered_session"), (price_cutoff - session_start).total_seconds()
+    ):
+        blocked.add("spot_session")
     if not sesion_con_minuto_cerrado:
         # F4: NULL = no medido. El SQL ya devuelve NULL aqui -SUM(...) FILTER (WHERE ts >=
         # $3) sobre cero filas, metrics.py:349 y :370-, pero el significado se fija en este
