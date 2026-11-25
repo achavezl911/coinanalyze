@@ -22,11 +22,14 @@ WHALE_ACTIVITY_MIN = WHALE_THRESHOLD_MAP
 # ausente cuenta 0, uno con covered_seconds NULL (legado, app/api.py:1253) tambien- entre
 # los segundos que la ventana pide. Ni los extremos de la tabla ni un feed de data_gap que
 # nadie escribe («spot_trades»: 0 filas en 140) ven un hueco de dentro.
-# UMBRAL 0.99, DECISION DEL OPERADOR medida en 140 el 2026-11-22 sobre spot_trades_agg
-# combined venue_count=2, por dia y simbolo, 11-08..11-21: dias normales 0.99696-0.9995,
-# dias con caida 0.643 (11-16), 0.892 (11-18), 0.915 (11-13). Deja pasar todo dia normal
-# con margen y bloquea toda caida de mas de ~14 min en 24 h.
-COBERTURA_MINIMA = 0.99
+# UMBRAL 0.98, DECISION DEL OPERADOR (COBERTURA R2, V-12) medida en 140 sobre spot_trades_agg
+# combined venue_count=2, por dia y simbolo: dias normales 0.997-0.9995 (11-08..11-21, medido
+# el 11-22); dias con caida 0.643 (11-16), 0.892 (11-18), 0.915 (11-13); y el dia de ~12
+# despliegues del 11-24/25, 0.985 (cada reinicio del colector pierde su minuto). Con el 0.99
+# anterior ese dia bloqueo spot_24h y apago el regimen en toda foto. 0.98 son ~29 min de 1440:
+# tolera un dia de despliegues, y un corte real de 29 min o mas sigue bloqueando (y apaga el
+# regimen, que es la intencion de la regla fail-closed de compute_snapshot).
+COBERTURA_MINIMA = 0.98
 
 
 def segundos_cubiertos_sql(columna: str = "covered_seconds", filtro: str = "") -> str:
