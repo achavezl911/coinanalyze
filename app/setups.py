@@ -847,7 +847,9 @@ def episodio(
     Antes se juzgaba siempre `nearest_*`, que excluye la zona donde esta el precio: un rechazo
     EN la zona se medía contra la siguiente, y una ruptura contra la que aun no habia cruzado.
     Ruptura: la zona cuya frontera cruzo el cierre por ultima vez, buscada en la de detras,
-    la activa y la de delante. Rechazo: la activa (o la de detras) con contacto reciente.
+    la activa y la de delante: entre las que tienen cruce, la de apertura mas reciente (V-05,
+    Fable V1 N1); si la misma vela cruza dos, gana ese orden. Rechazo: la activa (o la de
+    detras) con contacto reciente.
     """
     activa = barriers.get("active_zone")
     detras = barriers.get("nearest_support") if signo > 0 else barriers.get("nearest_resistance")
@@ -855,11 +857,13 @@ def episodio(
     if setup == "rechazo":
         zona = activa or detras
         return zona, _apertura(setup, signo, zona, bars)
+    elegida: tuple[dict[str, Any] | None, int | None] = (activa or delante, None)
     for zona in (detras, activa, delante):
         i0 = _apertura(setup, signo, zona, bars)
-        if i0 is not None:
-            return zona, i0
-    return activa or delante, None
+        # Estricto: en empate se queda la anterior en el orden.
+        if i0 is not None and (elegida[1] is None or i0 > elegida[1]):
+            elegida = (zona, i0)
+    return elegida
 
 
 def _gap_in(bars: list[dict[str, Any]], bar_seconds: int | None) -> bool:
