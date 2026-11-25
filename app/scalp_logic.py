@@ -2680,20 +2680,31 @@ async def _flow_windows(
           SELECT * FROM unnest($2::text[], $3::int[]) AS r(horizon, seconds)
         ), exchanges(exchange) AS (
           VALUES ('combined'),('binance'),('bybit')
+        -- HYPO R1 (V-07): cada lectura de las tablas va en un LATERAL por exchange y ventana,
+        -- para que sea un rango del indice primario (symbol, exchange[, interval], ts). Con
+        -- JOIN + GROUP BY el planificador no sabe que el rango sale de choice y recorria la
+        -- historia ENTERA del simbolo (90 dias de spot_trades_agg en 140) tres veces por
+        -- llamada: /api/hypothesis pasaba de los 20 s del canal. Mismas filas, mismas sumas.
         ), rt_span AS (
-          SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
-          FROM {realtime_table}
-          WHERE symbol=$1 AND exchange IN ('combined','binance','bybit')
-            AND (exchange <> 'combined' OR venue_count=2)
-            AND ts <= $4::timestamptz
-          GROUP BY exchange
+          SELECT e.exchange,s.lo,s.hi
+          FROM exchanges e CROSS JOIN LATERAL (
+            SELECT MIN(ts) AS lo,MAX(ts) AS hi
+            FROM {realtime_table}
+            WHERE symbol=$1 AND exchange=e.exchange
+              AND (exchange <> 'combined' OR venue_count=2)
+              AND ts <= $4::timestamptz
+          ) s
+          WHERE s.lo IS NOT NULL
         ), agg_span AS (
-          SELECT exchange,MIN(ts) AS lo,MAX(ts) AS hi
-          FROM {agg_table}
-          WHERE symbol=$1 AND exchange IN ('combined','binance','bybit') AND interval='1min'
-            AND (exchange <> 'combined' OR venue_count=2)
-            AND ts <= $4::timestamptz
-          GROUP BY exchange
+          SELECT e.exchange,s.lo,s.hi
+          FROM exchanges e CROSS JOIN LATERAL (
+            SELECT MIN(ts) AS lo,MAX(ts) AS hi
+            FROM {agg_table}
+            WHERE symbol=$1 AND exchange=e.exchange AND interval='1min'
+              AND (exchange <> 'combined' OR venue_count=2)
+              AND ts <= $4::timestamptz
+          ) s
+          WHERE s.lo IS NOT NULL
         ), choice0 AS (
           SELECT r.horizon,r.seconds,e.exchange,
                  $4::timestamptz-(r.seconds*interval '1 second') AS window_start,
@@ -2711,13 +2722,16 @@ async def _flow_windows(
           FROM choice0 c0
         ), agg_cov AS (
           -- los segundos que el agg CERTIFICA en esos minutos (metrics.segundos_cubiertos_sql)
-          SELECT c.horizon,c.exchange,{_AGG_CUBIERTOS}::float8 AS agg_covered_seconds
-          FROM choice1 c
-          JOIN {agg_table} t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
-          WHERE (c.exchange <> 'combined' OR t.venue_count=2)
-            AND t.ts >= c.window_start AND t.ts <= c.agg_hi
-            AND t.ts <= $4
-          GROUP BY c.horizon,c.exchange
+          SELECT c.horizon,c.exchange,x.agg_covered_seconds
+          FROM choice1 c CROSS JOIN LATERAL (
+            SELECT {_AGG_CUBIERTOS}::float8 AS agg_covered_seconds,COUNT(*) AS n
+            FROM {agg_table} t
+            WHERE t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
+              AND (c.exchange <> 'combined' OR t.venue_count=2)
+              AND t.ts >= c.window_start AND t.ts <= c.agg_hi
+              AND t.ts <= $4
+          ) x
+          WHERE x.n > 0
         ), choice AS (
           -- M-02: MIN/MAX del realtime tocan los dos extremos aunque falten horas en medio.
           -- El realtime no certifica segundos (un segundo sin operaciones no tiene fila);
@@ -2731,48 +2745,51 @@ async def _flow_windows(
           FROM choice1 c1
           LEFT JOIN agg_cov ac USING(horizon,exchange)
         ), parts AS (
-          SELECT c.horizon,c.exchange,
-                 SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
-                 SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
-                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
-                 0::bigint AS agg_minutes,0::bigint AS agg_full,0::bigint AS agg_unknown
-          FROM choice c
-          JOIN {realtime_table} t ON t.symbol=$1 AND t.exchange=c.exchange
-          WHERE c.realtime_complete
-            AND (c.exchange <> 'combined' OR t.venue_count=2)
-            AND t.ts >= c.window_start
-            AND t.ts <= $4
-          GROUP BY c.horizon,c.exchange
+          SELECT c.horizon,c.exchange,x.*
+          FROM choice c CROSS JOIN LATERAL (
+            SELECT SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
+                   SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
+                   SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
+                   0::bigint AS agg_minutes,0::bigint AS agg_full,0::bigint AS agg_unknown
+            FROM {realtime_table} t
+            WHERE t.symbol=$1 AND t.exchange=c.exchange
+              AND (c.exchange <> 'combined' OR t.venue_count=2)
+              AND t.ts >= c.window_start
+              AND t.ts <= $4
+          ) x
+          WHERE c.realtime_complete AND x.rows > 0
           UNION ALL
-          SELECT c.horizon,c.exchange,
-                 SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
-                 SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
-                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
-                 COUNT(*)::bigint AS agg_minutes,
-                 COUNT(*) FILTER (WHERE t.covered_seconds >= 60)::bigint AS agg_full,
-                 COUNT(*) FILTER (WHERE t.covered_seconds IS NULL)::bigint AS agg_unknown
-          FROM choice c
-          JOIN {agg_table} t ON t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
-          WHERE NOT c.realtime_complete
-            AND (c.exchange <> 'combined' OR t.venue_count=2)
-            AND t.ts >= c.window_start AND t.ts <= c.agg_hi
-            AND t.ts <= $4
-          GROUP BY c.horizon,c.exchange
+          SELECT c.horizon,c.exchange,x.*
+          FROM choice c CROSS JOIN LATERAL (
+            SELECT SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
+                   SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
+                   SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
+                   COUNT(*)::bigint AS agg_minutes,
+                   COUNT(*) FILTER (WHERE t.covered_seconds >= 60)::bigint AS agg_full,
+                   COUNT(*) FILTER (WHERE t.covered_seconds IS NULL)::bigint AS agg_unknown
+            FROM {agg_table} t
+            WHERE t.symbol=$1 AND t.exchange=c.exchange AND t.interval='1min'
+              AND (c.exchange <> 'combined' OR t.venue_count=2)
+              AND t.ts >= c.window_start AND t.ts <= c.agg_hi
+              AND t.ts <= $4
+          ) x
+          WHERE NOT c.realtime_complete AND x.rows > 0
           UNION ALL
-          SELECT c.horizon,c.exchange,
-                 SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
-                 SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
-                 SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
-                 0::bigint AS agg_minutes,0::bigint AS agg_full,0::bigint AS agg_unknown
-          FROM choice c
-          JOIN {realtime_table} t ON t.symbol=$1 AND t.exchange=c.exchange
-          WHERE NOT c.realtime_complete
-            AND (c.exchange <> 'combined' OR t.venue_count=2)
-            AND t.ts >= GREATEST(
-              c.window_start,COALESCE(c.agg_hi+interval '1 minute',c.window_start)
-            )
-            AND t.ts <= $4
-          GROUP BY c.horizon,c.exchange
+          SELECT c.horizon,c.exchange,x.*
+          FROM choice c CROSS JOIN LATERAL (
+            SELECT SUM(t.buy_vol_usd-t.sell_vol_usd) AS delta,
+                   SUM(t.buy_vol_usd+t.sell_vol_usd) AS volume,
+                   SUM(t.trade_count) AS trades,COUNT(*)::bigint AS rows,
+                   0::bigint AS agg_minutes,0::bigint AS agg_full,0::bigint AS agg_unknown
+            FROM {realtime_table} t
+            WHERE t.symbol=$1 AND t.exchange=c.exchange
+              AND (c.exchange <> 'combined' OR t.venue_count=2)
+              AND t.ts >= GREATEST(
+                c.window_start,COALESCE(c.agg_hi+interval '1 minute',c.window_start)
+              )
+              AND t.ts <= $4
+          ) x
+          WHERE NOT c.realtime_complete AND x.rows > 0
         )
         SELECT c.horizon,c.seconds,c.exchange,
                CASE WHEN COALESCE(SUM(p.rows),0)>0 THEN SUM(p.delta) END AS delta,

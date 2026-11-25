@@ -401,6 +401,36 @@ GAP_STATUS_UNDECLARED = "undeclared"
 # absurdo, y entonces se devuelven las cuentas sin el detalle en vez de barrer un millon
 # de instantes.
 MAX_BUCKET_SWEEP = 20000
+# EL RETRASO NORMAL DE CADA FEED (M-03 paso 2, P08). La ventana PEDIDA acaba en el ultimo cubo
+# cerrado, y un feed sano llega tarde: sus ultimos cubos cerrados aun no tienen fila. Medido en
+# 140 por el operador (sobre servido cada 60 s, 2026-11-24 05:27Z a 11-25 04:22Z, 1367
+# muestras por ruta, BTC): ohlcv y cvd 1min edad p99 36-37 s, max 94 s, sin declarar max 1;
+# cvd/spot y whale/delta 1min edad p99 161-166 s, max 215 s, sin declarar max 4;
+# liquidations 1hour (rala, con latido) edad max 279 s, sin declarar 0; oi pedido a 1min edad
+# 395-814 s (su cubo nativo es de 5 min y se publica hasta ~574 s despues de cerrar).
+# Tolerancia, decision del operador con margen sobre lo medido: 120 s (ohlcv_1min) y 300 s
+# (spot_trades). Las de liquidations (300 s, su max medido 279 s; los ceros los sigue dando su
+# latido) y open_interest_5min (600 s) son de SOBRE R2. Se pasan a cubos por arriba,
+# ceil(s / cubo): a 1min dan 2 y 5; a 1hour, 1 (la ultima hora, que el barrido o el ultimo
+# minuto aun no cubren entera, puede no tener fila sin que falte nada). El sobre deja de decir clean/complete cuando la ventana pedida tiene MAS
+# cubos sin fila que esos. Un feed fuera de esta tabla se juzga como antes: solo lo servido.
+RETRASO_TOLERADO = {
+    "ohlcv_1min": 120,
+    "spot_trades": 300,
+    "liquidations": 300,
+    "open_interest_5min": 600,
+}
+# La cadencia a la que EXISTE el dato. Pedido mas fino, cuatro de cada cinco cubos de 1min del
+# OI no pueden tener fila: no es una perdida, asi que el sobre se juzga en el cubo nativo.
+CADENCIA_NATIVA = {"open_interest_5min": timedelta(minutes=5)}
+
+
+def cubos_tolerados(feed: str, paso: timedelta) -> int | None:
+    """Cuantos cubos de ``paso`` puede llevar de retraso un feed sano. None: no se juzga."""
+    segundos = RETRASO_TOLERADO.get(feed)
+    if segundos is None:
+        return None
+    return -(-segundos // int(paso.total_seconds()))
 
 
 def minutos_de_las_filas(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -456,35 +486,40 @@ async def lo_pedido(
     market: str,
     symbol: str,
 ) -> dict[str, Any]:
-    """La EDAD del sobre y la ventana PEDIDA, al lado de la servida (M-03, paso 1 de 2).
+    """La EDAD del sobre y la ventana PEDIDA, al lado de la servida (M-03).
 
     La ventana servida sale de las filas: si el proveedor se para, la ultima fila se queda
     atras, la ventana con ella, y el hueco del final queda FUERA de lo que se mira. Por eso
     aqui se dice de cuando es lo ultimo servido (`as_of`, `age_seconds`) y se cuentan los
     cubos de lo que se PIDIO -[fin - limit x bucket, fin), con fin el ultimo cubo cerrado-
-    que no traen fila ni hueco declarado. ESTE PASO SOLO ANADE: `status`, `complete` y la
-    ventana servida no cambian; el veredicto lo cambia P08 con el retraso por feed medido.
+    que no traen fila ni hueco declarado; el cubo en formacion no cuenta. El veredicto lo
+    pone `declared_series_response` con `cubos_tolerados` (P08). `_faltan` son los cubos
+    sin fila, declarados o no; no sale en el sobre. Pedido mas fino que la CADENCIA_NATIVA
+    del feed, se juzga en la nativa: `undeclared_buckets` cuenta cubos de 5 min en el OI.
 
     ``barrido`` es el latido de una serie RALA (/api/liquidations: sin fila = cero, pero
     solo donde el latido `ingest:liquidations_history` lo certifica con estado ok). Ahi la
     edad es la del barrido y un cubo sin fila dentro de lo certificado no falta.
     """
     ahora = ahora or datetime.now(UTC)
+    paso = max(bucket, CADENCIA_NATIVA.get(feed, bucket))
     certificado: tuple[datetime, datetime] | None = None
     if barrido and barrido.get("estado") == "ok" and barrido.get("desde") and barrido.get("hasta"):
         certificado = (barrido["desde"], barrido["hasta"])
-    finales = [m for m in (starts[-1] + bucket if starts else None, certificado and certificado[1]) if m]
+    finales = [m for m in (starts[-1] + paso if starts else None, certificado and certificado[1]) if m]
     # El cubo en curso acaba en el futuro: lo servido llega, como mucho, hasta ahora.
     as_of = min(max(finales), ahora) if finales else None
     bloque: dict[str, Any] = {
         "as_of": as_of.isoformat() if as_of else None,
         "age_seconds": int((ahora - as_of).total_seconds()) if as_of else None,
         "requested_window": None,
+        "_faltan": None,
     }
     if limit is None or limit <= 0:
         return bloque
-    fin = align_down(ahora, bucket)
-    inicio = fin - limit * bucket
+    pasos = -(-(limit * bucket) // paso)
+    fin = align_down(ahora, paso)
+    inicio = fin - pasos * paso
     declared = await declared_gap_windows(
         conn, feed=feed, exchanges=exchanges, market=market, symbol=symbol, start=inicio, end=fin
     )
@@ -492,18 +527,20 @@ async def lo_pedido(
         (datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"]))
         for item in declared
     ]
-    presentes = set(starts)
+    presentes = {align_down(s, paso) for s in starts}
     undeclared: int | None = 0
-    if limit > MAX_BUCKET_SWEEP:
-        undeclared = None
+    faltan: int | None = 0
+    if pasos > MAX_BUCKET_SWEEP:
+        undeclared = faltan = None
     else:
-        for paso in range(limit):
-            cubo = inicio + paso * bucket
-            final = cubo + bucket
+        for n in range(pasos):
+            cubo = inicio + n * paso
+            final = cubo + paso
             if cubo in presentes:
                 continue
             if certificado and certificado[0] <= cubo and final <= certificado[1]:
                 continue
+            faltan += 1
             if not any(a < final and b > cubo for a, b in ventanas):
                 undeclared += 1
     bloque["requested_window"] = {
@@ -513,6 +550,7 @@ async def lo_pedido(
         "declared": declared,
         "undeclared_buckets": undeclared,
     }
+    bloque["_faltan"] = faltan
     return bloque
 
 
@@ -578,8 +616,12 @@ async def declared_series_response(
                 "requested_window": pedido["requested_window"],
             },
         }
-    window_start, window_end = starts[0], starts[-1] + bucket
-    esperados = expected_buckets(window_start, window_end, bucket)
+    # Pedido mas fino que su cadencia nativa (el OI a 1min), la ventana servida tambien se
+    # cuenta en cubos nativos: los cuatro minutos sin fila de cada cinco no faltan.
+    paso = max(bucket, CADENCIA_NATIVA.get(feed, bucket))
+    starts = sorted({align_down(s, paso) for s in starts})
+    window_start, window_end = starts[0], starts[-1] + paso
+    esperados = expected_buckets(window_start, window_end, paso)
     declared = await declared_gap_windows(
         conn,
         feed=feed,
@@ -600,7 +642,7 @@ async def declared_series_response(
     else:
         instante = window_start
         while instante < window_end:
-            fin = instante + bucket
+            fin = instante + paso
             if instante not in presentes and not any(
                 inicio < fin and final > instante for inicio, final in ventanas
             ):
@@ -615,16 +657,25 @@ async def declared_series_response(
         status = GAP_STATUS_DECLARED
     else:
         status = GAP_STATUS_CLEAN
+    # P08: lo servido puede estar entero y llegar 8 h tarde. Si la ventana PEDIDA tiene mas
+    # cubos sin fila que el retraso normal de su feed, el sobre no dice clean ni complete:
+    # undeclared si lo que sobra no lo apunto nadie, declared si lo tapa un hueco declarado.
+    tolerados = cubos_tolerados(feed, paso)
+    sin_fila = pedido["_faltan"]
+    sin_declarar = (pedido["requested_window"] or {}).get("undeclared_buckets")
+    atrasada = tolerados is not None and sin_fila is not None and sin_fila > tolerados
+    if atrasada and sin_declarar is not None and sin_declarar > tolerados:
+        status = GAP_STATUS_UNDECLARED
+    elif atrasada and status == GAP_STATUS_CLEAN:
+        status = GAP_STATUS_DECLARED
+    servida = coverage_entry(window_start, window_end, sources=((feed, esperados, len(starts)),))
+    if atrasada:
+        servida["complete"] = False
     return {
         "symbol": symbol,
         "interval": interval,
         "rows": rows,
-        "coverage": {
-            "served_window": coverage_entry(
-                window_start, window_end, sources=((feed, esperados, len(starts)),)
-            )
-            | minutos_de_las_filas(rows)
-        },
+        "coverage": {"served_window": servida | minutos_de_las_filas(rows)},
         "data_gaps": {
             "feed": feed,
             "exchanges": list(exchanges),

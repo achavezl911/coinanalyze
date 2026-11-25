@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `ai_profiles` · `app/api.py:3736` (cuerpo hasta la 3756) · decorador en la linea 3735.
+Handler `ai_profiles` · `app/api.py:3787` (cuerpo hasta la 3807) · decorador en la linea 3786.
 
 ## Parametros de entrada
 
@@ -16,20 +16,20 @@ _ninguno_
 
 | campo | de donde sale |
 |---|---|
-| `endpoints` | literal en app/api.py:3752 |
-| `profiles` | literal en app/api.py:3738 |
-| `profiles.default` | literal en app/api.py:3740 |
-| `profiles.default.purpose` | literal en app/api.py:3740 |
-| `profiles.default.recommended_for` | literal en app/api.py:3740 |
-| `profiles.lite` | literal en app/api.py:3739 |
-| `profiles.lite.purpose` | literal en app/api.py:3739 |
-| `profiles.lite.recommended_for` | literal en app/api.py:3739 |
-| `profiles.max` | literal en app/api.py:3745 |
-| `profiles.max.purpose` | literal en app/api.py:3746 |
-| `profiles.max.recommended_for` | literal en app/api.py:3749 |
-| `profiles.pro` | literal en app/api.py:3741 |
-| `profiles.pro.purpose` | literal en app/api.py:3742 |
-| `profiles.pro.recommended_for` | literal en app/api.py:3743 |
+| `endpoints` | literal en app/api.py:3803 |
+| `profiles` | literal en app/api.py:3789 |
+| `profiles.default` | literal en app/api.py:3791 |
+| `profiles.default.purpose` | literal en app/api.py:3791 |
+| `profiles.default.recommended_for` | literal en app/api.py:3791 |
+| `profiles.lite` | literal en app/api.py:3790 |
+| `profiles.lite.purpose` | literal en app/api.py:3790 |
+| `profiles.lite.recommended_for` | literal en app/api.py:3790 |
+| `profiles.max` | literal en app/api.py:3796 |
+| `profiles.max.purpose` | literal en app/api.py:3797 |
+| `profiles.max.recommended_for` | literal en app/api.py:3800 |
+| `profiles.pro` | literal en app/api.py:3792 |
+| `profiles.pro.purpose` | literal en app/api.py:3793 |
+| `profiles.pro.recommended_for` | literal en app/api.py:3794 |
 
 Forma de la respuesta segun el AST: objeto.
 
