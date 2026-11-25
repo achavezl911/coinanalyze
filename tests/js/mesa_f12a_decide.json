@@ -1,0 +1,248 @@
+{
+ "age": {
+  "metrics_cutoff_at": {
+   "source_key": "snapshot.metrics_cutoff_at",
+   "status": "ok",
+   "value": "2026-11-19T18:55:00+00:00"
+  },
+  "price_cutoff_at": {
+   "source_key": "snapshot.price_cutoff_at",
+   "status": "ok",
+   "value": "2026-11-19T18:59:00+00:00"
+  },
+  "snapshot_lag_seconds": {
+   "source_key": "data_confidence.snapshot_lag_seconds",
+   "status": "ok",
+   "value": 25.153
+  },
+  "stale": false,
+  "stale_rule": "snapshot_lag_seconds > max_age_s (120 s)"
+ },
+ "asset": "BTC",
+ "build_finished_at": "2026-11-19T19:00:45.477561+00:00",
+ "build_started_at": "2026-11-19T19:00:44.419736+00:00",
+ "decide": {
+  "bias": {
+   "motivo": "no sostiene un lado en 5 min: LONG 0 · SHORT 7 · NO OPERAR 10 de 17 (umbral 60 %)",
+   "source_key": "mesa.decide.memoria",
+   "status": "ok",
+   "value": "NO OPERAR"
+  },
+  "book_status": {
+   "rotulo_instante": "del instante",
+   "source_key": "scalp.book_status",
+   "status": "ok",
+   "value": "ok"
+  },
+  "confidence": {
+   "rotulo_instante": "del instante",
+   "source_key": "operator_read.confidence",
+   "status": "ok",
+   "value": "media"
+  },
+  "confirms": [
+   {
+    "motivo": "sin lado: el sistema no sostiene un lado",
+    "source_key": "price_barriers.<lado>_case.rejection",
+    "status": "ausente",
+    "value": null
+   },
+   {
+    "motivo": "sin lado: el sistema no sostiene un lado",
+    "source_key": "price_barriers.<lado>_case.flow_requirement",
+    "status": "ausente",
+    "value": null
+   }
+  ],
+  "data_confidence": {
+   "source_key": "data_confidence.quality_score",
+   "status": "ok",
+   "value": 80.0
+  },
+  "edge": {
+   "rotulo_instante": "del instante",
+   "source_key": "operator_read.edge",
+   "status": "ok",
+   "value": 17.2
+  },
+  "evaluable": {
+   "rule": "handoff: data_confidence por debajo de 70 -> NO EVALUABLE",
+   "source_key": "data_confidence.quality_score",
+   "status": "ok",
+   "threshold": 70.0,
+   "value": true
+  },
+  "evidence": {
+   "rotulo_instante": "del instante",
+   "source_key": "scalp.evidence_coverage_pct",
+   "status": "ok",
+   "value": 100.0
+  },
+  "evidence_balance": {
+   "motivo": null,
+   "rotulo_instante": "del instante",
+   "rule": "signo de long_score - short_score. NO es la decision: el estado exige ademas edge >= 12 y que el score ganador llegue a 58",
+   "source_key": "operator_read.bias",
+   "status": "ok",
+   "value": "Short"
+  },
+  "horizon": {
+   "as_of": "2026-11-19T18:59:07.992161+00:00",
+   "dias": 30,
+   "mediana_min": 1,
+   "motivo": null,
+   "outside_cut": true,
+   "p90_min": 3,
+   "source_key": "scalp_persistence.etiqueta",
+   "status": "ok",
+   "value": "mediana 1 min · p90 3 min"
+  },
+  "instante": {
+   "cambios_en_ventana": 10,
+   "frase": "10 cambios en 5 min",
+   "motivo": null,
+   "rotulo_instante": "instante",
+   "source_key": "operator_read.state",
+   "status": "ok",
+   "value": "SHORT"
+  },
+  "invalidates": [
+   {
+    "motivo": "sin lado: el sistema no sostiene un lado",
+    "source_key": "operator_read.invalidates_<lado>",
+    "status": "ausente",
+    "value": null
+   }
+  ],
+  "invalidation_level": {
+   "motivo": "sin lado: el sistema no sostiene un lado",
+   "source_key": "price_barriers.nearest_*.center",
+   "status": "ausente",
+   "value": null
+  },
+  "memoria": {
+   "cambios_del_instante": 10,
+   "edad": {
+    "al_menos": false,
+    "antes": {
+     "palabra": "LONG",
+     "ts": "2026-11-19T18:30:59.054326+00:00"
+    },
+    "desde": "2026-11-19T18:31:19.632571+00:00",
+    "frase": "desde las 18:31:19Z (29 min)",
+    "s": 1764.8,
+    "source_key": "mesa.decide.memoria.edad"
+   },
+   "regla": {
+    "busqueda_s": 10800.0,
+    "frescura_s": 60.0,
+    "fuente": "scalp_signal_snapshot, una fila por evaluacion del colector",
+    "minimo": 10,
+    "texto": "La palabra grande es LONG (o SHORT) si al menos el 60 % de las evaluaciones que el colector registro en los 5 min que acaban en la ultima son LONG (o SHORT); si no, NO OPERAR. Antes mandan tres puertas, y cualquiera da NO EVALUABLE: la del instante (la palabra de esta peticion es NO EVALUABLE), la del colector (su ultima evaluacion tiene mas de 60 s) y la de la ventana (menos de 10 evaluaciones, o la ultima no evaluable). Cada evaluacion registrada se clasifica como la del instante, por su estado y su libro",
+    "umbral": 0.6,
+    "ventana_s": 300.0
+   },
+   "serie": [
+    [
+     "2026-11-19T18:26:06.730560+00:00",
+     "LONG"
+    ],
+    [
+     "2026-11-19T18:26:25.186492+00:00",
+     "NO OPERAR"
+    ],
+    [
+     "2026-11-19T18:26:43.599113+00:00",
+     "LONG"
+    ]
+   ],
+   "ultima_registrada": "2026-11-19T19:00:26.832602+00:00",
+   "ventana": {
+    "cuenta": {
+     "LONG": 0,
+     "NO EVALUABLE": 0,
+     "NO OPERAR": 10,
+     "SHORT": 7
+    },
+    "despues_de": "2026-11-19T18:55:26.832602+00:00",
+    "hasta": "2026-11-19T19:00:26.832602+00:00",
+    "n": 17
+   }
+  },
+  "no_trade_reasons": {
+   "rotulo_instante": "del instante",
+   "source_key": "operator_read.no_trade_reasons",
+   "status": "ok",
+   "value": [
+    "data_confidence_degraded"
+   ]
+  },
+  "reason": {
+   "rotulo_instante": "del instante",
+   "source_key": "scalp.reason",
+   "status": "ok",
+   "value": "ΔFut1m -6168014, div spot-fut -0.02, book ok/L5 0.69, Sin señal, liq S-L -33486, evidencia 100%"
+  },
+  "state": {
+   "rotulo_instante": "del instante",
+   "source_key": "operator_read.state",
+   "status": "ok",
+   "value": "Short Rejection"
+  },
+  "structural_horizon": {
+   "source_key": "structure_detail.horizons.1h",
+   "status": "ok",
+   "value": "1h"
+  },
+  "structural_invalidation": {
+   "source_key": "structure_detail.horizons.1h.invalidation_level",
+   "status": "ok",
+   "value": 62360.0
+  },
+  "warnings": {
+   "rotulo_instante": "del instante",
+   "source_key": "operator_read.warnings",
+   "status": "ok",
+   "value": []
+  },
+  "zone": {
+   "center": {
+    "source_key": "price_barriers.active_zone.center",
+    "status": "ok",
+    "value": 62491.22
+   },
+   "difficulty": {
+    "source_key": "price_barriers.active_zone.difficulty",
+    "status": "ok",
+    "value": "fuerte"
+   },
+   "high": {
+    "source_key": "price_barriers.active_zone.high",
+    "status": "ok",
+    "value": 63280.5
+   },
+   "low": {
+    "source_key": "price_barriers.active_zone.low",
+    "status": "ok",
+    "value": 61667.11
+   }
+  },
+  "zone_decision": {
+   "source_key": "price_barriers.decision",
+   "status": "ok",
+   "value": "ESPERAR: zona en disputa"
+  }
+ },
+ "envelope_cut": {
+  "as_of": "2026-11-19T19:00:44.420092+00:00",
+  "meaning": "UN corte. Todo lo que DECIDE ensena -salvo horizon, que lo declara aparte- se leyo dentro de la MISMA instantanea MVCC y con el MISMO cutoff de evento, asi que dos campos de esta pantalla no pueden salir de dos instantes",
+  "snapshot": "repeatable_read",
+  "snapshot_reason": null
+ },
+ "frame": "scalp",
+ "generated_at": "2026-11-19T19:00:45.477451+00:00",
+ "max_age_s": 120.0,
+ "no_evaluable_under": 70.0,
+ "schema_version": "mesa.decide.v3",
+ "symbol": "BTCUSDT_PERP.A"
+}
