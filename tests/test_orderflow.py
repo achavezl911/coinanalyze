@@ -18,6 +18,7 @@ import asyncio
 import json
 import math
 import os
+import re
 import uuid
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
@@ -229,6 +230,16 @@ def test_el_paso_tiene_que_ser_multiplo_del_base():
     for malo in ("0.5", "-1", "0", "abc", "NaN"):
         with pytest.raises(lec.Peticion):
             lec.paso_de(malo, D(1))
+
+
+def test_el_sondeo_de_la_ejecucion_cabe_en_el_indice_parcial():
+    """IND R2 (V-06): el planificador solo usa orderflow_cinta_liq_lado_ts_idx si la consulta repite su predicado
+    literal; si VENUE_CINTA_LIQ cambia, cambian los tres o el sondeo vuelve a leer los 9 venues."""
+    lista = ", ".join(f"'{v}'" for v in sorted(lec.VENUE_CINTA_LIQ.values()))
+    assert f"k.venue IN ({lista})" in lec.SUELTAS_SQL
+    indice = re.search(r"CREATE INDEX IF NOT EXISTS orderflow_cinta_liq_lado_ts_idx ON orderflow_cinta "
+                       r"\(symbol, venue, compra, ts\)\s+WHERE venue IN \(([^)]*)\)", SCHEMA_SQL)
+    assert indice and indice.group(1) == lista
 
 
 # --------------------------------------------------------------------------------------------- con base
