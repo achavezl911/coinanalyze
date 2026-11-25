@@ -3018,6 +3018,12 @@ CREATE TABLE IF NOT EXISTS orderflow_cinta (
     id text NOT NULL
 ) PARTITION BY RANGE (ts);
 SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_cinta_symbol_ts_idx ON orderflow_cinta (symbol, ts DESC)$ddl$);
+-- IND R2 (V-06): la impresion de cada liquidacion sin ap (SUELTAS_SQL de app/orderflow_lectura.py) se busca en el
+-- venue y el lado de la orden forzada a <= 1 s. Por (symbol, ts) el sondeo leia TODAS las impresiones del activo en
+-- esos 2 s (los 9 venues, ~92 % descartadas por el filtro). Parcial: solo los dos venues que se sondean; la consulta
+-- repite la misma lista literal para que el planificador pueda usarlo. Aditivo; ya creado, re-aplicar no lo toca.
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_cinta_liq_lado_ts_idx ON orderflow_cinta (symbol, venue, compra, ts)
+    WHERE venue IN ('binance_usdm', 'bybit_linear')$ddl$);
 
 CREATE TABLE IF NOT EXISTS orderflow_grande (
     ts timestamptz NOT NULL,

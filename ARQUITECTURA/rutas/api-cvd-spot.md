@@ -102,7 +102,7 @@ Llamadas directas del handler:
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:212`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
-- `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:986`
+- `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:991`
 
 </details>
 

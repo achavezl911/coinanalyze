@@ -8,14 +8,14 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`_barrido_liquidaciones`](#-barrido-liquidaciones) | 986 | 6 | **0** | 0 | **6** |
+| [`_barrido_liquidaciones`](#-barrido-liquidaciones) | 991 | 6 | **0** | 0 | **6** |
 | [`activo_de`](#activo-de) | 74 | 1 | **0** | 0 | **1** |
 | [`pasos`](#pasos) | 99 | 1 | **0** | 0 | **1** |
 | [`texto`](#texto) | 52 | 1 | **0** | 0 | **1** |
 
 ## _barrido_liquidaciones
 
-`app/orderflow_lectura.py:986` · clave completa `app.orderflow_lectura._barrido_liquidaciones`
+`app/orderflow_lectura.py:991` · clave completa `app.orderflow_lectura._barrido_liquidaciones`
 
 **Radio exacto: 6 rutas** de 94 · **cota superior: 6** (igual al exacto)
 
