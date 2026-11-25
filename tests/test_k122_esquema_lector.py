@@ -2,7 +2,7 @@
 
 Antes, `ddl()` casaba el CREATE INDEX DENTRO del literal y `_sentencia` leia `$ddl$);`: el `)` dejaba el nivel en -1, el
 `;` no contaba y se paraba con «sentencia sin `;`» (5 de las 10 tablas de los bancos; K112-control rc=2).
-La referencia es lo que daba el lector de main@b8655df con schema@6c5b193 (antes de ESQUEMA R1), byte a byte.
+La referencia: lo que daba el lector de main@b8655df con schema@6c5b193 (antes de ESQUEMA R1) + el indice de IND R2.
 """
 
 import importlib.util
@@ -18,7 +18,10 @@ _spec.loader.exec_module(esq)
 # las de K109-banco y K112-banco (TABLAS_OF) y las de /libro
 TABLAS = ("libro_cobertura", "libro_foto", "libro_honda", "orderflow_celda", "orderflow_celda_hora", "orderflow_cinta",
           "orderflow_cobertura", "orderflow_grande", "orderflow_hora_hecha", "orderflow_paso")
-REFERENCIA = (RAIZ / "tests" / "fixtures" / "k122_ddl_6c5b193.sql").read_text(encoding="utf-8")
+# schema@c4eab57 (IND R2) anade `orderflow_cinta_liq_lado_ts_idx`: sus 2 lineas, tras los indices de orderflow_cinta. Lo
+# demas es la referencia de 6c5b193 sin tocar un byte: `git show 9fe0e9a:tests/fixtures/k122_ddl_6c5b193.sql | diff -
+# tests/fixtures/k122_ddl_c4eab57.sql` da solo `100a101,102`. Un indice nuevo en estas 10 tablas la vuelve a mover.
+REFERENCIA = (RAIZ / "tests" / "fixtures" / "k122_ddl_c4eab57.sql").read_text(encoding="utf-8")
 
 
 def _ddl(tablas):

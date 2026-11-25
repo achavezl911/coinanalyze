@@ -927,7 +927,12 @@ FUENTE_SUELTAS = "liquidaciones sueltas · binance y bybit perpetuos (colector p
 # la `ap` de binance (avg_price); si no, la impresion de la cinta del MISMO venue y del lado de la orden forzada (largo
 # liquidado = VENTA), a <= 1 s, la mas cercana en tiempo entre las de usd >= la mitad de la liquidacion (si no hay,
 # la mas cercana de ese venue y lado; empate en tiempo: la de usd mas parecido); si tampoco (la cinta guarda 48 h),
-# sin_dato y ejecucion null. Una consulta por ventana (LATERAL sobre el indice (symbol, ts) de la cinta).
+# sin_dato y ejecucion null. Una consulta por ventana: un LATERAL por liquidacion sobre el indice parcial
+# orderflow_cinta_liq_lado_ts_idx (symbol, venue, compra, ts) de sql/schema.sql. IND R2 (V-06): por (symbol, ts) cada
+# sondeo leia las impresiones de los 9 venues en 2 s y descartaba ~92 %, y el orden convertia notional_usd a numeric y
+# sacaba el epoch en cada fila; 24 h de BTC iban a 7.1 s en 140. El `venue IN (...)` literal es el predicado del indice
+# (sin el, el planificador no puede usarlo) y la conversion va una vez por liquidacion (n, mitad): mismo orden, mismas
+# filas. greatest(d, -d) ordena como abs(extract(epoch FROM d)) para intervalos de menos de un dia.
 VENUE_CINTA_LIQ = {"binance": "binance_usdm", "bybit": "bybit_linear"}
 VENTANA_EJECUCION = timedelta(seconds=1)
 REGLA_EJECUCION = (
@@ -939,16 +944,16 @@ REGLA_EJECUCION = (
 SUELTAS_SQL = """
 SELECT l.ts, l.exchange, l.side, l.notional_usd, l.price, l.qty, l.avg_price,
        c.ts AS c_ts, c.venue AS c_venue, c.compra AS c_compra, c.precio AS c_precio, c.usd AS c_usd
-  FROM (SELECT ts, exchange, side, notional_usd, price, qty, avg_price, event_id FROM liquidations_realtime
+  FROM (SELECT ts, exchange, side, notional_usd, price, qty, avg_price, event_id, notional_usd::numeric AS n,
+               notional_usd::numeric / 2 AS mitad FROM liquidations_realtime
          WHERE symbol = $1 AND ts >= $2 AND ts < $3 ORDER BY ts DESC, exchange DESC, event_id DESC LIMIT $4) l
   LEFT JOIN LATERAL (
         SELECT k.ts, k.venue, k.compra, k.precio, k.usd FROM orderflow_cinta k
-         WHERE l.avg_price IS NULL AND k.symbol = $5
+         WHERE l.avg_price IS NULL AND k.symbol = $5 AND k.venue IN ('binance_usdm', 'bybit_linear')
            AND k.venue = (CASE l.exchange WHEN 'binance' THEN $6 ELSE $7 END)
            AND k.compra = (l.side = 'short')
            AND k.ts >= l.ts - $8::interval AND k.ts <= l.ts + $8::interval
-         ORDER BY (k.usd >= l.notional_usd::numeric / 2) DESC, abs(extract(epoch FROM k.ts - l.ts)),
-                  abs(k.usd - l.notional_usd::numeric), k.id
+         ORDER BY (k.usd >= l.mitad) DESC, greatest(k.ts - l.ts, l.ts - k.ts), abs(k.usd - l.n), k.id
          LIMIT 1) c ON true
  ORDER BY l.ts, l.exchange, l.event_id
 """

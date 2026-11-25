@@ -98,6 +98,8 @@ CREATE TABLE IF NOT EXISTS orderflow_cinta (
 ) PARTITION BY RANGE (ts);
 CREATE TABLE orderflow_cinta_banco PARTITION OF orderflow_cinta DEFAULT;
 CREATE INDEX IF NOT EXISTS orderflow_cinta_symbol_ts_idx ON orderflow_cinta (symbol, ts DESC);
+CREATE INDEX IF NOT EXISTS orderflow_cinta_liq_lado_ts_idx ON orderflow_cinta (symbol, venue, compra, ts)
+    WHERE venue IN ('binance_usdm', 'bybit_linear');
 CREATE TABLE IF NOT EXISTS orderflow_cobertura (
     ts timestamptz NOT NULL,
     venue text NOT NULL CHECK (venue IN ('binance_spot', 'binance_usdm', 'bybit_spot', 'bybit_linear',
