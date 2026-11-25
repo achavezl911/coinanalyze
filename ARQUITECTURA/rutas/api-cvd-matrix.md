@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `cvd_matrix_endpoint` · `app/api.py:2315` (cuerpo hasta la 2319) · decorador en la linea 2314.
+Handler `cvd_matrix_endpoint` · `app/api.py:2366` (cuerpo hasta la 2370) · decorador en la linea 2365.
 
 ## Parametros de entrada
 

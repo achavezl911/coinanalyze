@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `market_impact_endpoint` · `app/api.py:1517` (cuerpo hasta la 1521) · decorador en la linea 1516.
+Handler `market_impact_endpoint` · `app/api.py:1568` (cuerpo hasta la 1572) · decorador en la linea 1567.
 
 ## Parametros de entrada
 
