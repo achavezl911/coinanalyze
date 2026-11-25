@@ -112,9 +112,9 @@ Llamadas directas del handler:
 <details><summary>Alcanzables de forma indirecta (45)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`

@@ -101,9 +101,9 @@ Llamadas directas del handler:
 - `app.external_macro._pillar` — `app/external_macro.py:266`
 - `app.external_macro._state` — `app/external_macro.py:211`
 - `app.external_macro.build_external_macro_context` — `app/external_macro.py:271`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
 - `app.scalp_logic._beta` — `app/scalp_logic.py:3619`
 - `app.scalp_logic._binned` — `app/scalp_logic.py:3633`

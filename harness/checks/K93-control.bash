@@ -65,9 +65,28 @@ from pathlib import Path
 t = Path(sys.argv[1])
 schema = (t / "sql/schema.sql").read_text(encoding="utf-8")
 mig = (t / "sql/migrations/20260809_temporal_partitioning.sql").read_text(encoding="utf-8").strip()
-i = schema.index(mig)
-(t / "sql/schema.sql").write_text(schema[:i] + schema[i + len(mig):], encoding="utf-8")
+# Desde ESQUEMA R1 (#285, V-03) la copia en linea lleva el DROP/CREATE del trigger de evento
+# unico envuelto en esquema_ddl(): se busca con ESA sustitucion, contada == 1 como
+# migracion_en_linea() de tests/test_partitioning_postgres.py:19, y si no, la copia literal de
+# antes. Si ninguna esta exactamente una vez, el recorte no se puede plantar: NOMED, no un P1 falso.
+env = mig
+for viejo, nuevo in (
+    ("DROP TRIGGER IF EXISTS liquidations_realtime_event_unique_trigger\n    ON liquidations_realtime;\n"
+     "CREATE TRIGGER liquidations_realtime_event_unique_trigger",
+     "SELECT esquema_ddl($ddl$CREATE TRIGGER liquidations_realtime_event_unique_trigger"),
+    ("FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();",
+     "FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique()$ddl$);"),
+):
+    env = env.replace(viejo, nuevo) if env.count(viejo) == 1 else ""
+for m in (env, mig):
+    if m and schema.count(m) == 1:
+        i = schema.index(m)
+        (t / "sql/schema.sql").write_text(schema[:i] + schema[i + len(m):], encoding="utf-8")
+        raise SystemExit(0)
+print("NO MEDIDO: la migracion incrustada no esta en sql/schema.sql ni envuelta (#285) ni literal")
+raise SystemExit(2)
 PY
+[ $? = 0 ] || exit 2
 caso "P1 sin la migracion incrustada: ROJO" 1 "NO tras el camino de ACTUALIZACION" "$ROTO"
 caso "P2 y nombra el trigger que se pierde" 1 "liquidations_realtime_event_unique_trigger" "$ROTO"
 

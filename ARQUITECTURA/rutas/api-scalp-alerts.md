@@ -74,7 +74,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (20)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
