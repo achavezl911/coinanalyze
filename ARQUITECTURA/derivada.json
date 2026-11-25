@@ -2078,23 +2078,23 @@
     },
     "app.metrics.cobertura_suficiente": {
       "fichero": "app/metrics.py",
-      "linea": 41,
-      "sitio": "`app/metrics.py:41`"
+      "linea": 44,
+      "sitio": "`app/metrics.py:44`"
     },
     "app.metrics.current_nyse_start": {
       "fichero": "app/metrics.py",
-      "linea": 49,
-      "sitio": "`app/metrics.py:49`"
+      "linea": 52,
+      "sitio": "`app/metrics.py:52`"
     },
     "app.metrics.optional_finite": {
       "fichero": "app/metrics.py",
-      "linea": 79,
-      "sitio": "`app/metrics.py:79`"
+      "linea": 82,
+      "sitio": "`app/metrics.py:82`"
     },
     "app.metrics.session_bounds": {
       "fichero": "app/metrics.py",
-      "linea": 60,
-      "sitio": "`app/metrics.py:60`"
+      "linea": 63,
+      "sitio": "`app/metrics.py:63`"
     },
     "app.orderflow.nivel_de": {
       "fichero": "app/orderflow.py",
@@ -21113,7 +21113,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:344",
+        "sitio": "app/metrics.py:347",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21193,7 +21193,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:364",
+        "sitio": "app/metrics.py:367",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21304,7 +21304,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:41",
+        "sitio": "app/metrics.py:44",
         "solo_por_tabla": [
           "/api/dashboard/state",
           "/api/data-confidence",
@@ -21384,7 +21384,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:776",
+        "sitio": "app/metrics.py:779",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21485,7 +21485,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:195",
+        "sitio": "app/metrics.py:198",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21525,7 +21525,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:494",
+        "sitio": "app/metrics.py:497",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21608,7 +21608,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:49",
+        "sitio": "app/metrics.py:52",
         "solo_por_tabla": [
           "/api/data-confidence",
           "/api/healthz",
@@ -21666,7 +21666,7 @@
           "/api/snapshot",
           "/metrics"
         ],
-        "sitio": "app/metrics.py:741",
+        "sitio": "app/metrics.py:744",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21723,7 +21723,7 @@
           "/api/zone/analysis"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:281",
+        "sitio": "app/metrics.py:284",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21776,7 +21776,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:175",
+        "sitio": "app/metrics.py:178",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21834,7 +21834,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:79",
+        "sitio": "app/metrics.py:82",
         "solo_por_tabla": [
           "/api/dashboard/state",
           "/api/data-confidence",
@@ -21923,7 +21923,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:60",
+        "sitio": "app/metrics.py:63",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -22023,7 +22023,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:95",
+        "sitio": "app/metrics.py:98",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -48536,14 +48536,15 @@
             "tests/test_libro.py:587"
           ],
           "menciones": [
-            "tests/js/libro_hueco_vivo.test.js:2"
+            "tests/js/libro_hueco_vivo.test.js:2",
+            "tests/test_k122_esquema_lector.py:18"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 22,
-        "n_menciones": 27,
+        "n_menciones": 28,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -50021,7 +50022,7 @@
         {
           "funcion": "app.metrics.insert_snapshot",
           "origen": "literal",
-          "sitio": "app/metrics.py:748",
+          "sitio": "app/metrics.py:751",
           "verbo": "INSERT"
         }
       ],
@@ -50734,12 +50735,12 @@
         {
           "funcion": "app.metrics.liquidation_history_observation",
           "origen": "literal",
-          "sitio": "app/metrics.py:292"
+          "sitio": "app/metrics.py:295"
         },
         {
           "funcion": "app.metrics.certified_metrics_cutoff",
           "origen": "literal",
-          "sitio": "app/metrics.py:374"
+          "sitio": "app/metrics.py:377"
         },
         {
           "funcion": "app.orderflow_lectura._barrido_liquidaciones",

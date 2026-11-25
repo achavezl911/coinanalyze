@@ -8,23 +8,23 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 
 | funcion | linea | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto |
 |---|---|---|---|---|---|
-| [`session_bounds`](#session-bounds) | 60 | 2 | **0** | 52 ↑ | **2** |
-| [`compute_and_store_all`](#compute-and-store-all) | 776 | 0 | **0** | 50 ↑ | **0** |
-| [`certified_metrics_cutoff`](#certified-metrics-cutoff) | 364 | 0 | **0** | 48 ↑ | **0** |
-| [`current_nyse_start`](#current-nyse-start) | 49 | 16 | **0** | 15 ↑ | **16** |
-| [`liquidation_history_observation`](#liquidation-history-observation) | 281 | 0 | **0** | 22 ↑ | **0** |
-| [`cobertura_suficiente`](#cobertura-suficiente) | 41 | 12 | **0** | 9 ↑ | **12** |
-| [`optional_finite`](#optional-finite) | 79 | 12 | **0** | 9 ↑ | **12** |
-| [`_liquidation_history_observed`](#-liquidation-history-observed) | 344 | 0 | **0** | 9 ↑ | **0** |
-| [`compute_regime`](#compute-regime) | 195 | 0 | **0** | 9 ↑ | **0** |
-| [`compute_snapshot`](#compute-snapshot) | 494 | 0 | **0** | 9 ↑ | **0** |
-| [`insert_snapshot`](#insert-snapshot) | 741 | 0 | **9** | 9 | **9** |
-| [`normalized_cvd_imbalance`](#normalized-cvd-imbalance) | 175 | 0 | **0** | 9 ↑ | **0** |
-| [`whale_classification`](#whale-classification) | 95 | 0 | **0** | 9 ↑ | **0** |
+| [`session_bounds`](#session-bounds) | 63 | 2 | **0** | 52 ↑ | **2** |
+| [`compute_and_store_all`](#compute-and-store-all) | 779 | 0 | **0** | 50 ↑ | **0** |
+| [`certified_metrics_cutoff`](#certified-metrics-cutoff) | 367 | 0 | **0** | 48 ↑ | **0** |
+| [`current_nyse_start`](#current-nyse-start) | 52 | 16 | **0** | 15 ↑ | **16** |
+| [`liquidation_history_observation`](#liquidation-history-observation) | 284 | 0 | **0** | 22 ↑ | **0** |
+| [`cobertura_suficiente`](#cobertura-suficiente) | 44 | 12 | **0** | 9 ↑ | **12** |
+| [`optional_finite`](#optional-finite) | 82 | 12 | **0** | 9 ↑ | **12** |
+| [`_liquidation_history_observed`](#-liquidation-history-observed) | 347 | 0 | **0** | 9 ↑ | **0** |
+| [`compute_regime`](#compute-regime) | 198 | 0 | **0** | 9 ↑ | **0** |
+| [`compute_snapshot`](#compute-snapshot) | 497 | 0 | **0** | 9 ↑ | **0** |
+| [`insert_snapshot`](#insert-snapshot) | 744 | 0 | **9** | 9 | **9** |
+| [`normalized_cvd_imbalance`](#normalized-cvd-imbalance) | 178 | 0 | **0** | 9 ↑ | **0** |
+| [`whale_classification`](#whale-classification) | 98 | 0 | **0** | 9 ↑ | **0** |
 
 ## session_bounds
 
-`app/metrics.py:60` · clave completa `app.metrics.session_bounds`
+`app/metrics.py:63` · clave completa `app.metrics.session_bounds`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 52** (mas ancha)
 
@@ -169,7 +169,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## compute_and_store_all
 
-`app/metrics.py:776` · clave completa `app.metrics.compute_and_store_all`
+`app/metrics.py:779` · clave completa `app.metrics.compute_and_store_all`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 50** (mas ancha)
 
@@ -311,7 +311,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## certified_metrics_cutoff
 
-`app/metrics.py:364` · clave completa `app.metrics.certified_metrics_cutoff`
+`app/metrics.py:367` · clave completa `app.metrics.certified_metrics_cutoff`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 48** (mas ancha)
 
@@ -448,7 +448,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## current_nyse_start
 
-`app/metrics.py:49` · clave completa `app.metrics.current_nyse_start`
+`app/metrics.py:52` · clave completa `app.metrics.current_nyse_start`
 
 **Radio exacto: 16 rutas** de 94 · **cota superior: 27** (mas ancha)
 
@@ -527,7 +527,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## liquidation_history_observation
 
-`app/metrics.py:281` · clave completa `app.metrics.liquidation_history_observation`
+`app/metrics.py:284` · clave completa `app.metrics.liquidation_history_observation`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 22** (mas ancha)
 
@@ -607,7 +607,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## cobertura_suficiente
 
-`app/metrics.py:41` · clave completa `app.metrics.cobertura_suficiente`
+`app/metrics.py:44` · clave completa `app.metrics.cobertura_suficiente`
 
 **Radio exacto: 12 rutas** de 94 · **cota superior: 19** (mas ancha)
 
@@ -670,7 +670,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## optional_finite
 
-`app/metrics.py:79` · clave completa `app.metrics.optional_finite`
+`app/metrics.py:82` · clave completa `app.metrics.optional_finite`
 
 **Radio exacto: 12 rutas** de 94 · **cota superior: 19** (mas ancha)
 
@@ -733,7 +733,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## _liquidation_history_observed
 
-`app/metrics.py:344` · clave completa `app.metrics._liquidation_history_observed`
+`app/metrics.py:347` · clave completa `app.metrics._liquidation_history_observed`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 9** (mas ancha)
 
@@ -787,7 +787,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## compute_regime
 
-`app/metrics.py:195` · clave completa `app.metrics.compute_regime`
+`app/metrics.py:198` · clave completa `app.metrics.compute_regime`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 9** (mas ancha)
 
@@ -841,7 +841,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## compute_snapshot
 
-`app/metrics.py:494` · clave completa `app.metrics.compute_snapshot`
+`app/metrics.py:497` · clave completa `app.metrics.compute_snapshot`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 9** (mas ancha)
 
@@ -895,7 +895,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## insert_snapshot
 
-`app/metrics.py:741` · clave completa `app.metrics.insert_snapshot`
+`app/metrics.py:744` · clave completa `app.metrics.insert_snapshot`
 
 **Radio exacto: 9 rutas** de 94 · **cota superior: 9** (igual al exacto)
 
@@ -956,7 +956,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## normalized_cvd_imbalance
 
-`app/metrics.py:175` · clave completa `app.metrics.normalized_cvd_imbalance`
+`app/metrics.py:178` · clave completa `app.metrics.normalized_cvd_imbalance`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 9** (mas ancha)
 
@@ -1010,7 +1010,7 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 
 ## whale_classification
 
-`app/metrics.py:95` · clave completa `app.metrics.whale_classification`
+`app/metrics.py:98` · clave completa `app.metrics.whale_classification`
 
 **Radio exacto: 0 rutas** de 94 · **cota superior: 9** (mas ancha)
 
