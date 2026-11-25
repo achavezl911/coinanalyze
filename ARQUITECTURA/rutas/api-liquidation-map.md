@@ -52,6 +52,7 @@ LEE:
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
+  - la llena `app.scalp_collector._restore_liquidation_heartbeat` (UPDATE) — `app/scalp_collector.py:721`
 - `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`

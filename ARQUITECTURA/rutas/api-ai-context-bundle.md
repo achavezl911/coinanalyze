@@ -64,16 +64,17 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
+  - la llena `app.scalp_collector.declare_liquidation_silence` (UPDATE) — `app/scalp_collector.py:510`
 - `external_macro_observation` — `sql/schema.sql:1320`, 5 columnas
   - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:601`
   - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:622`
 - `funding_rate` — `sql/schema.sql:247`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1629`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:875`
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1681`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:927`
 - `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:898`
 - `liquidations` — `sql/schema.sql:275`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`
@@ -89,6 +90,7 @@ LEE:
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
+  - la llena `app.scalp_collector._restore_liquidation_heartbeat` (UPDATE) — `app/scalp_collector.py:721`
 - `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
@@ -104,8 +106,8 @@ LEE:
 - `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:1026`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:970`
 - `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
@@ -113,7 +115,7 @@ LEE:
 - `predicted_funding_rate` — `sql/schema.sql:261`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:672`
 - `scalp_signal_snapshot` — `sql/schema.sql:487`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1497`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1549`
 - `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`

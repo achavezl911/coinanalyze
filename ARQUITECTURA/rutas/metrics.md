@@ -26,21 +26,21 @@ Tipo declarado en la firma: `Response`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:898`
 - `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
   - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:1026`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:970`
 - `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
   - la llena `app.db.heartbeat_shard` (INSERT) — `app/db.py:542`
 - `scalp_signal_snapshot` — `sql/schema.sql:487`, 16 columnas
-  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1497`
+  - la llena `app.scalp_collector.persist_scalp_signals` (INSERT) — `app/scalp_collector.py:1549`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):

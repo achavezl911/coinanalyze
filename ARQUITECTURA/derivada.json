@@ -4,21 +4,21 @@
       "app.scalp_collector.flush_books": [
         {
           "constante": "SCALP_ORDERBOOK_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:899",
+          "sitio": "app/scalp_collector.py:951",
           "valor": "2"
         }
       ],
       "app.scalp_collector.flush_trades": [
         {
           "constante": "SCALP_FLUSH_SECONDS",
-          "sitio": "app/scalp_collector.py:697",
+          "sitio": "app/scalp_collector.py:749",
           "valor": "2"
         }
       ],
       "app.scalp_collector.persist_scalp_signals": [
         {
           "constante": "SCALP_SIGNAL_INTERVAL_SECONDS",
-          "sitio": "app/scalp_collector.py:1443",
+          "sitio": "app/scalp_collector.py:1495",
           "valor": "10"
         }
       ]
@@ -10261,7 +10261,8 @@
         "tablas_escritas": {
           "data_gap": [
             "app.data_gaps.reconcile_cadence_coverage",
-            "app.data_gaps.record_data_gap"
+            "app.data_gaps.record_data_gap",
+            "app.scalp_collector.declare_liquidation_silence"
           ]
         },
         "tablas_k0": [
@@ -10288,18 +10289,24 @@
           "/api/cvd/divergence",
           "/api/cvd/spot",
           "/api/daily",
+          "/api/dashboard/state",
           "/api/desk/state",
           "/api/entradas",
           "/api/external-macro",
           "/api/hypothesis",
+          "/api/liquidation-map",
           "/api/liquidations",
+          "/api/mesa/decide",
           "/api/mesa/entradas",
           "/api/ohlcv",
           "/api/oi",
           "/api/passive-flow",
           "/api/profile",
           "/api/quality/feeds",
+          "/api/scalp/alerts",
           "/api/scalp/delta-matrix",
+          "/api/scalp/execution-cost",
+          "/api/scalp/summary",
           "/api/swing-score",
           "/api/trend-matrix"
         ],
@@ -10313,28 +10320,41 @@
           "/api/cvd/divergence",
           "/api/cvd/spot",
           "/api/daily",
+          "/api/dashboard/state",
           "/api/desk/state",
           "/api/entradas",
           "/api/external-macro",
           "/api/hypothesis",
+          "/api/liquidation-map",
           "/api/liquidations",
+          "/api/mesa/decide",
           "/api/mesa/entradas",
           "/api/ohlcv",
           "/api/oi",
           "/api/passive-flow",
           "/api/profile",
           "/api/quality/feeds",
+          "/api/scalp/alerts",
           "/api/scalp/delta-matrix",
+          "/api/scalp/execution-cost",
+          "/api/scalp/summary",
           "/api/swing-score",
           "/api/trend-matrix"
         ],
         "tablas_escritas": {
           "data_gap": [
-            "app.data_gaps.record_data_gap"
+            "app.data_gaps.record_data_gap",
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
+          "market_feed_health": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
+          ],
+          "market_feed_health_shard": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ]
         },
         "tablas_k0": [],
-        "total": 21,
+        "total": 27,
         "total_exacto": 0
       },
       "app.data_gaps.recover_gap": {
@@ -10554,7 +10574,7 @@
         "total_exacto": 0
       },
       "app.db._mark_feed_shard_health": {
-        "cota_mas_ancha_que_k0": false,
+        "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
           "app.db.mark_feed_shard_connected",
           "app.db.mark_feed_shard_degraded",
@@ -10566,15 +10586,31 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
-          "/api/scalp/summary"
+          "/api/scalp/summary",
+          "/api/swing-score",
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [
           "/api/ai/context",
@@ -10593,29 +10629,50 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
-          "/api/scalp/summary"
+          "/api/scalp/summary",
+          "/api/swing-score",
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
           "market_feed_health": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "market_feed_health_shard": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ]
         },
         "tablas_k0": [
           "market_feed_health",
           "market_feed_health_shard"
         ],
-        "total": 11,
+        "total": 27,
         "total_exacto": 11
       },
       "app.db._mark_feed_unhealthy": {
@@ -10972,7 +11029,8 @@
           ],
           "data_gap": [
             "app.libro.declara_hueco",
-            "app.orderflow.declara_hueco"
+            "app.orderflow.declara_hueco",
+            "app.scalp_collector.declare_liquidation_silence"
           ],
           "external_api_rate_event": [
             "app.coinalyze.PostgresSlidingWindowRateLimiter.acquire"
@@ -11013,10 +11071,12 @@
             "app.db.sync_market_catalog"
           ],
           "market_feed_health": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "market_feed_health_shard": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "ohlcv": [
             "app.ingest.rollup_ohlcv_5m",
@@ -11460,7 +11520,8 @@
           ],
           "data_gap": [
             "app.libro.declara_hueco",
-            "app.orderflow.declara_hueco"
+            "app.orderflow.declara_hueco",
+            "app.scalp_collector.declare_liquidation_silence"
           ],
           "external_macro_observation": [
             "app.external_macro.refresh_external_macro"
@@ -11498,10 +11559,12 @@
             "app.db.sync_market_catalog"
           ],
           "market_feed_health": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "market_feed_health_shard": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "ohlcv": [
             "app.ingest.rollup_ohlcv_5m",
@@ -12398,32 +12461,67 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
-          "/api/scalp/summary"
+          "/api/scalp/summary",
+          "/api/swing-score",
+          "/api/trend-matrix"
         ],
         "por_tabla_k0": [],
         "sitio": "app/db.py:768",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
-          "/api/scalp/summary"
+          "/api/scalp/summary",
+          "/api/swing-score",
+          "/api/trend-matrix"
         ],
         "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
           "market_feed_health": [
             "app.db._mark_feed_shard_health"
           ],
@@ -12432,7 +12530,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 11,
+        "total": 27,
         "total_exacto": 0
       },
       "app.db.mark_feed_shard_degraded": {
@@ -12445,15 +12543,29 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
           "/api/price-barriers",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/liquidations",
@@ -12462,6 +12574,8 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/metrics"
         ],
         "por_tabla_k0": [],
@@ -12469,15 +12583,29 @@
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
           "/api/price-barriers",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/liquidations",
@@ -12486,17 +12614,24 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/metrics"
         ],
         "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
           "liquidations_realtime": [
             "app.scalp_collector.flush_liquidations"
           ],
           "market_feed_health": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "market_feed_health_shard": [
-            "app.db._mark_feed_shard_health"
+            "app.db._mark_feed_shard_health",
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "orderbook_snapshot": [
             "app.scalp_collector.flush_books"
@@ -12509,7 +12644,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 20,
+        "total": 36,
         "total_exacto": 0
       },
       "app.db.mark_feed_shard_error": {
@@ -22977,6 +23112,133 @@
         "total": 1,
         "total_exacto": 1
       },
+      "app.scalp_collector._restore_liquidation_heartbeat": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.scalp_collector.main",
+          "app.scalp_collector.reset_liquidation_feed_health"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/hypothesis",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/liquidations",
+          "/api/scalp/orderbook",
+          "/api/scalp/signals",
+          "/api/scalp/summary",
+          "/api/stream",
+          "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/metrics"
+        ],
+        "por_tabla_k0": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/dashboard/state",
+          "/api/desk/state",
+          "/api/hypothesis",
+          "/api/liquidation-map",
+          "/api/mesa/decide",
+          "/api/quality/feeds",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/summary"
+        ],
+        "sitio": "app/scalp_collector.py:709",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/hypothesis",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/liquidations",
+          "/api/scalp/orderbook",
+          "/api/scalp/signals",
+          "/api/scalp/summary",
+          "/api/stream",
+          "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
+          "liquidations_realtime": [
+            "app.scalp_collector.flush_liquidations"
+          ],
+          "market_feed_health": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
+          ],
+          "market_feed_health_shard": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
+          ],
+          "orderbook_snapshot": [
+            "app.scalp_collector.flush_books"
+          ],
+          "scalp_signal_snapshot": [
+            "app.scalp_collector.persist_scalp_signals"
+          ],
+          "service_ownership": [
+            "app.db.acquire_service_lock"
+          ]
+        },
+        "tablas_k0": [
+          "market_feed_health",
+          "market_feed_health_shard"
+        ],
+        "total": 36,
+        "total_exacto": 11
+      },
       "app.scalp_collector._write_combined_books": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -23023,7 +23285,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:969",
+        "sitio": "app/scalp_collector.py:1021",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23111,7 +23373,7 @@
           "/api/mesa/decide",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:868",
+        "sitio": "app/scalp_collector.py:920",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23212,7 +23474,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:839",
+        "sitio": "app/scalp_collector.py:891",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23295,7 +23557,7 @@
         "por_tabla_k0": [
           "/api/scalp/execution-cost"
         ],
-        "sitio": "app/scalp_collector.py:937",
+        "sitio": "app/scalp_collector.py:989",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23356,43 +23618,70 @@
           "/api/ai/context",
           "/api/ai/context/bundle",
           "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
           "/api/cvd/spot",
+          "/api/daily",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/healthz",
+          "/api/hypothesis",
           "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
           "/api/ohlcv",
           "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
           "/api/quality/feeds",
+          "/api/scalp/delta-matrix",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/api/whale/delta",
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:522",
+        "sitio": "app/scalp_collector.py:542",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
           "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
           "/api/cvd/spot",
+          "/api/daily",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/healthz",
+          "/api/hypothesis",
           "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
           "/api/ohlcv",
           "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
           "/api/quality/feeds",
+          "/api/scalp/delta-matrix",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/api/whale/delta",
           "/metrics"
         ],
         "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
           "pipeline_heartbeat": [
             "app.db.heartbeat_shard"
           ]
         },
         "tablas_k0": [],
-        "total": 14,
+        "total": 26,
         "total_exacto": 0
       },
       "app.scalp_collector._write_trade_rows": {
@@ -23428,7 +23717,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:782",
+        "sitio": "app/scalp_collector.py:834",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23514,7 +23803,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:684",
+        "sitio": "app/scalp_collector.py:736",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23594,7 +23883,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1061",
+        "sitio": "app/scalp_collector.py:1113",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23664,7 +23953,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1181",
+        "sitio": "app/scalp_collector.py:1233",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23734,7 +24023,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1233",
+        "sitio": "app/scalp_collector.py:1285",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23804,7 +24093,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1650",
+        "sitio": "app/scalp_collector.py:1702",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23886,7 +24175,7 @@
           "/api/mesa/decide",
           "/api/price-barriers"
         ],
-        "sitio": "app/scalp_collector.py:1619",
+        "sitio": "app/scalp_collector.py:1671",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -23945,15 +24234,29 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
           "/api/price-barriers",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/liquidations",
@@ -23962,22 +24265,60 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/metrics"
         ],
-        "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:484",
+        "por_tabla_k0": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
+          "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/hypothesis",
+          "/api/liquidations",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/scalp/delta-matrix",
+          "/api/swing-score",
+          "/api/trend-matrix"
+        ],
+        "sitio": "app/scalp_collector.py:487",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
           "/api/price-barriers",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/liquidations",
@@ -23986,11 +24327,22 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/metrics"
         ],
         "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
           "liquidations_realtime": [
             "app.scalp_collector.flush_liquidations"
+          ],
+          "market_feed_health": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
+          ],
+          "market_feed_health_shard": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "orderbook_snapshot": [
             "app.scalp_collector.flush_books"
@@ -24002,9 +24354,11 @@
             "app.db.acquire_service_lock"
           ]
         },
-        "tablas_k0": [],
-        "total": 20,
-        "total_exacto": 0
+        "tablas_k0": [
+          "data_gap"
+        ],
+        "total": 36,
+        "total_exacto": 21
       },
       "app.scalp_collector.drenar_minutos": {
         "cota_mas_ancha_que_k0": true,
@@ -24035,7 +24389,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:753",
+        "sitio": "app/scalp_collector.py:805",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24124,7 +24478,7 @@
           "/api/stream",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:894",
+        "sitio": "app/scalp_collector.py:946",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24216,7 +24570,7 @@
           "/api/structure",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:1027",
+        "sitio": "app/scalp_collector.py:1079",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24290,7 +24644,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:692",
+        "sitio": "app/scalp_collector.py:744",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24370,7 +24724,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1120",
+        "sitio": "app/scalp_collector.py:1172",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24441,7 +24795,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1322",
+        "sitio": "app/scalp_collector.py:1374",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24509,7 +24863,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1666",
+        "sitio": "app/scalp_collector.py:1718",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24581,7 +24935,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:679",
+        "sitio": "app/scalp_collector.py:731",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24658,7 +25012,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1543",
+        "sitio": "app/scalp_collector.py:1595",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24752,7 +25106,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:1615",
+        "sitio": "app/scalp_collector.py:1667",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24835,7 +25189,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:629",
+        "sitio": "app/scalp_collector.py:649",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24892,7 +25246,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:563",
+        "sitio": "app/scalp_collector.py:583",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -24970,7 +25324,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:592",
+        "sitio": "app/scalp_collector.py:612",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25061,7 +25415,7 @@
           "/api/scalp/signals",
           "/metrics"
         ],
-        "sitio": "app/scalp_collector.py:1438",
+        "sitio": "app/scalp_collector.py:1490",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -25121,15 +25475,29 @@
         "por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
           "/api/price-barriers",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/liquidations",
@@ -25138,22 +25506,38 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:653",
+        "sitio": "app/scalp_collector.py:673",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
+          "/api/cvd",
+          "/api/cvd-matrix",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/daily",
           "/api/dashboard/state",
           "/api/data-confidence",
           "/api/desk/state",
+          "/api/entradas",
+          "/api/external-macro",
           "/api/hypothesis",
           "/api/liquidation-map",
+          "/api/liquidations",
           "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/passive-flow",
           "/api/price-barriers",
+          "/api/profile",
           "/api/quality/feeds",
           "/api/scalp/alerts",
+          "/api/scalp/delta-matrix",
           "/api/scalp/execution-cost",
           "/api/scalp/liquidation-levels",
           "/api/scalp/liquidations",
@@ -25162,11 +25546,22 @@
           "/api/scalp/summary",
           "/api/stream",
           "/api/structure",
+          "/api/swing-score",
+          "/api/trend-matrix",
           "/metrics"
         ],
         "tablas_escritas": {
+          "data_gap": [
+            "app.scalp_collector.declare_liquidation_silence"
+          ],
           "liquidations_realtime": [
             "app.scalp_collector.flush_liquidations"
+          ],
+          "market_feed_health": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
+          ],
+          "market_feed_health_shard": [
+            "app.scalp_collector._restore_liquidation_heartbeat"
           ],
           "orderbook_snapshot": [
             "app.scalp_collector.flush_books"
@@ -25179,7 +25574,7 @@
           ]
         },
         "tablas_k0": [],
-        "total": 20,
+        "total": 36,
         "total_exacto": 0
       },
       "app.scalp_collector.segundos_cubiertos": {
@@ -25211,7 +25606,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_collector.py:730",
+        "sitio": "app/scalp_collector.py:782",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -49228,6 +49623,12 @@
           "origen": "constante GAP_SQL",
           "sitio": "app/orderflow.py:508",
           "verbo": "UPDATE"
+        },
+        {
+          "funcion": "app.scalp_collector.declare_liquidation_silence",
+          "origen": "literal",
+          "sitio": "app/scalp_collector.py:510",
+          "verbo": "UPDATE"
         }
       ],
       "lectores_del_arbol": [
@@ -49583,13 +49984,13 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1629",
+          "sitio": "app/scalp_collector.py:1681",
           "verbo": "DELETE"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:875",
+          "sitio": "app/scalp_collector.py:927",
           "verbo": "INSERT"
         }
       ],
@@ -49602,12 +50003,12 @@
         {
           "funcion": "app.scalp_collector.cleanup_expired_rows",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1629"
+          "sitio": "app/scalp_collector.py:1681"
         },
         {
           "funcion": "app.scalp_collector._write_combined_minute",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:875"
+          "sitio": "app/scalp_collector.py:927"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -49631,7 +50032,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:846",
+          "sitio": "app/scalp_collector.py:898",
           "verbo": "INSERT"
         }
       ],
@@ -49664,7 +50065,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_realtime",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:846"
+          "sitio": "app/scalp_collector.py:898"
         },
         {
           "funcion": "app.scalp_logic._cvd_fut_window",
@@ -49941,6 +50342,12 @@
           "origen": "literal",
           "sitio": "app/db.py:706",
           "verbo": "INSERT"
+        },
+        {
+          "funcion": "app.scalp_collector._restore_liquidation_heartbeat",
+          "origen": "literal",
+          "sitio": "app/scalp_collector.py:721",
+          "verbo": "UPDATE"
         }
       ],
       "lectores_del_arbol": [
@@ -50546,7 +50953,7 @@
         {
           "funcion": "app.scalp_collector._write_ladders",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:950",
+          "sitio": "app/scalp_collector.py:1002",
           "verbo": "INSERT"
         }
       ],
@@ -50570,15 +50977,15 @@
       "escrita_por": [],
       "escritores_del_arbol": [
         {
-          "funcion": "app.scalp_collector.flush_books",
+          "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:918",
+          "sitio": "app/scalp_collector.py:1026",
           "verbo": "INSERT"
         },
         {
-          "funcion": "app.scalp_collector._write_combined_books",
+          "funcion": "app.scalp_collector.flush_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:974",
+          "sitio": "app/scalp_collector.py:970",
           "verbo": "INSERT"
         }
       ],
@@ -50626,7 +51033,7 @@
         {
           "funcion": "app.scalp_collector._write_combined_books",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:974"
+          "sitio": "app/scalp_collector.py:1026"
         },
         {
           "funcion": "app.scalp_logic.price_barriers",
@@ -50808,7 +51215,7 @@
         {
           "funcion": "app.scalp_collector.persist_scalp_signals",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:1497",
+          "sitio": "app/scalp_collector.py:1549",
           "verbo": "INSERT"
         }
       ],
@@ -52028,6 +52435,12 @@
           "origen": "literal",
           "sitio": "app/db.py:672",
           "verbo": "INSERT"
+        },
+        {
+          "funcion": "app.scalp_collector._restore_liquidation_heartbeat",
+          "origen": "literal",
+          "sitio": "app/scalp_collector.py:712",
+          "verbo": "UPDATE"
         }
       ],
       "lectores": [
@@ -52039,7 +52452,17 @@
         {
           "funcion": "app.scalp_collector.declare_liquidation_silence",
           "origen": "literal",
-          "sitio": "app/scalp_collector.py:494"
+          "sitio": "app/scalp_collector.py:499"
+        },
+        {
+          "funcion": "app.scalp_collector.reset_liquidation_feed_health",
+          "origen": "literal",
+          "sitio": "app/scalp_collector.py:688"
+        },
+        {
+          "funcion": "app.scalp_collector._restore_liquidation_heartbeat",
+          "origen": "literal",
+          "sitio": "app/scalp_collector.py:721"
         }
       ]
     },

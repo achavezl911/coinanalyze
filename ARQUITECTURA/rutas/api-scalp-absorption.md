@@ -29,7 +29,7 @@ Tipo declarado en la firma: `list[dict[str, Any]]`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:898`
 - `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 

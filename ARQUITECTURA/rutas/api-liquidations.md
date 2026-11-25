@@ -63,6 +63,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
+  - la llena `app.scalp_collector.declare_liquidation_silence` (UPDATE) — `app/scalp_collector.py:510`
 - `liquidations` — `sql/schema.sql:275`, 5 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:675`
   - la llena `app.ingest.upsert_liquidations` (INSERT) — `app/ingest.py:317`

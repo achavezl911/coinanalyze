@@ -63,6 +63,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
+  - la llena `app.scalp_collector.declare_liquidation_silence` (UPDATE) — `app/scalp_collector.py:510`
 - `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`
