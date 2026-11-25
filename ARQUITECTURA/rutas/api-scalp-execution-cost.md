@@ -28,16 +28,16 @@ Handler `scalp_execution_cost` · `app/api.py:1779` (cuerpo hasta la 1832) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:5610 |
+| `as_of` | literal en app/scalp_logic.py:5627 |
 | `assessment` | asignado en app/api.py:1818 |
-| `note` | literal en app/scalp_logic.py:5612 |
+| `note` | literal en app/scalp_logic.py:5629 |
 | `profiles` | asignado en app/api.py:1831 |
-| `sizes_usd` | literal en app/scalp_logic.py:5609 |
-| `stale_after_seconds` | literal en app/scalp_logic.py:5611 |
-| `status` | literal en app/scalp_logic.py:5614 |
-| `symbol` | literal en app/scalp_logic.py:5607 |
-| `unit` | literal en app/scalp_logic.py:5608 |
-| `venues` | literal en app/scalp_logic.py:5613 |
+| `sizes_usd` | literal en app/scalp_logic.py:5626 |
+| `stale_after_seconds` | literal en app/scalp_logic.py:5628 |
+| `status` | literal en app/scalp_logic.py:5631 |
+| `symbol` | literal en app/scalp_logic.py:5624 |
+| `unit` | literal en app/scalp_logic.py:5625 |
+| `venues` | literal en app/scalp_logic.py:5630 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -89,16 +89,16 @@ Llamadas directas del handler:
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
-- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5413`
-- `app.scalp_logic.execution_cost` — `app/scalp_logic.py:5556`
+- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5430`
+- `app.scalp_logic.execution_cost` — `app/scalp_logic.py:5573`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
 
 <details><summary>Alcanzables de forma indirecta (24)</summary>
 
 - `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
-- `app.scalp_logic._banda` — `app/scalp_logic.py:5404`
-- `app.scalp_logic._bps` — `app/scalp_logic.py:5330`
+- `app.scalp_logic._banda` — `app/scalp_logic.py:5421`
+- `app.scalp_logic._bps` — `app/scalp_logic.py:5347`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:571`
@@ -110,12 +110,12 @@ Llamadas directas del handler:
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
-- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5337`
+- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5354`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
-- `app.scalp_logic.walk_book` — `app/scalp_logic.py:5252`
+- `app.scalp_logic.walk_book` — `app/scalp_logic.py:5269`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`

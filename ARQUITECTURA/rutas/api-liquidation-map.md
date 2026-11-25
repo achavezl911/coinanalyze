@@ -18,25 +18,25 @@ Handler `liquidation_map_endpoint` · `app/api.py:2082` (cuerpo hasta la 2085) �
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3851 |
-| `atr_1h` | literal en app/scalp_logic.py:3850 |
-| `available` | literal en app/scalp_logic.py:3847 |
-| `bucket_size` | literal en app/scalp_logic.py:3855 |
-| `buckets_total` | literal en app/scalp_logic.py:3860 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3868 |
-| `current_price` | literal en app/scalp_logic.py:3849 |
-| `feed_alive` | literal en app/scalp_logic.py:3864 |
-| `feed_reason` | literal en app/scalp_logic.py:3866 |
-| `feed_status` | literal en app/scalp_logic.py:3865 |
-| `levels` | literal en app/scalp_logic.py:3867 |
-| `levels_shown` | literal en app/scalp_logic.py:3861 |
-| `note` | literal en app/scalp_logic.py:3869 |
-| `symbol` | literal en app/scalp_logic.py:3846 |
-| `type` | literal en app/scalp_logic.py:3848 |
-| `window_end` | literal en app/scalp_logic.py:3853 |
-| `window_minutes` | literal en app/scalp_logic.py:3854 |
-| `window_notional` | literal en app/scalp_logic.py:3862 |
-| `window_start` | literal en app/scalp_logic.py:3852 |
+| `as_of` | literal en app/scalp_logic.py:3868 |
+| `atr_1h` | literal en app/scalp_logic.py:3867 |
+| `available` | literal en app/scalp_logic.py:3864 |
+| `bucket_size` | literal en app/scalp_logic.py:3872 |
+| `buckets_total` | literal en app/scalp_logic.py:3877 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3885 |
+| `current_price` | literal en app/scalp_logic.py:3866 |
+| `feed_alive` | literal en app/scalp_logic.py:3881 |
+| `feed_reason` | literal en app/scalp_logic.py:3883 |
+| `feed_status` | literal en app/scalp_logic.py:3882 |
+| `levels` | literal en app/scalp_logic.py:3884 |
+| `levels_shown` | literal en app/scalp_logic.py:3878 |
+| `note` | literal en app/scalp_logic.py:3886 |
+| `symbol` | literal en app/scalp_logic.py:3863 |
+| `type` | literal en app/scalp_logic.py:3865 |
+| `window_end` | literal en app/scalp_logic.py:3870 |
+| `window_minutes` | literal en app/scalp_logic.py:3871 |
+| `window_notional` | literal en app/scalp_logic.py:3879 |
+| `window_start` | literal en app/scalp_logic.py:3869 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -66,15 +66,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3770`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3787`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4188`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3256`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4205`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3228`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3245`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>

@@ -18,14 +18,14 @@ Handler `cross_asset_endpoint` · `app/api.py:2273` (cuerpo hasta la 2276) · de
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3686 |
-| `available` | literal en app/scalp_logic.py:3688 |
-| `base` | literal en app/scalp_logic.py:3687 |
-| `beta_vs_base` | literal en app/scalp_logic.py:3690 |
-| `correlation` | literal en app/scalp_logic.py:3689 |
-| `note` | literal en app/scalp_logic.py:3692 |
-| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3691 |
-| `symbol` | literal en app/scalp_logic.py:3685 |
+| `as_of` | literal en app/scalp_logic.py:3703 |
+| `available` | literal en app/scalp_logic.py:3705 |
+| `base` | literal en app/scalp_logic.py:3704 |
+| `beta_vs_base` | literal en app/scalp_logic.py:3707 |
+| `correlation` | literal en app/scalp_logic.py:3706 |
+| `note` | literal en app/scalp_logic.py:3709 |
+| `relative_strength_vs_base_pct` | literal en app/scalp_logic.py:3708 |
+| `symbol` | literal en app/scalp_logic.py:3702 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -49,15 +49,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3654`
+- `app.scalp_logic.cross_asset` — `app/scalp_logic.py:3671`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._beta` — `app/scalp_logic.py:3619`
-- `app.scalp_logic._binned` — `app/scalp_logic.py:3633`
+- `app.scalp_logic._beta` — `app/scalp_logic.py:3636`
+- `app.scalp_logic._binned` — `app/scalp_logic.py:3650`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
-- `app.scalp_logic._pearson` — `app/scalp_logic.py:3606`
-- `app.scalp_logic._returns` — `app/scalp_logic.py:3598`
+- `app.scalp_logic._pearson` — `app/scalp_logic.py:3623`
+- `app.scalp_logic._returns` — `app/scalp_logic.py:3615`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 

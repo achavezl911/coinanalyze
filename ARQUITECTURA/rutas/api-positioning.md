@@ -18,23 +18,23 @@ Handler `positioning` · `app/api.py:1525` (cuerpo hasta la 1529) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `age_seconds` | literal en app/scalp_logic.py:6055 |
-| `limitations` | literal en app/scalp_logic.py:6056 |
-| `long_pct` | literal en app/scalp_logic.py:6041 |
-| `median_sample` | literal en app/scalp_logic.py:6049 |
-| `percentile_sample` | literal en app/scalp_logic.py:6050 |
-| `ratio` | literal en app/scalp_logic.py:6043 |
-| `ratio_24h_ago` | literal en app/scalp_logic.py:6044 |
-| `ratio_change_24h` | literal en app/scalp_logic.py:6046 |
-| `reason` | literal en app/scalp_logic.py:6018 |
-| `sample_count` | literal en app/scalp_logic.py:6051 |
-| `sample_days` | literal en app/scalp_logic.py:6052 |
-| `sample_is_full_month` | literal en app/scalp_logic.py:6053 |
-| `short_pct` | literal en app/scalp_logic.py:6042 |
-| `status` | literal en app/scalp_logic.py:6039 |
-| `symbol` | literal en app/scalp_logic.py:6038 |
-| `ts` | literal en app/scalp_logic.py:6054 |
-| `unit` | literal en app/scalp_logic.py:6040 |
+| `age_seconds` | literal en app/scalp_logic.py:6072 |
+| `limitations` | literal en app/scalp_logic.py:6073 |
+| `long_pct` | literal en app/scalp_logic.py:6058 |
+| `median_sample` | literal en app/scalp_logic.py:6066 |
+| `percentile_sample` | literal en app/scalp_logic.py:6067 |
+| `ratio` | literal en app/scalp_logic.py:6060 |
+| `ratio_24h_ago` | literal en app/scalp_logic.py:6061 |
+| `ratio_change_24h` | literal en app/scalp_logic.py:6063 |
+| `reason` | literal en app/scalp_logic.py:6035 |
+| `sample_count` | literal en app/scalp_logic.py:6068 |
+| `sample_days` | literal en app/scalp_logic.py:6069 |
+| `sample_is_full_month` | literal en app/scalp_logic.py:6070 |
+| `short_pct` | literal en app/scalp_logic.py:6059 |
+| `status` | literal en app/scalp_logic.py:6056 |
+| `symbol` | literal en app/scalp_logic.py:6055 |
+| `ts` | literal en app/scalp_logic.py:6071 |
+| `unit` | literal en app/scalp_logic.py:6057 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -62,7 +62,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5981`
+- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5998`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 

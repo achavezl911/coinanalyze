@@ -2158,38 +2158,38 @@
     },
     "app.scalp_logic._atr": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3239,
-      "sitio": "`app/scalp_logic.py:3239`"
+      "linea": 3256,
+      "sitio": "`app/scalp_logic.py:3256`"
     },
     "app.scalp_logic._banda": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5404,
-      "sitio": "`app/scalp_logic.py:5404`"
+      "linea": 5421,
+      "sitio": "`app/scalp_logic.py:5421`"
     },
     "app.scalp_logic._beta": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3619,
-      "sitio": "`app/scalp_logic.py:3619`"
+      "linea": 3636,
+      "sitio": "`app/scalp_logic.py:3636`"
     },
     "app.scalp_logic._binned": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3633,
-      "sitio": "`app/scalp_logic.py:3633`"
+      "linea": 3650,
+      "sitio": "`app/scalp_logic.py:3650`"
     },
     "app.scalp_logic._bps": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5330,
-      "sitio": "`app/scalp_logic.py:5330`"
+      "linea": 5347,
+      "sitio": "`app/scalp_logic.py:5347`"
     },
     "app.scalp_logic._buckets_observados": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3291,
-      "sitio": "`app/scalp_logic.py:3291`"
+      "linea": 3308,
+      "sitio": "`app/scalp_logic.py:3308`"
     },
     "app.scalp_logic._classify_passive": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6158,
-      "sitio": "`app/scalp_logic.py:6158`"
+      "linea": 6175,
+      "sitio": "`app/scalp_logic.py:6175`"
     },
     "app.scalp_logic._closed_5m_oi_bounds": {
       "fichero": "app/scalp_logic.py",
@@ -2203,8 +2203,8 @@
     },
     "app.scalp_logic._closes_1min": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3218,
-      "sitio": "`app/scalp_logic.py:3218`"
+      "linea": 3235,
+      "sitio": "`app/scalp_logic.py:3235`"
     },
     "app.scalp_logic._complete_tail_values": {
       "fichero": "app/scalp_logic.py",
@@ -2233,8 +2233,8 @@
     },
     "app.scalp_logic._cvd_src": {
       "fichero": "app/scalp_logic.py",
-      "linea": 2934,
-      "sitio": "`app/scalp_logic.py:2934`"
+      "linea": 2951,
+      "sitio": "`app/scalp_logic.py:2951`"
     },
     "app.scalp_logic._dsr": {
       "fichero": "app/scalp_logic.py",
@@ -2248,8 +2248,8 @@
     },
     "app.scalp_logic._feed_status": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4223,
-      "sitio": "`app/scalp_logic.py:4223`"
+      "linea": 4240,
+      "sitio": "`app/scalp_logic.py:4240`"
     },
     "app.scalp_logic._first_present": {
       "fichero": "app/scalp_logic.py",
@@ -2258,8 +2258,8 @@
     },
     "app.scalp_logic._flow_bias": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4859,
-      "sitio": "`app/scalp_logic.py:4859`"
+      "linea": 4876,
+      "sitio": "`app/scalp_logic.py:4876`"
     },
     "app.scalp_logic._flow_coverage_reason": {
       "fichero": "app/scalp_logic.py",
@@ -2288,18 +2288,18 @@
     },
     "app.scalp_logic._gap_and_baseline": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4444,
-      "sitio": "`app/scalp_logic.py:4444`"
+      "linea": 4461,
+      "sitio": "`app/scalp_logic.py:4461`"
     },
     "app.scalp_logic._gap_threshold_seconds": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4414,
-      "sitio": "`app/scalp_logic.py:4414`"
+      "linea": 4431,
+      "sitio": "`app/scalp_logic.py:4431`"
     },
     "app.scalp_logic._gap_too_large": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4426,
-      "sitio": "`app/scalp_logic.py:4426`"
+      "linea": 4443,
+      "sitio": "`app/scalp_logic.py:4443`"
     },
     "app.scalp_logic._intraday_divergences": {
       "fichero": "app/scalp_logic.py",
@@ -2308,8 +2308,8 @@
     },
     "app.scalp_logic._liquidation_feed_quality_status": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4188,
-      "sitio": "`app/scalp_logic.py:4188`"
+      "linea": 4205,
+      "sitio": "`app/scalp_logic.py:4205`"
     },
     "app.scalp_logic._liquidation_window_measured": {
       "fichero": "app/scalp_logic.py",
@@ -2323,18 +2323,18 @@
     },
     "app.scalp_logic._oi_change_pct": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4625,
-      "sitio": "`app/scalp_logic.py:4625`"
+      "linea": 4642,
+      "sitio": "`app/scalp_logic.py:4642`"
     },
     "app.scalp_logic._oi_coverage": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3303,
-      "sitio": "`app/scalp_logic.py:3303`"
+      "linea": 3320,
+      "sitio": "`app/scalp_logic.py:3320`"
     },
     "app.scalp_logic._oi_quadrant": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3261,
-      "sitio": "`app/scalp_logic.py:3261`"
+      "linea": 3278,
+      "sitio": "`app/scalp_logic.py:3278`"
     },
     "app.scalp_logic._pct_rank": {
       "fichero": "app/scalp_logic.py",
@@ -2343,8 +2343,8 @@
     },
     "app.scalp_logic._pearson": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3606,
-      "sitio": "`app/scalp_logic.py:3606`"
+      "linea": 3623,
+      "sitio": "`app/scalp_logic.py:3623`"
     },
     "app.scalp_logic._pivot_structure": {
       "fichero": "app/scalp_logic.py",
@@ -2353,18 +2353,18 @@
     },
     "app.scalp_logic._profile": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3875,
-      "sitio": "`app/scalp_logic.py:3875`"
+      "linea": 3892,
+      "sitio": "`app/scalp_logic.py:3892`"
     },
     "app.scalp_logic._realized_vol": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3247,
-      "sitio": "`app/scalp_logic.py:3247`"
+      "linea": 3264,
+      "sitio": "`app/scalp_logic.py:3264`"
     },
     "app.scalp_logic._realtime_flow": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4541,
-      "sitio": "`app/scalp_logic.py:4541`"
+      "linea": 4558,
+      "sitio": "`app/scalp_logic.py:4558`"
     },
     "app.scalp_logic._regime": {
       "fichero": "app/scalp_logic.py",
@@ -2383,8 +2383,8 @@
     },
     "app.scalp_logic._returns": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3598,
-      "sitio": "`app/scalp_logic.py:3598`"
+      "linea": 3615,
+      "sitio": "`app/scalp_logic.py:3615`"
     },
     "app.scalp_logic._sign_vote": {
       "fichero": "app/scalp_logic.py",
@@ -2413,8 +2413,8 @@
     },
     "app.scalp_logic._tr_series": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3228,
-      "sitio": "`app/scalp_logic.py:3228`"
+      "linea": 3245,
+      "sitio": "`app/scalp_logic.py:3245`"
     },
     "app.scalp_logic._utc_now": {
       "fichero": "app/scalp_logic.py",
@@ -2448,8 +2448,8 @@
     },
     "app.scalp_logic.coherencia_del_plan": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5337,
-      "sitio": "`app/scalp_logic.py:5337`"
+      "linea": 5354,
+      "sitio": "`app/scalp_logic.py:5354`"
     },
     "app.scalp_logic.compute_scalp_summary": {
       "fichero": "app/scalp_logic.py",
@@ -2458,33 +2458,33 @@
     },
     "app.scalp_logic.compute_swing_score": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6493,
-      "sitio": "`app/scalp_logic.py:6493`"
+      "linea": 6510,
+      "sitio": "`app/scalp_logic.py:6510`"
     },
     "app.scalp_logic.context_metadata": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3972,
-      "sitio": "`app/scalp_logic.py:3972`"
+      "linea": 3989,
+      "sitio": "`app/scalp_logic.py:3989`"
     },
     "app.scalp_logic.cross_asset": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3654,
-      "sitio": "`app/scalp_logic.py:3654`"
+      "linea": 3671,
+      "sitio": "`app/scalp_logic.py:3671`"
     },
     "app.scalp_logic.cvd_matrix": {
       "fichero": "app/scalp_logic.py",
-      "linea": 2993,
-      "sitio": "`app/scalp_logic.py:2993`"
+      "linea": 3010,
+      "sitio": "`app/scalp_logic.py:3010`"
     },
     "app.scalp_logic.data_quality": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4346,
-      "sitio": "`app/scalp_logic.py:4346`"
+      "linea": 4363,
+      "sitio": "`app/scalp_logic.py:4363`"
     },
     "app.scalp_logic.delta_matrix": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4657,
-      "sitio": "`app/scalp_logic.py:4657`"
+      "linea": 4674,
+      "sitio": "`app/scalp_logic.py:4674`"
     },
     "app.scalp_logic.divergence_scan": {
       "fichero": "app/scalp_logic.py",
@@ -2493,38 +2493,38 @@
     },
     "app.scalp_logic.execution_assessment": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5413,
-      "sitio": "`app/scalp_logic.py:5413`"
+      "linea": 5430,
+      "sitio": "`app/scalp_logic.py:5430`"
     },
     "app.scalp_logic.execution_cost": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5556,
-      "sitio": "`app/scalp_logic.py:5556`"
+      "linea": 5573,
+      "sitio": "`app/scalp_logic.py:5573`"
     },
     "app.scalp_logic.feed_quality": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4063,
-      "sitio": "`app/scalp_logic.py:4063`"
+      "linea": 4080,
+      "sitio": "`app/scalp_logic.py:4080`"
     },
     "app.scalp_logic.feed_quality_view": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5639,
-      "sitio": "`app/scalp_logic.py:5639`"
+      "linea": 5656,
+      "sitio": "`app/scalp_logic.py:5656`"
     },
     "app.scalp_logic.flow_confirmation": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4793,
-      "sitio": "`app/scalp_logic.py:4793`"
+      "linea": 4810,
+      "sitio": "`app/scalp_logic.py:4810`"
     },
     "app.scalp_logic.funding_context": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3697,
-      "sitio": "`app/scalp_logic.py:3697`"
+      "linea": 3714,
+      "sitio": "`app/scalp_logic.py:3714`"
     },
     "app.scalp_logic.futures_flow_windows": {
       "fichero": "app/scalp_logic.py",
-      "linea": 2915,
-      "sitio": "`app/scalp_logic.py:2915`"
+      "linea": 2932,
+      "sitio": "`app/scalp_logic.py:2932`"
     },
     "app.scalp_logic.horizon_structure": {
       "fichero": "app/scalp_logic.py",
@@ -2533,8 +2533,8 @@
     },
     "app.scalp_logic.hypothesis_evidence": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5064,
-      "sitio": "`app/scalp_logic.py:5064`"
+      "linea": 5081,
+      "sitio": "`app/scalp_logic.py:5081`"
     },
     "app.scalp_logic.level_breakout": {
       "fichero": "app/scalp_logic.py",
@@ -2548,8 +2548,8 @@
     },
     "app.scalp_logic.liquidation_map": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3770,
-      "sitio": "`app/scalp_logic.py:3770`"
+      "linea": 3787,
+      "sitio": "`app/scalp_logic.py:3787`"
     },
     "app.scalp_logic.load_baselines": {
       "fichero": "app/scalp_logic.py",
@@ -2563,8 +2563,8 @@
     },
     "app.scalp_logic.market_impact": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5876,
-      "sitio": "`app/scalp_logic.py:5876`"
+      "linea": 5893,
+      "sitio": "`app/scalp_logic.py:5893`"
     },
     "app.scalp_logic.market_memory": {
       "fichero": "app/scalp_logic.py",
@@ -2578,28 +2578,28 @@
     },
     "app.scalp_logic.max_internal_gap": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4497,
-      "sitio": "`app/scalp_logic.py:4497`"
+      "linea": 4514,
+      "sitio": "`app/scalp_logic.py:4514`"
     },
     "app.scalp_logic.metric_quality": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4252,
-      "sitio": "`app/scalp_logic.py:4252`"
+      "linea": 4269,
+      "sitio": "`app/scalp_logic.py:4269`"
     },
     "app.scalp_logic.oi_context": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3334,
-      "sitio": "`app/scalp_logic.py:3334`"
+      "linea": 3351,
+      "sitio": "`app/scalp_logic.py:3351`"
     },
     "app.scalp_logic.passive_flow": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6191,
-      "sitio": "`app/scalp_logic.py:6191`"
+      "linea": 6208,
+      "sitio": "`app/scalp_logic.py:6208`"
     },
     "app.scalp_logic.positioning_context": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5981,
-      "sitio": "`app/scalp_logic.py:5981`"
+      "linea": 5998,
+      "sitio": "`app/scalp_logic.py:5998`"
     },
     "app.scalp_logic.price_barriers": {
       "fichero": "app/scalp_logic.py",
@@ -2608,8 +2608,8 @@
     },
     "app.scalp_logic.profile_view": {
       "fichero": "app/scalp_logic.py",
-      "linea": 4872,
-      "sitio": "`app/scalp_logic.py:4872`"
+      "linea": 4889,
+      "sitio": "`app/scalp_logic.py:4889`"
     },
     "app.scalp_logic.range_validate": {
       "fichero": "app/scalp_logic.py",
@@ -2618,8 +2618,8 @@
     },
     "app.scalp_logic.reference_levels": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3504,
-      "sitio": "`app/scalp_logic.py:3504`"
+      "linea": 3521,
+      "sitio": "`app/scalp_logic.py:3521`"
     },
     "app.scalp_logic.resolve_matrix_as_of": {
       "fichero": "app/scalp_logic.py",
@@ -2628,13 +2628,13 @@
     },
     "app.scalp_logic.scalp_absorption": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5682,
-      "sitio": "`app/scalp_logic.py:5682`"
+      "linea": 5699,
+      "sitio": "`app/scalp_logic.py:5699`"
     },
     "app.scalp_logic.scalp_basis": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5838,
-      "sitio": "`app/scalp_logic.py:5838`"
+      "linea": 5855,
+      "sitio": "`app/scalp_logic.py:5855`"
     },
     "app.scalp_logic.scalp_bias_label": {
       "fichero": "app/scalp_logic.py",
@@ -2648,8 +2648,8 @@
     },
     "app.scalp_logic.scalp_liquidations": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5777,
-      "sitio": "`app/scalp_logic.py:5777`"
+      "linea": 5794,
+      "sitio": "`app/scalp_logic.py:5794`"
     },
     "app.scalp_logic.score_component": {
       "fichero": "app/scalp_logic.py",
@@ -2663,18 +2663,18 @@
     },
     "app.scalp_logic.spot_con_guarda": {
       "fichero": "app/scalp_logic.py",
-      "linea": 2854,
-      "sitio": "`app/scalp_logic.py:2854`"
+      "linea": 2871,
+      "sitio": "`app/scalp_logic.py:2871`"
     },
     "app.scalp_logic.spot_flow_windows": {
       "fichero": "app/scalp_logic.py",
-      "linea": 2844,
-      "sitio": "`app/scalp_logic.py:2844`"
+      "linea": 2861,
+      "sitio": "`app/scalp_logic.py:2861`"
     },
     "app.scalp_logic.spot_perp_flow": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6060,
-      "sitio": "`app/scalp_logic.py:6060`"
+      "linea": 6077,
+      "sitio": "`app/scalp_logic.py:6077`"
     },
     "app.scalp_logic.structure_detail": {
       "fichero": "app/scalp_logic.py",
@@ -2683,28 +2683,28 @@
     },
     "app.scalp_logic.swing_score": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6644,
-      "sitio": "`app/scalp_logic.py:6644`"
+      "linea": 6661,
+      "sitio": "`app/scalp_logic.py:6661`"
     },
     "app.scalp_logic.trend_matrix": {
       "fichero": "app/scalp_logic.py",
-      "linea": 6319,
-      "sitio": "`app/scalp_logic.py:6319`"
+      "linea": 6336,
+      "sitio": "`app/scalp_logic.py:6336`"
     },
     "app.scalp_logic.volatility_context": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3454,
-      "sitio": "`app/scalp_logic.py:3454`"
+      "linea": 3471,
+      "sitio": "`app/scalp_logic.py:3471`"
     },
     "app.scalp_logic.volume_profile": {
       "fichero": "app/scalp_logic.py",
-      "linea": 3912,
-      "sitio": "`app/scalp_logic.py:3912`"
+      "linea": 3929,
+      "sitio": "`app/scalp_logic.py:3929`"
     },
     "app.scalp_logic.walk_book": {
       "fichero": "app/scalp_logic.py",
-      "linea": 5252,
-      "sitio": "`app/scalp_logic.py:5252`"
+      "linea": 5269,
+      "sitio": "`app/scalp_logic.py:5269`"
     },
     "app.scalp_logic.wyckoff_context": {
       "fichero": "app/scalp_logic.py",
@@ -25305,7 +25305,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3239",
+        "sitio": "app/scalp_logic.py:3256",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25326,7 +25326,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5404",
+        "sitio": "app/scalp_logic.py:5421",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25350,7 +25350,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3619",
+        "sitio": "app/scalp_logic.py:3636",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25374,7 +25374,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3633",
+        "sitio": "app/scalp_logic.py:3650",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25395,7 +25395,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5330",
+        "sitio": "app/scalp_logic.py:5347",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25415,7 +25415,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3291",
+        "sitio": "app/scalp_logic.py:3308",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25439,7 +25439,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6158",
+        "sitio": "app/scalp_logic.py:6175",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25587,7 +25587,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3218",
+        "sitio": "app/scalp_logic.py:3235",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25755,7 +25755,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:2934",
+        "sitio": "app/scalp_logic.py:2951",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25879,7 +25879,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4223",
+        "sitio": "app/scalp_logic.py:4240",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -25965,7 +25965,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4859",
+        "sitio": "app/scalp_logic.py:4876",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26150,7 +26150,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4444",
+        "sitio": "app/scalp_logic.py:4461",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26187,7 +26187,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4414",
+        "sitio": "app/scalp_logic.py:4431",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26223,7 +26223,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4426",
+        "sitio": "app/scalp_logic.py:4443",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26268,7 +26268,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4188",
+        "sitio": "app/scalp_logic.py:4205",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26434,7 +26434,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4625",
+        "sitio": "app/scalp_logic.py:4642",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26455,7 +26455,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3303",
+        "sitio": "app/scalp_logic.py:3320",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26476,7 +26476,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3261",
+        "sitio": "app/scalp_logic.py:3278",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26531,7 +26531,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3606",
+        "sitio": "app/scalp_logic.py:3623",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26577,7 +26577,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3875",
+        "sitio": "app/scalp_logic.py:3892",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26598,7 +26598,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3247",
+        "sitio": "app/scalp_logic.py:3264",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26636,7 +26636,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4541",
+        "sitio": "app/scalp_logic.py:4558",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26755,7 +26755,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3598",
+        "sitio": "app/scalp_logic.py:3615",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -26917,7 +26917,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3228",
+        "sitio": "app/scalp_logic.py:3245",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27396,7 +27396,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5337",
+        "sitio": "app/scalp_logic.py:5354",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27524,7 +27524,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6493",
+        "sitio": "app/scalp_logic.py:6510",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -27554,7 +27554,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3972",
+        "sitio": "app/scalp_logic.py:3989",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27585,7 +27585,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3654",
+        "sitio": "app/scalp_logic.py:3671",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -27615,7 +27615,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:2993",
+        "sitio": "app/scalp_logic.py:3010",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27639,7 +27639,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4346",
+        "sitio": "app/scalp_logic.py:4363",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27669,7 +27669,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4657",
+        "sitio": "app/scalp_logic.py:4674",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27712,7 +27712,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5413",
+        "sitio": "app/scalp_logic.py:5430",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27729,7 +27729,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5556",
+        "sitio": "app/scalp_logic.py:5573",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27750,7 +27750,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4063",
+        "sitio": "app/scalp_logic.py:4080",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27771,7 +27771,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5639",
+        "sitio": "app/scalp_logic.py:5656",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27809,7 +27809,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4793",
+        "sitio": "app/scalp_logic.py:4810",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27830,7 +27830,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3697",
+        "sitio": "app/scalp_logic.py:3714",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27862,7 +27862,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:2915",
+        "sitio": "app/scalp_logic.py:2932",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27900,7 +27900,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5064",
+        "sitio": "app/scalp_logic.py:5081",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -27957,7 +27957,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3770",
+        "sitio": "app/scalp_logic.py:3787",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28096,7 +28096,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5876",
+        "sitio": "app/scalp_logic.py:5893",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28160,7 +28160,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4497",
+        "sitio": "app/scalp_logic.py:4514",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28181,7 +28181,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4252",
+        "sitio": "app/scalp_logic.py:4269",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28202,7 +28202,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3334",
+        "sitio": "app/scalp_logic.py:3351",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28233,7 +28233,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6191",
+        "sitio": "app/scalp_logic.py:6208",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -28263,7 +28263,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5981",
+        "sitio": "app/scalp_logic.py:5998",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28314,7 +28314,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:4872",
+        "sitio": "app/scalp_logic.py:4889",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28354,7 +28354,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3504",
+        "sitio": "app/scalp_logic.py:3521",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28502,7 +28502,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5682",
+        "sitio": "app/scalp_logic.py:5699",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28523,7 +28523,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5838",
+        "sitio": "app/scalp_logic.py:5855",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28705,7 +28705,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5777",
+        "sitio": "app/scalp_logic.py:5794",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28820,7 +28820,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:2854",
+        "sitio": "app/scalp_logic.py:2871",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28859,7 +28859,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:2844",
+        "sitio": "app/scalp_logic.py:2861",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28876,7 +28876,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6060",
+        "sitio": "app/scalp_logic.py:6077",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -28994,7 +28994,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6644",
+        "sitio": "app/scalp_logic.py:6661",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -29098,7 +29098,7 @@
           "/api/verdicts"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:6319",
+        "sitio": "app/scalp_logic.py:6336",
         "solo_por_tabla": [
           "/api/verdicts"
         ],
@@ -29128,7 +29128,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3454",
+        "sitio": "app/scalp_logic.py:3471",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29155,7 +29155,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:3912",
+        "sitio": "app/scalp_logic.py:3929",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29175,7 +29175,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/scalp_logic.py:5252",
+        "sitio": "app/scalp_logic.py:5269",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -34479,12 +34479,12 @@
     {
       "camino": "/api/context-metadata",
       "campos": {
-        "calc_version": "literal en app/scalp_logic.py:3997",
-        "feeds": "literal en app/scalp_logic.py:3999",
-        "generated_at": "literal en app/scalp_logic.py:3998",
-        "note": "literal en app/scalp_logic.py:4001",
-        "symbol": "literal en app/scalp_logic.py:3996",
-        "venues_note": "literal en app/scalp_logic.py:4000"
+        "calc_version": "literal en app/scalp_logic.py:4014",
+        "feeds": "literal en app/scalp_logic.py:4016",
+        "generated_at": "literal en app/scalp_logic.py:4015",
+        "note": "literal en app/scalp_logic.py:4018",
+        "symbol": "literal en app/scalp_logic.py:4013",
+        "venues_note": "literal en app/scalp_logic.py:4017"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -34570,14 +34570,14 @@
     {
       "camino": "/api/cross-asset",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:3686",
-        "available": "literal en app/scalp_logic.py:3688",
-        "base": "literal en app/scalp_logic.py:3687",
-        "beta_vs_base": "literal en app/scalp_logic.py:3690",
-        "correlation": "literal en app/scalp_logic.py:3689",
-        "note": "literal en app/scalp_logic.py:3692",
-        "relative_strength_vs_base_pct": "literal en app/scalp_logic.py:3691",
-        "symbol": "literal en app/scalp_logic.py:3685"
+        "as_of": "literal en app/scalp_logic.py:3703",
+        "available": "literal en app/scalp_logic.py:3705",
+        "base": "literal en app/scalp_logic.py:3704",
+        "beta_vs_base": "literal en app/scalp_logic.py:3707",
+        "correlation": "literal en app/scalp_logic.py:3706",
+        "note": "literal en app/scalp_logic.py:3709",
+        "relative_strength_vs_base_pct": "literal en app/scalp_logic.py:3708",
+        "symbol": "literal en app/scalp_logic.py:3702"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -34842,24 +34842,24 @@
     {
       "camino": "/api/cvd-matrix",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:3196",
-        "symbol": "literal en app/scalp_logic.py:3195",
-        "window_meta": "literal en app/scalp_logic.py:3198",
-        "window_meta.acceleration_measured": "literal en app/scalp_logic.py:3203",
-        "window_meta.as_of": "literal en app/scalp_logic.py:3199",
-        "window_meta.as_of_semantics": "literal en app/scalp_logic.py:3212",
-        "window_meta.definition": "literal en app/scalp_logic.py:3206",
-        "window_meta.freshness_rule": "literal en app/scalp_logic.py:3210",
-        "window_meta.futures_agg_retention_hours": "literal en app/scalp_logic.py:3209",
-        "window_meta.futures_realtime_retention_hours": "literal en app/scalp_logic.py:3208",
-        "window_meta.independent_confirmations": "literal en app/scalp_logic.py:3202",
-        "window_meta.null_reasons": "literal en app/scalp_logic.py:3211",
-        "window_meta.reset_timezone": "literal en app/scalp_logic.py:3204",
-        "window_meta.sources": "literal en app/scalp_logic.py:3207",
-        "window_meta.venues": "literal en app/scalp_logic.py:3205",
-        "window_meta.window_type": "literal en app/scalp_logic.py:3200",
-        "window_meta.windows_are_nested": "literal en app/scalp_logic.py:3201",
-        "windows": "literal en app/scalp_logic.py:3197"
+        "as_of": "literal en app/scalp_logic.py:3213",
+        "symbol": "literal en app/scalp_logic.py:3212",
+        "window_meta": "literal en app/scalp_logic.py:3215",
+        "window_meta.acceleration_measured": "literal en app/scalp_logic.py:3220",
+        "window_meta.as_of": "literal en app/scalp_logic.py:3216",
+        "window_meta.as_of_semantics": "literal en app/scalp_logic.py:3229",
+        "window_meta.definition": "literal en app/scalp_logic.py:3223",
+        "window_meta.freshness_rule": "literal en app/scalp_logic.py:3227",
+        "window_meta.futures_agg_retention_hours": "literal en app/scalp_logic.py:3226",
+        "window_meta.futures_realtime_retention_hours": "literal en app/scalp_logic.py:3225",
+        "window_meta.independent_confirmations": "literal en app/scalp_logic.py:3219",
+        "window_meta.null_reasons": "literal en app/scalp_logic.py:3228",
+        "window_meta.reset_timezone": "literal en app/scalp_logic.py:3221",
+        "window_meta.sources": "literal en app/scalp_logic.py:3224",
+        "window_meta.venues": "literal en app/scalp_logic.py:3222",
+        "window_meta.window_type": "literal en app/scalp_logic.py:3217",
+        "window_meta.windows_are_nested": "literal en app/scalp_logic.py:3218",
+        "windows": "literal en app/scalp_logic.py:3214"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -37284,18 +37284,18 @@
     {
       "camino": "/api/flow/spot-vs-perp",
       "campos": {
-        "buckets": "literal en app/scalp_logic.py:6149",
-        "buckets_with_both_legs": "literal en app/scalp_logic.py:6150",
-        "coverage_pct": "literal en app/scalp_logic.py:6151",
-        "interval": "literal en app/scalp_logic.py:6147",
-        "reason": "literal en app/scalp_logic.py:6081",
-        "rows": "literal en app/scalp_logic.py:6154",
-        "spot_symbol": "literal en app/scalp_logic.py:6145",
-        "state_counts": "literal en app/scalp_logic.py:6153",
-        "status": "literal en app/scalp_logic.py:6152",
-        "symbol": "literal en app/scalp_logic.py:6144",
-        "unit": "literal en app/scalp_logic.py:6148",
-        "venue": "literal en app/scalp_logic.py:6146"
+        "buckets": "literal en app/scalp_logic.py:6166",
+        "buckets_with_both_legs": "literal en app/scalp_logic.py:6167",
+        "coverage_pct": "literal en app/scalp_logic.py:6168",
+        "interval": "literal en app/scalp_logic.py:6164",
+        "reason": "literal en app/scalp_logic.py:6098",
+        "rows": "literal en app/scalp_logic.py:6171",
+        "spot_symbol": "literal en app/scalp_logic.py:6162",
+        "state_counts": "literal en app/scalp_logic.py:6170",
+        "status": "literal en app/scalp_logic.py:6169",
+        "symbol": "literal en app/scalp_logic.py:6161",
+        "unit": "literal en app/scalp_logic.py:6165",
+        "venue": "literal en app/scalp_logic.py:6163"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -37456,16 +37456,16 @@
     {
       "camino": "/api/funding-context",
       "campos": {
-        "annualized_pct": "literal en app/scalp_logic.py:3755",
-        "coverage": "literal en app/scalp_logic.py:3757",
-        "current_pct": "literal en app/scalp_logic.py:3750",
-        "divergence_pred_minus_current": "literal en app/scalp_logic.py:3752",
-        "history_avg_pct": "literal en app/scalp_logic.py:3756",
-        "next_funding_time_utc": "literal en app/scalp_logic.py:3758",
-        "note": "literal en app/scalp_logic.py:3766",
-        "predicted_pct": "literal en app/scalp_logic.py:3751",
-        "regime": "literal en app/scalp_logic.py:3759",
-        "symbol": "literal en app/scalp_logic.py:3749"
+        "annualized_pct": "literal en app/scalp_logic.py:3772",
+        "coverage": "literal en app/scalp_logic.py:3774",
+        "current_pct": "literal en app/scalp_logic.py:3767",
+        "divergence_pred_minus_current": "literal en app/scalp_logic.py:3769",
+        "history_avg_pct": "literal en app/scalp_logic.py:3773",
+        "next_funding_time_utc": "literal en app/scalp_logic.py:3775",
+        "note": "literal en app/scalp_logic.py:3783",
+        "predicted_pct": "literal en app/scalp_logic.py:3768",
+        "regime": "literal en app/scalp_logic.py:3776",
+        "symbol": "literal en app/scalp_logic.py:3766"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -37741,50 +37741,50 @@
       "camino": "/api/hypothesis",
       "campos": {
         "as_of": "literal en app/api.py:1585",
-        "context": "literal en app/scalp_logic.py:5224",
-        "counts": "literal en app/scalp_logic.py:5235",
-        "data_coverage_pct": "literal en app/scalp_logic.py:5226",
-        "direction": "literal en app/scalp_logic.py:5212",
-        "direction_label": "literal en app/scalp_logic.py:5213",
-        "evidence": "literal en app/scalp_logic.py:5234",
-        "evidence.a_favor": "literal en app/scalp_logic.py:5108",
-        "evidence.en_contra": "literal en app/scalp_logic.py:5109",
-        "evidence.neutral": "literal en app/scalp_logic.py:5110",
-        "evidence.no_evaluable": "literal en app/scalp_logic.py:5112",
-        "evidence.pendiente": "literal en app/scalp_logic.py:5111",
-        "execution": "literal en app/scalp_logic.py:5232",
-        "execution.bands_note": "literal en app/scalp_logic.py:5543",
-        "execution.cost_components_bps": "literal en app/scalp_logic.py:5512",
-        "execution.cost_components_missing": "literal en app/scalp_logic.py:5513",
-        "execution.cost_to_risk": "literal en app/scalp_logic.py:5517",
-        "execution.cost_to_risk_band": "literal en app/scalp_logic.py:5519",
-        "execution.cost_to_target": "literal en app/scalp_logic.py:5516",
-        "execution.cost_to_target_band": "literal en app/scalp_logic.py:5518",
-        "execution.horizon": "literal en app/scalp_logic.py:5508",
-        "execution.inputs": "literal en app/scalp_logic.py:5521",
-        "execution.missing_inputs": "literal en app/scalp_logic.py:5520",
-        "execution.note": "literal en app/scalp_logic.py:5549",
-        "execution.plan_coherence": "literal en app/scalp_logic.py:5540",
-        "execution.plan_incoherencias": "literal en app/scalp_logic.py:5541",
-        "execution.plan_warning": "literal en app/scalp_logic.py:5542",
-        "execution.profile": "literal en app/scalp_logic.py:5506",
-        "execution.profile_label": "literal en app/scalp_logic.py:5507",
-        "execution.risk_bps": "literal en app/scalp_logic.py:5515",
-        "execution.spread_warn_bps": "literal en app/scalp_logic.py:5533",
-        "execution.spread_warning": "literal en app/scalp_logic.py:5532",
-        "execution.status": "literal en app/scalp_logic.py:5509",
-        "execution.target_bps": "literal en app/scalp_logic.py:5514",
-        "execution.total_cost_bps": "literal en app/scalp_logic.py:5511",
-        "execution.verdict": "literal en app/scalp_logic.py:5510",
-        "hypothesis": "literal en app/scalp_logic.py:5211",
-        "invalidations": "literal en app/scalp_logic.py:5237",
-        "label": "literal en app/scalp_logic.py:5218",
-        "note": "literal en app/scalp_logic.py:5245",
-        "pending_conditions": "literal en app/scalp_logic.py:5236",
-        "profile": "literal en app/scalp_logic.py:5223",
-        "profile_coverage_pct": "literal en app/scalp_logic.py:5227",
-        "setup": "literal en app/scalp_logic.py:5214",
-        "setup_evaluation": "literal en app/scalp_logic.py:5217",
+        "context": "literal en app/scalp_logic.py:5241",
+        "counts": "literal en app/scalp_logic.py:5252",
+        "data_coverage_pct": "literal en app/scalp_logic.py:5243",
+        "direction": "literal en app/scalp_logic.py:5229",
+        "direction_label": "literal en app/scalp_logic.py:5230",
+        "evidence": "literal en app/scalp_logic.py:5251",
+        "evidence.a_favor": "literal en app/scalp_logic.py:5125",
+        "evidence.en_contra": "literal en app/scalp_logic.py:5126",
+        "evidence.neutral": "literal en app/scalp_logic.py:5127",
+        "evidence.no_evaluable": "literal en app/scalp_logic.py:5129",
+        "evidence.pendiente": "literal en app/scalp_logic.py:5128",
+        "execution": "literal en app/scalp_logic.py:5249",
+        "execution.bands_note": "literal en app/scalp_logic.py:5560",
+        "execution.cost_components_bps": "literal en app/scalp_logic.py:5529",
+        "execution.cost_components_missing": "literal en app/scalp_logic.py:5530",
+        "execution.cost_to_risk": "literal en app/scalp_logic.py:5534",
+        "execution.cost_to_risk_band": "literal en app/scalp_logic.py:5536",
+        "execution.cost_to_target": "literal en app/scalp_logic.py:5533",
+        "execution.cost_to_target_band": "literal en app/scalp_logic.py:5535",
+        "execution.horizon": "literal en app/scalp_logic.py:5525",
+        "execution.inputs": "literal en app/scalp_logic.py:5538",
+        "execution.missing_inputs": "literal en app/scalp_logic.py:5537",
+        "execution.note": "literal en app/scalp_logic.py:5566",
+        "execution.plan_coherence": "literal en app/scalp_logic.py:5557",
+        "execution.plan_incoherencias": "literal en app/scalp_logic.py:5558",
+        "execution.plan_warning": "literal en app/scalp_logic.py:5559",
+        "execution.profile": "literal en app/scalp_logic.py:5523",
+        "execution.profile_label": "literal en app/scalp_logic.py:5524",
+        "execution.risk_bps": "literal en app/scalp_logic.py:5532",
+        "execution.spread_warn_bps": "literal en app/scalp_logic.py:5550",
+        "execution.spread_warning": "literal en app/scalp_logic.py:5549",
+        "execution.status": "literal en app/scalp_logic.py:5526",
+        "execution.target_bps": "literal en app/scalp_logic.py:5531",
+        "execution.total_cost_bps": "literal en app/scalp_logic.py:5528",
+        "execution.verdict": "literal en app/scalp_logic.py:5527",
+        "hypothesis": "literal en app/scalp_logic.py:5228",
+        "invalidations": "literal en app/scalp_logic.py:5254",
+        "label": "literal en app/scalp_logic.py:5235",
+        "note": "literal en app/scalp_logic.py:5262",
+        "pending_conditions": "literal en app/scalp_logic.py:5253",
+        "profile": "literal en app/scalp_logic.py:5240",
+        "profile_coverage_pct": "literal en app/scalp_logic.py:5244",
+        "setup": "literal en app/scalp_logic.py:5231",
+        "setup_evaluation": "literal en app/scalp_logic.py:5234",
         "setup_evaluation.confirmation_evaluable": "literal en app/setups.py:1422",
         "setup_evaluation.confirmation_met": "literal en app/setups.py:1423",
         "setup_evaluation.confirmation_total": "literal en app/setups.py:1421",
@@ -37812,17 +37812,17 @@
         "setup_evaluation.setup": "literal en app/setups.py:1402",
         "setup_evaluation.state": "literal en app/setups.py:1407",
         "setup_evaluation.thesis": "literal en app/setups.py:1406",
-        "setup_label": "literal en app/scalp_logic.py:5215",
-        "setup_observables": "literal en app/scalp_logic.py:5238",
-        "setup_state": "literal en app/scalp_logic.py:5216",
-        "setup_zone": "literal en app/scalp_logic.py:5239",
-        "setup_zone.breakout_boundary": "literal en app/scalp_logic.py:5243",
-        "setup_zone.zone_center": "literal en app/scalp_logic.py:5242",
-        "setup_zone.zone_high": "literal en app/scalp_logic.py:5241",
-        "setup_zone.zone_low": "literal en app/scalp_logic.py:5240",
-        "spread_bps": "literal en app/scalp_logic.py:5233",
+        "setup_label": "literal en app/scalp_logic.py:5232",
+        "setup_observables": "literal en app/scalp_logic.py:5255",
+        "setup_state": "literal en app/scalp_logic.py:5233",
+        "setup_zone": "literal en app/scalp_logic.py:5256",
+        "setup_zone.breakout_boundary": "literal en app/scalp_logic.py:5260",
+        "setup_zone.zone_center": "literal en app/scalp_logic.py:5259",
+        "setup_zone.zone_high": "literal en app/scalp_logic.py:5258",
+        "setup_zone.zone_low": "literal en app/scalp_logic.py:5257",
+        "spread_bps": "literal en app/scalp_logic.py:5250",
         "symbol": "literal en app/api.py:1584",
-        "timing": "literal en app/scalp_logic.py:5225"
+        "timing": "literal en app/scalp_logic.py:5242"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -39026,25 +39026,25 @@
     {
       "camino": "/api/liquidation-map",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:3851",
-        "atr_1h": "literal en app/scalp_logic.py:3850",
-        "available": "literal en app/scalp_logic.py:3847",
-        "bucket_size": "literal en app/scalp_logic.py:3855",
-        "buckets_total": "literal en app/scalp_logic.py:3860",
-        "cumulative_within_band": "literal en app/scalp_logic.py:3868",
-        "current_price": "literal en app/scalp_logic.py:3849",
-        "feed_alive": "literal en app/scalp_logic.py:3864",
-        "feed_reason": "literal en app/scalp_logic.py:3866",
-        "feed_status": "literal en app/scalp_logic.py:3865",
-        "levels": "literal en app/scalp_logic.py:3867",
-        "levels_shown": "literal en app/scalp_logic.py:3861",
-        "note": "literal en app/scalp_logic.py:3869",
-        "symbol": "literal en app/scalp_logic.py:3846",
-        "type": "literal en app/scalp_logic.py:3848",
-        "window_end": "literal en app/scalp_logic.py:3853",
-        "window_minutes": "literal en app/scalp_logic.py:3854",
-        "window_notional": "literal en app/scalp_logic.py:3862",
-        "window_start": "literal en app/scalp_logic.py:3852"
+        "as_of": "literal en app/scalp_logic.py:3868",
+        "atr_1h": "literal en app/scalp_logic.py:3867",
+        "available": "literal en app/scalp_logic.py:3864",
+        "bucket_size": "literal en app/scalp_logic.py:3872",
+        "buckets_total": "literal en app/scalp_logic.py:3877",
+        "cumulative_within_band": "literal en app/scalp_logic.py:3885",
+        "current_price": "literal en app/scalp_logic.py:3866",
+        "feed_alive": "literal en app/scalp_logic.py:3881",
+        "feed_reason": "literal en app/scalp_logic.py:3883",
+        "feed_status": "literal en app/scalp_logic.py:3882",
+        "levels": "literal en app/scalp_logic.py:3884",
+        "levels_shown": "literal en app/scalp_logic.py:3878",
+        "note": "literal en app/scalp_logic.py:3886",
+        "symbol": "literal en app/scalp_logic.py:3863",
+        "type": "literal en app/scalp_logic.py:3865",
+        "window_end": "literal en app/scalp_logic.py:3870",
+        "window_minutes": "literal en app/scalp_logic.py:3871",
+        "window_notional": "literal en app/scalp_logic.py:3879",
+        "window_start": "literal en app/scalp_logic.py:3869"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -39479,12 +39479,12 @@
     {
       "camino": "/api/market-impact",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:5969",
-        "definition": "literal en app/scalp_logic.py:5971",
-        "limitations": "literal en app/scalp_logic.py:5973",
-        "metric": "literal en app/scalp_logic.py:5970",
-        "symbol": "literal en app/scalp_logic.py:5968",
-        "windows": "literal en app/scalp_logic.py:5972"
+        "as_of": "literal en app/scalp_logic.py:5986",
+        "definition": "literal en app/scalp_logic.py:5988",
+        "limitations": "literal en app/scalp_logic.py:5990",
+        "metric": "literal en app/scalp_logic.py:5987",
+        "symbol": "literal en app/scalp_logic.py:5985",
+        "windows": "literal en app/scalp_logic.py:5989"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -40637,22 +40637,22 @@
     {
       "camino": "/api/oi-context",
       "campos": {
-        "available": "literal en app/scalp_logic.py:3426",
-        "by_venue": "literal en app/scalp_logic.py:3437",
-        "by_venue.binance_oi_usd": "literal en app/scalp_logic.py:3438",
-        "by_venue.bybit_oi_usd": "literal en app/scalp_logic.py:3439",
-        "by_venue.bybit_share_of_two_venues_pct": "literal en app/scalp_logic.py:3443",
-        "by_venue.note": "literal en app/scalp_logic.py:3446",
-        "by_venue.two_venue_total_usd": "literal en app/scalp_logic.py:3440",
-        "coverage": "literal en app/scalp_logic.py:3434",
-        "oi_latest_ts": "literal en app/scalp_logic.py:3431",
-        "oi_total_usd": "literal en app/scalp_logic.py:3427",
-        "percentile_1y": "literal en app/scalp_logic.py:3435",
-        "price_latest_ts": "literal en app/scalp_logic.py:3432",
-        "quadrant_note": "literal en app/scalp_logic.py:3450",
-        "symbol": "literal en app/scalp_logic.py:3425",
-        "windows": "literal en app/scalp_logic.py:3433",
-        "zscore_1y": "literal en app/scalp_logic.py:3436"
+        "available": "literal en app/scalp_logic.py:3443",
+        "by_venue": "literal en app/scalp_logic.py:3454",
+        "by_venue.binance_oi_usd": "literal en app/scalp_logic.py:3455",
+        "by_venue.bybit_oi_usd": "literal en app/scalp_logic.py:3456",
+        "by_venue.bybit_share_of_two_venues_pct": "literal en app/scalp_logic.py:3460",
+        "by_venue.note": "literal en app/scalp_logic.py:3463",
+        "by_venue.two_venue_total_usd": "literal en app/scalp_logic.py:3457",
+        "coverage": "literal en app/scalp_logic.py:3451",
+        "oi_latest_ts": "literal en app/scalp_logic.py:3448",
+        "oi_total_usd": "literal en app/scalp_logic.py:3444",
+        "percentile_1y": "literal en app/scalp_logic.py:3452",
+        "price_latest_ts": "literal en app/scalp_logic.py:3449",
+        "quadrant_note": "literal en app/scalp_logic.py:3467",
+        "symbol": "literal en app/scalp_logic.py:3442",
+        "windows": "literal en app/scalp_logic.py:3450",
+        "zscore_1y": "literal en app/scalp_logic.py:3453"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -42275,22 +42275,22 @@
     {
       "camino": "/api/passive-flow",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:6285",
-        "counts": "literal en app/scalp_logic.py:6291",
-        "counts.neutral": "literal en app/scalp_logic.py:6214",
-        "counts.reacumulacion_silenciosa": "literal en app/scalp_logic.py:6214",
-        "counts.redistribucion_silenciosa": "literal en app/scalp_logic.py:6214",
-        "horizons": "literal en app/scalp_logic.py:6289",
-        "location": "literal en app/scalp_logic.py:6287",
-        "note": "literal en app/scalp_logic.py:6292",
-        "price": "literal en app/scalp_logic.py:6286",
-        "reading_method": "literal en app/scalp_logic.py:6298",
-        "summary": "literal en app/scalp_logic.py:6290",
-        "symbol": "literal en app/scalp_logic.py:6284",
-        "value_area": "literal en app/scalp_logic.py:6288",
-        "value_area.poc": "literal en app/scalp_logic.py:6288",
-        "value_area.vah": "literal en app/scalp_logic.py:6288",
-        "value_area.val": "literal en app/scalp_logic.py:6288"
+        "as_of": "literal en app/scalp_logic.py:6302",
+        "counts": "literal en app/scalp_logic.py:6308",
+        "counts.neutral": "literal en app/scalp_logic.py:6231",
+        "counts.reacumulacion_silenciosa": "literal en app/scalp_logic.py:6231",
+        "counts.redistribucion_silenciosa": "literal en app/scalp_logic.py:6231",
+        "horizons": "literal en app/scalp_logic.py:6306",
+        "location": "literal en app/scalp_logic.py:6304",
+        "note": "literal en app/scalp_logic.py:6309",
+        "price": "literal en app/scalp_logic.py:6303",
+        "reading_method": "literal en app/scalp_logic.py:6315",
+        "summary": "literal en app/scalp_logic.py:6307",
+        "symbol": "literal en app/scalp_logic.py:6301",
+        "value_area": "literal en app/scalp_logic.py:6305",
+        "value_area.poc": "literal en app/scalp_logic.py:6305",
+        "value_area.vah": "literal en app/scalp_logic.py:6305",
+        "value_area.val": "literal en app/scalp_logic.py:6305"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -42446,23 +42446,23 @@
     {
       "camino": "/api/positioning",
       "campos": {
-        "age_seconds": "literal en app/scalp_logic.py:6055",
-        "limitations": "literal en app/scalp_logic.py:6056",
-        "long_pct": "literal en app/scalp_logic.py:6041",
-        "median_sample": "literal en app/scalp_logic.py:6049",
-        "percentile_sample": "literal en app/scalp_logic.py:6050",
-        "ratio": "literal en app/scalp_logic.py:6043",
-        "ratio_24h_ago": "literal en app/scalp_logic.py:6044",
-        "ratio_change_24h": "literal en app/scalp_logic.py:6046",
-        "reason": "literal en app/scalp_logic.py:6018",
-        "sample_count": "literal en app/scalp_logic.py:6051",
-        "sample_days": "literal en app/scalp_logic.py:6052",
-        "sample_is_full_month": "literal en app/scalp_logic.py:6053",
-        "short_pct": "literal en app/scalp_logic.py:6042",
-        "status": "literal en app/scalp_logic.py:6039",
-        "symbol": "literal en app/scalp_logic.py:6038",
-        "ts": "literal en app/scalp_logic.py:6054",
-        "unit": "literal en app/scalp_logic.py:6040"
+        "age_seconds": "literal en app/scalp_logic.py:6072",
+        "limitations": "literal en app/scalp_logic.py:6073",
+        "long_pct": "literal en app/scalp_logic.py:6058",
+        "median_sample": "literal en app/scalp_logic.py:6066",
+        "percentile_sample": "literal en app/scalp_logic.py:6067",
+        "ratio": "literal en app/scalp_logic.py:6060",
+        "ratio_24h_ago": "literal en app/scalp_logic.py:6061",
+        "ratio_change_24h": "literal en app/scalp_logic.py:6063",
+        "reason": "literal en app/scalp_logic.py:6035",
+        "sample_count": "literal en app/scalp_logic.py:6068",
+        "sample_days": "literal en app/scalp_logic.py:6069",
+        "sample_is_full_month": "literal en app/scalp_logic.py:6070",
+        "short_pct": "literal en app/scalp_logic.py:6059",
+        "status": "literal en app/scalp_logic.py:6056",
+        "symbol": "literal en app/scalp_logic.py:6055",
+        "ts": "literal en app/scalp_logic.py:6071",
+        "unit": "literal en app/scalp_logic.py:6057"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -42677,19 +42677,19 @@
       "camino": "/api/profile",
       "campos": {
         "as_of": "literal en app/api.py:1773",
-        "bias": "literal en app/scalp_logic.py:5027",
-        "confidence": "literal en app/scalp_logic.py:5029",
-        "contradictions": "literal en app/scalp_logic.py:5033",
-        "coverage_pct": "literal en app/scalp_logic.py:5030",
-        "invalidation": "literal en app/scalp_logic.py:5039",
-        "layers": "literal en app/scalp_logic.py:5031",
-        "missing_data": "literal en app/scalp_logic.py:5034",
-        "net_score": "literal en app/scalp_logic.py:5028",
-        "profile": "literal en app/scalp_logic.py:5025",
-        "profile_label": "literal en app/scalp_logic.py:5026",
-        "reference_only": "literal en app/scalp_logic.py:5032",
+        "bias": "literal en app/scalp_logic.py:5044",
+        "confidence": "literal en app/scalp_logic.py:5046",
+        "contradictions": "literal en app/scalp_logic.py:5050",
+        "coverage_pct": "literal en app/scalp_logic.py:5047",
+        "invalidation": "literal en app/scalp_logic.py:5056",
+        "layers": "literal en app/scalp_logic.py:5048",
+        "missing_data": "literal en app/scalp_logic.py:5051",
+        "net_score": "literal en app/scalp_logic.py:5045",
+        "profile": "literal en app/scalp_logic.py:5042",
+        "profile_label": "literal en app/scalp_logic.py:5043",
+        "reference_only": "literal en app/scalp_logic.py:5049",
         "symbol": "literal en app/api.py:1772",
-        "weights_note": "literal en app/scalp_logic.py:5035"
+        "weights_note": "literal en app/scalp_logic.py:5052"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -42889,13 +42889,13 @@
     {
       "camino": "/api/quality/feeds",
       "campos": {
-        "collectors": "literal en app/scalp_logic.py:5673",
-        "contexts": "literal en app/scalp_logic.py:5674",
-        "contexts.intraday": "literal en app/scalp_logic.py:5676",
-        "contexts.macro": "literal en app/scalp_logic.py:5677",
-        "contexts.scalp": "literal en app/scalp_logic.py:5675",
-        "metrics": "literal en app/scalp_logic.py:4337",
-        "note": "literal en app/scalp_logic.py:4338"
+        "collectors": "literal en app/scalp_logic.py:5690",
+        "contexts": "literal en app/scalp_logic.py:5691",
+        "contexts.intraday": "literal en app/scalp_logic.py:5693",
+        "contexts.macro": "literal en app/scalp_logic.py:5694",
+        "contexts.scalp": "literal en app/scalp_logic.py:5692",
+        "metrics": "literal en app/scalp_logic.py:4354",
+        "note": "literal en app/scalp_logic.py:4355"
       },
       "campos_pendientes": [
         "el objeto se expande con **feeds, que no se resuelve en el arbol: sus campos no se pueden derivar"
@@ -43559,28 +43559,28 @@
     {
       "camino": "/api/reference-levels",
       "campos": {
-        "current_day": "literal en app/scalp_logic.py:3575",
-        "current_day.duracion_min": "literal en app/scalp_logic.py:3577",
-        "current_day.en_curso": "literal en app/scalp_logic.py:3577",
-        "current_day.high": "literal en app/scalp_logic.py:3575",
-        "current_day.low": "literal en app/scalp_logic.py:3575",
-        "current_day.open": "literal en app/scalp_logic.py:3575",
-        "current_day.velas": "literal en app/scalp_logic.py:3576",
-        "current_day.velas_posibles": "literal en app/scalp_logic.py:3576",
-        "note": "literal en app/scalp_logic.py:3589",
-        "opens": "literal en app/scalp_logic.py:3578",
-        "opens.daily": "literal en app/scalp_logic.py:3579",
-        "opens.monthly": "literal en app/scalp_logic.py:3581",
-        "opens.weekly": "literal en app/scalp_logic.py:3580",
-        "previous_day": "literal en app/scalp_logic.py:3573",
-        "previous_day.close": "literal en app/scalp_logic.py:3573",
-        "previous_day.en_curso": "literal en app/scalp_logic.py:3574",
-        "previous_day.high": "literal en app/scalp_logic.py:3573",
-        "previous_day.low": "literal en app/scalp_logic.py:3573",
-        "previous_day.velas": "literal en app/scalp_logic.py:3574",
-        "previous_day.velas_posibles": "literal en app/scalp_logic.py:3574",
-        "sessions_today_utc": "literal en app/scalp_logic.py:3583",
-        "symbol": "literal en app/scalp_logic.py:3572"
+        "current_day": "literal en app/scalp_logic.py:3592",
+        "current_day.duracion_min": "literal en app/scalp_logic.py:3594",
+        "current_day.en_curso": "literal en app/scalp_logic.py:3594",
+        "current_day.high": "literal en app/scalp_logic.py:3592",
+        "current_day.low": "literal en app/scalp_logic.py:3592",
+        "current_day.open": "literal en app/scalp_logic.py:3592",
+        "current_day.velas": "literal en app/scalp_logic.py:3593",
+        "current_day.velas_posibles": "literal en app/scalp_logic.py:3593",
+        "note": "literal en app/scalp_logic.py:3606",
+        "opens": "literal en app/scalp_logic.py:3595",
+        "opens.daily": "literal en app/scalp_logic.py:3596",
+        "opens.monthly": "literal en app/scalp_logic.py:3598",
+        "opens.weekly": "literal en app/scalp_logic.py:3597",
+        "previous_day": "literal en app/scalp_logic.py:3590",
+        "previous_day.close": "literal en app/scalp_logic.py:3590",
+        "previous_day.en_curso": "literal en app/scalp_logic.py:3591",
+        "previous_day.high": "literal en app/scalp_logic.py:3590",
+        "previous_day.low": "literal en app/scalp_logic.py:3590",
+        "previous_day.velas": "literal en app/scalp_logic.py:3591",
+        "previous_day.velas_posibles": "literal en app/scalp_logic.py:3591",
+        "sessions_today_utc": "literal en app/scalp_logic.py:3600",
+        "symbol": "literal en app/scalp_logic.py:3589"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -43940,7 +43940,7 @@
     {
       "camino": "/api/scalp/basis",
       "campos": {
-        "symbol": "literal en app/scalp_logic.py:5870"
+        "symbol": "literal en app/scalp_logic.py:5887"
       },
       "campos_pendientes": [
         "el objeto se expande con **item, que no se resuelve en el arbol: sus campos no se pueden derivar",
@@ -44229,16 +44229,16 @@
     {
       "camino": "/api/scalp/execution-cost",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:5610",
+        "as_of": "literal en app/scalp_logic.py:5627",
         "assessment": "asignado en app/api.py:1818",
-        "note": "literal en app/scalp_logic.py:5612",
+        "note": "literal en app/scalp_logic.py:5629",
         "profiles": "asignado en app/api.py:1831",
-        "sizes_usd": "literal en app/scalp_logic.py:5609",
-        "stale_after_seconds": "literal en app/scalp_logic.py:5611",
-        "status": "literal en app/scalp_logic.py:5614",
-        "symbol": "literal en app/scalp_logic.py:5607",
-        "unit": "literal en app/scalp_logic.py:5608",
-        "venues": "literal en app/scalp_logic.py:5613"
+        "sizes_usd": "literal en app/scalp_logic.py:5626",
+        "stale_after_seconds": "literal en app/scalp_logic.py:5628",
+        "status": "literal en app/scalp_logic.py:5631",
+        "symbol": "literal en app/scalp_logic.py:5624",
+        "unit": "literal en app/scalp_logic.py:5625",
+        "venues": "literal en app/scalp_logic.py:5630"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -44644,9 +44644,9 @@
     {
       "camino": "/api/scalp/liquidations",
       "campos": {
-        "matrix": "literal en app/scalp_logic.py:5835",
-        "recent": "literal en app/scalp_logic.py:5835",
-        "symbol": "literal en app/scalp_logic.py:5835"
+        "matrix": "literal en app/scalp_logic.py:5852",
+        "recent": "literal en app/scalp_logic.py:5852",
+        "symbol": "literal en app/scalp_logic.py:5852"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -46812,22 +46812,22 @@
     {
       "camino": "/api/swing-score",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:6659",
-        "as_of_semantics": "literal en app/scalp_logic.py:6660",
-        "bias": "literal en app/scalp_logic.py:6624",
-        "components": "literal en app/scalp_logic.py:6634",
-        "conflicts": "literal en app/scalp_logic.py:6633",
-        "conviction": "literal en app/scalp_logic.py:6626",
-        "evidence_coverage_pct": "literal en app/scalp_logic.py:6630",
-        "horizon": "literal en app/scalp_logic.py:6635",
-        "long_share_pct": "literal en app/scalp_logic.py:6627",
-        "measured_weight": "literal en app/scalp_logic.py:6631",
-        "neutral_share_pct": "literal en app/scalp_logic.py:6629",
-        "note": "literal en app/scalp_logic.py:6636",
-        "score": "literal en app/scalp_logic.py:6625",
-        "short_share_pct": "literal en app/scalp_logic.py:6628",
-        "symbol": "literal en app/scalp_logic.py:6658",
-        "total_weight": "literal en app/scalp_logic.py:6632"
+        "as_of": "literal en app/scalp_logic.py:6676",
+        "as_of_semantics": "literal en app/scalp_logic.py:6677",
+        "bias": "literal en app/scalp_logic.py:6641",
+        "components": "literal en app/scalp_logic.py:6651",
+        "conflicts": "literal en app/scalp_logic.py:6650",
+        "conviction": "literal en app/scalp_logic.py:6643",
+        "evidence_coverage_pct": "literal en app/scalp_logic.py:6647",
+        "horizon": "literal en app/scalp_logic.py:6652",
+        "long_share_pct": "literal en app/scalp_logic.py:6644",
+        "measured_weight": "literal en app/scalp_logic.py:6648",
+        "neutral_share_pct": "literal en app/scalp_logic.py:6646",
+        "note": "literal en app/scalp_logic.py:6653",
+        "score": "literal en app/scalp_logic.py:6642",
+        "short_share_pct": "literal en app/scalp_logic.py:6645",
+        "symbol": "literal en app/scalp_logic.py:6675",
+        "total_weight": "literal en app/scalp_logic.py:6649"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -47111,14 +47111,14 @@
     {
       "camino": "/api/trend-matrix",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:6463",
-        "bias_method": "literal en app/scalp_logic.py:6472",
-        "distinct_from": "literal en app/scalp_logic.py:6481",
-        "medium_term_alignment": "literal en app/scalp_logic.py:6465",
-        "note": "literal en app/scalp_logic.py:6466",
-        "structure_method": "literal en app/scalp_logic.py:6477",
-        "symbol": "literal en app/scalp_logic.py:6462",
-        "timeframes": "literal en app/scalp_logic.py:6464"
+        "as_of": "literal en app/scalp_logic.py:6480",
+        "bias_method": "literal en app/scalp_logic.py:6489",
+        "distinct_from": "literal en app/scalp_logic.py:6498",
+        "medium_term_alignment": "literal en app/scalp_logic.py:6482",
+        "note": "literal en app/scalp_logic.py:6483",
+        "structure_method": "literal en app/scalp_logic.py:6494",
+        "symbol": "literal en app/scalp_logic.py:6479",
+        "timeframes": "literal en app/scalp_logic.py:6481"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -47424,13 +47424,13 @@
     {
       "camino": "/api/volatility",
       "campos": {
-        "atr": "literal en app/scalp_logic.py:3491",
-        "compression_score": "literal en app/scalp_logic.py:3494",
-        "daily_range_percentile_1y": "literal en app/scalp_logic.py:3493",
-        "note": "literal en app/scalp_logic.py:3496",
-        "range_expansion": "literal en app/scalp_logic.py:3495",
-        "realized_vol_annualized_pct": "literal en app/scalp_logic.py:3492",
-        "symbol": "literal en app/scalp_logic.py:3490"
+        "atr": "literal en app/scalp_logic.py:3508",
+        "compression_score": "literal en app/scalp_logic.py:3511",
+        "daily_range_percentile_1y": "literal en app/scalp_logic.py:3510",
+        "note": "literal en app/scalp_logic.py:3513",
+        "range_expansion": "literal en app/scalp_logic.py:3512",
+        "realized_vol_annualized_pct": "literal en app/scalp_logic.py:3509",
+        "symbol": "literal en app/scalp_logic.py:3507"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -47534,23 +47534,23 @@
     {
       "camino": "/api/volume-profile",
       "campos": {
-        "as_of": "literal en app/scalp_logic.py:3957",
-        "available": "literal en app/scalp_logic.py:3958",
-        "note": "literal en app/scalp_logic.py:3968",
-        "session": "literal en app/scalp_logic.py:3959",
-        "session.hvn": "literal en app/scalp_logic.py:3907",
-        "session.lvn": "literal en app/scalp_logic.py:3908",
-        "session.poc": "literal en app/scalp_logic.py:3904",
-        "session.vah": "literal en app/scalp_logic.py:3905",
-        "session.val": "literal en app/scalp_logic.py:3906",
-        "symbol": "literal en app/scalp_logic.py:3956",
-        "vwap": "literal en app/scalp_logic.py:3960",
-        "vwap.bands": "literal en app/scalp_logic.py:3963",
-        "vwap.distinct_from": "literal en app/scalp_logic.py:3966",
-        "vwap.market": "literal en app/scalp_logic.py:3964",
-        "vwap.session_convention": "literal en app/scalp_logic.py:3965",
-        "vwap.utc_day": "literal en app/scalp_logic.py:3961",
-        "vwap.weekly": "literal en app/scalp_logic.py:3962"
+        "as_of": "literal en app/scalp_logic.py:3974",
+        "available": "literal en app/scalp_logic.py:3975",
+        "note": "literal en app/scalp_logic.py:3985",
+        "session": "literal en app/scalp_logic.py:3976",
+        "session.hvn": "literal en app/scalp_logic.py:3924",
+        "session.lvn": "literal en app/scalp_logic.py:3925",
+        "session.poc": "literal en app/scalp_logic.py:3921",
+        "session.vah": "literal en app/scalp_logic.py:3922",
+        "session.val": "literal en app/scalp_logic.py:3923",
+        "symbol": "literal en app/scalp_logic.py:3973",
+        "vwap": "literal en app/scalp_logic.py:3977",
+        "vwap.bands": "literal en app/scalp_logic.py:3980",
+        "vwap.distinct_from": "literal en app/scalp_logic.py:3983",
+        "vwap.market": "literal en app/scalp_logic.py:3981",
+        "vwap.session_convention": "literal en app/scalp_logic.py:3982",
+        "vwap.utc_day": "literal en app/scalp_logic.py:3978",
+        "vwap.weekly": "literal en app/scalp_logic.py:3979"
       },
       "campos_pendientes": [],
       "cierre": [
@@ -49043,17 +49043,17 @@
         {
           "funcion": "app.scalp_logic.oi_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3407"
+          "sitio": "app/scalp_logic.py:3424"
         },
         {
           "funcion": "app.scalp_logic.volatility_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3474"
+          "sitio": "app/scalp_logic.py:3491"
         },
         {
           "funcion": "app.scalp_logic.trend_matrix",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:6337"
+          "sitio": "app/scalp_logic.py:6354"
         }
       ],
       "leida_por": [
@@ -49560,12 +49560,12 @@
         {
           "funcion": "app.scalp_logic.funding_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3700"
+          "sitio": "app/scalp_logic.py:3717"
         },
         {
           "funcion": "app.scalp_logic.funding_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3722"
+          "sitio": "app/scalp_logic.py:3739"
         }
       ],
       "leida_por": [
@@ -49679,12 +49679,12 @@
         {
           "funcion": "app.scalp_logic.scalp_absorption",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5699"
+          "sitio": "app/scalp_logic.py:5716"
         },
         {
           "funcion": "app.scalp_logic.scalp_basis",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5842"
+          "sitio": "app/scalp_logic.py:5859"
         }
       ],
       "leida_por": [
@@ -49812,22 +49812,22 @@
         {
           "funcion": "app.scalp_logic.liquidation_map",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3794"
+          "sitio": "app/scalp_logic.py:3811"
         },
         {
           "funcion": "app.scalp_logic.data_quality",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:4366"
+          "sitio": "app/scalp_logic.py:4383"
         },
         {
           "funcion": "app.scalp_logic.scalp_liquidations",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5817"
+          "sitio": "app/scalp_logic.py:5834"
         },
         {
           "funcion": "app.scalp_logic.scalp_liquidations",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5830"
+          "sitio": "app/scalp_logic.py:5847"
         }
       ],
       "leida_por": [
@@ -49873,7 +49873,7 @@
         {
           "funcion": "app.scalp_logic.positioning_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5991"
+          "sitio": "app/scalp_logic.py:6008"
         }
       ],
       "leida_por": [
@@ -49952,12 +49952,12 @@
         {
           "funcion": "app.scalp_logic.liquidation_map",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3823"
+          "sitio": "app/scalp_logic.py:3840"
         },
         {
           "funcion": "app.scalp_logic.feed_quality",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:4086"
+          "sitio": "app/scalp_logic.py:4103"
         }
       ],
       "leida_por": [
@@ -50301,12 +50301,12 @@
         {
           "funcion": "app.scalp_logic._closes_1min",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3220"
+          "sitio": "app/scalp_logic.py:3237"
         },
         {
           "funcion": "app.scalp_logic.oi_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3350"
+          "sitio": "app/scalp_logic.py:3367"
         },
         {
           "funcion": "app.scalp_logic.scalp_context",
@@ -50316,77 +50316,77 @@
         {
           "funcion": "app.scalp_logic.reference_levels",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3513"
+          "sitio": "app/scalp_logic.py:3530"
         },
         {
           "funcion": "app.scalp_logic.reference_levels.first_open",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3513"
+          "sitio": "app/scalp_logic.py:3530"
         },
         {
           "funcion": "app.scalp_logic.reference_levels",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3525"
+          "sitio": "app/scalp_logic.py:3542"
         },
         {
           "funcion": "app.scalp_logic.reference_levels.hl",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3525"
+          "sitio": "app/scalp_logic.py:3542"
         },
         {
           "funcion": "app.scalp_logic.reference_levels",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3544"
+          "sitio": "app/scalp_logic.py:3561"
         },
         {
           "funcion": "app.scalp_logic._binned",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3641"
+          "sitio": "app/scalp_logic.py:3658"
         },
         {
           "funcion": "app.scalp_logic.liquidation_map",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3777"
+          "sitio": "app/scalp_logic.py:3794"
         },
         {
           "funcion": "app.scalp_logic.volume_profile",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3921"
+          "sitio": "app/scalp_logic.py:3938"
         },
         {
           "funcion": "app.scalp_logic.volume_profile",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3937"
+          "sitio": "app/scalp_logic.py:3954"
         },
         {
           "funcion": "app.scalp_logic.market_impact",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5900"
+          "sitio": "app/scalp_logic.py:5917"
         },
         {
           "funcion": "app.scalp_logic.spot_perp_flow",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:6089"
+          "sitio": "app/scalp_logic.py:6106"
         },
         {
           "funcion": "app.scalp_logic.passive_flow",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:6202"
+          "sitio": "app/scalp_logic.py:6219"
         },
         {
           "funcion": "app.scalp_logic.passive_flow",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:6232"
+          "sitio": "app/scalp_logic.py:6249"
         },
         {
           "funcion": "app.scalp_logic.trend_matrix",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:6328"
+          "sitio": "app/scalp_logic.py:6345"
         },
         {
           "funcion": "app.scalp_logic.trend_matrix",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:6385"
+          "sitio": "app/scalp_logic.py:6402"
         },
         {
           "funcion": "app.signal_outcomes.materialize_due_signal_outcomes",
@@ -50456,7 +50456,7 @@
         {
           "funcion": "app.scalp_logic.oi_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3420"
+          "sitio": "app/scalp_logic.py:3437"
         }
       ],
       "leida_por": [
@@ -50504,7 +50504,7 @@
         {
           "funcion": "app.scalp_logic.oi_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3343"
+          "sitio": "app/scalp_logic.py:3360"
         },
         {
           "funcion": "app.scalp_logic.scalp_context",
@@ -50514,7 +50514,7 @@
         {
           "funcion": "app.scalp_logic._oi_change_pct",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:4637"
+          "sitio": "app/scalp_logic.py:4654"
         }
       ],
       "leida_por": [
@@ -50554,7 +50554,7 @@
         {
           "funcion": "app.scalp_logic.execution_cost",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5566"
+          "sitio": "app/scalp_logic.py:5583"
         },
         {
           "funcion": "app.signal_execution.load_signal_execution_inputs",
@@ -50749,12 +50749,12 @@
         {
           "funcion": "app.scalp_logic.feed_quality",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:4079"
+          "sitio": "app/scalp_logic.py:4096"
         },
         {
           "funcion": "app.scalp_logic.data_quality",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:4351"
+          "sitio": "app/scalp_logic.py:4368"
         }
       ],
       "leida_por": [
@@ -50793,7 +50793,7 @@
         {
           "funcion": "app.scalp_logic.funding_context",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:3706"
+          "sitio": "app/scalp_logic.py:3723"
         }
       ],
       "leida_por": [
@@ -51527,7 +51527,7 @@
         {
           "funcion": "app.scalp_logic.scalp_basis",
           "origen": "literal",
-          "sitio": "app/scalp_logic.py:5842"
+          "sitio": "app/scalp_logic.py:5859"
         },
         {
           "funcion": "app.ws_collector.flush_realtime",

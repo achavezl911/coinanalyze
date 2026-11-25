@@ -18,23 +18,23 @@ Handler `volume_profile_endpoint` · `app/api.py:2089` (cuerpo hasta la 2092) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3957 |
-| `available` | literal en app/scalp_logic.py:3958 |
-| `note` | literal en app/scalp_logic.py:3968 |
-| `session` | literal en app/scalp_logic.py:3959 |
-| `session.hvn` | literal en app/scalp_logic.py:3907 |
-| `session.lvn` | literal en app/scalp_logic.py:3908 |
-| `session.poc` | literal en app/scalp_logic.py:3904 |
-| `session.vah` | literal en app/scalp_logic.py:3905 |
-| `session.val` | literal en app/scalp_logic.py:3906 |
-| `symbol` | literal en app/scalp_logic.py:3956 |
-| `vwap` | literal en app/scalp_logic.py:3960 |
-| `vwap.bands` | literal en app/scalp_logic.py:3963 |
-| `vwap.distinct_from` | literal en app/scalp_logic.py:3966 |
-| `vwap.market` | literal en app/scalp_logic.py:3964 |
-| `vwap.session_convention` | literal en app/scalp_logic.py:3965 |
-| `vwap.utc_day` | literal en app/scalp_logic.py:3961 |
-| `vwap.weekly` | literal en app/scalp_logic.py:3962 |
+| `as_of` | literal en app/scalp_logic.py:3974 |
+| `available` | literal en app/scalp_logic.py:3975 |
+| `note` | literal en app/scalp_logic.py:3985 |
+| `session` | literal en app/scalp_logic.py:3976 |
+| `session.hvn` | literal en app/scalp_logic.py:3924 |
+| `session.lvn` | literal en app/scalp_logic.py:3925 |
+| `session.poc` | literal en app/scalp_logic.py:3921 |
+| `session.vah` | literal en app/scalp_logic.py:3922 |
+| `session.val` | literal en app/scalp_logic.py:3923 |
+| `symbol` | literal en app/scalp_logic.py:3973 |
+| `vwap` | literal en app/scalp_logic.py:3977 |
+| `vwap.bands` | literal en app/scalp_logic.py:3980 |
+| `vwap.distinct_from` | literal en app/scalp_logic.py:3983 |
+| `vwap.market` | literal en app/scalp_logic.py:3981 |
+| `vwap.session_convention` | literal en app/scalp_logic.py:3982 |
+| `vwap.utc_day` | literal en app/scalp_logic.py:3978 |
+| `vwap.weekly` | literal en app/scalp_logic.py:3979 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -58,12 +58,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3912`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3929`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3875`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3892`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
