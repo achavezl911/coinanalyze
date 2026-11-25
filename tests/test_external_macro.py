@@ -80,3 +80,66 @@ def test_regime_is_explainable_and_event_risk_blocks_multi_session_entry():
     aligned = align_with_internal(context, {"bias": "LONG"})
     assert aligned["alignment"]["state"] == "esperar_evento"
     assert "12.0 h" in aligned["alignment"]["reading"]
+
+
+def _rising(series: str, last: date, days: int, step: float = 1.01) -> list[dict]:
+    return [
+        {
+            "series": series,
+            "observed_on": last - timedelta(days=days - 1 - index),
+            "value": 100.0 * step**index,
+            "source": "test",
+            "fetched_at": None,
+        }
+        for index in range(days)
+    ]
+
+
+def test_m04_series_parada_91_dias_ni_vota_ni_cuenta():
+    # M-04 (fable-dz2, caso del banco): con main, seis series FRED paradas hace 91 dias votaban
+    # y daban confianza alta, porque el cambio se medía por FILAS y la cobertura por EXISTIR.
+    now = datetime(2026, 11, 20, 12, tzinfo=UTC)
+    vieja = now.date() - timedelta(days=91)
+    observations = []
+    for key in ("treasury_2y", "real_yield_10y", "usd_broad", "nasdaq", "sp500", "vix"):
+        observations += _rising(key, vieja, 30)
+    observations += _rising("stablecoin_supply_usd", now.date(), 40)
+    context = build_external_macro_context(observations, [], [], now=now)
+
+    metrics = {m["key"]: m for p in context["pillars"].values() for m in p["metrics"]}
+    nasdaq = metrics["nasdaq"]
+    # Primero lo que main dice mal (vota 1, confianza alta); despues los campos nuevos.
+    assert nasdaq["vote"] == 0 and nasdaq["change"] is None
+    assert context["coverage_pct"] == 14 and context["data_confidence"] == "baja"
+    assert nasdaq["stale"] is True
+    assert nasdaq["observed_on"] == vieja.isoformat() and nasdaq["age_days"] == 91
+    assert context["pillars"]["risk"]["state"] == "mixto"
+    assert context["regime"] == "sin_datos" and context["available"] is False
+    assert context["stale_series"] == ["treasury_2y", "real_yield_10y", "usd_broad", "nasdaq", "sp500", "vix"]
+    assert context["as_of"] == now.date().isoformat()
+    assert any("usd_broad (91 d > 12)" in item for item in context["limitations"])
+    stable = metrics["stablecoin_supply_usd"]
+    assert stable["stale"] is False and stable["vote"] == 1
+    assert stable["change_base_on"] == (now.date() - timedelta(days=30)).isoformat()
+
+
+def test_m04_cambio_por_fecha_hueco_y_serie_sana():
+    now = datetime(2026, 11, 20, 12, tzinfo=UTC)
+    ayer = now.date() - timedelta(days=1)
+    # Hueco de 60 dias antes de las 7 ultimas observaciones: la base de 7 dias cae a 66 dias,
+    # pasa de 2N y no hay cambio (con main, «5 periodos» medía contra hace 2 meses y votaba).
+    hueco = _rising("nasdaq", ayer, 30)
+    for row in hueco[:-7]:
+        row["observed_on"] -= timedelta(days=60)
+    # Serie sana diaria: mismo cambio que 7 periodos (1.01**7) y vota.
+    sana = _rising("sp500", ayer, 30)
+    # usd_broad semanal con 9 dias (su edad en 140 el 2026-11-22) sigue votando.
+    usd = _rising("usd_broad", now.date() - timedelta(days=9), 30, step=0.99)
+    context = build_external_macro_context([*hueco, *sana, *usd], [], [], now=now)
+    metrics = {m["key"]: m for p in context["pillars"].values() for m in p["metrics"]}
+    assert metrics["nasdaq"]["change"] is None and metrics["nasdaq"]["vote"] == 0
+    assert metrics["nasdaq"]["stale"] is False
+    assert abs(metrics["sp500"]["change"] - (1.01**7 - 1) * 100) < 1e-9
+    assert metrics["sp500"]["vote"] == 1 and metrics["sp500"]["age_days"] == 1
+    assert metrics["usd_broad"]["stale"] is False and metrics["usd_broad"]["vote"] == 1
+    assert context["as_of"] == (now.date() - timedelta(days=9)).isoformat()

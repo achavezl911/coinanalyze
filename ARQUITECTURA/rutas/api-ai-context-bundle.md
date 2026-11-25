@@ -65,8 +65,8 @@ LEE:
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
 - `external_macro_observation` — `sql/schema.sql:1320`, 5 columnas
-  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:553`
-  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:574`
+  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:601`
+  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:622`
 - `funding_rate` — `sql/schema.sql:247`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:669`
 - `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
@@ -83,8 +83,8 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:678`
   - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:358`
 - `macro_event` — `sql/schema.sql:1331`, 6 columnas
-  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:564`
-  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:576`
+  - la llena `app.external_macro.refresh_external_macro` (INSERT) — `app/external_macro.py:612`
+  - la llena `app.external_macro.refresh_external_macro` (DELETE) — `app/external_macro.py:624`
 - `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
@@ -183,14 +183,14 @@ Llamadas directas del handler:
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
 - `app.db.required_heartbeat_failures` — `app/db.py:110`
-- `app.external_macro._direction` — `app/external_macro.py:190`
-- `app.external_macro._metric` — `app/external_macro.py:205`
-- `app.external_macro._pct_change` — `app/external_macro.py:184`
-- `app.external_macro._pillar` — `app/external_macro.py:232`
-- `app.external_macro._state` — `app/external_macro.py:197`
-- `app.external_macro.align_with_internal` — `app/external_macro.py:415`
-- `app.external_macro.build_external_macro_context` — `app/external_macro.py:237`
-- `app.external_macro.external_macro_context` — `app/external_macro.py:437`
+- `app.external_macro._direction` — `app/external_macro.py:204`
+- `app.external_macro._metric` — `app/external_macro.py:219`
+- `app.external_macro._pct_change` — `app/external_macro.py:198`
+- `app.external_macro._pillar` — `app/external_macro.py:266`
+- `app.external_macro._state` — `app/external_macro.py:211`
+- `app.external_macro.align_with_internal` — `app/external_macro.py:463`
+- `app.external_macro.build_external_macro_context` — `app/external_macro.py:271`
+- `app.external_macro.external_macro_context` — `app/external_macro.py:485`
 - `app.field_disambiguation.build` — `app/field_disambiguation.py:72`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
