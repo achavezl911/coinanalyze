@@ -48536,14 +48536,15 @@
             "tests/test_libro.py:587"
           ],
           "menciones": [
-            "tests/js/libro_hueco_vivo.test.js:2"
+            "tests/js/libro_hueco_vivo.test.js:2",
+            "tests/test_k122_esquema_lector.py:18"
           ]
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 22,
-        "n_menciones": 27,
+        "n_menciones": 28,
         "sin_ninguno": false,
         "solo_mencion": false
       },
