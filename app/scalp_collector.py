@@ -474,6 +474,9 @@ LIQ_GAP_PENDING: set[tuple[str, str, datetime]] = set()
 # mientras siga conectada), el cierre de una conexion que estaba buena y, tras declarar [latido, ahora),
 # el arranque y la reconexion. Un intento fallido tras otro NO lo pisa: en 140 el colector estuvo vivo 21 h
 # (11-16 18:41Z .. 11-17 15:32Z) con todas sus conexiones en TimeoutError, y cada intento lo refrescaba.
+# V-08 (HUELIQ R1b): el silencio se juzga ENTERO, del ultimo latido sano al primer `ok`. El arranque que no
+# declara nada NO pisa el latido (80 s parado + 85 s reconectando eran dos tramos bajo el TOPE y 0 huecos);
+# y si el arranque ya declaro una parte, el `ok` alarga esa fila en vez de abrir otra.
 # TOPE: monitor() refresca el latido cada 30 s; 90 s son tres vueltas, una perdida (scalp_heartbeat_failed)
 # y la latencia de la base. Un latido de hace 20 s no es una parada.
 LIQ_OUTAGE_TOPE = timedelta(seconds=90)
@@ -488,17 +491,34 @@ async def declare_liquidation_silence(
 ) -> int:
     """H-03/P12: write [heartbeat, now) as collector_outage per symbol when it passes the TOPE.
 
+    A silence already declared up to the heartbeat (its row ends there and the feed is not ok) is the
+    same silence: its row is extended to now, whatever the length of the rest (V-08).
     Run it in the transaction that then refreshes the heartbeat: the next one starts where this ends.
     """
     row = await conn.fetchrow(
-        "SELECT updated_at, now() AS now FROM market_feed_health_shard "
+        "SELECT updated_at, status, now() AS now FROM market_feed_health_shard "
         "WHERE feed='liquidations' AND exchange=$1 AND shard_index=$2 AND shard_count=$3",
         exchange,
         SETTINGS.COLLECTOR_SHARD_INDEX,
         SETTINGS.COLLECTOR_SHARD_COUNT,
     )
     # sin latido previo no hay nada que declarar: no se inventa un inicio
-    if row is None or row["now"] - row["updated_at"] <= LIQ_OUTAGE_TOPE:
+    if row is None:
+        return 0
+    if row["status"] != "ok":
+        extended = await conn.fetchval(
+            "WITH ext AS (UPDATE data_gap SET end_ts=$3 "
+            " WHERE feed='liquidations' AND exchange=$1 AND market='perpetual' AND symbol=ANY($4::text[]) "
+            "   AND granularity='event' AND evidence_type='collector_outage' AND end_ts=$2 RETURNING 1) "
+            "SELECT count(*) FROM ext",
+            exchange,
+            row["updated_at"],
+            row["now"],
+            list(ACTIVE_SYMBOLS),
+        )
+        if extended:
+            return int(extended)
+    if row["now"] - row["updated_at"] <= LIQ_OUTAGE_TOPE:
         return 0
     for symbol in ACTIVE_SYMBOLS:
         await record_event_stream_loss(
@@ -656,13 +676,21 @@ async def reset_liquidation_feed_health(
 ) -> None:
     """Break persisted continuity before any stream can reconnect after process start.
 
-    Before the reset overwrites the heartbeat, a stop longer than the TOPE is declared (H-03).
+    A stop longer than the TOPE is declared and the heartbeat moves to its end (H-03). A shorter one
+    keeps the old heartbeat: the first `ok` judges the whole silence, stop plus reconnection (V-08).
     """
     fence = {"ownership": ownership} if ownership is not None else {}
     for exchange in LIQ_FEED_CONNECTED:
         LIQ_FEED_CONNECTED[exchange] = False
         async with fenced_transaction(conn, ownership):
-            await declare_liquidation_silence(conn, exchange, "scalp_collector.startup")
+            declared = await declare_liquidation_silence(conn, exchange, "scalp_collector.startup")
+            healthy = None if declared else await conn.fetchval(
+                "SELECT updated_at FROM market_feed_health_shard "
+                "WHERE feed='liquidations' AND exchange=$1 AND shard_index=$2 AND shard_count=$3",
+                exchange,
+                SETTINGS.COLLECTOR_SHARD_INDEX,
+                SETTINGS.COLLECTOR_SHARD_COUNT,
+            )
             await mark_feed_shard_degraded(
                 conn,
                 "liquidations",
@@ -673,7 +701,31 @@ async def reset_liquidation_feed_health(
                 "scalp collector starting; awaiting stream confirmation",
                 **fence,
             )
+            if healthy is not None:
+                await _restore_liquidation_heartbeat(conn, exchange, healthy)
         LIQ_HEARTBEAT_BROKEN[exchange] = True
+
+
+async def _restore_liquidation_heartbeat(conn: asyncpg.Connection, exchange: str, healthy: datetime) -> None:
+    """Put back the last healthy heartbeat that mark_feed_shard_degraded just overwrote (V-08)."""
+    await conn.execute(
+        "UPDATE market_feed_health_shard SET updated_at=$4 "
+        "WHERE feed='liquidations' AND exchange=$1 AND shard_index=$2 AND shard_count=$3",
+        exchange,
+        SETTINGS.COLLECTOR_SHARD_INDEX,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+        healthy,
+    )
+    # el agregado es MIN(updated_at) de los shards esperados, como en _mark_feed_shard_health
+    await conn.execute(
+        "UPDATE market_feed_health SET updated_at=COALESCE(("
+        "  SELECT MIN(updated_at) FROM market_feed_health_shard"
+        "   WHERE feed='liquidations' AND exchange=$1 AND shard_count=$2 AND shard_index=ANY($3::integer[])"
+        "), updated_at) WHERE feed='liquidations' AND exchange=$1",
+        exchange,
+        SETTINGS.COLLECTOR_SHARD_COUNT,
+        list(LIQUIDATION_HEALTH_SHARDS),
+    )
 
 
 def mark_exchange_disconnected(exchange: str) -> None:
