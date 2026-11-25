@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `zone_analysis_endpoint` · `app/api.py:2148` (cuerpo hasta la 2170) · decorador en la linea 2147.
+Handler `zone_analysis_endpoint` · `app/api.py:2199` (cuerpo hasta la 2221) · decorador en la linea 2198.
 
 ## Parametros de entrada
 
@@ -23,7 +23,7 @@ Handler `zone_analysis_endpoint` · `app/api.py:2148` (cuerpo hasta la 2170) · 
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:2143 |
+| `as_of` | asignado en app/api.py:2194 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -51,15 +51,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1886`
-- `app.api.sella_respuesta` — `app/api.py:2131`
+- `app.api.declara_ventana` — `app/api.py:1937`
+- `app.api.sella_respuesta` — `app/api.py:2182`
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.api.ventana_pedida` — `app/api.py:1853`
+- `app.api.ventana_pedida` — `app/api.py:1904`
 - `app.scalp_logic.zone_analysis` — `app/scalp_logic.py:1438`
 
 <details><summary>Alcanzables de forma indirecta (11)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2599`
+- `app.api._utc_iso` — `app/api.py:2650`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.zones._atr_pct` — `app/zones.py:104`
@@ -88,13 +88,13 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1870` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1873` | una funcion de su cierre |
-| 422 | — | `app/api.py:1878` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1880` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1882` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:2163` | el propio handler |
-| 422 | zone spans more than 3x; narrow it | `app/api.py:2165` | el propio handler |
+| 422 | hace falta «desde» | `app/api.py:1921` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1924` | una funcion de su cierre |
+| 422 | — | `app/api.py:1929` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1931` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1933` | una funcion de su cierre |
+| 422 | low must be below high | `app/api.py:2214` | el propio handler |
+| 422 | zone spans more than 3x; narrow it | `app/api.py:2216` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

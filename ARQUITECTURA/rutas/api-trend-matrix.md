@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `trend_matrix_endpoint` · `app/api.py:2301` (cuerpo hasta la 2304) · decorador en la linea 2300.
+Handler `trend_matrix_endpoint` · `app/api.py:2352` (cuerpo hasta la 2355) · decorador en la linea 2351.
 
 ## Parametros de entrada
 
@@ -18,14 +18,14 @@ Handler `trend_matrix_endpoint` · `app/api.py:2301` (cuerpo hasta la 2304) · d
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:6463 |
-| `bias_method` | literal en app/scalp_logic.py:6472 |
-| `distinct_from` | literal en app/scalp_logic.py:6481 |
-| `medium_term_alignment` | literal en app/scalp_logic.py:6465 |
-| `note` | literal en app/scalp_logic.py:6466 |
-| `structure_method` | literal en app/scalp_logic.py:6477 |
-| `symbol` | literal en app/scalp_logic.py:6462 |
-| `timeframes` | literal en app/scalp_logic.py:6464 |
+| `as_of` | literal en app/scalp_logic.py:6480 |
+| `bias_method` | literal en app/scalp_logic.py:6489 |
+| `distinct_from` | literal en app/scalp_logic.py:6498 |
+| `medium_term_alignment` | literal en app/scalp_logic.py:6482 |
+| `note` | literal en app/scalp_logic.py:6483 |
+| `structure_method` | literal en app/scalp_logic.py:6494 |
+| `symbol` | literal en app/scalp_logic.py:6479 |
+| `timeframes` | literal en app/scalp_logic.py:6481 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -86,31 +86,31 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6319`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6336`
 
 <details><summary>Alcanzables de forma indirecta (21)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:965`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
 - `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4625`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4541`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4461`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4431`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4443`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4642`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4558`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
 - `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2377`
 - `app.scalp_logic._swings` — `app/scalp_logic.py:2363`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4793`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4810`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2861`
 
 </details>
 

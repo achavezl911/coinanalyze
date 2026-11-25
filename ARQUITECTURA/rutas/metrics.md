@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `prometheus_metrics` · `app/api.py:3777` (cuerpo hasta la 3851) · decorador en la linea 3776.
+Handler `prometheus_metrics` · `app/api.py:3828` (cuerpo hasta la 3902) · decorador en la linea 3827.
 
 ## Parametros de entrada
 
@@ -31,7 +31,7 @@ LEE:
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:751`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
@@ -54,7 +54,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._parse_heartbeat_detail` — `app/api.py:3759`
+- `app.api._parse_heartbeat_detail` — `app/api.py:3810`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (11)</summary>
 
@@ -78,7 +78,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Metrics disabled | `app/api.py:3779` | el propio handler |
+| 404 | Metrics disabled | `app/api.py:3830` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

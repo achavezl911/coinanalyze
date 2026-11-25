@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volatility_endpoint` · `app/api.py:2287` (cuerpo hasta la 2290) · decorador en la linea 2286.
+Handler `volatility_endpoint` · `app/api.py:2338` (cuerpo hasta la 2341) · decorador en la linea 2337.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `volatility_endpoint` · `app/api.py:2287` (cuerpo hasta la 2290) · dec
 
 | campo | de donde sale |
 |---|---|
-| `atr` | literal en app/scalp_logic.py:3491 |
-| `compression_score` | literal en app/scalp_logic.py:3494 |
-| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3493 |
-| `note` | literal en app/scalp_logic.py:3496 |
-| `range_expansion` | literal en app/scalp_logic.py:3495 |
-| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3492 |
-| `symbol` | literal en app/scalp_logic.py:3490 |
+| `atr` | literal en app/scalp_logic.py:3508 |
+| `compression_score` | literal en app/scalp_logic.py:3511 |
+| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3510 |
+| `note` | literal en app/scalp_logic.py:3513 |
+| `range_expansion` | literal en app/scalp_logic.py:3512 |
+| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3509 |
+| `symbol` | literal en app/scalp_logic.py:3507 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -51,16 +51,16 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3454`
+- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3471`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
-- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3218`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3256`
+- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3235`
 - `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1861`
-- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3247`
+- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3264`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3228`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3245`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>

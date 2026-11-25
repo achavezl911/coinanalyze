@@ -111,7 +111,7 @@ async def test_dia_normal_con_minutos_cortos_repartidos_se_publica():
     try:
         await _dia_normal(conn, "BTC")
         cobertura = await _cobertura(conn, "BTC")
-        assert 0.99 <= cobertura < 0.9970, cobertura  # 0.99: COBERTURA_MINIMA, del operador
+        assert 0.99 <= cobertura < 0.9970, cobertura  # dia normal, sobre COBERTURA_MINIMA (0.98)
         foto = await _foto(conn)
         assert foto["cvd_spot_24h"] == 1440 * 60.0, foto
         assert foto["spot_vol_24h"] == 1440 * 140.0, foto

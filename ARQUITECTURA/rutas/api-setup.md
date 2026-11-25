@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `setup` · `app/api.py:2543` (cuerpo hasta la 2554) · decorador en la linea 2542.
+Handler `setup` · `app/api.py:2594` (cuerpo hasta la 2605) · decorador en la linea 2593.
 
 ## Parametros de entrada
 
@@ -23,8 +23,8 @@ Handler `setup` · `app/api.py:2543` (cuerpo hasta la 2554) · decorador en la l
 | `daily_streak` | literal en app/interpretation.py:199 |
 | `primary` | literal en app/interpretation.py:202 |
 | `setups` | literal en app/interpretation.py:203 |
-| `snapshot_ts` | literal en app/api.py:2552 |
-| `symbol` | literal en app/api.py:2551 |
+| `snapshot_ts` | literal en app/api.py:2603 |
+| `symbol` | literal en app/api.py:2602 |
 | `warning` | literal en app/interpretation.py:204 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -40,7 +40,7 @@ LEE:
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:751`
 
 ## Funciones que la componen
 
@@ -49,8 +49,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.daily_data` — `app/api.py:691`
-- `app.api.latest_snapshot` — `app/api.py:664`
+- `app.api.daily_data` — `app/api.py:742`
+- `app.api.latest_snapshot` — `app/api.py:715`
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
 
@@ -76,7 +76,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | No data | `app/api.py:2548` | el propio handler |
+| 404 | No data | `app/api.py:2599` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)

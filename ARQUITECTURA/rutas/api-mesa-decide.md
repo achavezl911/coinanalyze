@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `mesa_decide` · `app/api.py:4267` (cuerpo hasta la 4302) · decorador en la linea 4266.
+Handler `mesa_decide` · `app/api.py:4318` (cuerpo hasta la 4353) · decorador en la linea 4317.
 
 ## Parametros de entrada
 
@@ -51,7 +51,7 @@ LEE:
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:751`
 - `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -92,7 +92,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.build_mesa_decide` — `app/ai_context.py:1575`
-- `app.api.scalp_persistence` — `app/api.py:3327`
+- `app.api.scalp_persistence` — `app/api.py:3378`
 - `app.api.validate_symbol` — `app/api.py:260`
 
 <details><summary>Alcanzables de forma indirecta (54)</summary>
@@ -118,7 +118,7 @@ Llamadas directas del handler:
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
@@ -170,7 +170,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | — | `app/api.py:4278` | el propio handler |
+| 422 | — | `app/api.py:4329` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

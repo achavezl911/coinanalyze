@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `macro_context_endpoint` · `app/api.py:2330` (cuerpo hasta la 2333) · decorador en la linea 2329.
+Handler `macro_context_endpoint` · `app/api.py:2381` (cuerpo hasta la 2384) · decorador en la linea 2380.
 
 ## Parametros de entrada
 
@@ -50,7 +50,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (8)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._conditional_outcome` — `app/scalp_logic.py:1899`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
 - `app.scalp_logic._forward_returns` — `app/scalp_logic.py:1889`

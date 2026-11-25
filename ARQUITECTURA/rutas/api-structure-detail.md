@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `structure_detail_endpoint` · `app/api.py:2323` (cuerpo hasta la 2326) · decorador en la linea 2322.
+Handler `structure_detail_endpoint` · `app/api.py:2374` (cuerpo hasta la 2377) · decorador en la linea 2373.
 
 ## Parametros de entrada
 
@@ -55,7 +55,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._contiguous_measured_suffix` — `app/scalp_logic.py:975`
 - `app.scalp_logic._dsr` — `app/scalp_logic.py:2426`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
