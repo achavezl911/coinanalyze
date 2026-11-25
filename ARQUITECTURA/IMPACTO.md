@@ -194,7 +194,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.declared_series_response`](impacto/app-api.md) | `app/api.py:519` | 6 | **0** | 0 | **6** |
 | [`app.api.lo_pedido`](impacto/app-api.md) | `app/api.py:446` | 6 | **0** | 0 | **6** |
 | [`app.api.minutos_de_las_filas`](impacto/app-api.md) | `app/api.py:406` | 6 | **0** | 0 | **6** |
-| [`app.orderflow_lectura._barrido_liquidaciones`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:986` | 6 | **0** | 0 | **6** |
+| [`app.orderflow_lectura._barrido_liquidaciones`](impacto/app-orderflow_lectura.md) | `app/orderflow_lectura.py:991` | 6 | **0** | 0 | **6** |
 | [`app.scalp_logic._profile`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3875` | 6 | **0** | 0 | **6** |
 | [`app.scalp_logic.volume_profile`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:3912` | 6 | **0** | 0 | **6** |
 | [`app.scalp_collector.persist_scalp_signals`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:1438` | 0 | **5** | 25 ↑ | **5** |
