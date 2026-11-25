@@ -51,7 +51,7 @@ LEE:
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:751`
 - `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
@@ -118,7 +118,7 @@ Llamadas directas del handler:
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`

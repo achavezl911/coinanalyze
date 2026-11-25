@@ -156,9 +156,9 @@ Llamadas directas del handler:
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
 - `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
 - `app.scalp_logic._banda` — `app/scalp_logic.py:5404`
