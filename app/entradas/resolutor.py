@@ -29,7 +29,8 @@ from typing import Any
 
 from app.entradas import reglamento as R
 
-RESOLUTOR_VERSION = "entradas-resolutor-1"
+RESOLUTOR_VERSION = "entradas-resolutor-2"
+REGLA_CRUZADA = "limite-cruzada-a-la-apertura"
 # Los de app/signal_outcomes.py (OUTCOME_SETTLEMENT_LAG y MISSING_DATA_FINAL_GRACE), copiados para seguir
 # siendo biblioteca estandar; tests/test_entradas_resolutor.py ata que sean los mismos.
 ASENTAMIENTO = timedelta(minutes=42)
@@ -77,7 +78,10 @@ CONVENCIONES = {
     "corto: maximo por encima). Si antes de llenarse cruza T1, una vela del perfil cierra al otro lado del nivel o "
     "llega la caducidad: LIMITE NO LLENADA, 0 USD y R 0 (sin P&L si falta un coste: sin_coste), en el instante de "
     "esa vela o en el de la caducidad, con su hipotetico a mercado aparte; si en la misma vela se llena y cruza T1 o "
-    "cierra en contra, cuenta que se lleno. "
+    "cierra en contra, cuenta que se lleno. Si la vela floor(registered_at)+1min ya ABRE mas alla del precio (largo: "
+    "por debajo) antes de la caducidad, la limite LLEGA CRUZADA: era ejecutable al llegar y entra como la de mercado "
+    "(apertura movida en contra por la banda pesimista, y SIN ENTRADA si esa apertura ya esta mas alla del stop), con "
+    "la comision de la pata stop (taker) en vez de la suya, y su entrada lleva regla = " + REGLA_CRUZADA + ". "
     "En la vela en que se llena, su apertura no cuenta (fue antes del lleno) y T1 solo no es salida (no se sabe si "
     "llego despues); el stop si, con la regla de la misma vela si tambien cruza T1",
     "tolerancia_venue": "el plan se ejecuta en Bybit y se mide sobre Binance: tolerancia en bps = |mids.base_bps| "
@@ -124,7 +128,8 @@ CONVENCIONES = {
     "coste_objetivo, coste_riesgo y r_neto_t1 no son evaluables)",
     "r": "R neto = bps netos / riesgo neto del PLAN registrado (plan.distancias_bps.stop mas el total_bps de las "
     "patas de entrada y de stop de la foto): la unidad la fija el registro, no la entrada real. Si falta alguno de "
-    "los tres, o el riesgo es 0, R neto es null y los bps se dan igual. Con la apertura de la entrada en la "
+    "los tres, o el riesgo es 0, R neto es null. En la limite que llega cruzada, la pata de entrada cuenta lo que "
+    "paga: la comision taker mas la banda y los bps se dan igual. Con la apertura de la entrada en la "
     "referencia de la foto, T1 da el r.neto de la foto y el stop -1, con una diferencia pequena: la banda y los "
     "bps se miden sobre la entrada real",
     "t2_t3": "se informa si el precio cruzo T2 y T3 (la regla de T1) y cuando, desde la entrada hasta el fin del "
@@ -345,14 +350,21 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
     v = vela(t_entrada)
     if v is None:
         return espera(t_entrada, "la de la entrada")
-    if not limite:
+    if limite:
+        precio = entrada.get("precio")
+        L = s * (precio if precio is not None else (entrada.get("referencia") or {}).get("precio"))
+    cruzada = limite and t_entrada < caduca and v["o"] < L  # llega cruzada (llenado-r1): ejecutable al llegar
+    if cruzada:
+        banda_e, com_e = entrada.get("banda_pesimista_bps", banda_pata_e), com_stop
+        total_e = None if None in (com_e, banda_e) else com_e + banda_e
+        riesgo = d_stop + total_e + total_stop if None not in (d_stop, total_e, total_stop) else None
+        con_coste = None not in (com_e, com_obj, com_stop, banda_stop, banda_e)
+    if not limite or cruzada:
         if toca(v["o"]) or cruza(v["o"], Ts[0]):
             return acaba(SIN_ENTRADA, t_entrada, "la apertura de la entrada real ya esta mas alla "
                          + ("del stop" if toca(v["o"]) else "de T1") + ": no abre posicion")
         x_e, m_ini = v["o"] + abs(v["o"]) * (banda_e or 0.0) / BPS, t_entrada
     else:
-        precio = entrada.get("precio")
-        L = s * (precio if precio is not None else (entrada.get("referencia") or {}).get("precio"))
         m = t_entrada
         while True:
             w = vela(m) if m < caduca else None
@@ -375,7 +387,10 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
                 break
             m += MINUTO
     out["entrada"] = {"instante": iso(m_ini), "precio": s * x_e, "tipo": entrada.get("tipo"),
-                      "apertura": None if limite else s * v["o"], "banda_bps": banda_e, "comision_bps": com_e}
+                      "apertura": None if limite and not cruzada else s * v["o"], "banda_bps": banda_e,
+                      "comision_bps": com_e}
+    if cruzada:
+        out["entrada"]["regla"] = REGLA_CRUZADA
 
     # 3 · la vida, minuto a minuto: el primer evento
     alto = bajo = x_e
@@ -386,7 +401,7 @@ def resolver(fila: dict[str, Any], velas: list[dict[str, Any]], ahora: datetime,
         v = vela(m)
         if v is None:
             return espera(m, "con la posicion abierta")
-        llena_aqui = limite and m == m_ini   # la limite se lleno DENTRO de esta vela: su apertura no cuenta
+        llena_aqui = limite and not cruzada and m == m_ini   # la limite se lleno DENTRO de esta vela: su apertura no cuenta
         if not llena_aqui and toca(v["o"]):
             evento = (STOP, contra(v["o"], banda_stop), com_stop, (STOP, contra(S, banda_stop), com_stop))
         elif not llena_aqui and cruza(v["o"], Ts[0]):

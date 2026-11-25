@@ -11,6 +11,11 @@
                                             la mitad de las de binance traen avg_price; de las demas, 2/3 tienen su
                                             impresion en orderflow_cinta (su venue, su lado, a <= 0.8 s) con un senuelo
                                             del OTRO lado mas cerca en tiempo; el resto, sin dato.
+    acerca <dsn> <hasta ISO>                en una base de K111-banco: corre libro_foto (ts y ts_libro) DIAS ENTEROS hacia
+                                            hoy para que `hasta` caiga entre 1 y 2 dias antes de ahora, y escribe en
+                                            stdout el `hasta` corrido. El fixture de K111 es de 2026-10-18: sembrado tal
+                                            cual, la ventana de 720 h lo dejo atras hacia el 11-17 y la ruta servia 0
+                                            sueltas con cualquier codigo. Dias enteros: no mueve minutos ni cubos.
     libro --puerto P --db DSN [--sobre D] [--plantado F] [--avisos A]
                                             K111-banco tal cual, y ademas /api/orderflow/indicadores calculada con
                                             app/orderflow_lectura.py sobre la MISMA base (K112-banco._sirve_ruta).
@@ -125,6 +130,15 @@ def siembra(dsn: str, hasta: str, fuente: str) -> int:
     return 0
 
 
+def acerca(dsn: str, hasta: str) -> int:
+    b = datetime.fromisoformat(hasta.replace("Z", "+00:00"))
+    dias = max(0, (datetime.now(UTC) - b) // timedelta(days=1) - 1)
+    if dias:
+        _psql(dsn, f"UPDATE libro_foto SET ts = ts + interval '{dias} days', ts_libro = ts_libro + interval '{dias} days';")
+    print((b + timedelta(days=dias)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+    return 0
+
+
 def recorta_12h(d: dict) -> dict:
     """El plantado: la ruta como si liquidations_realtime retuviera 12 h (la poda vieja de 140)."""
     s = d.get("sueltas") or {}
@@ -187,6 +201,8 @@ def libro(argv: list[str]) -> int:
 def main() -> int:
     if len(sys.argv) == 5 and sys.argv[1] == "siembra" and sys.argv[4] in MID:
         return siembra(*sys.argv[2:])
+    if len(sys.argv) == 4 and sys.argv[1] == "acerca":
+        return acerca(*sys.argv[2:])
     if len(sys.argv) > 1 and sys.argv[1] == "libro":
         return libro(sys.argv[2:])
     print(__doc__)

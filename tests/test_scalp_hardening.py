@@ -1,4 +1,6 @@
 import asyncio
+import contextlib
+from datetime import UTC, datetime
 
 import pytest
 
@@ -33,6 +35,18 @@ class _CleanupConnection:
     async def execute(self, query, *args):
         self.calls.append((query, args))
 
+    # CINTA R1: apply_temporal_retention pide el corte, tira por su lado y lista las hijas del borde.
+    async def fetchval(self, query, *args):
+        self.calls.append((query, args))
+        return datetime(2026, 11, 21, tzinfo=UTC) if "statement_timestamp" in query else 0
+
+    async def fetch(self, query, *args):
+        self.calls.append((query, args))
+        return []
+
+    def transaction(self):
+        return contextlib.nullcontext()
+
 
 @pytest.mark.asyncio
 async def test_designated_shard_cleans_expired_rows_for_removed_symbols():
@@ -42,9 +56,9 @@ async def test_designated_shard_cleans_expired_rows_for_removed_symbols():
 
     assert scalp.owns_global_cleanup(0) is True
     assert scalp.owns_global_cleanup(1) is False
-    assert len(conn.calls) == 5
+    assert len([q for q, _a in conn.calls if "DELETE FROM futures_trades_agg" in q]) == 1
     assert all("symbol" not in query for query, _args in conn.calls)
-    managed = [args[0] for query, args in conn.calls if "apply_temporal_retention" in query]
+    managed = [args[0] for query, args in conn.calls if "drop_expired_temporal_partitions" in query]
     assert managed == [
         "futures_trades_realtime",
         "orderbook_snapshot",

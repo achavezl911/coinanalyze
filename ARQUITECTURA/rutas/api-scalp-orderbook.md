@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_orderbook` · `app/api.py:1832` (cuerpo hasta la 1844) · decorador en la linea 1831.
+Handler `scalp_orderbook` · `app/api.py:1937` (cuerpo hasta la 1949) · decorador en la linea 1936.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `scalp_orderbook` · `app/api.py:1832` (cuerpo hasta la 1844) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `freshness` | literal en app/api.py:1843 |
+| `freshness` | literal en app/api.py:1948 |
 | `freshness.age_seconds` | literal en app/ai_context.py:679 |
 | `freshness.as_of` | literal en app/ai_context.py:678 |
 | `freshness.max_age_seconds` | literal en app/ai_context.py:680 |
 | `freshness.status` | literal en app/ai_context.py:677 |
-| `rows` | literal en app/api.py:1842 |
-| `symbol` | literal en app/api.py:1841 |
+| `rows` | literal en app/api.py:1947 |
+| `symbol` | literal en app/api.py:1946 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -34,9 +34,9 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
 
 ## Funciones que la componen
 
@@ -46,8 +46,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.ai_context.orderbook_freshness` — `app/ai_context.py:672`
-- `app.api.records` — `app/api.py:272`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.records` — `app/api.py:273`
+- `app.api.validate_symbol` — `app/api.py:260`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (4)</summary>
 
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -75,7 +75,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K13-vacio-o-rancio.sh:32`, `harness/checks/K13-vacio-o-rancio.sh:33`, `harness/checks/K13-vacio-o-rancio.sh:92`, `harness/checks/K13-vacio-o-rancio.sh:94` _(+4)_ | `harness/checks/K13-vacio-o-rancio.sh:2`, `harness/checks/K43-foto-unica.sh:45`, `harness/checks/K79-el-coste-calla-lo-que-le-falta.sh:71` |
-| **panel-sobre** | `static/js/02-canal.js:70` | — |
+| **panel-sobre** | `static/js/02-canal.js:76` | — |
 | **tests** | `tests/js/mesa_f12a.test.js:138` | `tests/js/libro_vacio_o_rancio.test.js:4`, `tests/test_orderbook_frescura.py:1`, `tests/test_orderbook_frescura.py:119` |
 
 **La llama el panel: es superficie de producto.**
@@ -116,7 +116,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.ai_context.orderbook_freshness` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-ai_context.md) |
 | `app.api.scalp_orderbook` | 1 | **0** | 0 | **1** | [impacto](../impacto/app-api.md) |
 

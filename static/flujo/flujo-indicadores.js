@@ -34,7 +34,11 @@ const IND_SERIE = { oi: ['oi_binance'], oib: ['oi_bybit'], funding: ['funding', 
                     ls: ['largos_cortos'], liq: ['liquidaciones'] };
 const RUTA_IND = '/api/orderflow/indicadores';
 const RUTA_GRANDES = '/api/orderflow/grandes';
-const IND = { datos: null, grandes: null, fallos: [], pide: 0, canvas: null, ctx: null, pr: 1, W: 0, H: 0, cuadros: 0 };
+const IND = { datos: null, grandes: null, fallos: [], pide: 0, canvas: null, ctx: null, pr: 1, W: 0, H: 0, cuadros: 0,
+              de: null, pedido: 0, leido: null };
+// U-05: en vivo se vuelven a pedir cada IND_REFRESCO_S, no solo con la vela nueva (en 1d eso era un dia). La ruta,
+// con la ventana de la pantalla, tarda 1-2 s en 4h y 1d (140, 2026-11-23, harness/bin/api)
+const IND_REFRESCO_S = 60;
 
 /* ------------------------------------------------------------- lo puro (node --test y K112 lo recalculan)
  * (deEntero, decimales y entero son de flujo-calculo.js) */
@@ -102,6 +106,11 @@ function indicadoresQuePide(e) {
  * (si sus marcas estan encendidas). La ultima peticion manda; lo que no llega se dice con su codigo. */
 async function cargaIndicadores(e, w, alAcabar) {
   const mia = ++IND.pide;
+  IND.pedido = reloj(); // la cadencia cuenta desde la PETICION: una ruta lenta no se pisa a si misma
+  const de = e.activo + '/' + e.marco + '/' + e.familia;
+  if (IND.de !== de) { // I1: lo pintado es de OTRO activo o marco: fuera antes de pedir, no al llegar
+    Object.assign(IND, { de, datos: null, grandes: null, leido: null });
+  }
   const pide = [];
   if (indicadoresQuePide(e).length || (e.ind || []).includes('liqp')) {
     pide.push(['indicadores', RUTA_IND, { symbol: e.activo, desde: w.desde, hasta: w.hasta, marco: e.marco }]);
@@ -113,7 +122,8 @@ async function cargaIndicadores(e, w, alAcabar) {
   if (!pide.some(([n]) => n === 'indicadores')) IND.datos = null;
   if (!pide.some(([n]) => n === 'grandes')) IND.grandes = null;
   const sobres = await Promise.all(pide.map(([, ruta, q]) => pedir(ruta, q)));
-  if (mia !== IND.pide) return;
+  if (mia !== IND.pide || IND.de !== de) return; // ni la de una peticion que ya no es la ultima, ni la de otra vista
+  IND.leido = reloj(); // la edad se mide desde la LLEGADA; la escribe pintaEstado cada segundo
   IND.fallos = [];
   pide.forEach(([nombre], i) => {
     const s = sobres[i];
@@ -428,12 +438,11 @@ function pintaLiq(ctx, caja, g, xT, d) {
                        cortos: c.valores.cortos, y_cortos: yc, y_largos: yl, estado: c.estado });
   });
   // antes de la retencion de las sueltas no hay dato: se raya (no es «ninguna»)
-  const borde = xT(Date.parse(d.sueltas.desde_dato));
-  if (borde > 0) {
-    ctx.fillStyle = IND_COLOR.pendiente;
-    ctx.fillRect(0, caja.arriba, Math.min(borde, g.ancho), 6);
-    caja.sin_sueltas = { hasta_x: Math.round(Math.min(borde, g.ancho) * 10) / 10, desde_dato: d.sueltas.desde_dato };
-  }
+  caja.sin_sueltas = sinDatoLiq(d.sueltas, Date.parse(d.desde), Date.parse(d.hasta)).map((s) => (
+    { x0: Math.max(0, xT(s.desde)), x1: Math.min(g.ancho, xT(s.hasta)), motivo: s.motivo }))
+    .filter((s) => s.x1 > s.x0);
+  ctx.fillStyle = IND_COLOR.pendiente;
+  caja.sin_sueltas.forEach((s) => ctx.fillRect(s.x0, caja.arriba, s.x1 - s.x0, 6));
   const mxs = Math.max(1, ...d.sueltas.eventos.map((ev) => Number(ev.usd)));
   d.sueltas.eventos.forEach((ev) => {
     const x = xT(Date.parse(ev.ts));
@@ -502,8 +511,16 @@ function pintaGrandes(ctx, g, y, m, i0, i1) {
                x: Math.round(x * 10) / 10, y: Math.round(yy * 10) / 10, r: Math.round(r * 10) / 10,
                fuera: yy < g.arriba || yy > g.abajo });
   });
+  let sin = null; // I4: si la ruta corto, lo anterior a su operacion mas vieja se raya
+  const viejo = d.truncada ? Math.min(...d.operaciones.map((o) => Date.parse(o.ts))) : NaN;
+  const iv = Math.floor((viejo - t0) / mMs);
+  if (iv > i0) {
+    ctx.fillStyle = IND_COLOR.pendiente;
+    ctx.fillRect(g.x(i0) - g.bs / 2, g.arriba, g.x(Math.min(iv, i1)) - g.x(i0), 6);
+    sin = { hasta: new Date(viejo).toISOString(), motivo: 'la ruta cortó por su tope: lo de antes no está' };
+  }
   ctx.restore();
-  return { umbral_usd: d.umbral_usd_vigente, truncada: d.truncada, marcas: out };
+  return { umbral_usd: d.umbral_usd_vigente, truncada: d.truncada, sin_dato: sin, marcas: out };
 }
 
 /* LAS LIQUIDACIONES SOBRE EL PRECIO (campana 150, flujo-liq.js): las sueltas de la ventana por encima de LIQ_UMBRAL_USD,

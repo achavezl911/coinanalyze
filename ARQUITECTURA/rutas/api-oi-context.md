@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `oi_context_endpoint` · `app/api.py:2175` (cuerpo hasta la 2178) · decorador en la linea 2174.
+Handler `oi_context_endpoint` · `app/api.py:2280` (cuerpo hasta la 2283) · decorador en la linea 2279.
 
 ## Parametros de entrada
 
@@ -18,22 +18,22 @@ Handler `oi_context_endpoint` · `app/api.py:2175` (cuerpo hasta la 2178) · dec
 
 | campo | de donde sale |
 |---|---|
-| `available` | literal en app/scalp_logic.py:3427 |
-| `by_venue` | literal en app/scalp_logic.py:3438 |
-| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3439 |
-| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3440 |
-| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3444 |
-| `by_venue.note` | literal en app/scalp_logic.py:3447 |
-| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3441 |
-| `coverage` | literal en app/scalp_logic.py:3435 |
-| `oi_latest_ts` | literal en app/scalp_logic.py:3432 |
-| `oi_total_usd` | literal en app/scalp_logic.py:3428 |
-| `percentile_1y` | literal en app/scalp_logic.py:3436 |
-| `price_latest_ts` | literal en app/scalp_logic.py:3433 |
-| `quadrant_note` | literal en app/scalp_logic.py:3451 |
-| `symbol` | literal en app/scalp_logic.py:3426 |
-| `windows` | literal en app/scalp_logic.py:3434 |
-| `zscore_1y` | literal en app/scalp_logic.py:3437 |
+| `available` | literal en app/scalp_logic.py:3426 |
+| `by_venue` | literal en app/scalp_logic.py:3437 |
+| `by_venue.binance_oi_usd` | literal en app/scalp_logic.py:3438 |
+| `by_venue.bybit_oi_usd` | literal en app/scalp_logic.py:3439 |
+| `by_venue.bybit_share_of_two_venues_pct` | literal en app/scalp_logic.py:3443 |
+| `by_venue.note` | literal en app/scalp_logic.py:3446 |
+| `by_venue.two_venue_total_usd` | literal en app/scalp_logic.py:3440 |
+| `coverage` | literal en app/scalp_logic.py:3434 |
+| `oi_latest_ts` | literal en app/scalp_logic.py:3431 |
+| `oi_total_usd` | literal en app/scalp_logic.py:3427 |
+| `percentile_1y` | literal en app/scalp_logic.py:3435 |
+| `price_latest_ts` | literal en app/scalp_logic.py:3432 |
+| `quadrant_note` | literal en app/scalp_logic.py:3450 |
+| `symbol` | literal en app/scalp_logic.py:3425 |
+| `windows` | literal en app/scalp_logic.py:3433 |
+| `zscore_1y` | literal en app/scalp_logic.py:3436 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -43,17 +43,17 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `oi_bybit` — `sql/schema.sql:97`, 7 columnas
+- `oi_bybit` — `sql/schema.sql:198`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:666`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 
 ## Funciones que la componen
@@ -63,21 +63,21 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3335`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.oi_context` — `app/scalp_logic.py:3334`
 
 <details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.data_gaps._aware_utc` — `app/data_gaps.py:67`
-- `app.data_gaps._validated_window` — `app/data_gaps.py:73`
-- `app.data_gaps.align_down` — `app/data_gaps.py:242`
-- `app.data_gaps.coverage_entry` — `app/data_gaps.py:263`
-- `app.data_gaps.expected_buckets` — `app/data_gaps.py:255`
-- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3292`
-- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3304`
-- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3262`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
+- `app.data_gaps._validated_window` — `app/data_gaps.py:78`
+- `app.data_gaps.align_down` — `app/data_gaps.py:247`
+- `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
+- `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
+- `app.scalp_logic._buckets_observados` — `app/scalp_logic.py:3291`
+- `app.scalp_logic._oi_coverage` — `app/scalp_logic.py:3303`
+- `app.scalp_logic._oi_quadrant` — `app/scalp_logic.py:3261`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1861`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 
@@ -93,7 +93,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -146,8 +146,8 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.data_gaps._validated_window` | 15 | **0** | 21 ↑ | **15** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.expected_buckets` | 12 | **0** | 21 ↑ | **12** | [impacto](../impacto/app-data_gaps.md) |
 | `app.data_gaps.coverage_entry` | 14 | **0** | 0 | **14** | [impacto](../impacto/app-data_gaps.md) |
+| `app.data_gaps.align_down` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic._pct_rank` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.data_gaps.align_down` | 4 | **0** | 0 | **4** | [impacto](../impacto/app-data_gaps.md) |
 | `app.scalp_logic._buckets_observados` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._oi_coverage` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic._oi_quadrant` | 3 | **0** | 0 | **3** | [impacto](../impacto/app-scalp_logic.md) |

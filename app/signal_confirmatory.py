@@ -22,11 +22,15 @@ Confirmatory vs exploratory (do not blur this line):
   every ``primary_*`` field is a scalar, so there is no way to express more
   than one primary hypothesis in this shape.
 
-Baseline (``block_unconditional_direction_matched_baseline_v1``): the mean of
+Baseline (``block_unconditional_direction_matched_baseline_v2``): the mean of
 PR5's already-persisted, direction-agnostic ``signal_outcome.market_return_pct``
 (see ``app.signal_outcomes.compute_path_metrics``) across every compatible
-periodic *evaluated* observation in the same calendar block -- not merely the
-signal's own row, and not restricted to actionable/long/short rows. This is a
+periodic *evaluated* observation in the OTHER calendar blocks -- never the
+row's own block, and not restricted to actionable/long/short rows. Version 1
+used the row's own block, so the baseline contained the row itself and the
+very returns that chose its direction (R-01): a direction-free contrarian rule
+"passed" and a real momentum edge "failed". A v1 contract is rejected, never
+reinterpreted; with fewer than two baseline blocks there is no baseline. This is a
 real control: it is unconditional on the primary signal ever having fired at
 all in that block, and is deliberately frictionless (no trading costs applied
 to it), which makes comparing an actionable signal's modeled, cost-aware
@@ -75,10 +79,15 @@ CONFIRMATORY_PRIMARY_ENDPOINT_NAME = (
     "measured_entry_modeled_exit_net_of_fees_stress_and_baseline_excess_v1"
 )
 
-BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION = 1
+BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION = 2
 BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_NAME = (
-    "block_unconditional_direction_matched_baseline_v1"
+    "block_unconditional_direction_matched_baseline_v2"
 )
+# v1 (own-block mean, row included) is biased (R-01) and is never evaluated.
+RETIRED_BLOCK_BASELINE_VERSIONS = {
+    1: "baseline v1 averaged the row's own block, including the row itself and the "
+    "returns that chose its direction (R-01): biased excess; re-freeze with baseline_version=2",
+}
 
 BLOCK_BOOTSTRAP_INFERENCE_VERSION = 1
 BLOCK_BOOTSTRAP_INFERENCE_NAME = "block_bootstrap_v1"
@@ -267,6 +276,11 @@ def validate_confirmatory_contract(
             "actually applied and the fee the contract claims"
         )
 
+    if contract.baseline_version in RETIRED_BLOCK_BASELINE_VERSIONS:
+        raise ValueError(
+            f"confirmatory baseline_version={contract.baseline_version!r} is retired: "
+            f"{RETIRED_BLOCK_BASELINE_VERSIONS[contract.baseline_version]}"
+        )
     if contract.baseline_version != BLOCK_UNCONDITIONAL_DIRECTION_MATCHED_BASELINE_VERSION:
         raise ValueError(
             f"confirmatory baseline_version={contract.baseline_version!r} is not "
@@ -334,11 +348,11 @@ def block_unconditional_direction_matched_baseline_bps(
     *,
     direction: str,
 ) -> float:
-    """``block_unconditional_direction_matched_baseline_v1``.
+    """``block_unconditional_direction_matched_baseline_v2``.
 
     Sign-matches an already-computed, per-block, direction-*agnostic* control
     mean (``mean(market_return_pct * 100)`` over ALL compatible periodic
-    evaluated observations in one calendar block -- see
+    evaluated observations in the OTHER calendar blocks -- see
     ``app.signal_walk_forward._compute_confirmatory_result``, which owns that
     aggregation) to one primary row's own stated ``direction``: a "long" row
     is compared against the block's unconditional market drift as-is (a

@@ -1,5 +1,107 @@
 BEGIN;
 
+-- V-03 (ESQUEMA R1): el desplegador re-aplica este fichero entero con los servicios VIVOS. ALTER TABLE,
+-- CREATE INDEX IF NOT EXISTS, CREATE/DROP TRIGGER y COMMENT piden su bloqueo ANTES de mirar si hay algo
+-- que cambiar, y dentro de un bloque BEGIN..COMMIT lo retienen hasta el final: el despliegue de 98dca1d
+-- murio por un deadlock entre DROP TRIGGER sobre liquidations_realtime y la retencion. esquema_ddl()
+-- ejecuta la orden SOLO si el catalogo no la tiene ya igual; mirar el catalogo no bloquea la tabla.
+-- ADD CONSTRAINT y CREATE TRIGGER son «reemplazar» (lo que antes era DROP IF EXISTS + ADD/CREATE): se
+-- comparan con la definicion canonica que sale de crearlos sobre una tabla temporal con las mismas
+-- columnas, que no toca la real. El resultado sobre una base nueva o vieja es el de antes. Lo que no
+-- reconoce lo rechaza, para que nadie crea que una orden se salta cuando no. superada_por: la restriccion
+-- de la misma tabla que sucede a esta en una cadena (pr23 -> pr24 -> pr25); si ya esta, el paso intermedio
+-- ya se recorrio y re-anadirlo para quitarlo despues tomaria AccessExclusive y re-validaria la tabla.
+CREATE OR REPLACE FUNCTION esquema_ddl(orden text, superada_por text DEFAULT NULL)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    o text := btrim(regexp_replace(orden, '\s+', ' ', 'g'), ' ;');
+    m text[];
+    rel regclass;
+    actual text;
+    nueva text;
+    columnas text;
+BEGIN
+    IF superada_por IS NOT NULL AND EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = superada_por AND conrelid = to_regclass(coalesce(
+            (regexp_match(o, '^ALTER TABLE (\w+) '))[1], (regexp_match(o, '^COMMENT ON CONSTRAINT \w+ ON (\w+) '))[1])))
+    THEN
+        RETURN;
+    END IF;
+    IF o ~ '^CREATE (UNIQUE )?INDEX IF NOT EXISTS ' THEN
+        -- En el esquema de la TABLA, como IF NOT EXISTS: las pruebas aplican este fichero con
+        -- search_path = <esquema propio>, public, y to_regclass(indice) encontraria el de public.
+        m := regexp_match(o, '^CREATE (?:UNIQUE )?INDEX IF NOT EXISTS (\w+) ON (?:ONLY )?(\w+)');
+        IF EXISTS (SELECT 1 FROM pg_class i JOIN pg_class t ON t.relnamespace = i.relnamespace
+                   WHERE t.oid = to_regclass(m[2]) AND i.relname = m[1]) THEN RETURN; END IF;
+    ELSIF o ~ '^COMMENT ON (COLUMN|CONSTRAINT) ' THEN
+        m := regexp_match(o, '^COMMENT ON (?:COLUMN (\w+)\.(\w+)|CONSTRAINT (\w+) ON (\w+)) IS ');
+        EXECUTE 'SELECT ' || rtrim(substring(orden FROM '\sIS\s(.*)$'), E' \t\n;') INTO nueva;
+        IF m[1] IS NOT NULL THEN
+            SELECT col_description(a.attrelid, a.attnum) INTO actual FROM pg_attribute a
+            WHERE a.attrelid = to_regclass(m[1]) AND a.attname = m[2] AND NOT a.attisdropped;
+        ELSE
+            SELECT obj_description(c.oid, 'pg_constraint') INTO actual FROM pg_constraint c
+            WHERE c.conrelid = to_regclass(m[4]) AND c.conname = m[3];
+        END IF;
+        IF actual IS NOT DISTINCT FROM nueva THEN RETURN; END IF;
+    ELSIF o ~ '^ALTER TABLE \w+ ADD COLUMN IF NOT EXISTS \w+ ' THEN
+        m := regexp_match(o, '^ALTER TABLE (\w+) ADD COLUMN IF NOT EXISTS (\w+) ');
+        IF EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = to_regclass(m[1]) AND attname = m[2]
+                   AND attnum > 0 AND NOT attisdropped) THEN RETURN; END IF;
+    ELSIF o ~ '^ALTER TABLE \w+ ALTER COLUMN \w+ DROP (NOT NULL|DEFAULT)$' THEN
+        m := regexp_match(o, '^ALTER TABLE (\w+) ALTER COLUMN (\w+) DROP (NOT NULL|DEFAULT)$');
+        IF EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = to_regclass(m[1]) AND attname = m[2]
+                   AND NOT attisdropped
+                   AND NOT CASE m[3] WHEN 'NOT NULL' THEN attnotnull ELSE atthasdef END) THEN RETURN; END IF;
+    ELSIF o ~ '^ALTER TABLE \w+ DROP CONSTRAINT IF EXISTS \w+$' THEN
+        m := regexp_match(o, '^ALTER TABLE (\w+) DROP CONSTRAINT IF EXISTS (\w+)$');
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = to_regclass(m[1]) AND conname = m[2]) THEN
+            RETURN;
+        END IF;
+    ELSIF o ~ '^(ALTER TABLE \w+ ADD CONSTRAINT|CREATE (OR REPLACE )?TRIGGER) \w+ ' THEN
+        IF o ~ '^ALTER' THEN
+            m := regexp_match(o, '^ALTER TABLE (\w+) ADD CONSTRAINT (\w+) ');
+            rel := to_regclass(m[1]);
+            SELECT pg_get_constraintdef(oid) INTO actual FROM pg_constraint
+            WHERE conrelid = rel AND conname = m[2];
+        ELSE
+            m := regexp_match(o, '^CREATE (?:OR REPLACE )?TRIGGER (\w+) ');
+            m := array[(regexp_match(o, ' ON (\w+) '))[1], m[1]];
+            rel := to_regclass(m[1]);
+            SELECT regexp_replace(pg_get_triggerdef(oid), ' ON \S+ ', ' ON _ ') INTO actual FROM pg_trigger
+            WHERE tgrelid = rel AND tgname = m[2] AND NOT tgisinternal;
+        END IF;
+        IF actual IS NOT NULL THEN
+            SELECT string_agg(format('%I %s', attname, format_type(atttypid, atttypmod)), ', ' ORDER BY attnum)
+            INTO columnas FROM pg_attribute WHERE attrelid = rel AND attnum > 0 AND NOT attisdropped;
+            EXECUTE format('CREATE TEMP TABLE esquema_muestra (%s)', columnas);
+            IF o ~ '^ALTER' THEN
+                EXECUTE regexp_replace(orden, '^\s*ALTER TABLE \w+', 'ALTER TABLE pg_temp.esquema_muestra');
+                SELECT pg_get_constraintdef(oid) INTO nueva FROM pg_constraint
+                WHERE conrelid = 'pg_temp.esquema_muestra'::regclass AND conname = m[2];
+            ELSE
+                EXECUTE regexp_replace(orden, '\sON\s+' || m[1] || '\M', ' ON pg_temp.esquema_muestra');
+                SELECT regexp_replace(pg_get_triggerdef(oid), ' ON \S+ ', ' ON _ ') INTO nueva FROM pg_trigger
+                WHERE tgrelid = 'pg_temp.esquema_muestra'::regclass AND tgname = m[2];
+            END IF;
+            DROP TABLE pg_temp.esquema_muestra;
+            IF nueva = actual THEN RETURN; END IF;
+            IF o ~ '^ALTER' THEN
+                EXECUTE format('ALTER TABLE %I DROP CONSTRAINT %I', m[1], m[2]);
+            ELSE
+                EXECUTE format('DROP TRIGGER %I ON %I', m[2], m[1]);
+            END IF;
+        END IF;
+    ELSE
+        RAISE EXCEPTION 'esquema_ddl: orden no reconocida: %', left(o, 120);
+    END IF;
+    RAISE NOTICE 'esquema_ddl: aplica %', left(o, 160);
+    EXECUTE orden;
+END
+$$;
+
 CREATE OR REPLACE FUNCTION finite_float8(value double precision)
 RETURNS boolean
 LANGUAGE sql
@@ -25,7 +127,7 @@ CREATE TABLE IF NOT EXISTS symbols (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE symbols DROP CONSTRAINT IF EXISTS symbols_base_asset_check;
+SELECT esquema_ddl($ddl$ALTER TABLE symbols DROP CONSTRAINT IF EXISTS symbols_base_asset_check$ddl$);
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -69,16 +171,15 @@ CREATE TABLE IF NOT EXISTS ohlcv (
     CHECK (high >= GREATEST(open, close, low)),
     CHECK (low <= LEAST(open, close, high))
 );
-CREATE INDEX IF NOT EXISTS ohlcv_ts_idx ON ohlcv(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS ohlcv_ts_idx ON ohlcv(ts DESC)$ddl$);
 
 -- Instalaciones anteriores solo aceptaban 1min/5min. El OHLCV diario permite conservar
 -- dos años de memoria estructural con ~2,200 filas en vez de cientos de miles de velas 5m.
 -- '4hour' se añadió en v1.3.9: Coinalyze sirve ese intervalo hasta ~300 días (medido: completo
 -- a 300d, vacío a 365d), mientras que 5min solo llega a ~8-9 días. Los pivotes 4h de
 -- price_barriers pedían 720 barras (120 días) y se estaban calculando sobre 48.
-ALTER TABLE ohlcv DROP CONSTRAINT IF EXISTS ohlcv_interval_check;
-ALTER TABLE ohlcv ADD CONSTRAINT ohlcv_interval_check
-    CHECK (interval IN ('1min','5min','4hour','daily'));
+SELECT esquema_ddl($ddl$ALTER TABLE ohlcv ADD CONSTRAINT ohlcv_interval_check
+    CHECK (interval IN ('1min','5min','4hour','daily'))$ddl$);
 
 CREATE TABLE IF NOT EXISTS open_interest (
     ts timestamptz NOT NULL,
@@ -92,7 +193,7 @@ CREATE TABLE IF NOT EXISTS open_interest (
     CHECK (oi_high >= GREATEST(oi_open, oi_close, oi_low)),
     CHECK (oi_low <= LEAST(oi_open, oi_close, oi_high))
 );
-CREATE INDEX IF NOT EXISTS open_interest_ts_idx ON open_interest(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS open_interest_ts_idx ON open_interest(ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS oi_bybit (
     ts timestamptz NOT NULL,
@@ -106,7 +207,7 @@ CREATE TABLE IF NOT EXISTS oi_bybit (
     CHECK (oi_high >= GREATEST(oi_open, oi_close, oi_low)),
     CHECK (oi_low <= LEAST(oi_open, oi_close, oi_high))
 );
-CREATE INDEX IF NOT EXISTS oi_bybit_ts_idx ON oi_bybit(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS oi_bybit_ts_idx ON oi_bybit(ts DESC)$ddl$);
 
 -- OI DIARIO · LA MEMORIA LARGA DEL INTERES ABIERTO.
 --
@@ -141,7 +242,7 @@ CREATE TABLE IF NOT EXISTS open_interest_daily (
     CHECK (oi_high >= GREATEST(oi_open, oi_close, oi_low)),
     CHECK (oi_low <= LEAST(oi_open, oi_close, oi_high))
 );
-CREATE INDEX IF NOT EXISTS open_interest_daily_day_idx ON open_interest_daily(day DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS open_interest_daily_day_idx ON open_interest_daily(day DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS funding_rate (
     ts timestamptz NOT NULL,
@@ -155,7 +256,7 @@ CREATE TABLE IF NOT EXISTS funding_rate (
     CHECK (fr_high >= GREATEST(fr_open, fr_close, fr_low)),
     CHECK (fr_low <= LEAST(fr_open, fr_close, fr_high))
 );
-CREATE INDEX IF NOT EXISTS funding_rate_ts_idx ON funding_rate(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS funding_rate_ts_idx ON funding_rate(ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS predicted_funding_rate (
     ts timestamptz NOT NULL,
@@ -169,7 +270,7 @@ CREATE TABLE IF NOT EXISTS predicted_funding_rate (
     CHECK (pfr_high >= GREATEST(pfr_open, pfr_close, pfr_low)),
     CHECK (pfr_low <= LEAST(pfr_open, pfr_close, pfr_high))
 );
-CREATE INDEX IF NOT EXISTS predicted_funding_rate_ts_idx ON predicted_funding_rate(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS predicted_funding_rate_ts_idx ON predicted_funding_rate(ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS liquidations (
     ts timestamptz NOT NULL,
@@ -179,7 +280,7 @@ CREATE TABLE IF NOT EXISTS liquidations (
     short_liq double precision NOT NULL CHECK (finite_float8(short_liq) AND short_liq >= 0),
     PRIMARY KEY (symbol, interval, ts)
 );
-CREATE INDEX IF NOT EXISTS liquidations_ts_idx ON liquidations(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS liquidations_ts_idx ON liquidations(ts DESC)$ddl$);
 
 -- v1.4.9 (P2): posicionamiento. `/long-short-ratio-history` responde a 5min y no se estaba
 -- ingiriendo; es informacion que NO se deduce de OI, funding ni CVD (esos dicen cuanto y a
@@ -193,7 +294,7 @@ CREATE TABLE IF NOT EXISTS long_short_ratio (
     ratio double precision NOT NULL CHECK (finite_float8(ratio) AND ratio >= 0),
     PRIMARY KEY (symbol, interval, ts)
 );
-CREATE INDEX IF NOT EXISTS long_short_ratio_ts_idx ON long_short_ratio(symbol, ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS long_short_ratio_ts_idx ON long_short_ratio(symbol, ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS spot_trades_agg (
     ts timestamptz NOT NULL,
@@ -213,7 +314,7 @@ CREATE TABLE IF NOT EXISTS spot_trades_agg (
     CHECK (inst_buy_usd + mid_buy_usd + retail_buy_usd <= buy_vol_usd + 0.01),
     CHECK (inst_sell_usd + mid_sell_usd + retail_sell_usd <= sell_vol_usd + 0.01)
 );
-ALTER TABLE spot_trades_agg DROP CONSTRAINT IF EXISTS spot_trades_agg_symbol_check;
+SELECT esquema_ddl($ddl$ALTER TABLE spot_trades_agg DROP CONSTRAINT IF EXISTS spot_trades_agg_symbol_check$ddl$);
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -223,7 +324,7 @@ BEGIN
             FOREIGN KEY (symbol) REFERENCES market_assets(base_asset);
     END IF;
 END $$;
-CREATE INDEX IF NOT EXISTS spot_trades_agg_ts_idx ON spot_trades_agg(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS spot_trades_agg_ts_idx ON spot_trades_agg(ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS spot_trades_realtime (
     ts timestamptz NOT NULL,
@@ -238,7 +339,7 @@ CREATE TABLE IF NOT EXISTS spot_trades_realtime (
     last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0),
     PRIMARY KEY (symbol, exchange, ts)
 ) PARTITION BY RANGE (ts);
-ALTER TABLE spot_trades_realtime DROP CONSTRAINT IF EXISTS spot_trades_realtime_symbol_check;
+SELECT esquema_ddl($ddl$ALTER TABLE spot_trades_realtime DROP CONSTRAINT IF EXISTS spot_trades_realtime_symbol_check$ddl$);
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -248,9 +349,9 @@ BEGIN
             FOREIGN KEY (symbol) REFERENCES market_assets(base_asset);
     END IF;
 END $$;
-ALTER TABLE spot_trades_realtime ADD COLUMN IF NOT EXISTS last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0);
-CREATE INDEX IF NOT EXISTS spot_trades_realtime_ts_idx ON spot_trades_realtime(ts DESC);
-CREATE INDEX IF NOT EXISTS spot_trades_realtime_symbol_exchange_ts_idx ON spot_trades_realtime(symbol, exchange, ts DESC);
+SELECT esquema_ddl($ddl$ALTER TABLE spot_trades_realtime ADD COLUMN IF NOT EXISTS last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS spot_trades_realtime_ts_idx ON spot_trades_realtime(ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS spot_trades_realtime_symbol_exchange_ts_idx ON spot_trades_realtime(symbol, exchange, ts DESC)$ddl$);
 
 
 CREATE TABLE IF NOT EXISTS futures_trades_realtime (
@@ -266,9 +367,9 @@ CREATE TABLE IF NOT EXISTS futures_trades_realtime (
     last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0),
     PRIMARY KEY (symbol, exchange, ts)
 ) PARTITION BY RANGE (ts);
-ALTER TABLE futures_trades_realtime ADD COLUMN IF NOT EXISTS last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0);
-CREATE INDEX IF NOT EXISTS futures_trades_realtime_ts_idx ON futures_trades_realtime(ts DESC);
-CREATE INDEX IF NOT EXISTS futures_trades_realtime_symbol_exchange_ts_idx ON futures_trades_realtime(symbol, exchange, ts DESC);
+SELECT esquema_ddl($ddl$ALTER TABLE futures_trades_realtime ADD COLUMN IF NOT EXISTS last_event_ms bigint NOT NULL DEFAULT 0 CHECK (last_event_ms >= 0)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS futures_trades_realtime_ts_idx ON futures_trades_realtime(ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS futures_trades_realtime_symbol_exchange_ts_idx ON futures_trades_realtime(symbol, exchange, ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS futures_trades_agg (
     ts timestamptz NOT NULL,
@@ -282,7 +383,7 @@ CREATE TABLE IF NOT EXISTS futures_trades_agg (
     trade_count integer NOT NULL CHECK (trade_count >= 0),
     PRIMARY KEY (symbol, exchange, interval, ts)
 );
-CREATE INDEX IF NOT EXISTS futures_trades_agg_ts_idx ON futures_trades_agg(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS futures_trades_agg_ts_idx ON futures_trades_agg(ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS orderbook_snapshot (
     ts timestamptz NOT NULL,
@@ -305,8 +406,8 @@ CREATE TABLE IF NOT EXISTS orderbook_snapshot (
     wall_down_pct double precision CHECK (wall_down_pct IS NULL OR finite_float8(wall_down_pct)),
     PRIMARY KEY (symbol, exchange, ts)
 ) PARTITION BY RANGE (ts);
-CREATE INDEX IF NOT EXISTS orderbook_snapshot_ts_idx ON orderbook_snapshot(ts DESC);
-CREATE INDEX IF NOT EXISTS orderbook_snapshot_symbol_exchange_ts_idx ON orderbook_snapshot(symbol, exchange, ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderbook_snapshot_ts_idx ON orderbook_snapshot(ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderbook_snapshot_symbol_exchange_ts_idx ON orderbook_snapshot(symbol, exchange, ts DESC)$ddl$);
 
 -- New rows must not persist crossed best bid/ask. Existing rows from older
 -- versions are intentionally not validated during upgrade.
@@ -354,9 +455,9 @@ CREATE TABLE IF NOT EXISTS liquidations_realtime (
 -- forceOrder de binance. `price` sigue siendo la `p` de la orden (limite de binance, quiebra de bybit: ~0.4 % mas alla
 -- del mercado) y notional_usd = price * qty: la historia no cambia de significado. Bybit (allLiquidation) no da
 -- precio de ejecucion: NULL. Aditiva y AL FINAL: en una base viva la anade el ALTER (las particiones la heredan).
-ALTER TABLE liquidations_realtime ADD COLUMN IF NOT EXISTS avg_price double precision
-    CHECK (avg_price IS NULL OR (finite_float8(avg_price) AND avg_price > 0));
-CREATE INDEX IF NOT EXISTS liquidations_realtime_symbol_ts_idx ON liquidations_realtime(symbol, ts DESC);
+SELECT esquema_ddl($ddl$ALTER TABLE liquidations_realtime ADD COLUMN IF NOT EXISTS avg_price double precision
+    CHECK (avg_price IS NULL OR (finite_float8(avg_price) AND avg_price > 0))$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS liquidations_realtime_symbol_ts_idx ON liquidations_realtime(symbol, ts DESC)$ddl$);
 
 CREATE OR REPLACE FUNCTION enforce_liquidation_event_unique()
 RETURNS trigger
@@ -379,11 +480,9 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS liquidations_realtime_event_unique_trigger
-    ON liquidations_realtime;
-CREATE TRIGGER liquidations_realtime_event_unique_trigger
+SELECT esquema_ddl($ddl$CREATE TRIGGER liquidations_realtime_event_unique_trigger
 BEFORE INSERT ON liquidations_realtime
-FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();
+FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique()$ddl$);
 
 CREATE TABLE IF NOT EXISTS scalp_signal_snapshot (
     ts timestamptz NOT NULL DEFAULT now(),
@@ -404,17 +503,17 @@ CREATE TABLE IF NOT EXISTS scalp_signal_snapshot (
     absorption text CHECK (absorption IS NULL OR length(absorption) BETWEEN 1 AND 80),
     PRIMARY KEY (symbol, ts)
 ) PARTITION BY RANGE (ts);
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS fut_delta_1m double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS fut_delta_3m double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS spot_delta_3m double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS diff_3m double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS spot_fut_divergence_norm double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS book_status text;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS book_lag_seconds double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS basis_bps double precision;
-ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS absorption text;
-CREATE INDEX IF NOT EXISTS scalp_signal_snapshot_latest_idx ON scalp_signal_snapshot(symbol, ts DESC);
-CREATE INDEX IF NOT EXISTS scalp_signal_snapshot_state_idx ON scalp_signal_snapshot(symbol, state, ts DESC);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS fut_delta_1m double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS fut_delta_3m double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS spot_delta_3m double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS diff_3m double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS spot_fut_divergence_norm double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS book_status text$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS book_lag_seconds double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS basis_bps double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE scalp_signal_snapshot ADD COLUMN IF NOT EXISTS absorption text$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS scalp_signal_snapshot_latest_idx ON scalp_signal_snapshot(symbol, ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS scalp_signal_snapshot_state_idx ON scalp_signal_snapshot(symbol, state, ts DESC)$ddl$);
 
 -- PR4_SIGNAL_OBSERVATION_LEDGER_BEGIN
 -- Investigación forward-only: congela lo que el sistema sabía EN VIVO. Nunca se
@@ -497,8 +596,8 @@ CREATE TABLE IF NOT EXISTS signal_observation (
         )
     )
 );
-ALTER TABLE signal_observation
-    ADD COLUMN IF NOT EXISTS regime_logic_version smallint;
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
+    ADD COLUMN IF NOT EXISTS regime_logic_version smallint$ddl$);
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -510,12 +609,11 @@ BEGIN
       ADD CONSTRAINT signal_observation_regime_logic_version_check
       CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1);
   END IF;
-  ALTER TABLE signal_observation
-    DROP CONSTRAINT IF EXISTS signal_observation_pr22_regime_provenance_check;
+  PERFORM esquema_ddl('ALTER TABLE signal_observation DROP CONSTRAINT IF EXISTS signal_observation_pr22_regime_provenance_check');
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conrelid='signal_observation'::regclass
-      AND conname='signal_observation_pr23_regime_provenance_check'
+      AND conname IN ('signal_observation_pr23_regime_provenance_check', 'signal_observation_pr25_regime_provenance_check')  -- V-03: o su sucesor, que ya la quito
   ) THEN
     ALTER TABLE signal_observation
       ADD CONSTRAINT signal_observation_pr23_regime_provenance_check
@@ -533,18 +631,18 @@ BEGIN
       );
   END IF;
 END $$;
-CREATE UNIQUE INDEX IF NOT EXISTS signal_observation_periodic_slot_uidx
+SELECT esquema_ddl($ddl$CREATE UNIQUE INDEX IF NOT EXISTS signal_observation_periodic_slot_uidx
     ON signal_observation(symbol, signal_family, observed_minute)
-    WHERE is_periodic;
-CREATE INDEX IF NOT EXISTS signal_observation_symbol_ts_idx
-    ON signal_observation(symbol, observed_at DESC);
-CREATE INDEX IF NOT EXISTS signal_observation_state_ts_idx
-    ON signal_observation(signal_family, state, observed_at DESC);
-CREATE INDEX IF NOT EXISTS signal_observation_actionable_idx
+    WHERE is_periodic$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_observation_symbol_ts_idx
+    ON signal_observation(symbol, observed_at DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_observation_state_ts_idx
+    ON signal_observation(signal_family, state, observed_at DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_observation_actionable_idx
     ON signal_observation(symbol, direction, observed_at DESC)
-    WHERE actionable;
-CREATE INDEX IF NOT EXISTS signal_observation_ts_brin_idx
-    ON signal_observation USING brin(observed_at);
+    WHERE actionable$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_observation_ts_brin_idx
+    ON signal_observation USING brin(observed_at)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_signal_observation_mutation()
 RETURNS trigger
@@ -556,14 +654,12 @@ BEGIN
     RETURN NULL;
 END
 $$;
-DROP TRIGGER IF EXISTS signal_observation_no_update_delete ON signal_observation;
-CREATE TRIGGER signal_observation_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_observation_no_update_delete
 BEFORE UPDATE OR DELETE ON signal_observation
-FOR EACH ROW EXECUTE FUNCTION reject_signal_observation_mutation();
-DROP TRIGGER IF EXISTS signal_observation_no_truncate ON signal_observation;
-CREATE TRIGGER signal_observation_no_truncate
+FOR EACH ROW EXECUTE FUNCTION reject_signal_observation_mutation()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_observation_no_truncate
 BEFORE TRUNCATE ON signal_observation
-FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_observation_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_observation_mutation()$ddl$);
 -- PR4_SIGNAL_OBSERVATION_LEDGER_END
 
 -- PR5_SIGNAL_OUTCOMES_BEGIN
@@ -673,15 +769,15 @@ CREATE TABLE IF NOT EXISTS signal_outcome (
          AND mae_pct IS NULL)
     )
 );
-CREATE INDEX IF NOT EXISTS signal_outcome_due_idx
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_due_idx
     ON signal_outcome(next_attempt_at,due_at,outcome_id)
-    WHERE status='pending';
-CREATE INDEX IF NOT EXISTS signal_outcome_observation_idx
-    ON signal_outcome(observation_id,horizon_minutes);
-CREATE INDEX IF NOT EXISTS signal_outcome_status_finalized_idx
-    ON signal_outcome(status,finalized_at DESC);
-CREATE INDEX IF NOT EXISTS signal_outcome_horizon_status_idx
-    ON signal_outcome(horizon_minutes,status,finalized_at DESC);
+    WHERE status='pending'$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_observation_idx
+    ON signal_outcome(observation_id,horizon_minutes)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_status_finalized_idx
+    ON signal_outcome(status,finalized_at DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_horizon_status_idx
+    ON signal_outcome(horizon_minutes,status,finalized_at DESC)$ddl$);
 
 CREATE OR REPLACE FUNCTION guard_signal_outcome_mutation()
 RETURNS trigger
@@ -715,15 +811,13 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS signal_outcome_guard_update_delete ON signal_outcome;
-CREATE TRIGGER signal_outcome_guard_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_outcome_guard_update_delete
 BEFORE UPDATE OR DELETE ON signal_outcome
-FOR EACH ROW EXECUTE FUNCTION guard_signal_outcome_mutation();
+FOR EACH ROW EXECUTE FUNCTION guard_signal_outcome_mutation()$ddl$);
 
-DROP TRIGGER IF EXISTS signal_outcome_no_truncate ON signal_outcome;
-CREATE TRIGGER signal_outcome_no_truncate
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_outcome_no_truncate
 BEFORE TRUNCATE ON signal_outcome
-FOR EACH STATEMENT EXECUTE FUNCTION guard_signal_outcome_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION guard_signal_outcome_mutation()$ddl$);
 
 INSERT INTO signal_outcome(
   observation_id,horizon_minutes,window_start,window_end,due_at,next_attempt_at,
@@ -766,10 +860,10 @@ CREATE TABLE IF NOT EXISTS signal_replay_frame (
     context jsonb NOT NULL CHECK (jsonb_typeof(context) = 'object'),
     created_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
-CREATE INDEX IF NOT EXISTS signal_replay_frame_asof_idx
-    ON signal_replay_frame(context_as_of DESC);
-CREATE INDEX IF NOT EXISTS signal_replay_frame_asof_brin_idx
-    ON signal_replay_frame USING brin(context_as_of);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_replay_frame_asof_idx
+    ON signal_replay_frame(context_as_of DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_replay_frame_asof_brin_idx
+    ON signal_replay_frame USING brin(context_as_of)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_signal_replay_frame_mutation()
 RETURNS trigger
@@ -782,15 +876,13 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS signal_replay_frame_no_update_delete ON signal_replay_frame;
-CREATE TRIGGER signal_replay_frame_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_replay_frame_no_update_delete
 BEFORE UPDATE OR DELETE ON signal_replay_frame
-FOR EACH ROW EXECUTE FUNCTION reject_signal_replay_frame_mutation();
+FOR EACH ROW EXECUTE FUNCTION reject_signal_replay_frame_mutation()$ddl$);
 
-DROP TRIGGER IF EXISTS signal_replay_frame_no_truncate ON signal_replay_frame;
-CREATE TRIGGER signal_replay_frame_no_truncate
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_replay_frame_no_truncate
 BEFORE TRUNCATE ON signal_replay_frame
-FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_replay_frame_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_replay_frame_mutation()$ddl$);
 
 -- No INSERT ... SELECT backfill belongs here. A replay frame is truthful only
 -- when the exact live scalp_context was captured at decision time.
@@ -861,12 +953,12 @@ CREATE TABLE IF NOT EXISTS signal_execution_snapshot (
     )
 );
 
-CREATE INDEX IF NOT EXISTS signal_execution_snapshot_observation_idx
-    ON signal_execution_snapshot(observation_id,exchange);
-CREATE INDEX IF NOT EXISTS signal_execution_snapshot_book_ts_idx
-    ON signal_execution_snapshot(book_ts DESC);
-CREATE INDEX IF NOT EXISTS signal_execution_snapshot_book_ts_brin_idx
-    ON signal_execution_snapshot USING brin(book_ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_execution_snapshot_observation_idx
+    ON signal_execution_snapshot(observation_id,exchange)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_execution_snapshot_book_ts_idx
+    ON signal_execution_snapshot(book_ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_execution_snapshot_book_ts_brin_idx
+    ON signal_execution_snapshot USING brin(book_ts)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_signal_execution_snapshot_mutation()
 RETURNS trigger
@@ -879,17 +971,13 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS signal_execution_snapshot_no_update_delete
-    ON signal_execution_snapshot;
-CREATE TRIGGER signal_execution_snapshot_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_execution_snapshot_no_update_delete
 BEFORE UPDATE OR DELETE ON signal_execution_snapshot
-FOR EACH ROW EXECUTE FUNCTION reject_signal_execution_snapshot_mutation();
+FOR EACH ROW EXECUTE FUNCTION reject_signal_execution_snapshot_mutation()$ddl$);
 
-DROP TRIGGER IF EXISTS signal_execution_snapshot_no_truncate
-    ON signal_execution_snapshot;
-CREATE TRIGGER signal_execution_snapshot_no_truncate
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_execution_snapshot_no_truncate
 BEFORE TRUNCATE ON signal_execution_snapshot
-FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_execution_snapshot_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_execution_snapshot_mutation()$ddl$);
 
 -- No historical backfill: orderbook_depth is overwritten current state.
 -- PR10_SIGNAL_EXECUTION_END
@@ -918,8 +1006,8 @@ CREATE TABLE IF NOT EXISTS signal_walk_forward_manifest (
     CHECK (created_at < cutoff_at)
 );
 
-CREATE INDEX IF NOT EXISTS signal_walk_forward_manifest_cutoff_idx
-    ON signal_walk_forward_manifest(cutoff_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_walk_forward_manifest_cutoff_idx
+    ON signal_walk_forward_manifest(cutoff_at)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_signal_walk_forward_manifest_mutation()
 RETURNS trigger
@@ -932,17 +1020,13 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS signal_walk_forward_manifest_no_update_delete
-    ON signal_walk_forward_manifest;
-CREATE TRIGGER signal_walk_forward_manifest_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_walk_forward_manifest_no_update_delete
 BEFORE UPDATE OR DELETE ON signal_walk_forward_manifest
-FOR EACH ROW EXECUTE FUNCTION reject_signal_walk_forward_manifest_mutation();
+FOR EACH ROW EXECUTE FUNCTION reject_signal_walk_forward_manifest_mutation()$ddl$);
 
-DROP TRIGGER IF EXISTS signal_walk_forward_manifest_no_truncate
-    ON signal_walk_forward_manifest;
-CREATE TRIGGER signal_walk_forward_manifest_no_truncate
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_walk_forward_manifest_no_truncate
 BEFORE TRUNCATE ON signal_walk_forward_manifest
-FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_walk_forward_manifest_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_walk_forward_manifest_mutation()$ddl$);
 
 -- No INSERT ... SELECT here: freezing a manifest is an explicit application
 -- action (scripts/freeze_walk_forward_manifest.py), never a schema-deploy
@@ -1001,14 +1085,14 @@ CREATE TABLE IF NOT EXISTS metrics_snapshot (
 -- Las etiquetas siguen siendo NOT NULL porque siempre hay texto ("Sin datos").
 -- Las filas antiguas NO se reescriben: no hay forma de distinguir retroactivamente un cero
 -- medido de un cero fabricado.
-ALTER TABLE metrics_snapshot ALTER COLUMN whale_intensity DROP NOT NULL;
-ALTER TABLE metrics_snapshot ALTER COLUMN regime_score DROP NOT NULL;
-ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS price_cutoff_at timestamptz;
-ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS metrics_cutoff_at timestamptz;
-ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS spot_vol_24h double precision;
-ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS cvd_spot_imbalance_24h double precision;
-ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS cvd_fut_imbalance_24h double precision;
-ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS regime_logic_version smallint;
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ALTER COLUMN whale_intensity DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ALTER COLUMN regime_score DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS price_cutoff_at timestamptz$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS metrics_cutoff_at timestamptz$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS spot_vol_24h double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS cvd_spot_imbalance_24h double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS cvd_fut_imbalance_24h double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ADD COLUMN IF NOT EXISTS regime_logic_version smallint$ddl$);
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='metrics_snapshot'::regclass
@@ -1033,8 +1117,8 @@ BEGIN
   END IF;
 END $$;
 
-CREATE INDEX IF NOT EXISTS metrics_snapshot_latest_idx ON metrics_snapshot(symbol, ts DESC);
-CREATE INDEX IF NOT EXISTS metrics_snapshot_ts_idx ON metrics_snapshot(ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS metrics_snapshot_latest_idx ON metrics_snapshot(symbol, ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS metrics_snapshot_ts_idx ON metrics_snapshot(ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS daily_session_agg (
     session_date date NOT NULL,
@@ -1060,19 +1144,19 @@ CREATE TABLE IF NOT EXISTS daily_session_agg (
 -- el signo invertido. cvd_fut_2v_usd mide la pata de futuros en Binance+Bybit para alinear
 -- venues; no corrige la asimetria de escala. Solo se puebla hacia adelante: depende de
 -- futures_trades_agg, que se retiene horas, no meses.
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS cvd_fut_2v_usd double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS cvd_fut_2v_minutes integer;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS cvd_diff_2v_usd double precision
-    GENERATED ALWAYS AS (cvd_spot_usd - cvd_fut_2v_usd) STORED;
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS cvd_fut_2v_usd double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS cvd_fut_2v_minutes integer$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS cvd_diff_2v_usd double precision
+    GENERATED ALWAYS AS (cvd_spot_usd - cvd_fut_2v_usd) STORED$ddl$);
 -- Rollup ampliado: lo granular muere a los 14 dias, esto construye historia hacia adelante.
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS volume_usd double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS price_high double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS price_low double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS long_liq_usd double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS short_liq_usd double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS oi_high double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS oi_low double precision;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS tx_count bigint;
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS volume_usd double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS price_high double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS price_low double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS long_liq_usd double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS short_liq_usd double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS oi_high double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS oi_low double precision$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS tx_count bigint$ddl$);
 
 -- El sistema calculaba swing_score, regime y setups al vuelo y los tiraba: no habia forma
 -- de preguntar despues "?acerto?". Una fila por sesion y simbolo, retenida como el resto
@@ -1097,7 +1181,7 @@ CREATE TABLE IF NOT EXISTS daily_verdict (
     updated_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (symbol, session_date)
 );
-CREATE INDEX IF NOT EXISTS daily_verdict_date_idx ON daily_verdict(session_date DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS daily_verdict_date_idx ON daily_verdict(session_date DESC)$ddl$);
 
 -- PR21_DAILY_VERDICT_SNAPSHOT_BEGIN
 -- Durable point-in-time evidence starts prospectively with PR21. daily_verdict remains
@@ -1175,8 +1259,8 @@ CREATE TABLE IF NOT EXISTS daily_verdict_snapshot (
         )
     )
 );
-ALTER TABLE daily_verdict_snapshot
-    ADD COLUMN IF NOT EXISTS regime_logic_version smallint;
+SELECT esquema_ddl($ddl$ALTER TABLE daily_verdict_snapshot
+    ADD COLUMN IF NOT EXISTS regime_logic_version smallint$ddl$);
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -1188,12 +1272,11 @@ BEGIN
       ADD CONSTRAINT daily_verdict_snapshot_regime_logic_version_check
       CHECK (regime_logic_version IS NULL OR regime_logic_version >= 1);
   END IF;
-  ALTER TABLE daily_verdict_snapshot
-    DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_pr22_regime_provenance_check;
+  PERFORM esquema_ddl('ALTER TABLE daily_verdict_snapshot DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_pr22_regime_provenance_check');
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conrelid='daily_verdict_snapshot'::regclass
-      AND conname='daily_verdict_snapshot_pr23_regime_provenance_check'
+      AND conname IN ('daily_verdict_snapshot_pr23_regime_provenance_check', 'daily_verdict_snapshot_pr24_regime_provenance_check')  -- V-03: o su sucesor, que ya la quito
   ) THEN
     ALTER TABLE daily_verdict_snapshot
       ADD CONSTRAINT daily_verdict_snapshot_pr23_regime_provenance_check
@@ -1209,8 +1292,8 @@ BEGIN
       );
   END IF;
 END $$;
-CREATE INDEX IF NOT EXISTS daily_verdict_snapshot_date_idx
-    ON daily_verdict_snapshot(session_date DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS daily_verdict_snapshot_date_idx
+    ON daily_verdict_snapshot(session_date DESC)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_daily_verdict_snapshot_mutation()
 RETURNS trigger
@@ -1223,17 +1306,13 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS daily_verdict_snapshot_no_update_delete
-    ON daily_verdict_snapshot;
-CREATE TRIGGER daily_verdict_snapshot_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER daily_verdict_snapshot_no_update_delete
 BEFORE UPDATE OR DELETE ON daily_verdict_snapshot
-FOR EACH ROW EXECUTE FUNCTION reject_daily_verdict_snapshot_mutation();
+FOR EACH ROW EXECUTE FUNCTION reject_daily_verdict_snapshot_mutation()$ddl$);
 
-DROP TRIGGER IF EXISTS daily_verdict_snapshot_no_truncate
-    ON daily_verdict_snapshot;
-CREATE TRIGGER daily_verdict_snapshot_no_truncate
+SELECT esquema_ddl($ddl$CREATE TRIGGER daily_verdict_snapshot_no_truncate
 BEFORE TRUNCATE ON daily_verdict_snapshot
-FOR EACH STATEMENT EXECUTE FUNCTION reject_daily_verdict_snapshot_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_daily_verdict_snapshot_mutation()$ddl$);
 -- PR21_DAILY_VERDICT_SNAPSHOT_END
 
 -- Contexto externo diario: 800 dias cubren dos años completos con margen para fines de
@@ -1246,8 +1325,8 @@ CREATE TABLE IF NOT EXISTS external_macro_observation (
     fetched_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (series, observed_on)
 );
-CREATE INDEX IF NOT EXISTS external_macro_observation_latest_idx
-    ON external_macro_observation(series, observed_on DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS external_macro_observation_latest_idx
+    ON external_macro_observation(series, observed_on DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS macro_event (
     event_key text NOT NULL CHECK (length(event_key) BETWEEN 1 AND 100),
@@ -1258,7 +1337,7 @@ CREATE TABLE IF NOT EXISTS macro_event (
     fetched_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (event_key, event_at)
 );
-CREATE INDEX IF NOT EXISTS macro_event_upcoming_idx ON macro_event(event_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS macro_event_upcoming_idx ON macro_event(event_at)$ddl$);
 
 -- v1.4.9 (P2): distribucion medida de cada metrica por simbolo y ventana, para que los
 -- umbrales salgan de los datos y no de una constante inventada.
@@ -1307,11 +1386,9 @@ CREATE TABLE IF NOT EXISTS service_ownership (
 -- Upgrade existing v1.0/v1.1.0 installations where the CHECK constraint
 -- did not include the scalp collector. CREATE TABLE IF NOT EXISTS does not
 -- update constraints on an existing table, so this is intentionally explicit.
-ALTER TABLE pipeline_heartbeat
-    DROP CONSTRAINT IF EXISTS pipeline_heartbeat_service_check;
-ALTER TABLE pipeline_heartbeat
+SELECT esquema_ddl($ddl$ALTER TABLE pipeline_heartbeat
     ADD CONSTRAINT pipeline_heartbeat_service_check
-    CHECK (length(service) BETWEEN 1 AND 100);
+    CHECK (length(service) BETWEEN 1 AND 100)$ddl$);
 
 CREATE TABLE IF NOT EXISTS external_api_rate_event (
     provider text NOT NULL,
@@ -1319,8 +1396,8 @@ CREATE TABLE IF NOT EXISTS external_api_rate_event (
     units integer NOT NULL CHECK (units > 0)
 );
 
-CREATE INDEX IF NOT EXISTS external_api_rate_event_provider_ts_idx
-    ON external_api_rate_event(provider, ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS external_api_rate_event_provider_ts_idx
+    ON external_api_rate_event(provider, ts)$ddl$);
 
 CREATE TABLE IF NOT EXISTS market_feed_health (
     feed text NOT NULL,
@@ -1333,8 +1410,8 @@ CREATE TABLE IF NOT EXISTS market_feed_health (
     PRIMARY KEY (feed, exchange)
 );
 
-CREATE INDEX IF NOT EXISTS market_feed_health_updated_idx
-    ON market_feed_health(feed, updated_at DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS market_feed_health_updated_idx
+    ON market_feed_health(feed, updated_at DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS market_feed_health_shard (
     feed text NOT NULL,
@@ -1349,8 +1426,8 @@ CREATE TABLE IF NOT EXISTS market_feed_health_shard (
     PRIMARY KEY (feed, exchange, shard_index, shard_count)
 );
 
-CREATE INDEX IF NOT EXISTS market_feed_health_shard_updated_idx
-    ON market_feed_health_shard(feed, exchange, shard_count, updated_at DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS market_feed_health_shard_updated_idx
+    ON market_feed_health_shard(feed, exchange, shard_count, updated_at DESC)$ddl$);
 
 -- PR19: provenance for materialized two-venue rows.
 -- NULL = legacy/unverified. Old rows are not rewritten.
@@ -1359,13 +1436,13 @@ CREATE INDEX IF NOT EXISTS market_feed_health_shard_updated_idx
 -- un arranque se escribe corto: medido el 2026-08-26 sobre 23 arranques, mediana 0.221
 -- del trade_count de sus vecinos, con la linea base del mismo dia en 0.923. Sin esta
 -- columna esa fila es INDISTINGUIBLE de una completa y nadie aguas abajo puede saberlo.
-ALTER TABLE spot_trades_agg ADD COLUMN IF NOT EXISTS covered_seconds smallint;
-ALTER TABLE futures_trades_agg ADD COLUMN IF NOT EXISTS covered_seconds smallint;
-ALTER TABLE spot_trades_agg ADD COLUMN IF NOT EXISTS venue_count smallint;
-ALTER TABLE spot_trades_realtime ADD COLUMN IF NOT EXISTS venue_count smallint;
-ALTER TABLE futures_trades_agg ADD COLUMN IF NOT EXISTS venue_count smallint;
-ALTER TABLE futures_trades_realtime ADD COLUMN IF NOT EXISTS venue_count smallint;
-ALTER TABLE orderbook_snapshot ADD COLUMN IF NOT EXISTS venue_count smallint;
+SELECT esquema_ddl($ddl$ALTER TABLE spot_trades_agg ADD COLUMN IF NOT EXISTS covered_seconds smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE futures_trades_agg ADD COLUMN IF NOT EXISTS covered_seconds smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE spot_trades_agg ADD COLUMN IF NOT EXISTS venue_count smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE spot_trades_realtime ADD COLUMN IF NOT EXISTS venue_count smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE futures_trades_agg ADD COLUMN IF NOT EXISTS venue_count smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE futures_trades_realtime ADD COLUMN IF NOT EXISTS venue_count smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE orderbook_snapshot ADD COLUMN IF NOT EXISTS venue_count smallint$ddl$);
 
 DO $$
 DECLARE
@@ -1395,22 +1472,22 @@ BEGIN
 END
 $$;
 
-COMMENT ON COLUMN spot_trades_agg.covered_seconds IS
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN spot_trades_agg.covered_seconds IS
     'K52: segundos del minuto con el colector escuchando. 60=completo; <60=el minuto '
-    'contiene un arranque y la fila va CORTA; NULL=legado, escrita antes de la marca.';
-COMMENT ON COLUMN futures_trades_agg.covered_seconds IS
+    'contiene un arranque y la fila va CORTA; NULL=legado, escrita antes de la marca.'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN futures_trades_agg.covered_seconds IS
     'K52: segundos del minuto con el colector escuchando. 60=completo; <60=el minuto '
-    'contiene un arranque y la fila va CORTA; NULL=legado, escrita antes de la marca.';
-COMMENT ON COLUMN spot_trades_agg.venue_count IS
-    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined';
-COMMENT ON COLUMN spot_trades_realtime.venue_count IS
-    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined';
-COMMENT ON COLUMN futures_trades_agg.venue_count IS
-    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined';
-COMMENT ON COLUMN futures_trades_realtime.venue_count IS
-    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined';
-COMMENT ON COLUMN orderbook_snapshot.venue_count IS
-    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined';
+    'contiene un arranque y la fila va CORTA; NULL=legado, escrita antes de la marca.'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN spot_trades_agg.venue_count IS
+    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN spot_trades_realtime.venue_count IS
+    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN futures_trades_agg.venue_count IS
+    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN futures_trades_realtime.venue_count IS
+    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN orderbook_snapshot.venue_count IS
+    'NULL=legacy/unverified; 1=explicit venue; 2=verified Binance+Bybit combined'$ddl$);
 
 -- Explicit continuity failures. Intervals are half-open [start_ts,end_ts): a gap ending
 -- exactly when a metric window starts does not overlap it, while one starting exactly at
@@ -1465,11 +1542,11 @@ CREATE TABLE IF NOT EXISTS data_gap (
         start_ts, end_ts, evidence_type, detection_source
     )
 );
-CREATE INDEX IF NOT EXISTS data_gap_overlap_idx
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS data_gap_overlap_idx
     ON data_gap(feed, exchange, market, symbol, start_ts, end_ts)
-    WHERE status IN ('unresolved','unrecoverable');
-CREATE INDEX IF NOT EXISTS data_gap_status_detected_idx
-    ON data_gap(status, detected_at DESC);
+    WHERE status IN ('unresolved','unrecoverable')$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS data_gap_status_detected_idx
+    ON data_gap(status, detected_at DESC)$ddl$);
 
 -- Daily UTC partitions balance the realtime retention horizons with a small, predictable
 -- object count. Startup calls this function; the advisory transaction lock makes concurrent
@@ -2036,11 +2113,9 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS liquidations_realtime_event_unique_trigger
-    ON liquidations_realtime;
-CREATE TRIGGER liquidations_realtime_event_unique_trigger
+SELECT esquema_ddl($ddl$CREATE TRIGGER liquidations_realtime_event_unique_trigger
 BEFORE INSERT ON liquidations_realtime
-FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();
+FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique()$ddl$);
 
 CREATE OR REPLACE FUNCTION ensure_temporal_partitions(
     reference_ts timestamptz DEFAULT now(),
@@ -2185,22 +2260,22 @@ BEGIN;
 -- PR20_F3_F4_F7_BEGIN
 -- F4: NULL means price direction was not measurable. Zero is reserved for a real
 -- measured lateral move inside +/-20 bps.
-ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h DROP NOT NULL;
+SELECT esquema_ddl($ddl$ALTER TABLE metrics_snapshot ALTER COLUMN price_dir_1h DROP NOT NULL$ddl$);
 -- F3: partial daily sessions must preserve absence. Existing rows are legacy/unverified
 -- until prospectively recalculated by the v1 coverage contract.
-ALTER TABLE daily_session_agg ALTER COLUMN cvd_spot_usd DROP NOT NULL;
-ALTER TABLE daily_session_agg ALTER COLUMN cvd_fut_usd DROP NOT NULL;
-ALTER TABLE daily_session_agg ALTER COLUMN inst_delta_usd DROP NOT NULL;
-ALTER TABLE daily_session_agg ALTER COLUMN price_open DROP NOT NULL;
-ALTER TABLE daily_session_agg ALTER COLUMN price_close DROP NOT NULL;
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN cvd_spot_usd DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN cvd_fut_usd DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN inst_delta_usd DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN price_open DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN price_close DROP NOT NULL$ddl$);
 
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS session_coverage_version smallint;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS session_expected_minutes integer;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS futures_ohlcv_minutes integer;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS spot_2v_minutes integer;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS session_expected_5m_samples integer;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS oi_5m_samples integer;
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS funding_5m_samples integer;
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS session_coverage_version smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS session_expected_minutes integer$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS futures_ohlcv_minutes integer$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS spot_2v_minutes integer$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS session_expected_5m_samples integer$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS oi_5m_samples integer$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS funding_5m_samples integer$ddl$);
 
 DO $$
 BEGIN
@@ -2230,34 +2305,32 @@ BEGIN
   END IF;
 END $$;
 
-COMMENT ON COLUMN daily_session_agg.session_coverage_version IS
-  'NULL=legacy/unverified; 1=PR20 DST-aware metric-specific coverage';
-COMMENT ON COLUMN daily_session_agg.session_expected_minutes IS
-  'Expected 1-minute samples from exact NYSE session_bounds; naturally 1380/1440/1500 across DST';
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN daily_session_agg.session_coverage_version IS
+  'NULL=legacy/unverified; 1=PR20 DST-aware metric-specific coverage'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN daily_session_agg.session_expected_minutes IS
+  'Expected 1-minute samples from exact NYSE session_bounds; naturally 1380/1440/1500 across DST'$ddl$);
 -- PR20_F3_F4_F7_END
 COMMIT;
 -- PR24: prospective daily projection provenance and immutable verdict outcomes.
 -- No historical rows are rewritten or backfilled.
 BEGIN;
 
-ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS updated_at timestamptz;
-ALTER TABLE daily_session_agg ALTER COLUMN updated_at DROP NOT NULL;
-ALTER TABLE daily_session_agg ALTER COLUMN updated_at DROP DEFAULT;
-COMMENT ON COLUMN daily_session_agg.updated_at IS
-  'Prospective refresh time for the mutable daily projection; NULL on untouched legacy rows.';
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ADD COLUMN IF NOT EXISTS updated_at timestamptz$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN updated_at DROP NOT NULL$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg ALTER COLUMN updated_at DROP DEFAULT$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN daily_session_agg.updated_at IS
+  'Prospective refresh time for the mutable daily projection; NULL on untouched legacy rows.'$ddl$);
 
-ALTER TABLE daily_session_agg
-  ADD COLUMN IF NOT EXISTS liquidation_coverage_version smallint;
-ALTER TABLE daily_session_agg
-  ADD COLUMN IF NOT EXISTS liquidation_observed_at timestamptz;
-ALTER TABLE daily_session_agg
-  ADD COLUMN IF NOT EXISTS liquidation_source_start_at timestamptz;
-ALTER TABLE daily_session_agg
-  ADD COLUMN IF NOT EXISTS liquidation_source_cutoff_at timestamptz;
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg
+  ADD COLUMN IF NOT EXISTS liquidation_coverage_version smallint$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg
+  ADD COLUMN IF NOT EXISTS liquidation_observed_at timestamptz$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg
+  ADD COLUMN IF NOT EXISTS liquidation_source_start_at timestamptz$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg
+  ADD COLUMN IF NOT EXISTS liquidation_source_cutoff_at timestamptz$ddl$);
 
-ALTER TABLE daily_session_agg
-  DROP CONSTRAINT IF EXISTS daily_session_agg_pr20_coverage_check;
-ALTER TABLE daily_session_agg
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg
   ADD CONSTRAINT daily_session_agg_pr20_coverage_check CHECK (
     session_coverage_version IS NULL OR (
       session_coverage_version IN (1,2)
@@ -2275,11 +2348,9 @@ ALTER TABLE daily_session_agg
       AND funding_5m_samples IS NOT NULL
         AND funding_5m_samples BETWEEN 0 AND session_expected_5m_samples
     )
-  ) NOT VALID;
+  ) NOT VALID$ddl$);
 
-ALTER TABLE daily_session_agg
-  DROP CONSTRAINT IF EXISTS daily_session_agg_pr24_liquidation_coverage_check;
-ALTER TABLE daily_session_agg
+SELECT esquema_ddl($ddl$ALTER TABLE daily_session_agg
   ADD CONSTRAINT daily_session_agg_pr24_liquidation_coverage_check CHECK (
     session_coverage_version IS DISTINCT FROM 2 OR (
       (
@@ -2300,9 +2371,9 @@ ALTER TABLE daily_session_agg
         AND liquidation_source_cutoff_at <= liquidation_observed_at
       )
     )
-  ) NOT VALID;
-COMMENT ON COLUMN daily_session_agg.liquidation_coverage_version IS
-  'NULL=unmeasured; 1=the published liquidation-history observation proves the whole session.';
+  ) NOT VALID$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON COLUMN daily_session_agg.liquidation_coverage_version IS
+  'NULL=unmeasured; 1=the published liquidation-history observation proves the whole session.'$ddl$);
 
 CREATE TABLE IF NOT EXISTS daily_verdict_outcome (
     outcome_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -2322,8 +2393,8 @@ CREATE TABLE IF NOT EXISTS daily_verdict_outcome (
     UNIQUE(snapshot_id,outcome_version,horizon_sessions),
     CHECK (source_projection_updated_at <= recorded_at)
 );
-CREATE INDEX IF NOT EXISTS daily_verdict_outcome_target_date_idx
-  ON daily_verdict_outcome(target_session_date DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS daily_verdict_outcome_target_date_idx
+  ON daily_verdict_outcome(target_session_date DESC)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_daily_verdict_outcome_mutation()
 RETURNS trigger
@@ -2335,20 +2406,16 @@ BEGIN
     RETURN NULL;
 END
 $$;
-DROP TRIGGER IF EXISTS daily_verdict_outcome_no_update_delete ON daily_verdict_outcome;
-CREATE TRIGGER daily_verdict_outcome_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER daily_verdict_outcome_no_update_delete
 BEFORE UPDATE OR DELETE ON daily_verdict_outcome
-FOR EACH ROW EXECUTE FUNCTION reject_daily_verdict_outcome_mutation();
-DROP TRIGGER IF EXISTS daily_verdict_outcome_no_truncate ON daily_verdict_outcome;
-CREATE TRIGGER daily_verdict_outcome_no_truncate
+FOR EACH ROW EXECUTE FUNCTION reject_daily_verdict_outcome_mutation()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER daily_verdict_outcome_no_truncate
 BEFORE TRUNCATE ON daily_verdict_outcome
-FOR EACH STATEMENT EXECUTE FUNCTION reject_daily_verdict_outcome_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_daily_verdict_outcome_mutation()$ddl$);
 
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr23_regime_provenance_check;
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr24_regime_provenance_check;
-ALTER TABLE signal_observation
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
+  DROP CONSTRAINT IF EXISTS signal_observation_pr23_regime_provenance_check$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
   ADD CONSTRAINT signal_observation_pr24_regime_provenance_check CHECK (
     evidence_version NOT IN (3,4,5)
     OR regime_logic_version IS NOT DISTINCT FROM 2
@@ -2357,10 +2424,8 @@ ALTER TABLE signal_observation
       AND metrics_snapshot_ts IS NULL AND price_cutoff_at IS NULL
       AND metrics_cutoff_at IS NULL
     )
-  );
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr24_reference_time_check;
-ALTER TABLE signal_observation
+  )$ddl$, 'signal_observation_pr25_regime_provenance_check');
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
   ADD CONSTRAINT signal_observation_pr24_reference_time_check CHECK (
     evidence_version <> 5 OR (
       (
@@ -2371,13 +2436,11 @@ ALTER TABLE signal_observation
         AND reference_price_at IS NOT NULL AND reference_price_at <= observed_at
       )
     )
-  );
+  )$ddl$, 'signal_observation_pr25_reference_time_check');
 
-ALTER TABLE daily_verdict_snapshot
-  DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_pr23_regime_provenance_check;
-ALTER TABLE daily_verdict_snapshot
-  DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_pr24_regime_provenance_check;
-ALTER TABLE daily_verdict_snapshot
+SELECT esquema_ddl($ddl$ALTER TABLE daily_verdict_snapshot
+  DROP CONSTRAINT IF EXISTS daily_verdict_snapshot_pr23_regime_provenance_check$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE daily_verdict_snapshot
   ADD CONSTRAINT daily_verdict_snapshot_pr24_regime_provenance_check CHECK (
     logic_version NOT IN ('daily-verdict-v2','daily-verdict-v3','daily-verdict-v4')
     OR regime_logic_version IS NOT DISTINCT FROM 2
@@ -2395,17 +2458,17 @@ ALTER TABLE daily_verdict_snapshot
       regime_logic_version IS NULL AND regime_score IS NULL AND regime_label IS NULL
       AND metrics_snapshot_ts IS NULL
     )
-  );
+  )$ddl$);
 
-COMMENT ON CONSTRAINT signal_observation_pr24_regime_provenance_check
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT signal_observation_pr24_regime_provenance_check
   ON signal_observation IS
-  'Signal evidence v3/v4/v5 requires regime logic v2 or a completely NULL regime block';
-COMMENT ON CONSTRAINT signal_observation_pr24_reference_time_check
+  'Signal evidence v3/v4/v5 requires regime logic v2 or a completely NULL regime block'$ddl$, 'signal_observation_pr25_regime_provenance_check');
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT signal_observation_pr24_reference_time_check
   ON signal_observation IS
-  'Signal evidence v5 reference prices require an exact source timestamp no later than observed_at';
-COMMENT ON CONSTRAINT daily_verdict_snapshot_pr24_regime_provenance_check
+  'Signal evidence v5 reference prices require an exact source timestamp no later than observed_at'$ddl$, 'signal_observation_pr25_reference_time_check');
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT daily_verdict_snapshot_pr24_regime_provenance_check
   ON daily_verdict_snapshot IS
-  'Daily verdict v2/v3/v4 requires regime logic v2 or a completely NULL regime block';
+  'Daily verdict v2/v3/v4 requires regime logic v2 or a completely NULL regime block'$ddl$);
 
 COMMIT;
 
@@ -2456,10 +2519,10 @@ CREATE TABLE IF NOT EXISTS signal_research_bundle_visibility (
         )
     )
 );
-CREATE INDEX IF NOT EXISTS signal_research_bundle_visibility_observation_idx
-    ON signal_research_bundle_visibility(observation_id);
-CREATE INDEX IF NOT EXISTS signal_research_bundle_visibility_verified_idx
-    ON signal_research_bundle_visibility(verified_visible_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_research_bundle_visibility_observation_idx
+    ON signal_research_bundle_visibility(observation_id)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_research_bundle_visibility_verified_idx
+    ON signal_research_bundle_visibility(verified_visible_at)$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_signal_research_bundle_visibility_mutation()
 RETURNS trigger
@@ -2472,16 +2535,12 @@ BEGIN
     RETURN NULL;
 END
 $$;
-DROP TRIGGER IF EXISTS signal_research_bundle_visibility_no_update_delete
-    ON signal_research_bundle_visibility;
-CREATE TRIGGER signal_research_bundle_visibility_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_research_bundle_visibility_no_update_delete
 BEFORE UPDATE OR DELETE ON signal_research_bundle_visibility
-FOR EACH ROW EXECUTE FUNCTION reject_signal_research_bundle_visibility_mutation();
-DROP TRIGGER IF EXISTS signal_research_bundle_visibility_no_truncate
-    ON signal_research_bundle_visibility;
-CREATE TRIGGER signal_research_bundle_visibility_no_truncate
+FOR EACH ROW EXECUTE FUNCTION reject_signal_research_bundle_visibility_mutation()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_research_bundle_visibility_no_truncate
 BEFORE TRUNCATE ON signal_research_bundle_visibility
-FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_research_bundle_visibility_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_research_bundle_visibility_mutation()$ddl$);
 
 -- No INSERT ... SELECT backfill here: a certificate is only ever produced by
 -- app/signal_visibility.py reading already-committed source state.
@@ -2513,10 +2572,16 @@ CREATE TABLE IF NOT EXISTS signal_outcome_final_visibility (
         OR (visibility_version = 2 AND outcome_version = 1)
     )
 );
-CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_outcome_idx
-    ON signal_outcome_final_visibility(outcome_id);
-CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_verified_idx
-    ON signal_outcome_final_visibility(verified_visible_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_outcome_idx
+    ON signal_outcome_final_visibility(outcome_id)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_final_visibility_verified_idx
+    ON signal_outcome_final_visibility(verified_visible_at)$ddl$);
+-- COLA R1 (P26): la busqueda de candidatos del certificador recorria TODO el heap de
+-- signal_outcome por la pk para filtrar status (sin candidatos no para nunca) y caia por
+-- statement_timeout. Con este indice el anti-join contra los certificados es solo-indice.
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS signal_outcome_final_certify_idx
+    ON signal_outcome(outcome_id) INCLUDE (observation_id,outcome_version)
+    WHERE status IN ('evaluated','not_evaluable')$ddl$);
 
 CREATE OR REPLACE FUNCTION reject_signal_outcome_final_visibility_mutation()
 RETURNS trigger
@@ -2529,16 +2594,12 @@ BEGIN
     RETURN NULL;
 END
 $$;
-DROP TRIGGER IF EXISTS signal_outcome_final_visibility_no_update_delete
-    ON signal_outcome_final_visibility;
-CREATE TRIGGER signal_outcome_final_visibility_no_update_delete
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_outcome_final_visibility_no_update_delete
 BEFORE UPDATE OR DELETE ON signal_outcome_final_visibility
-FOR EACH ROW EXECUTE FUNCTION reject_signal_outcome_final_visibility_mutation();
-DROP TRIGGER IF EXISTS signal_outcome_final_visibility_no_truncate
-    ON signal_outcome_final_visibility;
-CREATE TRIGGER signal_outcome_final_visibility_no_truncate
+FOR EACH ROW EXECUTE FUNCTION reject_signal_outcome_final_visibility_mutation()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER signal_outcome_final_visibility_no_truncate
 BEFORE TRUNCATE ON signal_outcome_final_visibility
-FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_outcome_final_visibility_mutation();
+FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_outcome_final_visibility_mutation()$ddl$);
 
 -- No INSERT ... SELECT backfill here either.
 -- PR25_SIGNAL_OUTCOME_FINAL_VISIBILITY_END
@@ -2546,13 +2607,11 @@ FOR EACH STATEMENT EXECUTE FUNCTION reject_signal_outcome_final_visibility_mutat
 -- Prospective evidence v6 inherits the PR23/PR24 regime-provenance and
 -- PR24 reference-time contracts unchanged; only the evidence_version sets
 -- widen to admit 6. No existing row (evidence 1-5) is reinterpreted.
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr23_regime_provenance_check;
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr24_regime_provenance_check;
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr25_regime_provenance_check;
-ALTER TABLE signal_observation
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
+  DROP CONSTRAINT IF EXISTS signal_observation_pr23_regime_provenance_check$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
+  DROP CONSTRAINT IF EXISTS signal_observation_pr24_regime_provenance_check$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
   ADD CONSTRAINT signal_observation_pr25_regime_provenance_check CHECK (
     -- K64 · PUERTA CONCEDIDA 2026-08-30. Se ANADE el 7 a la lista y se le exige el
     -- regimen 3. NO es una relajacion: medido contra el espejo, hoy la evidencia 7 pasa
@@ -2567,13 +2626,11 @@ ALTER TABLE signal_observation
       AND metrics_snapshot_ts IS NULL AND price_cutoff_at IS NULL
       AND metrics_cutoff_at IS NULL
     )
-  );
+  )$ddl$);
 
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr24_reference_time_check;
-ALTER TABLE signal_observation
-  DROP CONSTRAINT IF EXISTS signal_observation_pr25_reference_time_check;
-ALTER TABLE signal_observation
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
+  DROP CONSTRAINT IF EXISTS signal_observation_pr24_reference_time_check$ddl$);
+SELECT esquema_ddl($ddl$ALTER TABLE signal_observation
   ADD CONSTRAINT signal_observation_pr25_reference_time_check CHECK (
     -- K64 · PUERTA CONCEDIDA 2026-08-30. El 7 entra en la lista porque si no, este
     -- contrato no se RELAJA: CADUCA. Con evidencia 7 fuera de la lista, el CHECK pasa
@@ -2593,16 +2650,14 @@ ALTER TABLE signal_observation
         AND reference_price_at IS NOT NULL AND reference_price_at <= observed_at
       )
     )
-  );
+  )$ddl$);
 
 -- K75 · PUERTA CONCEDIDA 2026-08-31 · los dos frozen_tuple, RECONCILIADOS.
 -- Las definiciones de arriba viven dentro de CREATE TABLE IF NOT EXISTS, o sea que en una
 -- base que YA tiene las tablas no se aplican solas. Sin este bloque, CI -base nueva-
 -- tendria el brazo de la v2 y produccion NO, que es la peor de las divergencias posibles:
 -- la prueba pasaria justo donde el guardia no existe.
-ALTER TABLE signal_research_bundle_visibility
-  DROP CONSTRAINT IF EXISTS signal_research_bundle_visibility_pr25_frozen_tuple_check;
-ALTER TABLE signal_research_bundle_visibility
+SELECT esquema_ddl($ddl$ALTER TABLE signal_research_bundle_visibility
   ADD CONSTRAINT signal_research_bundle_visibility_pr25_frozen_tuple_check CHECK (
     visibility_version NOT IN (1, 2)
     OR (
@@ -2619,30 +2674,28 @@ ALTER TABLE signal_research_bundle_visibility
       AND outcome_version = 1
       AND execution_snapshot_version = 1
     )
-  );
+  )$ddl$);
 
-ALTER TABLE signal_outcome_final_visibility
-  DROP CONSTRAINT IF EXISTS signal_outcome_final_visibility_pr25_frozen_tuple_check;
-ALTER TABLE signal_outcome_final_visibility
+SELECT esquema_ddl($ddl$ALTER TABLE signal_outcome_final_visibility
   ADD CONSTRAINT signal_outcome_final_visibility_pr25_frozen_tuple_check CHECK (
     visibility_version NOT IN (1, 2)
     OR (visibility_version = 1 AND outcome_version = 1)
     OR (visibility_version = 2 AND outcome_version = 1)
-  );
+  )$ddl$);
 
-COMMENT ON CONSTRAINT signal_research_bundle_visibility_pr25_frozen_tuple_check
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT signal_research_bundle_visibility_pr25_frozen_tuple_check
   ON signal_research_bundle_visibility IS
-  'Visibility v1 freezes evidence 6 + context/outcome/snapshot 1; v2 freezes evidence 7 with the same other three. Any other visibility_version is unconstrained here BY DESIGN and must declare its own arm before being written';
-COMMENT ON CONSTRAINT signal_outcome_final_visibility_pr25_frozen_tuple_check
+  'Visibility v1 freezes evidence 6 + context/outcome/snapshot 1; v2 freezes evidence 7 with the same other three. Any other visibility_version is unconstrained here BY DESIGN and must declare its own arm before being written'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT signal_outcome_final_visibility_pr25_frozen_tuple_check
   ON signal_outcome_final_visibility IS
-  'Visibility v1 and v2 both certify only outcome_version 1; a new visibility_version must declare its own arm before being written';
+  'Visibility v1 and v2 both certify only outcome_version 1; a new visibility_version must declare its own arm before being written'$ddl$);
 
-COMMENT ON CONSTRAINT signal_observation_pr25_regime_provenance_check
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT signal_observation_pr25_regime_provenance_check
   ON signal_observation IS
-  'Signal evidence v3/v4/v5/v6 requires regime logic v2 or a completely NULL regime block';
-COMMENT ON CONSTRAINT signal_observation_pr25_reference_time_check
+  'Signal evidence v3/v4/v5/v6 requires regime logic v2 or a completely NULL regime block'$ddl$);
+SELECT esquema_ddl($ddl$COMMENT ON CONSTRAINT signal_observation_pr25_reference_time_check
   ON signal_observation IS
-  'Signal evidence v5/v6 reference prices require an exact source timestamp no later than observed_at';
+  'Signal evidence v5/v6 reference prices require an exact source timestamp no later than observed_at'$ddl$);
 
 COMMIT;
 
@@ -2709,12 +2762,12 @@ CREATE TABLE IF NOT EXISTS entrada_registro (
     CHECK (vela_cierre >= inicio_episodio),
     CHECK (estado <> 'DISPARADO' OR caduca_en IS NOT NULL)
 );
-CREATE INDEX IF NOT EXISTS entrada_registro_grupo_idx
-    ON entrada_registro (symbol, perfil, version, vela_cierre);
-CREATE INDEX IF NOT EXISTS entrada_registro_clave_idx
-    ON entrada_registro (version, symbol, familia, perfil, lado, clave, vela_cierre);
-CREATE INDEX IF NOT EXISTS entrada_registro_registered_idx
-    ON entrada_registro (registered_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS entrada_registro_grupo_idx
+    ON entrada_registro (symbol, perfil, version, vela_cierre)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS entrada_registro_clave_idx
+    ON entrada_registro (version, symbol, familia, perfil, lado, clave, vela_cierre)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS entrada_registro_registered_idx
+    ON entrada_registro (registered_at)$ddl$);
 
 CREATE TABLE IF NOT EXISTS entrada_latido (
     latido_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -2726,7 +2779,7 @@ CREATE TABLE IF NOT EXISTS entrada_latido (
     detalle json NOT NULL CHECK (json_typeof(detalle) = 'object'),
     error text
 );
-CREATE INDEX IF NOT EXISTS entrada_latido_registered_idx ON entrada_latido (registered_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS entrada_latido_registered_idx ON entrada_latido (registered_at)$ddl$);
 
 CREATE OR REPLACE FUNCTION entrada_pone_registered_at()
 RETURNS trigger
@@ -2786,44 +2839,35 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS entrada_reglamento_al_insertar ON entrada_reglamento;
-CREATE TRIGGER entrada_reglamento_al_insertar
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_reglamento_al_insertar
 BEFORE INSERT ON entrada_reglamento
-FOR EACH ROW EXECUTE FUNCTION entrada_pone_registered_at();
-DROP TRIGGER IF EXISTS entrada_reglamento_no_update_delete ON entrada_reglamento;
-CREATE TRIGGER entrada_reglamento_no_update_delete
+FOR EACH ROW EXECUTE FUNCTION entrada_pone_registered_at()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_reglamento_no_update_delete
 BEFORE UPDATE OR DELETE ON entrada_reglamento
-FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
-DROP TRIGGER IF EXISTS entrada_reglamento_no_truncate ON entrada_reglamento;
-CREATE TRIGGER entrada_reglamento_no_truncate
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_reglamento_no_truncate
 BEFORE TRUNCATE ON entrada_reglamento
-FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
 
-DROP TRIGGER IF EXISTS entrada_registro_al_insertar ON entrada_registro;
-CREATE TRIGGER entrada_registro_al_insertar
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_registro_al_insertar
 BEFORE INSERT ON entrada_registro
-FOR EACH ROW EXECUTE FUNCTION entrada_registro_al_insertar();
-DROP TRIGGER IF EXISTS entrada_registro_no_update_delete ON entrada_registro;
-CREATE TRIGGER entrada_registro_no_update_delete
+FOR EACH ROW EXECUTE FUNCTION entrada_registro_al_insertar()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_registro_no_update_delete
 BEFORE UPDATE OR DELETE ON entrada_registro
-FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
-DROP TRIGGER IF EXISTS entrada_registro_no_truncate ON entrada_registro;
-CREATE TRIGGER entrada_registro_no_truncate
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_registro_no_truncate
 BEFORE TRUNCATE ON entrada_registro
-FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
 
-DROP TRIGGER IF EXISTS entrada_latido_al_insertar ON entrada_latido;
-CREATE TRIGGER entrada_latido_al_insertar
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_latido_al_insertar
 BEFORE INSERT ON entrada_latido
-FOR EACH ROW EXECUTE FUNCTION entrada_pone_registered_at();
-DROP TRIGGER IF EXISTS entrada_latido_no_update_delete ON entrada_latido;
-CREATE TRIGGER entrada_latido_no_update_delete
+FOR EACH ROW EXECUTE FUNCTION entrada_pone_registered_at()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_latido_no_update_delete
 BEFORE UPDATE OR DELETE ON entrada_latido
-FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
-DROP TRIGGER IF EXISTS entrada_latido_no_truncate ON entrada_latido;
-CREATE TRIGGER entrada_latido_no_truncate
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_latido_no_truncate
 BEFORE TRUNCATE ON entrada_latido
-FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
 
 COMMIT;
 
@@ -2873,7 +2917,7 @@ CREATE TABLE IF NOT EXISTS entrada_resultado (
     convenciones json NOT NULL CHECK (json_typeof(convenciones) = 'object'),
     UNIQUE (registro_id, resolutor)
 );
-CREATE INDEX IF NOT EXISTS entrada_resultado_registered_idx ON entrada_resultado (registered_at);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS entrada_resultado_registered_idx ON entrada_resultado (registered_at)$ddl$);
 
 CREATE OR REPLACE FUNCTION entrada_resultado_al_insertar()
 RETURNS trigger
@@ -2901,18 +2945,15 @@ BEGIN
 END
 $$;
 
-DROP TRIGGER IF EXISTS entrada_resultado_al_insertar ON entrada_resultado;
-CREATE TRIGGER entrada_resultado_al_insertar
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_resultado_al_insertar
 BEFORE INSERT ON entrada_resultado
-FOR EACH ROW EXECUTE FUNCTION entrada_resultado_al_insertar();
-DROP TRIGGER IF EXISTS entrada_resultado_no_update_delete ON entrada_resultado;
-CREATE TRIGGER entrada_resultado_no_update_delete
+FOR EACH ROW EXECUTE FUNCTION entrada_resultado_al_insertar()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_resultado_no_update_delete
 BEFORE UPDATE OR DELETE ON entrada_resultado
-FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas();
-DROP TRIGGER IF EXISTS entrada_resultado_no_truncate ON entrada_resultado;
-CREATE TRIGGER entrada_resultado_no_truncate
+FOR EACH ROW EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
+SELECT esquema_ddl($ddl$CREATE TRIGGER entrada_resultado_no_truncate
 BEFORE TRUNCATE ON entrada_resultado
-FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas();
+FOR EACH STATEMENT EXECUTE FUNCTION rechaza_mutacion_entradas()$ddl$);
 
 COMMIT;
 
@@ -2976,7 +3017,7 @@ CREATE TABLE IF NOT EXISTS orderflow_cinta (
     compra boolean NOT NULL,
     id text NOT NULL
 ) PARTITION BY RANGE (ts);
-CREATE INDEX IF NOT EXISTS orderflow_cinta_symbol_ts_idx ON orderflow_cinta (symbol, ts DESC);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_cinta_symbol_ts_idx ON orderflow_cinta (symbol, ts DESC)$ddl$);
 
 CREATE TABLE IF NOT EXISTS orderflow_grande (
     ts timestamptz NOT NULL,
@@ -2992,8 +3033,8 @@ CREATE TABLE IF NOT EXISTS orderflow_grande (
     CHECK (usd >= umbral_usd),
     PRIMARY KEY (venue, symbol, id)
 );
-CREATE INDEX IF NOT EXISTS orderflow_grande_symbol_ts_idx ON orderflow_grande (symbol, ts DESC);
-CREATE INDEX IF NOT EXISTS orderflow_grande_ts_idx ON orderflow_grande (ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_grande_symbol_ts_idx ON orderflow_grande (symbol, ts DESC)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_grande_ts_idx ON orderflow_grande (ts)$ddl$);
 
 CREATE TABLE IF NOT EXISTS orderflow_cobertura (
     ts timestamptz NOT NULL,
@@ -3009,7 +3050,7 @@ CREATE TABLE IF NOT EXISTS orderflow_cobertura (
     escrito timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (symbol, ts, venue)
 );
-CREATE INDEX IF NOT EXISTS orderflow_cobertura_ts_idx ON orderflow_cobertura (ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_cobertura_ts_idx ON orderflow_cobertura (ts)$ddl$);
 
 -- OF-1b (campana 149) · las celdas SUMADAS POR HORA, para que el footprint de 1h, 4h y 1d no sume minutos en cada
 -- carga. ts = inicio de la hora UTC; el nivel es el MISMO que el guardado en orderflow_celda (no se reagrega). La
@@ -3043,7 +3084,7 @@ CREATE TABLE IF NOT EXISTS orderflow_hora_hecha (
     CHECK ((lo IS NULL) = (hi IS NULL) AND lo <= hi),
     PRIMARY KEY (symbol, ts, venue)
 );
-CREATE INDEX IF NOT EXISTS orderflow_hora_hecha_ts_idx ON orderflow_hora_hecha (ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS orderflow_hora_hecha_ts_idx ON orderflow_hora_hecha (ts)$ddl$);
 
 CREATE OR REPLACE FUNCTION ensure_temporal_partitions(
     reference_ts timestamptz DEFAULT now(),
@@ -3235,7 +3276,7 @@ CREATE TABLE IF NOT EXISTS libro_cobertura (
     escrito timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (symbol, ts, venue)
 );
-CREATE INDEX IF NOT EXISTS libro_cobertura_ts_idx ON libro_cobertura (ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS libro_cobertura_ts_idx ON libro_cobertura (ts)$ddl$);
 
 SELECT ensure_temporal_partitions();
 
@@ -3322,9 +3363,9 @@ CREATE TABLE IF NOT EXISTS bot_evento (
     enviada boolean NOT NULL,
     detalle jsonb NOT NULL DEFAULT '{}'
 );
-CREATE UNIQUE INDEX IF NOT EXISTS bot_evento_unico ON bot_evento (tipo, symbol, minuto) WHERE tipo IN ('rafaga', 'clase');
-CREATE INDEX IF NOT EXISTS bot_evento_minuto_idx ON bot_evento (minuto);
-CREATE INDEX IF NOT EXISTS bot_evento_tipo_ts_idx ON bot_evento (tipo, ts);
+SELECT esquema_ddl($ddl$CREATE UNIQUE INDEX IF NOT EXISTS bot_evento_unico ON bot_evento (tipo, symbol, minuto) WHERE tipo IN ('rafaga', 'clase')$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_evento_minuto_idx ON bot_evento (minuto)$ddl$);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_evento_tipo_ts_idx ON bot_evento (tipo, ts)$ddl$);
 
 CREATE TABLE IF NOT EXISTS bot_evaluacion (
     id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -3337,7 +3378,7 @@ CREATE TABLE IF NOT EXISTS bot_evaluacion (
     acierto boolean,
     detalle jsonb NOT NULL DEFAULT '{}'
 );
-CREATE INDEX IF NOT EXISTS bot_evaluacion_posicion_idx ON bot_evaluacion (posicion);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_evaluacion_posicion_idx ON bot_evaluacion (posicion)$ddl$);
 
 CREATE TABLE IF NOT EXISTS bot_llamada (
     id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -3352,7 +3393,7 @@ CREATE TABLE IF NOT EXISTS bot_llamada (
     estimado boolean NOT NULL DEFAULT false,
     detalle jsonb NOT NULL DEFAULT '{}'
 );
-CREATE INDEX IF NOT EXISTS bot_llamada_ts_idx ON bot_llamada (ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_llamada_ts_idx ON bot_llamada (ts)$ddl$);
 
 CREATE TABLE IF NOT EXISTS bot_operacion (
     orden text PRIMARY KEY,
@@ -3368,7 +3409,7 @@ CREATE TABLE IF NOT EXISTS bot_operacion (
     cerrada timestamptz,
     detalle jsonb NOT NULL DEFAULT '{}'
 );
-CREATE INDEX IF NOT EXISTS bot_operacion_cerrada_idx ON bot_operacion (cerrada);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_operacion_cerrada_idx ON bot_operacion (cerrada)$ddl$);
 
 CREATE TABLE IF NOT EXISTS bot_estado (
     clave text PRIMARY KEY CHECK (clave IN ('bot', 'vigia')),
@@ -3376,22 +3417,22 @@ CREATE TABLE IF NOT EXISTS bot_estado (
     estado jsonb NOT NULL
 );
 
-CREATE OR REPLACE TRIGGER bot_evento_solo_anadir BEFORE UPDATE OR DELETE ON bot_evento
-    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_evento_sin_truncate BEFORE TRUNCATE ON bot_evento
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_evaluacion_solo_anadir BEFORE UPDATE OR DELETE ON bot_evaluacion
-    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_evaluacion_sin_truncate BEFORE TRUNCATE ON bot_evaluacion
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_llamada_solo_anadir BEFORE UPDATE OR DELETE ON bot_llamada
-    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_llamada_sin_truncate BEFORE TRUNCATE ON bot_llamada
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_operacion_solo_anadir BEFORE UPDATE OR DELETE ON bot_operacion
-    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_operacion_sin_truncate BEFORE TRUNCATE ON bot_operacion
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_evento_solo_anadir BEFORE UPDATE OR DELETE ON bot_evento
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_evento_sin_truncate BEFORE TRUNCATE ON bot_evento
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_evaluacion_solo_anadir BEFORE UPDATE OR DELETE ON bot_evaluacion
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_evaluacion_sin_truncate BEFORE TRUNCATE ON bot_evaluacion
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_llamada_solo_anadir BEFORE UPDATE OR DELETE ON bot_llamada
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_llamada_sin_truncate BEFORE TRUNCATE ON bot_llamada
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_operacion_solo_anadir BEFORE UPDATE OR DELETE ON bot_operacion
+    FOR EACH ROW EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_operacion_sin_truncate BEFORE TRUNCATE ON bot_operacion
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
 
 COMMIT;
 
@@ -3424,12 +3465,12 @@ CREATE TABLE IF NOT EXISTS bot_crudo (
     symbol text,
     detalle jsonb NOT NULL DEFAULT '{}'
 );
-CREATE INDEX IF NOT EXISTS bot_crudo_ts_idx ON bot_crudo (ts);
+SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_crudo_ts_idx ON bot_crudo (ts)$ddl$);
 
-CREATE OR REPLACE TRIGGER bot_crudo_solo_anadir BEFORE UPDATE OR DELETE ON bot_crudo
-    FOR EACH ROW EXECUTE FUNCTION bot_crudo_solo_poda();
-CREATE OR REPLACE TRIGGER bot_crudo_sin_truncate BEFORE TRUNCATE ON bot_crudo
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_crudo_solo_anadir BEFORE UPDATE OR DELETE ON bot_crudo
+    FOR EACH ROW EXECUTE FUNCTION bot_crudo_solo_poda()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_crudo_sin_truncate BEFORE TRUNCATE ON bot_crudo
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
 
 COMMIT;
 
@@ -3508,14 +3549,14 @@ BEGIN
 END
 $$;
 
-CREATE OR REPLACE TRIGGER bot_sombra_solo_resuelve BEFORE UPDATE OR DELETE ON bot_sombra
-    FOR EACH ROW EXECUTE FUNCTION bot_sombra_solo_resuelve();
-CREATE OR REPLACE TRIGGER bot_sombra_sin_truncate BEFORE TRUNCATE ON bot_sombra
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
-CREATE OR REPLACE TRIGGER bot_sombra_candidata_avanza BEFORE UPDATE OR DELETE ON bot_sombra_candidata
-    FOR EACH ROW EXECUTE FUNCTION bot_sombra_cursor_avanza();
-CREATE OR REPLACE TRIGGER bot_sombra_candidata_sin_truncate BEFORE TRUNCATE ON bot_sombra_candidata
-    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion();
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_sombra_solo_resuelve BEFORE UPDATE OR DELETE ON bot_sombra
+    FOR EACH ROW EXECUTE FUNCTION bot_sombra_solo_resuelve()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_sombra_sin_truncate BEFORE TRUNCATE ON bot_sombra
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_sombra_candidata_avanza BEFORE UPDATE OR DELETE ON bot_sombra_candidata
+    FOR EACH ROW EXECUTE FUNCTION bot_sombra_cursor_avanza()$ddl$);
+SELECT esquema_ddl($ddl$CREATE OR REPLACE TRIGGER bot_sombra_candidata_sin_truncate BEFORE TRUNCATE ON bot_sombra_candidata
+    FOR EACH STATEMENT EXECUTE FUNCTION bot_rechaza_mutacion()$ddl$);
 
 -- Los permisos del bot los da el despliegue (lo aplica `coinalyze`, dueno de las tres): el operador ya no entra al
 -- nodo. SOLO si existe el rol: sin el (la CI, una base nueva) no hace nada. Ni DELETE, ni otras tablas, ni el rol.
@@ -3526,6 +3567,52 @@ BEGIN
         GRANT SELECT ON orderflow_cinta TO "coinalyze-ai";
         GRANT SELECT, INSERT, UPDATE ON bot_sombra, bot_sombra_candidata TO "coinalyze-ai";
     END IF;
+END
+$$;
+
+COMMIT;
+
+
+-- =========================================================================================
+-- CINTA R1 (V-02) · la poda del borde por tramos. Bloque ADITIVO: una funcion nueva; apply_temporal_retention queda
+-- como estaba, pero la aplicacion ya no la llama. app/partitioning.py tira primero las particiones enteras caducadas
+-- (drop_expired_temporal_partitions, en su transaccion) y recorta despues la del borde con esta funcion, un tramo de
+-- bloques de heap por transaccion. La sentencia unica era la causa: el DELETE del borde de orderflow_cinta agotaba el
+-- tiempo y su ROLLBACK deshacia tambien el DROP (140, 11-22/11-23: ni una particion tirada en 48 h).
+-- =========================================================================================
+BEGIN;
+
+CREATE OR REPLACE FUNCTION podar_temporal_tramo(
+    parent_name text,
+    hija text,
+    cutoff timestamptz,
+    desde bigint,
+    bloques integer
+)
+RETURNS bigint
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    schema_name text := current_schema();
+    borradas bigint;
+BEGIN
+    -- El portero de la lista es el de drop_expired_temporal_partitions: rechaza la madre que no gestiona y con
+    -- -infinity no tira nada. Toma ademas el mismo cerrojo de retencion de la madre hasta el final del tramo.
+    PERFORM drop_expired_temporal_partitions(parent_name, '-infinity');
+    IF desde < 0 OR bloques <= 0 THEN
+        RAISE EXCEPTION 'tramo invalido: desde %, bloques %', desde, bloques;
+    END IF;
+    IF hija !~ ('^' || parent_name || '_p[0-9]{8}$') OR NOT EXISTS (
+        SELECT 1 FROM pg_inherits
+         WHERE inhrelid = to_regclass(format('%I.%I', schema_name, hija))
+           AND inhparent = to_regclass(format('%I.%I', schema_name, parent_name))
+    ) THEN
+        RAISE EXCEPTION '% is not a daily partition of %', hija, parent_name;
+    END IF;
+    EXECUTE format('DELETE FROM %I.%I WHERE ctid >= $1 AND ctid < $2 AND ts < $3', schema_name, hija)
+        USING format('(%s,0)', desde)::tid, format('(%s,0)', desde + bloques)::tid, cutoff;
+    GET DIAGNOSTICS borradas = ROW_COUNT;
+    RETURN borradas;
 END
 $$;
 

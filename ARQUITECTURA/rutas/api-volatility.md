@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volatility_endpoint` · `app/api.py:2182` (cuerpo hasta la 2185) · decorador en la linea 2181.
+Handler `volatility_endpoint` · `app/api.py:2287` (cuerpo hasta la 2290) · decorador en la linea 2286.
 
 ## Parametros de entrada
 
@@ -18,13 +18,13 @@ Handler `volatility_endpoint` · `app/api.py:2182` (cuerpo hasta la 2185) · dec
 
 | campo | de donde sale |
 |---|---|
-| `atr` | literal en app/scalp_logic.py:3492 |
-| `compression_score` | literal en app/scalp_logic.py:3495 |
-| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3494 |
-| `note` | literal en app/scalp_logic.py:3497 |
-| `range_expansion` | literal en app/scalp_logic.py:3496 |
-| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3493 |
-| `symbol` | literal en app/scalp_logic.py:3491 |
+| `atr` | literal en app/scalp_logic.py:3491 |
+| `compression_score` | literal en app/scalp_logic.py:3494 |
+| `daily_range_percentile_1y` | literal en app/scalp_logic.py:3493 |
+| `note` | literal en app/scalp_logic.py:3496 |
+| `range_expansion` | literal en app/scalp_logic.py:3495 |
+| `realized_vol_annualized_pct` | literal en app/scalp_logic.py:3492 |
+| `symbol` | literal en app/scalp_logic.py:3490 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -34,10 +34,10 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -50,18 +50,18 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3455`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.volatility_context` — `app/scalp_logic.py:3454`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
-- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3219`
-- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1856`
-- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3248`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3229`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
+- `app.scalp_logic._closes_1min` — `app/scalp_logic.py:3218`
+- `app.scalp_logic._pct_rank` — `app/scalp_logic.py:1861`
+- `app.scalp_logic._realized_vol` — `app/scalp_logic.py:3247`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3228`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 
@@ -77,7 +77,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

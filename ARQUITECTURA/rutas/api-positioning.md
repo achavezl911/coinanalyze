@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `positioning` · `app/api.py:1420` (cuerpo hasta la 1424) · decorador en la linea 1419.
+Handler `positioning` · `app/api.py:1525` (cuerpo hasta la 1529) · decorador en la linea 1524.
 
 ## Parametros de entrada
 
@@ -18,23 +18,23 @@ Handler `positioning` · `app/api.py:1420` (cuerpo hasta la 1424) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `age_seconds` | literal en app/scalp_logic.py:6056 |
-| `limitations` | literal en app/scalp_logic.py:6057 |
-| `long_pct` | literal en app/scalp_logic.py:6042 |
-| `median_sample` | literal en app/scalp_logic.py:6050 |
-| `percentile_sample` | literal en app/scalp_logic.py:6051 |
-| `ratio` | literal en app/scalp_logic.py:6044 |
-| `ratio_24h_ago` | literal en app/scalp_logic.py:6045 |
-| `ratio_change_24h` | literal en app/scalp_logic.py:6047 |
-| `reason` | literal en app/scalp_logic.py:6019 |
-| `sample_count` | literal en app/scalp_logic.py:6052 |
-| `sample_days` | literal en app/scalp_logic.py:6053 |
-| `sample_is_full_month` | literal en app/scalp_logic.py:6054 |
-| `short_pct` | literal en app/scalp_logic.py:6043 |
-| `status` | literal en app/scalp_logic.py:6040 |
-| `symbol` | literal en app/scalp_logic.py:6039 |
-| `ts` | literal en app/scalp_logic.py:6055 |
-| `unit` | literal en app/scalp_logic.py:6041 |
+| `age_seconds` | literal en app/scalp_logic.py:6055 |
+| `limitations` | literal en app/scalp_logic.py:6056 |
+| `long_pct` | literal en app/scalp_logic.py:6041 |
+| `median_sample` | literal en app/scalp_logic.py:6049 |
+| `percentile_sample` | literal en app/scalp_logic.py:6050 |
+| `ratio` | literal en app/scalp_logic.py:6043 |
+| `ratio_24h_ago` | literal en app/scalp_logic.py:6044 |
+| `ratio_change_24h` | literal en app/scalp_logic.py:6046 |
+| `reason` | literal en app/scalp_logic.py:6018 |
+| `sample_count` | literal en app/scalp_logic.py:6051 |
+| `sample_days` | literal en app/scalp_logic.py:6052 |
+| `sample_is_full_month` | literal en app/scalp_logic.py:6053 |
+| `short_pct` | literal en app/scalp_logic.py:6042 |
+| `status` | literal en app/scalp_logic.py:6039 |
+| `symbol` | literal en app/scalp_logic.py:6038 |
+| `ts` | literal en app/scalp_logic.py:6054 |
+| `unit` | literal en app/scalp_logic.py:6040 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -44,7 +44,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `long_short_ratio` — `sql/schema.sql:187`, 6 columnas
+- `long_short_ratio` — `sql/schema.sql:288`, 6 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:678`
   - la llena `app.ingest.upsert_long_short` (INSERT) — `app/ingest.py:358`
 
@@ -61,12 +61,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5982`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.positioning_context` — `app/scalp_logic.py:5981`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 
@@ -82,7 +82,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -93,7 +93,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:157`, `harness/checks/K43-foto-unica.sh:222` | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:385` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:386` | — |
 
 **La llama el panel: es superficie de producto.**
 

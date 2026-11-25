@@ -3,7 +3,7 @@
  * recalculan). Los datos son las sueltas de /api/orderflow/indicadores (liquidations_realtime): ninguna ruta nueva.
  *   lado 'long'  = largo liquidado = VENTA forzada -> color de venta de la pagina
  *   lado 'short' = corto liquidado = COMPRA forzada -> color de compra
- * Lo que la ruta no trae (antes de su retencion, despues del corte de TOPE_SUELTAS, un hueco de data_gap) se DICE: es
+ * Lo que la ruta no trae (antes de su retencion, antes del corte de TOPE_SUELTAS, un hueco de data_gap) se DICE: es
  * «sin dato», nunca «ninguna». */
 
 // 10 mil USD por omision: en 12 h de 140 hubo ~625 liquidaciones (BTC+ETH+SOL) y casi todas son de cientos a pocos miles
@@ -60,8 +60,9 @@ function sinDatoLiq(sueltas, desdeMs, hastaMs) {
   }
   if (sueltas.truncada) {
     const ev = sueltas.eventos || [];
-    const ult = ev.length ? Date.parse(ev[ev.length - 1].ts) : desdeMs;
-    out.push({ desde: ult, hasta: hastaMs, motivo: 'la ruta cortó en ' + ev.length + ' eventos: lo de después no está' });
+    const pri = ev.length ? Date.parse(ev[0].ts) : hastaMs; // la ruta sirve los MAS RECIENTES
+    out.push({ desde: Number.isFinite(dd) ? Math.max(dd, desdeMs) : desdeMs, hasta: pri,
+               motivo: 'la ruta cortó por su tope de eventos: lo de antes no está' });
   }
   (sueltas.huecos || []).filter((h) => h.estado !== 'recovered').forEach((h) => {
     out.push({ desde: Math.max(Date.parse(h.desde), desdeMs), hasta: Math.min(Date.parse(h.hasta), hastaMs),

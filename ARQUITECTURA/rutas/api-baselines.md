@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `metric_baselines` · `app/api.py:1636` (cuerpo hasta la 1650) · decorador en la linea 1635.
+Handler `metric_baselines` · `app/api.py:1741` (cuerpo hasta la 1755) · decorador en la linea 1740.
 
 ## Parametros de entrada
 
@@ -19,11 +19,11 @@ Handler `metric_baselines` · `app/api.py:1636` (cuerpo hasta la 1650) · decora
 
 | campo | de donde sale |
 |---|---|
-| `fallback_min_ratio` | literal en app/api.py:1644 |
-| `metric` | literal en app/api.py:1643 |
-| `note` | literal en app/api.py:1645 |
-| `symbol` | literal en app/api.py:1642 |
-| `windows` | literal en app/api.py:1649 |
+| `fallback_min_ratio` | literal en app/api.py:1749 |
+| `metric` | literal en app/api.py:1748 |
+| `note` | literal en app/api.py:1750 |
+| `symbol` | literal en app/api.py:1747 |
+| `windows` | literal en app/api.py:1754 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -33,8 +33,8 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 
 ## Funciones que la componen
 
@@ -43,12 +43,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
 
 </details>
 
@@ -64,7 +64,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

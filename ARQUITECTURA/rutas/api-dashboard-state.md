@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `dashboard_state` · `app/api.py:3562` (cuerpo hasta la 3589) · decorador en la linea 3561.
+Handler `dashboard_state` · `app/api.py:3667` (cuerpo hasta la 3694) · decorador en la linea 3666.
 
 ## Parametros de entrada
 
@@ -18,12 +18,12 @@ Handler `dashboard_state` · `app/api.py:3562` (cuerpo hasta la 3589) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `barriers` | literal en app/api.py:3587 |
+| `barriers` | literal en app/api.py:3692 |
 | `barriers.active_zone` | literal en app/interpretation.py:1001 |
 | `barriers.available` | literal en app/interpretation.py:998 |
 | `barriers.current_price` | literal en app/interpretation.py:999 |
 | `barriers.decision` | literal en app/interpretation.py:1000 |
-| `barriers.intraday_source_interval` | literal en app/scalp_logic.py:1423 |
+| `barriers.intraday_source_interval` | literal en app/scalp_logic.py:1428 |
 | `barriers.live_pressure` | literal en app/interpretation.py:1004 |
 | `barriers.long_case` | literal en app/interpretation.py:1021 |
 | `barriers.method` | literal en app/interpretation.py:1035 |
@@ -31,10 +31,10 @@ Handler `dashboard_state` · `app/api.py:3562` (cuerpo hasta la 3589) · decorad
 | `barriers.nearest_support` | literal en app/interpretation.py:1002 |
 | `barriers.reason` | literal en app/interpretation.py:886 |
 | `barriers.short_case` | literal en app/interpretation.py:1028 |
-| `barriers.symbol` | literal en app/scalp_logic.py:1422 |
+| `barriers.symbol` | literal en app/scalp_logic.py:1427 |
 | `barriers.warning` | literal en app/interpretation.py:1057 |
 | `barriers.warnings` | literal en app/interpretation.py:1048 |
-| `cvd_swing` | literal en app/api.py:3586 |
+| `cvd_swing` | literal en app/api.py:3691 |
 | `cvd_swing.as_of` | literal en app/interpretation.py:643 |
 | `cvd_swing.available` | literal en app/interpretation.py:642 |
 | `cvd_swing.backtest` | literal en app/interpretation.py:661 |
@@ -50,7 +50,7 @@ Handler `dashboard_state` · `app/api.py:3562` (cuerpo hasta la 3589) · decorad
 | `cvd_swing.strength` | literal en app/interpretation.py:646 |
 | `cvd_swing.thesis` | literal en app/interpretation.py:648 |
 | `cvd_swing.warning` | literal en app/interpretation.py:680 |
-| `market_memory` | literal en app/api.py:3588 |
+| `market_memory` | literal en app/api.py:3693 |
 | `market_memory.analog_summary` | literal en app/interpretation.py:508 |
 | `market_memory.analogs` | literal en app/interpretation.py:507 |
 | `market_memory.available` | literal en app/interpretation.py:491 |
@@ -62,91 +62,91 @@ Handler `dashboard_state` · `app/api.py:3562` (cuerpo hasta la 3589) · decorad
 | `market_memory.reason` | literal en app/interpretation.py:412 |
 | `market_memory.sessions` | literal en app/interpretation.py:411 |
 | `market_memory.source` | literal en app/interpretation.py:516 |
-| `market_memory.symbol` | literal en app/scalp_logic.py:1750 |
+| `market_memory.symbol` | literal en app/scalp_logic.py:1755 |
 | `market_memory.warning` | literal en app/interpretation.py:517 |
-| `scalp` | literal en app/api.py:3580 |
-| `scalp.absorption` | literal en app/scalp_logic.py:914 |
-| `scalp.absorption_context` | literal en app/scalp_logic.py:916 |
-| `scalp.absorption_delta_ratio` | literal en app/scalp_logic.py:915 |
-| `scalp.basis_bps` | literal en app/scalp_logic.py:866 |
-| `scalp.basis_detail` | literal en app/scalp_logic.py:868 |
-| `scalp.basis_status` | literal en app/scalp_logic.py:867 |
-| `scalp.book_lag_seconds` | literal en app/scalp_logic.py:870 |
-| `scalp.book_status` | literal en app/scalp_logic.py:869 |
-| `scalp.confidence` | literal en app/scalp_logic.py:846 |
-| `scalp.diff_3m` | literal en app/scalp_logic.py:854 |
-| `scalp.evidence_coverage_pct` | literal en app/scalp_logic.py:862 |
-| `scalp.expected_weight` | literal en app/scalp_logic.py:861 |
-| `scalp.fut_delta_1m` | literal en app/scalp_logic.py:848 |
-| `scalp.fut_delta_3m` | literal en app/scalp_logic.py:849 |
-| `scalp.fut_price` | literal en app/scalp_logic.py:864 |
-| `scalp.fut_volume_1m` | literal en app/scalp_logic.py:850 |
-| `scalp.imbalance_l1` | literal en app/scalp_logic.py:873 |
-| `scalp.imbalance_l10` | literal en app/scalp_logic.py:875 |
-| `scalp.imbalance_l5` | literal en app/scalp_logic.py:874 |
-| `scalp.liquidation_feed_health` | literal en app/scalp_logic.py:884 |
-| `scalp.liquidations_measured` | literal en app/scalp_logic.py:882 |
-| `scalp.liquidations_window` | literal en app/scalp_logic.py:883 |
-| `scalp.long_liq_5m` | literal en app/scalp_logic.py:878 |
-| `scalp.long_score` | literal en app/scalp_logic.py:843 |
-| `scalp.measured_weight` | literal en app/scalp_logic.py:860 |
-| `scalp.missing_components` | literal en app/scalp_logic.py:863 |
-| `scalp.oi_chg_15m_pct` | literal en app/scalp_logic.py:893 |
-| `scalp.oi_contributes_direction` | literal en app/scalp_logic.py:907 |
-| `scalp.oi_directional_support` | literal en app/scalp_logic.py:904 |
-| `scalp.oi_new_positioning` | literal en app/scalp_logic.py:905 |
-| `scalp.oi_now` | literal en app/scalp_logic.py:895 |
-| `scalp.oi_price_quadrant` | literal en app/scalp_logic.py:902 |
-| `scalp.oi_price_status` | literal en app/scalp_logic.py:911 |
-| `scalp.oi_reading` | literal en app/scalp_logic.py:903 |
-| `scalp.oi_start` | literal en app/scalp_logic.py:894 |
-| `scalp.oi_state` | literal en app/scalp_logic.py:901 |
-| `scalp.oi_timeframe` | literal en app/scalp_logic.py:906 |
-| `scalp.oi_window_end` | literal en app/scalp_logic.py:897 |
-| `scalp.oi_window_samples` | literal en app/scalp_logic.py:898 |
-| `scalp.oi_window_start` | literal en app/scalp_logic.py:896 |
-| `scalp.oi_window_status` | literal en app/scalp_logic.py:899 |
-| `scalp.price_move_15m_coverage` | literal en app/scalp_logic.py:910 |
-| `scalp.price_move_15m_pct` | literal en app/scalp_logic.py:908 |
-| `scalp.price_move_15m_status` | literal en app/scalp_logic.py:909 |
-| `scalp.price_move_3m_pct` | literal en app/scalp_logic.py:871 |
-| `scalp.reason` | literal en app/scalp_logic.py:847 |
-| `scalp.session_vwap` | literal en app/scalp_logic.py:912 |
-| `scalp.short_liq_5m` | literal en app/scalp_logic.py:879 |
-| `scalp.short_score` | literal en app/scalp_logic.py:844 |
-| `scalp.spot_delta_3m` | literal en app/scalp_logic.py:851 |
-| `scalp.spot_fut_divergence_norm` | literal en app/scalp_logic.py:859 |
-| `scalp.spot_price` | literal en app/scalp_logic.py:865 |
-| `scalp.spread_bps` | literal en app/scalp_logic.py:872 |
-| `scalp.state` | literal en app/scalp_logic.py:845 |
-| `scalp.vwap_dist_pct` | literal en app/scalp_logic.py:913 |
-| `scalp.wall_down_pct` | literal en app/scalp_logic.py:877 |
-| `scalp.wall_up_pct` | literal en app/scalp_logic.py:876 |
-| `scalp_persistence` | literal en app/api.py:3582 |
-| `scalp_persistence.as_of` | literal en app/api.py:3257 |
-| `scalp_persistence.available` | literal en app/api.py:3248 |
-| `scalp_persistence.dias` | literal en app/api.py:3256 |
-| `scalp_persistence.episodios` | literal en app/api.py:3252 |
-| `scalp_persistence.etiqueta` | literal en app/api.py:3258 |
-| `scalp_persistence.maximo_min` | literal en app/api.py:3251 |
-| `scalp_persistence.mediana_min` | literal en app/api.py:3249 |
-| `scalp_persistence.minutos_muestra` | literal en app/api.py:3253 |
-| `scalp_persistence.p90_min` | literal en app/api.py:3250 |
-| `scalp_persistence.p90_no_accionable_min` | literal en app/api.py:3254 |
-| `setup` | literal en app/api.py:3585 |
+| `scalp` | literal en app/api.py:3685 |
+| `scalp.absorption` | literal en app/scalp_logic.py:919 |
+| `scalp.absorption_context` | literal en app/scalp_logic.py:921 |
+| `scalp.absorption_delta_ratio` | literal en app/scalp_logic.py:920 |
+| `scalp.basis_bps` | literal en app/scalp_logic.py:871 |
+| `scalp.basis_detail` | literal en app/scalp_logic.py:873 |
+| `scalp.basis_status` | literal en app/scalp_logic.py:872 |
+| `scalp.book_lag_seconds` | literal en app/scalp_logic.py:875 |
+| `scalp.book_status` | literal en app/scalp_logic.py:874 |
+| `scalp.confidence` | literal en app/scalp_logic.py:851 |
+| `scalp.diff_3m` | literal en app/scalp_logic.py:859 |
+| `scalp.evidence_coverage_pct` | literal en app/scalp_logic.py:867 |
+| `scalp.expected_weight` | literal en app/scalp_logic.py:866 |
+| `scalp.fut_delta_1m` | literal en app/scalp_logic.py:853 |
+| `scalp.fut_delta_3m` | literal en app/scalp_logic.py:854 |
+| `scalp.fut_price` | literal en app/scalp_logic.py:869 |
+| `scalp.fut_volume_1m` | literal en app/scalp_logic.py:855 |
+| `scalp.imbalance_l1` | literal en app/scalp_logic.py:878 |
+| `scalp.imbalance_l10` | literal en app/scalp_logic.py:880 |
+| `scalp.imbalance_l5` | literal en app/scalp_logic.py:879 |
+| `scalp.liquidation_feed_health` | literal en app/scalp_logic.py:889 |
+| `scalp.liquidations_measured` | literal en app/scalp_logic.py:887 |
+| `scalp.liquidations_window` | literal en app/scalp_logic.py:888 |
+| `scalp.long_liq_5m` | literal en app/scalp_logic.py:883 |
+| `scalp.long_score` | literal en app/scalp_logic.py:848 |
+| `scalp.measured_weight` | literal en app/scalp_logic.py:865 |
+| `scalp.missing_components` | literal en app/scalp_logic.py:868 |
+| `scalp.oi_chg_15m_pct` | literal en app/scalp_logic.py:898 |
+| `scalp.oi_contributes_direction` | literal en app/scalp_logic.py:912 |
+| `scalp.oi_directional_support` | literal en app/scalp_logic.py:909 |
+| `scalp.oi_new_positioning` | literal en app/scalp_logic.py:910 |
+| `scalp.oi_now` | literal en app/scalp_logic.py:900 |
+| `scalp.oi_price_quadrant` | literal en app/scalp_logic.py:907 |
+| `scalp.oi_price_status` | literal en app/scalp_logic.py:916 |
+| `scalp.oi_reading` | literal en app/scalp_logic.py:908 |
+| `scalp.oi_start` | literal en app/scalp_logic.py:899 |
+| `scalp.oi_state` | literal en app/scalp_logic.py:906 |
+| `scalp.oi_timeframe` | literal en app/scalp_logic.py:911 |
+| `scalp.oi_window_end` | literal en app/scalp_logic.py:902 |
+| `scalp.oi_window_samples` | literal en app/scalp_logic.py:903 |
+| `scalp.oi_window_start` | literal en app/scalp_logic.py:901 |
+| `scalp.oi_window_status` | literal en app/scalp_logic.py:904 |
+| `scalp.price_move_15m_coverage` | literal en app/scalp_logic.py:915 |
+| `scalp.price_move_15m_pct` | literal en app/scalp_logic.py:913 |
+| `scalp.price_move_15m_status` | literal en app/scalp_logic.py:914 |
+| `scalp.price_move_3m_pct` | literal en app/scalp_logic.py:876 |
+| `scalp.reason` | literal en app/scalp_logic.py:852 |
+| `scalp.session_vwap` | literal en app/scalp_logic.py:917 |
+| `scalp.short_liq_5m` | literal en app/scalp_logic.py:884 |
+| `scalp.short_score` | literal en app/scalp_logic.py:849 |
+| `scalp.spot_delta_3m` | literal en app/scalp_logic.py:856 |
+| `scalp.spot_fut_divergence_norm` | literal en app/scalp_logic.py:864 |
+| `scalp.spot_price` | literal en app/scalp_logic.py:870 |
+| `scalp.spread_bps` | literal en app/scalp_logic.py:877 |
+| `scalp.state` | literal en app/scalp_logic.py:850 |
+| `scalp.vwap_dist_pct` | literal en app/scalp_logic.py:918 |
+| `scalp.wall_down_pct` | literal en app/scalp_logic.py:882 |
+| `scalp.wall_up_pct` | literal en app/scalp_logic.py:881 |
+| `scalp_persistence` | literal en app/api.py:3687 |
+| `scalp_persistence.as_of` | literal en app/api.py:3362 |
+| `scalp_persistence.available` | literal en app/api.py:3353 |
+| `scalp_persistence.dias` | literal en app/api.py:3361 |
+| `scalp_persistence.episodios` | literal en app/api.py:3357 |
+| `scalp_persistence.etiqueta` | literal en app/api.py:3363 |
+| `scalp_persistence.maximo_min` | literal en app/api.py:3356 |
+| `scalp_persistence.mediana_min` | literal en app/api.py:3354 |
+| `scalp_persistence.minutos_muestra` | literal en app/api.py:3358 |
+| `scalp_persistence.p90_min` | literal en app/api.py:3355 |
+| `scalp_persistence.p90_no_accionable_min` | literal en app/api.py:3359 |
+| `setup` | literal en app/api.py:3690 |
 | `setup.daily_flow_source` | literal en app/interpretation.py:201 |
 | `setup.daily_slope` | literal en app/interpretation.py:200 |
 | `setup.daily_streak` | literal en app/interpretation.py:199 |
 | `setup.primary` | literal en app/interpretation.py:202 |
 | `setup.setups` | literal en app/interpretation.py:203 |
 | `setup.warning` | literal en app/interpretation.py:204 |
-| `signal_base_rate` | literal en app/api.py:3584 |
-| `signal_base_rate.as_of` | literal en app/api.py:3472 |
-| `signal_base_rate.dias_pedidos` | literal en app/api.py:3468 |
-| `signal_base_rate.horizonte_min` | literal en app/api.py:3469 |
-| `signal_base_rate.ventana_pedida_desde` | literal en app/api.py:3470 |
-| `signal_base_rate.ventana_pedida_hasta` | literal en app/api.py:3471 |
-| `snapshot` | literal en app/api.py:3579 |
+| `signal_base_rate` | literal en app/api.py:3689 |
+| `signal_base_rate.as_of` | literal en app/api.py:3577 |
+| `signal_base_rate.dias_pedidos` | literal en app/api.py:3573 |
+| `signal_base_rate.horizonte_min` | literal en app/api.py:3574 |
+| `signal_base_rate.ventana_pedida_desde` | literal en app/api.py:3575 |
+| `signal_base_rate.ventana_pedida_hasta` | literal en app/api.py:3576 |
+| `snapshot` | literal en app/api.py:3684 |
 | `snapshot.btr_15m` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.btr_1h` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.btr_24h` | columna de metrics_snapshot (sql/schema.sql) |
@@ -182,7 +182,7 @@ Handler `dashboard_state` · `app/api.py:3562` (cuerpo hasta la 3589) · decorad
 | `snapshot.vol_24h` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.whale_intensity` | columna de metrics_snapshot (sql/schema.sql) |
 | `snapshot.whale_label` | columna de metrics_snapshot (sql/schema.sql) |
-| `symbol` | literal en app/api.py:3578 |
+| `symbol` | literal en app/api.py:3683 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -192,47 +192,47 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `daily_session_agg` — `sql/schema.sql:1039`, 37 columnas
+- `daily_session_agg` — `sql/schema.sql:1123`, 14 columnas
   - la llena `app.daily_agg.compute_session` (INSERT) — `app/daily_agg.py:206`
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:688`
-- `futures_trades_agg` — `sql/schema.sql:273`, 11 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1585`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:831`
-- `futures_trades_realtime` — `sql/schema.sql:256`, 11 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:802`
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1629`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:875`
+- `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `metric_baseline` — `sql/schema.sql:1272`, 14 columnas
-  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:798`
-- `metrics_snapshot` — `sql/schema.sql:952`, 35 columnas
+- `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
+  - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
+- `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:683`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:712`
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
-- `open_interest` — `sql/schema.sql:83`, 7 columnas
+- `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
-- `orderbook_snapshot` — `sql/schema.sql:287`, 19 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:874`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:930`
-- `signal_observation` — `sql/schema.sql:422`, 34 columnas
+- `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+- `signal_observation` — `sql/schema.sql:521`, 34 columnas
   - la llena `app.signal_ledger.persist_signal_observations` (INSERT) — `app/signal_ledger.py:371`
-- `signal_outcome` — `sql/schema.sql:572`, 27 columnas
+- `signal_outcome` — `sql/schema.sql:668`, 27 columnas
   - la llena `app.signal_outcomes.schedule_signal_outcomes` (INSERT) — `app/signal_outcomes.py:169`
   - la llena `app.signal_outcomes._finalize_not_evaluable` (UPDATE) — `app/signal_outcomes.py:199`
   - la llena `app.signal_outcomes._defer_missing_path` (UPDATE) — `app/signal_outcomes.py:226`
   - la llena `app.signal_outcomes._finalize_evaluated` (UPDATE) — `app/signal_outcomes.py:252`
-- `spot_trades_agg` — `sql/schema.sql:198`, 15 columnas
+- `spot_trades_agg` — `sql/schema.sql:299`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:681`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:277`
   - la llena `app.ws_collector._write_minute` (INSERT) — `app/ws_collector.py:298`
-- `spot_trades_realtime` — `sql/schema.sql:228`, 11 columnas
+- `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`
 
@@ -250,21 +250,21 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.daily_data` — `app/api.py:593`
-- `app.api.latest_snapshot` — `app/api.py:566`
-- `app.api.scalp_persistence` — `app/api.py:3222`
-- `app.api.signal_base_rate` — `app/api.py:3437`
-- `app.api.validate_symbol` — `app/api.py:259`
+- `app.api.daily_data` — `app/api.py:691`
+- `app.api.latest_snapshot` — `app/api.py:664`
+- `app.api.scalp_persistence` — `app/api.py:3327`
+- `app.api.signal_base_rate` — `app/api.py:3542`
+- `app.api.validate_symbol` — `app/api.py:260`
 - `app.interpretation.cvd_swing_read` — `app/interpretation.py:578`
 - `app.interpretation.evaluate_setups` — `app/interpretation.py:139`
-- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:628`
-- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1734`
-- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1304`
-- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:325`
+- `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
+- `app.scalp_logic.market_memory` — `app/scalp_logic.py:1739`
+- `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1309`
+- `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
 
 <details><summary>Alcanzables de forma indirecta (33)</summary>
 
-- `app.api.records` — `app/api.py:272`
+- `app.api.records` — `app/api.py:273`
 - `app.interpretation._barrier_candidates` — `app/interpretation.py:684`
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation._cvd_observation` — `app/interpretation.py:521`
@@ -275,25 +275,25 @@ Llamadas directas del handler:
 - `app.interpretation.market_memory_read` — `app/interpretation.py:400`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.metrics.current_nyse_start` — `app/metrics.py:20`
-- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:94`
-- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:590`
-- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:566`
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._first_present` — `app/scalp_logic.py:502`
-- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:514`
-- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:558`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._utc_now` — `app/scalp_logic.py:68`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:134`
-- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:231`
-- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:193`
-- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:158`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
-- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:292`
-- `app.scalp_logic.score_component` — `app/scalp_logic.py:317`
+- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
+- `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
+- `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
+- `app.scalp_logic._coverage_status` — `app/scalp_logic.py:571`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._first_present` — `app/scalp_logic.py:507`
+- `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:519`
+- `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:563`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._utc_now` — `app/scalp_logic.py:73`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
+- `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
+- `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
+- `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
+- `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
+- `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
@@ -312,7 +312,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -367,10 +367,10 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | funcion | por llamada | tabla k=0 | tabla k<=2 (cota) | total exacto | detalle |
 |---|---|---|---|---|---|
 | `app.api.validate_symbol` | 66 | **0** | 0 | **66** | [impacto](../impacto/app-api.md) |
-| `app.interpretation.evaluate_setups` | 4 | **0** | 56 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
+| `app.interpretation.evaluate_setups` | 4 | **0** | 48 ↑ | **4** | [impacto](../impacto/app-interpretation.md) |
 | `app.scalp_logic.as_float` | 38 | **0** | 11 ↑ | **38** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.resolve_matrix_as_of` | 24 | **0** | 12 ↑ | **24** | [impacto](../impacto/app-scalp_logic.md) |
-| `app.api.records` | 22 | **0** | 8 ↑ | **22** | [impacto](../impacto/app-api.md) |
+| `app.api.records` | 22 | **0** | 14 ↑ | **22** | [impacto](../impacto/app-api.md) |
 | `app.metrics.current_nyse_start` | 16 | **0** | 15 ↑ | **16** | [impacto](../impacto/app-metrics.md) |
 | `app.scalp_logic._explicit_as_of` | 25 | **0** | 0 | **25** | [impacto](../impacto/app-scalp_logic.md) |
 | `app.scalp_logic.compute_scalp_summary` | 10 | **0** | 25 ↑ | **10** | [impacto](../impacto/app-scalp_logic.md) |

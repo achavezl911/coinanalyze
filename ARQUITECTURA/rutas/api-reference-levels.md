@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `reference_levels_endpoint` · `app/api.py:2161` (cuerpo hasta la 2164) · decorador en la linea 2160.
+Handler `reference_levels_endpoint` · `app/api.py:2266` (cuerpo hasta la 2269) · decorador en la linea 2265.
 
 ## Parametros de entrada
 
@@ -18,28 +18,28 @@ Handler `reference_levels_endpoint` · `app/api.py:2161` (cuerpo hasta la 2164) 
 
 | campo | de donde sale |
 |---|---|
-| `current_day` | literal en app/scalp_logic.py:3576 |
-| `current_day.duracion_min` | literal en app/scalp_logic.py:3578 |
-| `current_day.en_curso` | literal en app/scalp_logic.py:3578 |
-| `current_day.high` | literal en app/scalp_logic.py:3576 |
-| `current_day.low` | literal en app/scalp_logic.py:3576 |
-| `current_day.open` | literal en app/scalp_logic.py:3576 |
-| `current_day.velas` | literal en app/scalp_logic.py:3577 |
-| `current_day.velas_posibles` | literal en app/scalp_logic.py:3577 |
-| `note` | literal en app/scalp_logic.py:3590 |
-| `opens` | literal en app/scalp_logic.py:3579 |
-| `opens.daily` | literal en app/scalp_logic.py:3580 |
-| `opens.monthly` | literal en app/scalp_logic.py:3582 |
-| `opens.weekly` | literal en app/scalp_logic.py:3581 |
-| `previous_day` | literal en app/scalp_logic.py:3574 |
-| `previous_day.close` | literal en app/scalp_logic.py:3574 |
-| `previous_day.en_curso` | literal en app/scalp_logic.py:3575 |
-| `previous_day.high` | literal en app/scalp_logic.py:3574 |
-| `previous_day.low` | literal en app/scalp_logic.py:3574 |
-| `previous_day.velas` | literal en app/scalp_logic.py:3575 |
-| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3575 |
-| `sessions_today_utc` | literal en app/scalp_logic.py:3584 |
-| `symbol` | literal en app/scalp_logic.py:3573 |
+| `current_day` | literal en app/scalp_logic.py:3575 |
+| `current_day.duracion_min` | literal en app/scalp_logic.py:3577 |
+| `current_day.en_curso` | literal en app/scalp_logic.py:3577 |
+| `current_day.high` | literal en app/scalp_logic.py:3575 |
+| `current_day.low` | literal en app/scalp_logic.py:3575 |
+| `current_day.open` | literal en app/scalp_logic.py:3575 |
+| `current_day.velas` | literal en app/scalp_logic.py:3576 |
+| `current_day.velas_posibles` | literal en app/scalp_logic.py:3576 |
+| `note` | literal en app/scalp_logic.py:3589 |
+| `opens` | literal en app/scalp_logic.py:3578 |
+| `opens.daily` | literal en app/scalp_logic.py:3579 |
+| `opens.monthly` | literal en app/scalp_logic.py:3581 |
+| `opens.weekly` | literal en app/scalp_logic.py:3580 |
+| `previous_day` | literal en app/scalp_logic.py:3573 |
+| `previous_day.close` | literal en app/scalp_logic.py:3573 |
+| `previous_day.en_curso` | literal en app/scalp_logic.py:3574 |
+| `previous_day.high` | literal en app/scalp_logic.py:3573 |
+| `previous_day.low` | literal en app/scalp_logic.py:3573 |
+| `previous_day.velas` | literal en app/scalp_logic.py:3574 |
+| `previous_day.velas_posibles` | literal en app/scalp_logic.py:3574 |
+| `sessions_today_utc` | literal en app/scalp_logic.py:3583 |
+| `symbol` | literal en app/scalp_logic.py:3572 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -49,7 +49,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -62,12 +62,12 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3505`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.reference_levels` — `app/scalp_logic.py:3504`
 
 <details><summary>Alcanzables de forma indirecta (1)</summary>
 
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 
@@ -83,7 +83,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

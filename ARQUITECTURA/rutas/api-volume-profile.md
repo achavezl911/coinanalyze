@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `volume_profile_endpoint` · `app/api.py:1984` (cuerpo hasta la 1987) · decorador en la linea 1983.
+Handler `volume_profile_endpoint` · `app/api.py:2089` (cuerpo hasta la 2092) · decorador en la linea 2088.
 
 ## Parametros de entrada
 
@@ -18,23 +18,23 @@ Handler `volume_profile_endpoint` · `app/api.py:1984` (cuerpo hasta la 1987) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3958 |
-| `available` | literal en app/scalp_logic.py:3959 |
-| `note` | literal en app/scalp_logic.py:3969 |
-| `session` | literal en app/scalp_logic.py:3960 |
-| `session.hvn` | literal en app/scalp_logic.py:3908 |
-| `session.lvn` | literal en app/scalp_logic.py:3909 |
-| `session.poc` | literal en app/scalp_logic.py:3905 |
-| `session.vah` | literal en app/scalp_logic.py:3906 |
-| `session.val` | literal en app/scalp_logic.py:3907 |
-| `symbol` | literal en app/scalp_logic.py:3957 |
-| `vwap` | literal en app/scalp_logic.py:3961 |
-| `vwap.bands` | literal en app/scalp_logic.py:3964 |
-| `vwap.distinct_from` | literal en app/scalp_logic.py:3967 |
-| `vwap.market` | literal en app/scalp_logic.py:3965 |
-| `vwap.session_convention` | literal en app/scalp_logic.py:3966 |
-| `vwap.utc_day` | literal en app/scalp_logic.py:3962 |
-| `vwap.weekly` | literal en app/scalp_logic.py:3963 |
+| `as_of` | literal en app/scalp_logic.py:3957 |
+| `available` | literal en app/scalp_logic.py:3958 |
+| `note` | literal en app/scalp_logic.py:3968 |
+| `session` | literal en app/scalp_logic.py:3959 |
+| `session.hvn` | literal en app/scalp_logic.py:3907 |
+| `session.lvn` | literal en app/scalp_logic.py:3908 |
+| `session.poc` | literal en app/scalp_logic.py:3904 |
+| `session.vah` | literal en app/scalp_logic.py:3905 |
+| `session.val` | literal en app/scalp_logic.py:3906 |
+| `symbol` | literal en app/scalp_logic.py:3956 |
+| `vwap` | literal en app/scalp_logic.py:3960 |
+| `vwap.bands` | literal en app/scalp_logic.py:3963 |
+| `vwap.distinct_from` | literal en app/scalp_logic.py:3966 |
+| `vwap.market` | literal en app/scalp_logic.py:3964 |
+| `vwap.session_convention` | literal en app/scalp_logic.py:3965 |
+| `vwap.utc_day` | literal en app/scalp_logic.py:3961 |
+| `vwap.weekly` | literal en app/scalp_logic.py:3962 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -44,7 +44,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -57,15 +57,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3913`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.volume_profile` — `app/scalp_logic.py:3912`
 
 <details><summary>Alcanzables de forma indirecta (4)</summary>
 
-- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2586`
-- `app.scalp_logic._profile` — `app/scalp_logic.py:3876`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
-- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2592`
+- `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
+- `app.scalp_logic._profile` — `app/scalp_logic.py:3875`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
+- `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 </details>
 
@@ -81,7 +81,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 

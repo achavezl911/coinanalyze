@@ -4,9 +4,11 @@
     al sello entra nunca (por eso una entrada sellada no puede saber su precio).
   MERCADO: se llena a la APERTURA de esa vela; esa misma vela ya cuenta para stop y objetivo. Su `entrada` es solo la
     referencia del sello (stop y objetivo son niveles fijos calculados sobre ella); d sale del precio LLENADO.
-  LIMITE: se llena AL NIVEL cuando una vela lo toca (largo: minimo <= nivel; corto: maximo >= nivel), aunque abra mas
-    alla (conservador: no se apunta la mejora). En la vela del llenado cuenta el stop, NO el objetivo (no se sabe si el
-    objetivo fue antes o despues del llenado). Sin llenar al llegar `caduca` -> «caducada», R 0.
+  LIMITE: se llena AL NIVEL cuando una vela lo toca (largo: minimo <= nivel; corto: maximo >= nivel). En la vela del
+    llenado cuenta el stop, NO el objetivo (no se sabe si el objetivo fue antes o despues del llenado). Sin llenar al
+    llegar `caduca` -> «caducada», R 0. LLEGA CRUZADA: si la PRIMERA vela que cuenta ya ABRE mas alla del nivel, la
+    orden era ejecutable al llegar: se llena a esa apertura como la de mercado (comision de tomador, la vela cuenta
+    entera) y el resultado lleva `regla` = REGLA_CRUZADA (llenado-r1; antes, al nivel con comision maker).
   DESPUES: la primera vela que toca el stop o el objetivo; si toca los dos, gana el stop. Si una vela ABRE mas alla del
     stop, se sale a su apertura. Al cumplirse `plazo_s` desde el llenado, salida al cierre de esa vela («plazo»).
   COSTE (en fraccion del nominal de entrada): entrada limite 2 pb (maker), entrada a mercado 5.5 pb y TODA salida 5.5 pb
@@ -24,6 +26,7 @@ from __future__ import annotations
 PASO, SELLO_FUNDING = 300, 28800
 INDECIDIBLE_S = 3 * 86400
 COM_MAKER, COM_TAKER, SLIP_STOP, FUNDING = 0.0002, 0.00055, 0.0010, 0.0001
+REGLA_CRUZADA = "limite-cruzada-a-la-apertura"
 
 
 def primera_vela(sello: int) -> int:
@@ -39,7 +42,7 @@ def resuelve(p: dict, velas: dict, ahora: int, publicas: frozenset | set = froze
     mercado = p["orden"] == "mercado"
     ultima = max((t for t in velas if t + PASO <= ahora), default=None)
     t = primera_vela(int(p["sello"]))
-    t_ll, n_pub = None, 0
+    t_ll, n_pub, cruzada = None, 0, False
     while True:
         if ultima is None or t > ultima:
             return {"estado": "pendiente", "hueco": None, "hasta": ultima}
@@ -53,6 +56,8 @@ def resuelve(p: dict, velas: dict, ahora: int, publicas: frozenset | set = froze
                 return {"estado": "resuelta", "resultado": _sin_llenar(p, t)}
             if mercado:
                 e, t_ll, misma = o, t, False
+            elif t == primera_vela(int(p["sello"])) and s * (o - e) < 0:  # llega cruzada: tomador a la apertura
+                e, t_ll, misma, cruzada = o, t, False, True
             elif (lo <= e) if s > 0 else (hi >= e):
                 t_ll, misma = t, True
             else:
@@ -76,7 +81,9 @@ def resuelve(p: dict, velas: dict, ahora: int, publicas: frozenset | set = froze
         else:
             t += PASO
             continue
-        r = _cuenta(p, s, e, d, t_ll, t + PASO, px, como, mercado)
+        r = _cuenta(p, s, e, d, t_ll, t + PASO, px, como, mercado or cruzada)
+        if cruzada:
+            r["regla"] = REGLA_CRUZADA
         if n_pub:
             r["velas_publicas"] = n_pub
         return {"estado": "resuelta", "resultado": r}
@@ -95,8 +102,8 @@ def _sin_llenar(p: dict, t: int) -> dict:
             "px_salida": None, "t_salida": int(p["caduca"]), "r_neto": 0.0, "usd_neto": 0.0, "coste": {}}
 
 
-def _cuenta(p: dict, s: int, e: float, d: float, t_ll: int, t_sal: int, px: float, como: str, mercado: bool) -> dict:
-    com_e = COM_TAKER if mercado else COM_MAKER
+def _cuenta(p: dict, s: int, e: float, d: float, t_ll: int, t_sal: int, px: float, como: str, taker: bool) -> dict:
+    com_e = COM_TAKER if taker else COM_MAKER
     sellos = t_sal // SELLO_FUNDING - t_ll // SELLO_FUNDING
     fund = FUNDING * sellos
     neto = s * (px / e - 1) - com_e - COM_TAKER - fund

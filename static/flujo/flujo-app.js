@@ -339,8 +339,9 @@ async function late() {
   });
   LIENZO.actualiza();
   pintaEstado();
-  if (MODELO.velas.length > antes) refrescaCapas();
-  if (MODELO.velas.length > antes) cargaVistaIndicadores(mia); // OF-5a
+  const nueva = MODELO.velas.length > antes;
+  if (nueva) refrescaCapas();
+  if (nueva || reloj() - IND.pedido >= IND_REFRESCO_S * 1000) cargaVistaIndicadores(mia); // OF-5a, U-05
 }
 
 function arrancaLatido() {
@@ -449,6 +450,11 @@ function pintaEstado(pidiendo) {
     } else if (MODELO.paso_auto) titulo.push('paso automático: la vela mediana toca ' + MODELO.paso_auto.niveles_vela_mediana
       + ' niveles · ' + MODELO.paso_auto.regla);
     if (!VISTA.hasta) titulo.push('vivo: la vela en curso se pide cada ' + VIVO_S + ' s');
+    if (panelesDe(VISTA).some((c) => IND_SERIE[c]) && IND.datos && IND.leido !== null) { // U-05: la edad de los paneles
+      const edadInd = Math.round((reloj() - IND.leido) / 1000);
+      pon(' · indicadores leídos hace ' + edadInd + ' s');
+      if (!VISTA.hasta) titulo.push('indicadores: se piden cada ' + IND_REFRESCO_S + ' s y con cada vela nueva');
+    }
     if (VISTA.capas.length || VISTA.compuesto || VISTA.fijo) {
       pon(' · capas');
       titulo.push(textoCapas());

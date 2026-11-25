@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_map_endpoint` · `app/api.py:1977` (cuerpo hasta la 1980) · decorador en la linea 1976.
+Handler `liquidation_map_endpoint` · `app/api.py:2082` (cuerpo hasta la 2085) · decorador en la linea 2081.
 
 ## Parametros de entrada
 
@@ -18,25 +18,25 @@ Handler `liquidation_map_endpoint` · `app/api.py:1977` (cuerpo hasta la 1980) �
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/scalp_logic.py:3852 |
-| `atr_1h` | literal en app/scalp_logic.py:3851 |
-| `available` | literal en app/scalp_logic.py:3848 |
-| `bucket_size` | literal en app/scalp_logic.py:3856 |
-| `buckets_total` | literal en app/scalp_logic.py:3861 |
-| `cumulative_within_band` | literal en app/scalp_logic.py:3869 |
-| `current_price` | literal en app/scalp_logic.py:3850 |
-| `feed_alive` | literal en app/scalp_logic.py:3865 |
-| `feed_reason` | literal en app/scalp_logic.py:3867 |
-| `feed_status` | literal en app/scalp_logic.py:3866 |
-| `levels` | literal en app/scalp_logic.py:3868 |
-| `levels_shown` | literal en app/scalp_logic.py:3862 |
-| `note` | literal en app/scalp_logic.py:3870 |
-| `symbol` | literal en app/scalp_logic.py:3847 |
-| `type` | literal en app/scalp_logic.py:3849 |
-| `window_end` | literal en app/scalp_logic.py:3854 |
-| `window_minutes` | literal en app/scalp_logic.py:3855 |
-| `window_notional` | literal en app/scalp_logic.py:3863 |
-| `window_start` | literal en app/scalp_logic.py:3853 |
+| `as_of` | literal en app/scalp_logic.py:3851 |
+| `atr_1h` | literal en app/scalp_logic.py:3850 |
+| `available` | literal en app/scalp_logic.py:3847 |
+| `bucket_size` | literal en app/scalp_logic.py:3855 |
+| `buckets_total` | literal en app/scalp_logic.py:3860 |
+| `cumulative_within_band` | literal en app/scalp_logic.py:3868 |
+| `current_price` | literal en app/scalp_logic.py:3849 |
+| `feed_alive` | literal en app/scalp_logic.py:3864 |
+| `feed_reason` | literal en app/scalp_logic.py:3866 |
+| `feed_status` | literal en app/scalp_logic.py:3865 |
+| `levels` | literal en app/scalp_logic.py:3867 |
+| `levels_shown` | literal en app/scalp_logic.py:3861 |
+| `note` | literal en app/scalp_logic.py:3869 |
+| `symbol` | literal en app/scalp_logic.py:3846 |
+| `type` | literal en app/scalp_logic.py:3848 |
+| `window_end` | literal en app/scalp_logic.py:3853 |
+| `window_minutes` | literal en app/scalp_logic.py:3854 |
+| `window_notional` | literal en app/scalp_logic.py:3862 |
+| `window_start` | literal en app/scalp_logic.py:3852 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -46,13 +46,13 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
-- `market_feed_health` — `sql/schema.sql:1325`, 7 columnas
+- `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
-- `ohlcv` — `sql/schema.sql:54`, 13 columnas
+- `ohlcv` — `sql/schema.sql:156`, 13 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:655`
   - la llena `app.ingest.upsert_ohlcv` (INSERT) — `app/ingest.py:155`
   - la llena `app.ingest.rollup_ohlcv_5m` (INSERT) — `app/ingest.py:201`
@@ -65,17 +65,17 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3771`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.liquidation_map` — `app/scalp_logic.py:3770`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
-- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:543`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3240`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4189`
-- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1227`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3229`
-- `app.scalp_logic.as_float` — `app/scalp_logic.py:920`
+- `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4188`
+- `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3228`
+- `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 
 </details>
 
@@ -91,7 +91,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -104,7 +104,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:43`, `harness/checks/K42-mapa-liquidaciones-cuadra.sh:44`, `harness/checks/K43-foto-unica.sh:166`, `harness/checks/K43-foto-unica.sh:224` | `harness/checks/K42-mapa-liquidaciones-cuadra.sh:8`, `harness/checks/K43-foto-unica.sh:81`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:31` |
 | **panel** | — | `static/js/10-contexto-y-estructura.js:498` |
 | **panel-html** | — | `static/index.html:245` |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:308` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:309` | — |
 | **tests** | `tests/js/mesa_f12a.test.js:146` | `tests/test_liquidation_map_ventana.py:1` |
 
 **La llama el panel: es superficie de producto.**

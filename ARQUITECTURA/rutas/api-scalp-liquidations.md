@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_liquidations` · `app/api.py:1857` (cuerpo hasta la 1860) · decorador en la linea 1856.
+Handler `scalp_liquidations` · `app/api.py:1962` (cuerpo hasta la 1965) · decorador en la linea 1961.
 
 ## Parametros de entrada
 
@@ -18,9 +18,9 @@ Handler `scalp_liquidations` · `app/api.py:1857` (cuerpo hasta la 1860) · deco
 
 | campo | de donde sale |
 |---|---|
-| `matrix` | literal en app/scalp_logic.py:5836 |
-| `recent` | literal en app/scalp_logic.py:5836 |
-| `symbol` | literal en app/scalp_logic.py:5836 |
+| `matrix` | literal en app/scalp_logic.py:5835 |
+| `recent` | literal en app/scalp_logic.py:5835 |
+| `symbol` | literal en app/scalp_logic.py:5835 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -30,7 +30,7 @@ Tipo declarado en la firma: `dict[str, Any]`.
 
 LEE:
 
-- `liquidations_realtime` — `sql/schema.sql:339`, 9 columnas
+- `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
 
 ## Funciones que la componen
@@ -40,8 +40,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.validate_symbol` — `app/api.py:259`
-- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5778`
+- `app.api.validate_symbol` — `app/api.py:260`
+- `app.scalp_logic.scalp_liquidations` — `app/scalp_logic.py:5777`
 
 <details><summary>Llamadas que salen del arbol o no se resuelven (1)</summary>
 
@@ -55,7 +55,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 404 | Unknown symbol | `app/api.py:261` | una funcion de su cierre |
+| 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)
 
@@ -66,7 +66,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K43-foto-unica.sh:158`, `harness/checks/K43-foto-unica.sh:227`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:171`, `harness/checks/K80-la-matriz-cambia-de-universo.sh:172` _(+1)_ | — |
-| **panel-sobre** | `static/js/07-decision-y-ciclos.js:379` | — |
+| **panel-sobre** | `static/js/07-decision-y-ciclos.js:380` | — |
 
 **La llama el panel: es superficie de producto.**
 

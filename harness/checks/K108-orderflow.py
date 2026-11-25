@@ -621,8 +621,8 @@ def juzga_indicadores(db: str, activo: str, sv: dict) -> list[str]:
                      f"{_iso_ms(borde)}")
     filas = sql(db, f"SELECT (extract(epoch FROM ts) * 1000)::bigint, exchange, side, notional_usd, price, qty "
                     f"FROM liquidations_realtime WHERE symbol = '{simbolo}' AND ts >= '{_iso_ms(borde)}' "
-                    f"AND ts < '{_iso_ms(b)}' ORDER BY ts, exchange, event_id LIMIT 5001")
-    mias = [(int(f[0]), f[1], f[2], Decimal(f[3]), Decimal(f[4]), Decimal(f[5])) for f in filas][:5000]
+                    f"AND ts < '{_iso_ms(b)}' ORDER BY ts DESC, exchange DESC, event_id DESC LIMIT 5001")
+    mias = [(int(f[0]), f[1], f[2], Decimal(f[3]), Decimal(f[4]), Decimal(f[5])) for f in reversed(filas)][-5000:]
     suyas = [(_ms(e["ts"]), e["exchange"], e["lado"], Decimal(e["usd"]), Decimal(e["precio"]), Decimal(e["cantidad"]))
              for e in sw.get("eventos") or []]
     if mias != suyas:

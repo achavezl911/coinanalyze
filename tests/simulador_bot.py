@@ -389,12 +389,13 @@ class BaseFalsa:
                 return "INSERT 0 0"
             self.evento.append({"ts": ahora, "tipo": tipo, "symbol": sym, "minuto": minuto, "enviada": enviada, "detalle": json.loads(det)})
         elif "INSERT INTO bot_evaluacion" in sql and "'veredicto'" in sql:
-            pos, v, _vd, det = a
-            self.evaluacion.append({"ts": ahora, "tipo": "veredicto", "posicion": pos, "veredicto": v, "detalle": json.loads(det)})
-        elif "INSERT INTO bot_evaluacion" in sql and "'cierre'" in sql:
-            pos, v, pnl, acierto, det = a
-            self.evaluacion.append({"ts": ahora, "tipo": "cierre", "posicion": pos, "veredicto": v, "pnl": pnl, "acierto": acierto,
+            pos, v, vd, det = a
+            self.evaluacion.append({"ts": ahora, "tipo": "veredicto", "posicion": pos, "veredicto": v, "veredicto_decide": vd,
                                     "detalle": json.loads(det)})
+        elif "INSERT INTO bot_evaluacion" in sql and "'cierre'" in sql:
+            pos, v, vd, pnl, acierto, det = a  # (AUDITOR R2: con veredicto_decide)
+            self.evaluacion.append({"ts": ahora, "tipo": "cierre", "posicion": pos, "veredicto": v, "veredicto_decide": vd, "pnl": pnl,
+                                    "acierto": acierto, "detalle": json.loads(det)})
         elif "INSERT INTO bot_operacion" in sql:
             orden, sym, q, e, x, pnl, _lev, ms, det = a
             if orden in self.operacion:
@@ -429,6 +430,9 @@ class BaseFalsa:
             return next((e["veredicto"] for e in sorted(self.evaluacion, key=lambda e: e["ts"]) if e["tipo"] == "cierre" and e["posicion"] == a[0]), None)
         if "SELECT 1 FROM bot_evaluacion WHERE tipo = 'cierre'" in sql:
             return 1 if any(e["tipo"] == "cierre" and e["posicion"] == a[0] for e in self.evaluacion) else None
+        if "SELECT detalle->'medicion' FROM bot_evaluacion WHERE tipo = 'cierre'" in sql:  # AUDITOR R2: la de su primer cierre
+            return next((json.dumps(e["detalle"].get("medicion")) for e in sorted(self.evaluacion, key=lambda e: e["ts"])
+                         if e["tipo"] == "cierre" and e["posicion"] == a[0]), None)
         raise AssertionError(f"consulta no prevista: {sql[:120]}")
 
     async def fetchrow(self, sql, *a):
@@ -437,6 +441,12 @@ class BaseFalsa:
             return Rec({"t": int(self.estado[0] // 1000), "estado": self.estado[1]}) if self.estado else None
         if "tipo = 'validacion'" in sql:
             return None
+        if "tipo = 'veredicto' AND posicion = $1" in sql:  # AUDITOR R2: su primer veredicto automatico
+            e = next((e for e in sorted(self.evaluacion, key=lambda e: e["ts"]) if e["tipo"] == "veredicto" and e["posicion"] == a[0]
+                      and str(e["detalle"].get("motivo", "")).startswith("posicion nueva")), None)
+            return None if e is None else Rec({"veredicto": e["veredicto"], "fuente": e["detalle"].get("fuente"),
+                                               "veredicto_decide": e.get("veredicto_decide"),
+                                               "auditor": json.dumps(e["detalle"].get("auditor")), "llamada": e["detalle"].get("llamada")})
         raise AssertionError(f"consulta no prevista: {sql[:120]}")
 
     async def fetch(self, sql, *a):
@@ -451,7 +461,9 @@ class BaseFalsa:
                 if e["tipo"] == "veredicto" and e["posicion"] not in cerradas and \
                         (not automatica or str(e["detalle"].get("motivo", "")).startswith("posicion nueva")):
                     primero.setdefault(e["posicion"], e)
-            return [Rec({"posicion": p, "veredicto": e["veredicto"], "p": json.dumps(e["detalle"].get("posicion")), "ms": int(e["ts"])})
+            return [Rec({"posicion": p, "veredicto": e["veredicto"], "p": json.dumps(e["detalle"].get("posicion")), "ms": int(e["ts"]),
+                         "fuente": e["detalle"].get("fuente"), "vd": e.get("veredicto_decide"),
+                         "auditor": json.dumps(e["detalle"].get("auditor")), "llamada": e["detalle"].get("llamada")})
                     for p, e in primero.items()]
         if "tipo IN ('stop', 'liquidacion', 'sin_stop')" in sql:
             out = []

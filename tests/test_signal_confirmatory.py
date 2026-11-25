@@ -107,7 +107,7 @@ def test_validate_confirmatory_contract_allows_unrestricted_manifest_symbols() -
 
 
 # ---------------------------------------------------------------------------
-# Baseline: block_unconditional_direction_matched_baseline_v1.
+# Baseline: block_unconditional_direction_matched_baseline_v2.
 # ---------------------------------------------------------------------------
 
 
