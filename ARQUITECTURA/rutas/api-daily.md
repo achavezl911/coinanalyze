@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `daily` · `app/api.py:2458` (cuerpo hasta la 2539) · decorador en la linea 2457.
+Handler `daily` · `app/api.py:2509` (cuerpo hasta la 2590) · decorador en la linea 2508.
 
 ## Parametros de entrada
 
@@ -21,18 +21,18 @@ Handler `daily` · `app/api.py:2458` (cuerpo hasta la 2539) · decorador en la l
 
 | campo | de donde sale |
 |---|---|
-| `coverage_note` | literal en app/api.py:797 |
-| `data_gaps` | asignado en app/api.py:2522 |
-| `knowledge_time_replay` | literal en app/api.py:794 |
-| `projection_latest_session_date` | literal en app/api.py:790 |
-| `quick_read` | literal en app/api.py:795 |
-| `rows` | literal en app/api.py:786 |
-| `sources` | literal en app/api.py:796 |
-| `streak` | literal en app/api.py:784 |
-| `streak_source` | literal en app/api.py:785 |
-| `symbol` | literal en app/api.py:783 |
-| `temporal_semantics` | literal en app/api.py:793 |
-| `through_session_date` | literal en app/api.py:787 |
+| `coverage_note` | literal en app/api.py:848 |
+| `data_gaps` | asignado en app/api.py:2573 |
+| `knowledge_time_replay` | literal en app/api.py:845 |
+| `projection_latest_session_date` | literal en app/api.py:841 |
+| `quick_read` | literal en app/api.py:846 |
+| `rows` | literal en app/api.py:837 |
+| `sources` | literal en app/api.py:847 |
+| `streak` | literal en app/api.py:835 |
+| `streak_source` | literal en app/api.py:836 |
+| `symbol` | literal en app/api.py:834 |
+| `temporal_semantics` | literal en app/api.py:844 |
+| `through_session_date` | literal en app/api.py:838 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -73,8 +73,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:645`
-- `app.api.daily_data` — `app/api.py:691`
+- `app.api._session_window` — `app/api.py:696`
+- `app.api.daily_data` — `app/api.py:742`
 - `app.api.mask_gapped_series_rows` — `app/api.py:296`
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:212`
@@ -112,7 +112,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
-| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2465` | el propio handler |
+| 400 | PIT replay is not supported by /api/daily; use through_session_date to limit the current mutable projection | `app/api.py:2516` | el propio handler |
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
 
 ## Superficie · quien la consume (medido)

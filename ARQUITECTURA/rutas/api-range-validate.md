@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `range_validate_endpoint` · `app/api.py:2174` (cuerpo hasta la 2204) · decorador en la linea 2173.
+Handler `range_validate_endpoint` · `app/api.py:2225` (cuerpo hasta la 2255) · decorador en la linea 2224.
 
 ## Parametros de entrada
 
@@ -24,7 +24,7 @@ Handler `range_validate_endpoint` · `app/api.py:2174` (cuerpo hasta la 2204) ·
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | asignado en app/api.py:2143 |
+| `as_of` | asignado en app/api.py:2194 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -49,13 +49,13 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.sella_respuesta` — `app/api.py:2131`
+- `app.api.sella_respuesta` — `app/api.py:2182`
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.range_validate` — `app/scalp_logic.py:1586`
 
 <details><summary>Alcanzables de forma indirecta (7)</summary>
 
-- `app.api._utc_iso` — `app/api.py:2599`
+- `app.api._utc_iso` — `app/api.py:2650`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.zones._atr_abs` — `app/zones.py:545`
 - `app.zones._edge_episodes` — `app/zones.py:525`
@@ -80,12 +80,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | low must be below high | `app/api.py:2189` | el propio handler |
-| 422 | range spans more than 3x; narrow it | `app/api.py:2191` | el propio handler |
-| 422 | start_date and end_date must come together | `app/api.py:2193` | el propio handler |
-| 422 | start_date must be before end_date | `app/api.py:2196` | el propio handler |
-| 422 | span exceeds the 730 days of history | `app/api.py:2198` | el propio handler |
-| 422 | days + end_days_ago exceeds daily history | `app/api.py:2200` | el propio handler |
+| 422 | low must be below high | `app/api.py:2240` | el propio handler |
+| 422 | range spans more than 3x; narrow it | `app/api.py:2242` | el propio handler |
+| 422 | start_date and end_date must come together | `app/api.py:2244` | el propio handler |
+| 422 | start_date must be before end_date | `app/api.py:2247` | el propio handler |
+| 422 | span exceeds the 730 days of history | `app/api.py:2249` | el propio handler |
+| 422 | days + end_days_ago exceeds daily history | `app/api.py:2251` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

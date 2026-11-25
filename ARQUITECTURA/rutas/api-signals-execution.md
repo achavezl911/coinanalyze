@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `signals_execution` · `app/api.py:2952` (cuerpo hasta la 3026) · decorador en la linea 2951.
+Handler `signals_execution` · `app/api.py:3003` (cuerpo hasta la 3077) · decorador en la linea 3002.
 
 ## Parametros de entrada
 
@@ -23,16 +23,16 @@ Handler `signals_execution` · `app/api.py:2952` (cuerpo hasta la 3026) · decor
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3020 |
-| `count` | literal en app/api.py:3023 |
-| `exchange` | literal en app/api.py:3021 |
-| `limit` | literal en app/api.py:3022 |
-| `since` | literal en app/api.py:3017 |
-| `snapshots` | literal en app/api.py:3025 |
-| `symbol` | literal en app/api.py:3016 |
-| `truncated` | literal en app/api.py:3024 |
-| `until` | literal en app/api.py:3018 |
-| `ventana_maxima_h` | literal en app/api.py:3019 |
+| `as_of` | literal en app/api.py:3071 |
+| `count` | literal en app/api.py:3074 |
+| `exchange` | literal en app/api.py:3072 |
+| `limit` | literal en app/api.py:3073 |
+| `since` | literal en app/api.py:3068 |
+| `snapshots` | literal en app/api.py:3076 |
+| `symbol` | literal en app/api.py:3067 |
+| `truncated` | literal en app/api.py:3075 |
+| `until` | literal en app/api.py:3069 |
+| `ventana_maxima_h` | literal en app/api.py:3070 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -54,8 +54,8 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._utc_iso` — `app/api.py:2599`
-- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2719`
+- `app.api._utc_iso` — `app/api.py:2650`
+- `app.api.rechaza_parametros_desconocidos` — `app/api.py:2770`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
 
@@ -83,12 +83,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | — | `app/api.py:2728` | una funcion de su cierre |
-| 422 | exchange tiene que ser binance o bybit | `app/api.py:2973` | el propio handler |
-| 422 | — | `app/api.py:2978` | el propio handler |
-| 422 | since/until necesitan zona horaria explicita | `app/api.py:2980` | el propio handler |
-| 422 | until tiene que ser posterior a since | `app/api.py:2982` | el propio handler |
-| 422 | — | `app/api.py:2984` | el propio handler |
+| 422 | — | `app/api.py:2779` | una funcion de su cierre |
+| 422 | exchange tiene que ser binance o bybit | `app/api.py:3024` | el propio handler |
+| 422 | — | `app/api.py:3029` | el propio handler |
+| 422 | since/until necesitan zona horaria explicita | `app/api.py:3031` | el propio handler |
+| 422 | until tiene que ser posterior a since | `app/api.py:3033` | el propio handler |
+| 422 | — | `app/api.py:3035` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

@@ -26,14 +26,15 @@
 # O SEA QUE LAS LINEAS 1631-2165 NO SON UNA DUPLICACION: son
 # sql/migrations/20260809_temporal_partitioning.sql copiado BYTE A BYTE como transaccion
 # previa -535 lineas, de su BEGIN; a su COMMIT;-, y el test lo exige con
-# `assert MIGRATION.strip() in schema`. Los cinco «duplicados» son objetos que esa migracion
+# `assert MIGRATION.strip() in schema`. (Desde ESQUEMA R1, #285, salvo el trigger de evento
+# unico, que va envuelto en esquema_ddl(); ver envuelta() abajo.) Los cinco «duplicados» son objetos que esa migracion
 # crea; sus primeras declaraciones (354, 377, 1470, 1541, 1593) estan todas FUERA.
 #
 # QUE HACE AHORA ESTE CHECK, Y QUE NO HACE:
 #   · EXCLUYE la region incrustada y mide solo lo de FUERA. Medido el 2026-09-06: fuera hay
 #     122 objetos CREATE y CERO duplicados.
 #   · NO comprueba que la region siga igual al fichero de migracion. Se penso hacerlo y se
-#     descarto al medirlo: `MIGRATION.strip() in schema` ya es exactamente esa pregunta, y la
+#     descarto al medirlo: `migracion_en_linea(MIGRATION) in schema` ya es esa pregunta, y la
 #     contesta mejor -compara contra el FICHERO, no contra un marcador escrito a mano-.
 #     Duplicar un test dentro de un check no es cobertura, es ruido.
 #   · Los limites de la region se DERIVAN del fichero de migracion, con el mismo instrumento
@@ -81,15 +82,41 @@ L = texto.splitlines()
 # Es el mismo instrumento que usa el test que la exige, asi que si alguien mueve la region,
 # este check la sigue; y si alguien la edita, el que enrojece es el test, que es su sitio.
 mig = Path(sys.argv[2]).read_text(encoding="utf-8", errors="replace").strip()
-i = texto.find(mig)
+
+# DESDE ESQUEMA R1 (#285, V-03) LA COPIA YA NO ES BYTE A BYTE: el DROP/CREATE del trigger de
+# evento unico va por esquema_ddl(). Se busca la migracion CON ESA MISMA SUSTITUCION, contada
+# == 1 como hace migracion_en_linea() en tests/test_partitioning_postgres.py:19, y si no, la
+# copia literal de antes de #285. Se repite aqui y no se importa del test porque el check corre
+# sobre arboles sin ese test (K16-control). Si la envoltura cambia otra vez, NOMED, no VERDE.
+def envuelta(m):
+    for viejo, nuevo in (
+        ("DROP TRIGGER IF EXISTS liquidations_realtime_event_unique_trigger\n    ON liquidations_realtime;\n"
+         "CREATE TRIGGER liquidations_realtime_event_unique_trigger",
+         "SELECT esquema_ddl($ddl$CREATE TRIGGER liquidations_realtime_event_unique_trigger"),
+        ("FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique();",
+         "FOR EACH ROW EXECUTE FUNCTION enforce_liquidation_event_unique()$ddl$);"),
+    ):
+        if m.count(viejo) != 1:
+            return None
+        m = m.replace(viejo, nuevo)
+    return m
+
+i = -1
+for forma, m in (("ENVUELTA", envuelta(mig)), ("LITERAL", mig)):
+    if m is not None and texto.count(m) == 1:
+        i, mig = texto.find(m), m
+        break
 if i < 0:
     print("SINREGION")
     raise SystemExit
 r_ini = texto[:i].count("\n") + 1
 r_fin = r_ini + mig.count("\n")
 
+# ESQUEMA R1 (#285) envolvio 115 CREATE en `SELECT esquema_ddl($ddl$CREATE ...$ddl$);`. Sin el
+# prefijo opcional el analizador dejaba de verlos: con el schema.sql de main contaba 85 objetos
+# donde 6c5b193 daba 198, y un duplicado envuelto no se comparaba con nada.
 RE_C = re.compile(
-    r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?"
+    r"^\s*(?:SELECT\s+esquema_ddl\(\$ddl\$\s*)?CREATE\s+(?:OR\s+REPLACE\s+)?"
     r"(TABLE|INDEX|UNIQUE\s+INDEX|FUNCTION|VIEW|MATERIALIZED\s+VIEW|TYPE|TRIGGER|SCHEMA|EXTENSION)\s+"
     r"(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z_][A-Za-z0-9_.]*)", re.IGNORECASE)
 
@@ -117,6 +144,9 @@ def tokens(t):
     # blancos desplazados. Ahora hay uno (N5).
     txt = " ".join(x for x in t if not x.strip().startswith("--"))
     txt = " ".join(txt.split())
+    # la envoltura de esquema_ddl() no es cuerpo: envuelta o no, la orden es la misma.
+    txt = re.sub(r"^SELECT esquema_ddl\(\$ddl\$\s*", "", txt)
+    txt = re.sub(r"\$ddl\$(?:\s*,\s*'[^']*')?\s*\);", ";", txt)
     return re.sub(r"' '", "", txt)
 
 # SOLO LO DE FUERA DE LA REGION. Dentro no se mira, y no por pereza: lo de dentro no es un
@@ -136,7 +166,7 @@ for (tipo, nom), ls in sorted(dups.items()):
     cuerpos = [tokens(cuerpo(x)) for x in ls]
     etq = f"{tipo.lower()} {nom} ({','.join(map(str, ls))})"
     (diverge if len(set(cuerpos)) > 1 else iguales).append(etq)
-print(f"REGION {r_ini} {r_fin}")
+print(f"REGION {r_ini} {r_fin} {forma}")
 print(f"TOTAL {total}")
 print(f"DIVERGEN {len(diverge)}")
 for d in diverge:
@@ -153,10 +183,11 @@ fi
 # duplicados los cinco objetos que la migracion crea -que es justo el error que costo la
 # puerta-. Ademas, si no esta, el que tiene que hablar es el test, no este check.
 case "$dup" in
-  SINREGION*) echo "NO MEDIDO: sql/schema.sql ya no contiene la migracion incrustada byte a byte; eso lo juzga tests/test_partitioning_postgres.py, no este check"; exit 2 ;;
+  SINREGION*) echo "NO MEDIDO: sql/schema.sql ya no contiene la migracion incrustada (ni envuelta como en #285 ni literal); eso lo juzga tests/test_partitioning_postgres.py, no este check"; exit 2 ;;
 esac
 r_ini=$(printf '%s\n' "$dup" | awk '/^REGION/{print $2}')
 r_fin=$(printf '%s\n' "$dup" | awk '/^REGION/{print $3}')
+r_forma=$(printf '%s\n' "$dup" | awk '/^REGION/{print $4}')
 n_obj=$(printf '%s\n' "$dup" | awk '/^TOTAL/{print $2}')
 n_div=$(printf '%s\n' "$dup" | awk '/^DIVERGEN/{print $2}')
 n_ig=$(printf '%s\n' "$dup" | awk '/^IGUALES/{print $2}')
@@ -185,9 +216,9 @@ done
 
 [ -z "${fallos# }" ] || { printf '%s\n' "${fallos#; }" | sed 's/^ //'; exit 1; }
 echo "ningun objeto de schema.sql diverge consigo mismo (de $n_obj CREATE fuera de la migracion incrustada), $cubierto test(s) sobre partitioning, y la funcion viva gestiona las 5 tablas"
-printf '  la migracion incrustada (lineas %s-%s) NO se mira aqui: es %s copiado byte a byte,\n' \
-  "$r_ini" "$r_fin" "sql/migrations/20260809_temporal_partitioning.sql"
-printf '  y que siga siendolo lo exige tests/test_partitioning_postgres.py:257 con MIGRATION.strip() in schema.\n'
+printf '  la migracion incrustada (lineas %s-%s, copia %s) NO se mira aqui: es %s copiado,\n' \
+  "$r_ini" "$r_fin" "$r_forma" "sql/migrations/20260809_temporal_partitioning.sql"
+printf '  y que siga siendolo lo exige tests/test_partitioning_postgres.py:275 con migracion_en_linea(MIGRATION) in schema.\n'
 if [ "${n_ig:-0}" -gt 0 ]; then
   printf '  DEUDA, no defecto: %s objeto(s) FUERA de la region declarados dos veces con el MISMO cuerpo. Se cuenta, no enrojece.\n' "$n_ig"
   printf '%s\n' "$dup" | sed -n 's/^  I /    /p'

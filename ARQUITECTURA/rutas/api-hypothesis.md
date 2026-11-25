@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `hypothesis` · `app/api.py:1533` (cuerpo hasta la 1610) · decorador en la linea 1532.
+Handler `hypothesis` · `app/api.py:1584` (cuerpo hasta la 1661) · decorador en la linea 1583.
 
 ## Parametros de entrada
 
@@ -31,7 +31,7 @@ Handler `hypothesis` · `app/api.py:1533` (cuerpo hasta la 1610) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1585 |
+| `as_of` | literal en app/api.py:1636 |
 | `context` | literal en app/scalp_logic.py:5241 |
 | `counts` | literal en app/scalp_logic.py:5252 |
 | `data_coverage_pct` | literal en app/scalp_logic.py:5243 |
@@ -112,7 +112,7 @@ Handler `hypothesis` · `app/api.py:1533` (cuerpo hasta la 1610) · decorador en
 | `setup_zone.zone_high` | literal en app/scalp_logic.py:5258 |
 | `setup_zone.zone_low` | literal en app/scalp_logic.py:5257 |
 | `spread_bps` | literal en app/scalp_logic.py:5250 |
-| `symbol` | literal en app/api.py:1584 |
+| `symbol` | literal en app/api.py:1635 |
 | `timing` | literal en app/scalp_logic.py:5242 |
 
 Forma de la respuesta segun el AST: objeto.
@@ -301,10 +301,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | — | `app/api.py:1556` | el propio handler |
-| 422 | — | `app/api.py:1560` | el propio handler |
-| 422 | — | `app/api.py:1564` | el propio handler |
-| 422 | — | `app/api.py:1568` | el propio handler |
+| 422 | — | `app/api.py:1607` | el propio handler |
+| 422 | — | `app/api.py:1611` | el propio handler |
+| 422 | — | `app/api.py:1615` | el propio handler |
+| 422 | — | `app/api.py:1619` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

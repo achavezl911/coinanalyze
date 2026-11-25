@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `whale_delta` · `app/api.py:1336` (cuerpo hasta la 1427) · decorador en la linea 1335.
+Handler `whale_delta` · `app/api.py:1387` (cuerpo hasta la 1478) · decorador en la linea 1386.
 
 ## Parametros de entrada
 
@@ -20,11 +20,11 @@ Handler `whale_delta` · `app/api.py:1336` (cuerpo hasta la 1427) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:622 |
-| `data_gaps` | literal en app/api.py:628 |
-| `interval` | literal en app/api.py:620 |
-| `rows` | literal en app/api.py:621 |
-| `symbol` | literal en app/api.py:619 |
+| `coverage` | literal en app/api.py:678 |
+| `data_gaps` | literal en app/api.py:679 |
+| `interval` | literal en app/api.py:676 |
+| `rows` | literal en app/api.py:677 |
+| `symbol` | literal en app/api.py:675 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -45,21 +45,22 @@ LEE:
 
 ## Funciones que la componen
 
-14 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+15 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declarar_tramo_no_medible` — `app/api.py:1283`
-- `app.api.declared_series_response` — `app/api.py:519`
+- `app.api.declarar_tramo_no_medible` — `app/api.py:1334`
+- `app.api.declared_series_response` — `app/api.py:557`
 - `app.api.historical_interval_value` — `app/api.py:266`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
 
-<details><summary>Alcanzables de forma indirecta (9)</summary>
+<details><summary>Alcanzables de forma indirecta (10)</summary>
 
-- `app.api.lo_pedido` — `app/api.py:446`
-- `app.api.minutos_de_las_filas` — `app/api.py:406`
+- `app.api.cubos_tolerados` — `app/api.py:428`
+- `app.api.lo_pedido` — `app/api.py:476`
+- `app.api.minutos_de_las_filas` — `app/api.py:436`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:78`
 - `app.data_gaps.align_down` — `app/data_gaps.py:247`
@@ -140,6 +141,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.data_gaps.align_down` | 10 | **0** | 0 | **10** | [impacto](../impacto/app-data_gaps.md) |
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
+| `app.api.cubos_tolerados` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.lo_pedido` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |

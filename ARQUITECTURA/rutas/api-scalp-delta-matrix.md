@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_delta_matrix` · `app/api.py:1488` (cuerpo hasta la 1513) · decorador en la linea 1487.
+Handler `scalp_delta_matrix` · `app/api.py:1539` (cuerpo hasta la 1564) · decorador en la linea 1538.
 
 ## Parametros de entrada
 
