@@ -231,7 +231,7 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.config.get_settings`](impacto/app-config.md) | `app/config.py:308` | 3 | **0** | 50 ↑ | **3** |
 | [`app.daily_agg.materialize_daily_verdict_outcomes`](impacto/app-daily_agg.md) | `app/daily_agg.py:521` | 0 | **3** | 48 ↑ | **3** |
 | [`app.daily_agg.persist_verdicts`](impacto/app-daily_agg.md) | `app/daily_agg.py:353` | 0 | **3** | 48 ↑ | **3** |
-| [`app.external_macro.refresh_external_macro`](impacto/app-external_macro.md) | `app/external_macro.py:478` | 0 | **3** | 18 ↑ | **3** |
+| [`app.external_macro.refresh_external_macro`](impacto/app-external_macro.md) | `app/external_macro.py:526` | 0 | **3** | 18 ↑ | **3** |
 | [`app.ingest.upsert_long_short`](impacto/app-ingest.md) | `app/ingest.py:327` | 0 | **3** | 18 ↑ | **3** |
 | [`app.signal_outcomes._defer_missing_path`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:217` | 0 | **3** | 11 ↑ | **3** |
 | [`app.signal_outcomes._finalize_evaluated`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:241` | 0 | **3** | 11 ↑ | **3** |
@@ -248,14 +248,14 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.api.declara_ventana`](impacto/app-api.md) | `app/api.py:1886` | 3 | **0** | 0 | **3** |
 | [`app.api.latest_snapshot`](impacto/app-api.md) | `app/api.py:664` | 3 | **0** | 0 | **3** |
 | [`app.api.sella_respuesta`](impacto/app-api.md) | `app/api.py:2131` | 3 | **0** | 0 | **3** |
-| [`app.external_macro._direction`](impacto/app-external_macro.md) | `app/external_macro.py:190` | 3 | **0** | 0 | **3** |
-| [`app.external_macro._metric`](impacto/app-external_macro.md) | `app/external_macro.py:205` | 3 | **0** | 0 | **3** |
-| [`app.external_macro._pct_change`](impacto/app-external_macro.md) | `app/external_macro.py:184` | 3 | **0** | 0 | **3** |
-| [`app.external_macro._pillar`](impacto/app-external_macro.md) | `app/external_macro.py:232` | 3 | **0** | 0 | **3** |
-| [`app.external_macro._state`](impacto/app-external_macro.md) | `app/external_macro.py:197` | 3 | **0** | 0 | **3** |
-| [`app.external_macro.align_with_internal`](impacto/app-external_macro.md) | `app/external_macro.py:415` | 3 | **0** | 0 | **3** |
-| [`app.external_macro.build_external_macro_context`](impacto/app-external_macro.md) | `app/external_macro.py:237` | 3 | **0** | 0 | **3** |
-| [`app.external_macro.external_macro_context`](impacto/app-external_macro.md) | `app/external_macro.py:437` | 3 | **0** | 0 | **3** |
+| [`app.external_macro._direction`](impacto/app-external_macro.md) | `app/external_macro.py:204` | 3 | **0** | 0 | **3** |
+| [`app.external_macro._metric`](impacto/app-external_macro.md) | `app/external_macro.py:219` | 3 | **0** | 0 | **3** |
+| [`app.external_macro._pct_change`](impacto/app-external_macro.md) | `app/external_macro.py:198` | 3 | **0** | 0 | **3** |
+| [`app.external_macro._pillar`](impacto/app-external_macro.md) | `app/external_macro.py:266` | 3 | **0** | 0 | **3** |
+| [`app.external_macro._state`](impacto/app-external_macro.md) | `app/external_macro.py:211` | 3 | **0** | 0 | **3** |
+| [`app.external_macro.align_with_internal`](impacto/app-external_macro.md) | `app/external_macro.py:463` | 3 | **0** | 0 | **3** |
+| [`app.external_macro.build_external_macro_context`](impacto/app-external_macro.md) | `app/external_macro.py:271` | 3 | **0** | 0 | **3** |
+| [`app.external_macro.external_macro_context`](impacto/app-external_macro.md) | `app/external_macro.py:485` | 3 | **0** | 0 | **3** |
 | [`app.interpretation._cvd_observation`](impacto/app-interpretation.md) | `app/interpretation.py:521` | 3 | **0** | 0 | **3** |
 | [`app.interpretation._cvd_side`](impacto/app-interpretation.md) | `app/interpretation.py:570` | 3 | **0** | 0 | **3** |
 | [`app.interpretation._percentile`](impacto/app-interpretation.md) | `app/interpretation.py:368` | 3 | **0** | 0 | **3** |
@@ -680,12 +680,12 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_collector.reset_liquidation_feed_health`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:653` | 0 | **0** | 20 ↑ | **0** |
 | [`app.ws_collector.drain_closed_minutes`](impacto/app-ws_collector.md) | `app/ws_collector.py:346` | 0 | **0** | 19 ↑ | **0** |
 | [`app.ws_collector.flush_minute`](impacto/app-ws_collector.md) | `app/ws_collector.py:334` | 0 | **0** | 19 ↑ | **0** |
-| [`app.external_macro._get`](impacto/app-external_macro.md) | `app/external_macro.py:472` | 0 | **0** | 18 ↑ | **0** |
-| [`app.external_macro.parse_bls_calendar`](impacto/app-external_macro.md) | `app/external_macro.py:113` | 0 | **0** | 18 ↑ | **0** |
-| [`app.external_macro.parse_coinglass_etf`](impacto/app-external_macro.md) | `app/external_macro.py:88` | 0 | **0** | 18 ↑ | **0** |
-| [`app.external_macro.parse_fomc_calendar`](impacto/app-external_macro.md) | `app/external_macro.py:150` | 0 | **0** | 18 ↑ | **0** |
-| [`app.external_macro.parse_fred_csv`](impacto/app-external_macro.md) | `app/external_macro.py:58` | 0 | **0** | 18 ↑ | **0** |
-| [`app.external_macro.parse_stablecoin_history`](impacto/app-external_macro.md) | `app/external_macro.py:74` | 0 | **0** | 18 ↑ | **0** |
+| [`app.external_macro._get`](impacto/app-external_macro.md) | `app/external_macro.py:520` | 0 | **0** | 18 ↑ | **0** |
+| [`app.external_macro.parse_bls_calendar`](impacto/app-external_macro.md) | `app/external_macro.py:127` | 0 | **0** | 18 ↑ | **0** |
+| [`app.external_macro.parse_coinglass_etf`](impacto/app-external_macro.md) | `app/external_macro.py:102` | 0 | **0** | 18 ↑ | **0** |
+| [`app.external_macro.parse_fomc_calendar`](impacto/app-external_macro.md) | `app/external_macro.py:164` | 0 | **0** | 18 ↑ | **0** |
+| [`app.external_macro.parse_fred_csv`](impacto/app-external_macro.md) | `app/external_macro.py:72` | 0 | **0** | 18 ↑ | **0** |
+| [`app.external_macro.parse_stablecoin_history`](impacto/app-external_macro.md) | `app/external_macro.py:88` | 0 | **0** | 18 ↑ | **0** |
 | [`app.ingest._liquidation_history_observation`](impacto/app-ingest.md) | `app/ingest.py:653` | 0 | **0** | 18 ↑ | **0** |
 | [`app.ingest.ingest_metrics_cycle`](impacto/app-ingest.md) | `app/ingest.py:818` | 0 | **0** | 18 ↑ | **0** |
 | [`app.ingest.source_response_buckets`](impacto/app-ingest.md) | `app/ingest.py:67` | 0 | **0** | 18 ↑ | **0** |
@@ -740,8 +740,8 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.signal_execution.execution_snapshot_record`](impacto/app-signal_execution.md) | `app/signal_execution.py:263` | 0 | **0** | 7 ↑ | **0** |
 | [`app.signal_outcomes.outcome_window`](impacto/app-signal_outcomes.md) | `app/signal_outcomes.py:73` | 0 | **0** | 7 ↑ | **0** |
 | [`app.signal_replay.canonical_json_object`](impacto/app-signal_replay.md) | `app/signal_replay.py:49` | 0 | **0** | 7 ↑ | **0** |
-| [`app.external_macro._plain_html`](impacto/app-external_macro.md) | `app/external_macro.py:146` | 0 | **0** | 3 ↑ | **0** |
-| [`app.external_macro._unfold_ics`](impacto/app-external_macro.md) | `app/external_macro.py:103` | 0 | **0** | 3 ↑ | **0** |
+| [`app.external_macro._plain_html`](impacto/app-external_macro.md) | `app/external_macro.py:160` | 0 | **0** | 3 ↑ | **0** |
+| [`app.external_macro._unfold_ics`](impacto/app-external_macro.md) | `app/external_macro.py:117` | 0 | **0** | 3 ↑ | **0** |
 | [`app.entradas.codigo.contenido`](impacto/app-entradas-codigo.md) | `app/entradas/codigo.py:48` | 0 | **0** | 2 ↑ | **0** |
 | [`app.entradas.codigo.piezas`](impacto/app-entradas-codigo.md) | `app/entradas/codigo.py:35` | 0 | **0** | 2 ↑ | **0** |
 | [`app.entradas.codigo.registradas`](impacto/app-entradas-codigo.md) | `app/entradas/codigo.py:56` | 0 | **0** | 2 ↑ | **0** |

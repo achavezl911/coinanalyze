@@ -59,9 +59,10 @@ constituye…"`. Es la unica de las 68 que trae un descargo en el cuerpo.
 *Que significa no cumplirlo:* que `setups` se recortara a los que apoyan a `primary`.
 Entonces el producto seria un generador de razones, que es lo que **P5.9** persigue.
 
-**Nadie la llama** salvo un fixture de control: su unico rastro de codigo es
-`harness/checks/K88-control.bash:133`, que la usa como caso de prueba. Contesta **siete**
-preguntas de la bateria —mas que ninguna otra ruta— y el panel no la consume.
+**La consume /mesa** (panel FOLLOW, `static/mesa/mesa-app.js:233`, por `pedir()`, que el
+detector no reconoce) y la sirve el doble de `tests/js/mesa_f12a.test.js`; ademas la usa
+`harness/checks/K88-control.bash:133` como caso de prueba. Contesta **siete** preguntas de
+la bateria —mas que ninguna otra ruta— y el panel principal no la consume.
 
 
 ## SUPERFICIE

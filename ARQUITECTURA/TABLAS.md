@@ -334,8 +334,8 @@ Rutas que ESCRIBEN en `entrada_resultado`: `/api/entradas`, `/api/mesa/entradas`
 
 La escriben:
 
-- `app.external_macro.refresh_external_macro` — **INSERT** en `app/external_macro.py:553`
-- `app.external_macro.refresh_external_macro` — **DELETE** en `app/external_macro.py:574`
+- `app.external_macro.refresh_external_macro` — **INSERT** en `app/external_macro.py:601`
+- `app.external_macro.refresh_external_macro` — **DELETE** en `app/external_macro.py:622`
 
 **Si cambia el contenido o el esquema de `external_macro_observation`, estas 3 rutas lo notan:**
 
@@ -471,8 +471,8 @@ La escriben:
 
 La escriben:
 
-- `app.external_macro.refresh_external_macro` — **INSERT** en `app/external_macro.py:564`
-- `app.external_macro.refresh_external_macro` — **DELETE** en `app/external_macro.py:576`
+- `app.external_macro.refresh_external_macro` — **INSERT** en `app/external_macro.py:612`
+- `app.external_macro.refresh_external_macro` — **DELETE** en `app/external_macro.py:624`
 
 **Si cambia el contenido o el esquema de `macro_event`, estas 3 rutas lo notan:**
 

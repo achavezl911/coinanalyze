@@ -79,8 +79,6 @@ function pintarScan(sobre, nodo) {
   }
   filas.slice(0, 4).forEach((s) => {
     const c = el('div', 'chip');
-    const ev = el('span', 'ev ev-vivo', 'VIVO');
-    c.appendChild(ev);
     c.appendChild(el('div', 'titulo', s.state || s.name || s.title || '—'));
     // Dos <span> en linea SIN separador se leen pegados: «confianza bajahace 46 d». Es
     // cosmetico, pero una pantalla que junta dos hechos distintos en una palabra ya esta
@@ -133,9 +131,9 @@ function pintarMatriz(sobre, nodo, nodoPie, nodoVenue) {
     // escrito aqui.
     const banda = (f.fut_delta_context && f.fut_delta_context.band) || null;
     const clase =
-      banda === 'extreme' || banda === 'high'
+      banda === 'extremo' || banda === 'alto'
         ? 'banda-violeta'
-        : banda === 'elevated'
+        : banda === 'elevado'
           ? 'banda-azul'
           : '';
     const c0 = el('td', 'acento ' + clase, f.window || '?');
@@ -321,7 +319,7 @@ function panelCinta(sobreDecide, sobreLibro) {
   }
 
   if (sobreLibro && sobreLibro.ok) {
-    const c = sobreLibro.datos.combined || {};
+    const c = (sobreLibro.datos.rows || []).find((r) => r.exchange === 'combined') || {};
     tiles.appendChild(
       tile(
         'imbalance L5',
@@ -403,7 +401,7 @@ function panelDerivados(sobre) {
   const t = el('table', 'rejilla');
   const venue = d.by_venue || {};
   [
-    ['OI total', usd(d.oi_total_usd)],
+    ['OI total', usd(venue.two_venue_total_usd)],
     ['OI binance', usd(venue.binance_oi_usd)],
     ['OI bybit', usd(venue.bybit_oi_usd)],
     ['percentil 1a', esNada(d.percentile_1y) ? null : num(d.percentile_1y, 1)],
@@ -456,7 +454,7 @@ function panelEstructura(sobre) {
   if (!claves.length) return hueco(p, 'estructura', 'el backend no trae horizontes');
   const t = el('table', 'rejilla');
   const tr = el('tr');
-  ['horizonte', 'estado', 'BOS', 'ChoCh', 'invalidación', 'swings'].forEach((h) =>
+  ['horizonte', 'estado', 'BOS', 'ChoCh', 'invalidación', 'cierre vs inval.', 'swings'].forEach((h) =>
     tr.appendChild(el('th', null, h))
   );
   t.appendChild(tr);
@@ -468,9 +466,11 @@ function panelEstructura(sobre) {
     [h.bos_level, h.choch_level, h.invalidation_level].forEach((v) => {
       const td = el('td');
       if (esNada(v)) td.appendChild(el('span', 'nd', 'N/D'));
-      else td.textContent = num(v, 1);
+      else td.textContent = precio(v);
       r.appendChild(td);
     });
+    const di = h.distance_to_invalidation_pct;
+    r.appendChild(el('td', esNada(di) ? 'nd' : null, esNada(di) ? 'N/D' : (di > 0 ? '+' : '') + num(di, 3) + ' %'));
     // TRAMPA 4 del operador: `swing_count` es {highs, lows}. Pintarlo a pelo da NaN.
     const sc = h.swing_count || {};
     const td = el('td');
@@ -495,10 +495,10 @@ function panelBasis(sobre) {
   const d = sobre.datos;
   const t = el('table', 'rejilla');
   [
-    ['futuro', num(d.fut_price, 1)],
-    ['spot', num(d.spot_price, 1)],
+    ['futuro', precio(d.fut_price)],
+    ['spot', precio(d.spot_price)],
     ['basis', esNada(d.basis_bps) ? null : num(d.basis_bps, 2) + ' bps'],
-    ['estado', d.basis_status || null],
+    ['estado', d.status || null],
   ].forEach(([k, v]) => {
     const r = el('tr');
     r.appendChild(el('td', null, k));
@@ -557,8 +557,8 @@ function panelLiquidaciones(sobre) {
   t.appendChild(tr);
   niveles.slice(0, 12).forEach((n) => {
     const r = el('tr');
-    r.appendChild(el('td', null, num(n.price ?? n.level ?? n.bucket, 1) || 'N/D'));
-    [n.long_usd ?? n.longs, n.short_usd ?? n.shorts].forEach((v, i) => {
+    r.appendChild(el('td', null, precio(n.price ?? n.level ?? n.bucket) || 'N/D'));
+    [n.long_liq ?? n.long_usd ?? n.longs, n.short_liq ?? n.short_usd ?? n.shorts].forEach((v, i) => {
       const td = el('td');
       const s = usd(v);
       if (s === null) td.appendChild(el('span', 'nd', 'N/D'));
@@ -593,9 +593,9 @@ function panelPerfil(sobre) {
   const d = sobre.datos;
   const t = el('table', 'rejilla');
   [
-    ['POC', num(d.poc, 1)],
-    ['VAH', num(d.vah, 1)],
-    ['VAL', num(d.val, 1)],
+    ['POC', precio((d.session || d).poc)],
+    ['VAH', precio((d.session || d).vah)],
+    ['VAL', precio((d.session || d).val)],
   ].forEach(([k, v]) => {
     const r = el('tr');
     r.appendChild(el('td', null, k));

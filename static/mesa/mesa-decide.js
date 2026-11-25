@@ -247,7 +247,7 @@ function pintarDecide(sobre, nodos) {
     celda('structural_invalidation', 'invalida · nivel estructural', dec.structural_invalidation, {
       cifra: true,
       clase: 'invalida',
-      formato: (v) => num(v, 1),
+      formato: precio,
     })
   );
   campos.appendChild(celda('structural_horizon', 'horizonte estructural', dec.structural_horizon));
@@ -310,7 +310,7 @@ function pintarLecturaScalp(origen, campos) {
       celda('invalidation_level', 'invalida · nivel de barrera', origen.invalidation_level, {
         cifra: true,
         clase: 'invalida',
-        formato: (v) => num(v, 1),
+        formato: precio,
       })
     );
   }

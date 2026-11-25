@@ -97,7 +97,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K24-replay-del-contexto.sh:87`, `harness/checks/K43-control.bash:93`, `harness/checks/K43-foto-unica.sh:163` | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:420` | — |
-| **tests** | — | `tests/test_signals_replay.py:1` |
+| **tests** | `tests/js/mesa_f12a.test.js:137` | `tests/test_signals_replay.py:1` |
 
 **La llama el panel: es superficie de producto.**
 

@@ -73,6 +73,12 @@ function esNada(v) {
   return v === null || v === undefined || v === '';
 }
 
+function precio(v) {
+  if (esNada(v) || Number.isNaN(Number(v))) return null;
+  const a = Math.abs(Number(v));
+  return num(v, a >= 10000 ? 1 : a >= 100 ? 2 : a >= 1 ? 3 : 5);
+}
+
 function num(v, dec) {
   if (esNada(v) || Number.isNaN(Number(v))) return null;
   const d = dec === undefined ? 2 : dec;
