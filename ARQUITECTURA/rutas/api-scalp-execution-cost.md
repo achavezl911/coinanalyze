@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_execution_cost` · `app/api.py:1779` (cuerpo hasta la 1832) · decorador en la linea 1778.
+Handler `scalp_execution_cost` · `app/api.py:1830` (cuerpo hasta la 1883) · decorador en la linea 1829.
 
 ## Parametros de entrada
 
@@ -29,9 +29,9 @@ Handler `scalp_execution_cost` · `app/api.py:1779` (cuerpo hasta la 1832) · de
 | campo | de donde sale |
 |---|---|
 | `as_of` | literal en app/scalp_logic.py:5610 |
-| `assessment` | asignado en app/api.py:1818 |
+| `assessment` | asignado en app/api.py:1869 |
 | `note` | literal en app/scalp_logic.py:5612 |
-| `profiles` | asignado en app/api.py:1831 |
+| `profiles` | asignado en app/api.py:1882 |
 | `sizes_usd` | literal en app/scalp_logic.py:5609 |
 | `stale_after_seconds` | literal en app/scalp_logic.py:5611 |
 | `status` | literal en app/scalp_logic.py:5614 |
@@ -85,7 +85,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._slippage_para` — `app/api.py:1835`
+- `app.api._slippage_para` — `app/api.py:1886`
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
@@ -143,9 +143,9 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | — | `app/api.py:1800` | el propio handler |
-| 422 | sizes debe ser una lista de numeros | `app/api.py:1806` | el propio handler |
-| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1808` | el propio handler |
+| 422 | — | `app/api.py:1851` | el propio handler |
+| 422 | sizes debe ser una lista de numeros | `app/api.py:1857` | el propio handler |
+| 422 | hasta 8 tamanios, cada uno entre 0 y 5.000.000 USD | `app/api.py:1859` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `liquidation_levels` · `app/api.py:3214` (cuerpo hasta la 3270) · decorador en la linea 3213.
+Handler `liquidation_levels` · `app/api.py:3265` (cuerpo hasta la 3321) · decorador en la linea 3264.
 
 ## Parametros de entrada
 
@@ -21,13 +21,13 @@ Handler `liquidation_levels` · `app/api.py:3214` (cuerpo hasta la 3270) · deco
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:3266 |
-| `bucket_bps` | literal en app/api.py:3265 |
-| `minutes` | literal en app/api.py:3264 |
-| `rows` | literal en app/api.py:3269 |
-| `symbol` | literal en app/api.py:3263 |
-| `window_end` | literal en app/api.py:3268 |
-| `window_start` | literal en app/api.py:3267 |
+| `as_of` | literal en app/api.py:3317 |
+| `bucket_bps` | literal en app/api.py:3316 |
+| `minutes` | literal en app/api.py:3315 |
+| `rows` | literal en app/api.py:3320 |
+| `symbol` | literal en app/api.py:3314 |
+| `window_end` | literal en app/api.py:3319 |
+| `window_start` | literal en app/api.py:3318 |
 
 Forma de la respuesta segun el AST: objeto.
 
