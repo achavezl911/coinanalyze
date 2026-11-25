@@ -35,7 +35,7 @@ from app.db import (
 from app.entradas import servicio as entradas_servicio
 from app.external_macro import refresh_external_macro
 from app.logging_setup import configure_logging
-from app.metrics import compute_and_store_all
+from app.metrics import certified_metrics_cutoff, compute_and_store_all
 
 LOGGER = logging.getLogger(__name__)
 
@@ -398,6 +398,9 @@ async def publish_snapshot(
             "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
             SNAPSHOT_PUBLISH_LOCK_KEY,
         )
+        if metrics_cutoff is not None:
+            # Bajo el cerrojo: el certificado que se lee es el que ya confirmo el otro ciclo.
+            metrics_cutoff = await certified_metrics_cutoff(conn, metrics_cutoff)
         await compute_and_store_all(
             conn,
             symbols,

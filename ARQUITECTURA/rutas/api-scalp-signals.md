@@ -79,7 +79,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K106-plantados.py:461`, `harness/checks/K106-plantados.py:462`, `harness/checks/K43-control.bash:29`, `harness/checks/K43-control.bash:74` _(+2)_ | — |
 | **panel** | `static/js/07-decision-y-ciclos.js:423` | — |
-| **tests** | — | `tests/test_dashboard_layout.py:160` |
+| **tests** | `tests/js/mesa_f12a.test.js:117` | `tests/test_dashboard_layout.py:160` |
 
 **La llama el panel: es superficie de producto.**
 

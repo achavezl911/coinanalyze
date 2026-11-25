@@ -108,7 +108,9 @@ let _refresco = null;
 /* ------------------------------------------------------------ OLA 1 */
 async function olaDecide() {
   const s = simbolo(ESTADO.activo);
+  const pasada = _pintando;
   const sobre = await pedir('/api/mesa/decide', { symbol: s, frame: ESTADO.marco });
+  if (pasada !== _pintando) return null; // otra pasada (activo, marco o vista): ni se guarda ni se pinta
   apuntar(sobre);
   sobre.tLlegada = (window.performance || Date).now();
 
@@ -166,6 +168,23 @@ function pararLatido() {
   if (_refresco !== null) { clearInterval(_refresco); _refresco = null; }
 }
 
+const MESA_RESTO_CADA = 4;
+/* EL ROTULO DE EDAD DE CADA PANEL DE LA OLA 2. mesa.html no lo trae: se crea la primera vez y
+ * otra vez cuando el pintor del panel lo borra al vaciarlo. La tira y el scan van por ENCIMA
+ * de DECIDE: su rotulo entra al final de su propia fila para no empujar DECIDE fuera del
+ * primer pliegue (K102); el de los demas, justo antes de su caja. */
+function nodoEdad(id) {
+  const ya = document.getElementById('edad-' + id);
+  if (ya) return ya;
+  const caja = document.getElementById(id);
+  if (!caja) return null;
+  const n = document.createElement('span');
+  n.id = 'edad-' + id;
+  if (id === 'tira' || id === 'scan') caja.appendChild(n);
+  else if (caja.parentNode && caja.parentNode.insertBefore) caja.parentNode.insertBefore(n, caja);
+  else return null;
+  return n;
+}
 function arrancarLatido() {
   pararLatido();
   _latido = setInterval(() => {
@@ -178,13 +197,26 @@ function arrancarLatido() {
       const c = claseFrescura(v.s, _ultimoDecide.datos.max_age_s);
       reloj.className = 'reloj-valor ' + (c || '');
     }
+    const hace = _restoLlegada === null ? null
+      : Math.round(((window.performance || Date).now() - _restoLlegada) / 1000);
+    ['tira', 'scan', 'matriz', 'inspect', 'research', 'follow', 'learn'].forEach((id) => {
+      const n = nodoEdad(id);
+      if (!n) return;
+      n.textContent = hace === null ? 'sin leer' : 'leído hace ' + hace + ' s';
+      const tope = 2 * MESA_REFRESCO_S * MESA_RESTO_CADA; // dos vueltas de la ola 2 sin llegar: RANCIO
+      n.className = 'edad-panel' + (hace !== null && hace > tope ? ' rancio' : '');
+    });
   }, MESA_LATIDO_MS);
 
+  let vuelta = 0;
   _refresco = setInterval(() => {
     // Si la pestana no se ve, no se pide: refrescar lo que nadie mira es coste sin operador.
     if (document.hidden) return;
     if (ESTADO.vista !== 'mesa') return;
-    olaDecide();
+    const toca = ++vuelta % MESA_RESTO_CADA === 0; // la ola 2, cada MESA_RESTO_CADA refrescos de DECIDE
+    olaDecide().then((sobre) => {
+      if (toca && sobre && sobre.ok) olaResto(sobre);
+    });
   }, MESA_REFRESCO_S * 1000);
 }
 
@@ -217,7 +249,9 @@ async function olaResto(sobreDecide) {
   }
 
   const claves = Object.keys(trabajos);
+  const pasada = _pintando;
   const hechos = await Promise.all(claves.map((k) => trabajos[k]));
+  if (pasada !== _pintando) return;
   const d = { decide: sobreDecide };
   claves.forEach((k, i) => {
     d[k] = hechos[i];
@@ -238,6 +272,7 @@ async function olaResto(sobreDecide) {
   if (d.follow) pintarFollow(d.follow, document.getElementById('follow'));
   if (d.learn) pintarLearn(d.learn, document.getElementById('learn'));
   if (d.feeds) pintarServicios(d.feeds, document.getElementById('pie-servicios'));
+  _restoLlegada = (window.performance || Date).now();
 
   marca('mesa:completo');
   window.MESA_HITOS.completo = (window.performance || Date).now();
@@ -387,6 +422,7 @@ function pintarSelectores() {
 }
 
 let _pintando = 0;
+let _restoLlegada = null;
 async function pintar() {
   const mio = ++_pintando;
   window.MESA_HITOS.t0 = (window.performance || Date).now();
@@ -409,6 +445,7 @@ async function pintar() {
   pararLatido();
   pararEntradas();
   _ultimoDecide = null;
+  _restoLlegada = null; // la edad de la ola 2 es de SU activo y SU marco: hasta que llegue la nueva, «sin leer»
 
   if (esEstado) {
     await pintarEstado();

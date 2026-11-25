@@ -1938,43 +1938,43 @@
     },
     "app.external_macro._direction": {
       "fichero": "app/external_macro.py",
-      "linea": 190,
-      "sitio": "`app/external_macro.py:190`"
+      "linea": 204,
+      "sitio": "`app/external_macro.py:204`"
     },
     "app.external_macro._metric": {
       "fichero": "app/external_macro.py",
-      "linea": 205,
-      "sitio": "`app/external_macro.py:205`"
+      "linea": 219,
+      "sitio": "`app/external_macro.py:219`"
     },
     "app.external_macro._pct_change": {
       "fichero": "app/external_macro.py",
-      "linea": 184,
-      "sitio": "`app/external_macro.py:184`"
+      "linea": 198,
+      "sitio": "`app/external_macro.py:198`"
     },
     "app.external_macro._pillar": {
       "fichero": "app/external_macro.py",
-      "linea": 232,
-      "sitio": "`app/external_macro.py:232`"
+      "linea": 266,
+      "sitio": "`app/external_macro.py:266`"
     },
     "app.external_macro._state": {
       "fichero": "app/external_macro.py",
-      "linea": 197,
-      "sitio": "`app/external_macro.py:197`"
+      "linea": 211,
+      "sitio": "`app/external_macro.py:211`"
     },
     "app.external_macro.align_with_internal": {
       "fichero": "app/external_macro.py",
-      "linea": 415,
-      "sitio": "`app/external_macro.py:415`"
+      "linea": 463,
+      "sitio": "`app/external_macro.py:463`"
     },
     "app.external_macro.build_external_macro_context": {
       "fichero": "app/external_macro.py",
-      "linea": 237,
-      "sitio": "`app/external_macro.py:237`"
+      "linea": 271,
+      "sitio": "`app/external_macro.py:271`"
     },
     "app.external_macro.external_macro_context": {
       "fichero": "app/external_macro.py",
-      "linea": 437,
-      "sitio": "`app/external_macro.py:437`"
+      "linea": 485,
+      "sitio": "`app/external_macro.py:485`"
     },
     "app.field_disambiguation.build": {
       "fichero": "app/field_disambiguation.py",
@@ -16707,7 +16707,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:190",
+        "sitio": "app/external_macro.py:204",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16742,7 +16742,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:472",
+        "sitio": "app/external_macro.py:520",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16798,7 +16798,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:205",
+        "sitio": "app/external_macro.py:219",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16808,7 +16808,6 @@
       "app.external_macro._pct_change": {
         "cota_mas_ancha_que_k0": false,
         "llamadores_hasta_k": [
-          "app.external_macro._metric",
           "app.external_macro.build_external_macro_context",
           "app.external_macro.external_macro_context"
         ],
@@ -16819,7 +16818,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:184",
+        "sitio": "app/external_macro.py:198",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16839,7 +16838,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:232",
+        "sitio": "app/external_macro.py:266",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16859,7 +16858,7 @@
           "/api/external-macro"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:146",
+        "sitio": "app/external_macro.py:160",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16891,7 +16890,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:197",
+        "sitio": "app/external_macro.py:211",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16911,7 +16910,7 @@
           "/api/external-macro"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:103",
+        "sitio": "app/external_macro.py:117",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -16943,7 +16942,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:415",
+        "sitio": "app/external_macro.py:463",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16964,7 +16963,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:237",
+        "sitio": "app/external_macro.py:271",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -16985,7 +16984,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:437",
+        "sitio": "app/external_macro.py:485",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -17020,7 +17019,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:113",
+        "sitio": "app/external_macro.py:127",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17091,7 +17090,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:88",
+        "sitio": "app/external_macro.py:102",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17162,7 +17161,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:150",
+        "sitio": "app/external_macro.py:164",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17233,7 +17232,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:58",
+        "sitio": "app/external_macro.py:72",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17304,7 +17303,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/external_macro.py:74",
+        "sitio": "app/external_macro.py:88",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17380,7 +17379,7 @@
           "/api/ai/context/bundle",
           "/api/external-macro"
         ],
-        "sitio": "app/external_macro.py:478",
+        "sitio": "app/external_macro.py:526",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17509,7 +17508,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:688",
+        "sitio": "app/ingest.py:691",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17618,7 +17617,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:650",
+        "sitio": "app/ingest.py:653",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17728,7 +17727,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:454",
+        "sitio": "app/ingest.py:457",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -17877,7 +17876,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:620",
+        "sitio": "app/ingest.py:623",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18021,7 +18020,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:569",
+        "sitio": "app/ingest.py:572",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18282,7 +18281,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:815",
+        "sitio": "app/ingest.py:818",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18385,7 +18384,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:747",
+        "sitio": "app/ingest.py:750",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -18951,7 +18950,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:1033",
+        "sitio": "app/ingest.py:1036",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -19003,7 +19002,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:1007",
+        "sitio": "app/ingest.py:1010",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -19057,7 +19056,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:998",
+        "sitio": "app/ingest.py:1001",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -19797,7 +19796,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/ingest.py:539",
+        "sitio": "app/ingest.py:542",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21135,6 +21134,142 @@
         "total": 9,
         "total_exacto": 0
       },
+      "app.metrics.certified_metrics_cutoff": {
+        "cota_mas_ancha_que_k0": true,
+        "llamadores_hasta_k": [
+          "app.ingest.ingest_metrics_cycle",
+          "app.ingest.ingest_ohlcv_cycle",
+          "app.ingest.publish_snapshot"
+        ],
+        "por_llamada": [],
+        "por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cross-asset",
+          "/api/cvd",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/delta-profile",
+          "/api/desk/state",
+          "/api/divergences",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/flow/spot-vs-perp",
+          "/api/healthz",
+          "/api/hypothesis",
+          "/api/level/breakout",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/market-impact",
+          "/api/market-memory",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/oi-context",
+          "/api/passive-flow",
+          "/api/positioning",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/range/validate",
+          "/api/rango/estructura",
+          "/api/reference-levels",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/summary",
+          "/api/structure",
+          "/api/structure-detail",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/api/volatility",
+          "/api/volume-profile",
+          "/api/whale/delta",
+          "/api/wyckoff",
+          "/api/zone/analysis",
+          "/metrics"
+        ],
+        "por_tabla_k0": [],
+        "sitio": "app/metrics.py:364",
+        "solo_por_tabla": [
+          "/api/ai/context",
+          "/api/ai/context/bundle",
+          "/api/cross-asset",
+          "/api/cvd",
+          "/api/cvd/divergence",
+          "/api/cvd/spot",
+          "/api/dashboard/state",
+          "/api/data-confidence",
+          "/api/delta-profile",
+          "/api/desk/state",
+          "/api/divergences",
+          "/api/entradas",
+          "/api/external-macro",
+          "/api/flow/spot-vs-perp",
+          "/api/healthz",
+          "/api/hypothesis",
+          "/api/level/breakout",
+          "/api/liquidation-map",
+          "/api/liquidations",
+          "/api/market-impact",
+          "/api/market-memory",
+          "/api/mesa/decide",
+          "/api/mesa/entradas",
+          "/api/ohlcv",
+          "/api/oi",
+          "/api/oi-context",
+          "/api/passive-flow",
+          "/api/positioning",
+          "/api/price-barriers",
+          "/api/profile",
+          "/api/quality/feeds",
+          "/api/range/validate",
+          "/api/rango/estructura",
+          "/api/reference-levels",
+          "/api/scalp/alerts",
+          "/api/scalp/execution-cost",
+          "/api/scalp/liquidation-levels",
+          "/api/scalp/summary",
+          "/api/structure",
+          "/api/structure-detail",
+          "/api/swing-score",
+          "/api/trend-matrix",
+          "/api/volatility",
+          "/api/volume-profile",
+          "/api/whale/delta",
+          "/api/wyckoff",
+          "/api/zone/analysis",
+          "/metrics"
+        ],
+        "tablas_escritas": {
+          "external_macro_observation": [
+            "app.external_macro.refresh_external_macro"
+          ],
+          "liquidations": [
+            "app.ingest.upsert_liquidations"
+          ],
+          "long_short_ratio": [
+            "app.ingest.upsert_long_short"
+          ],
+          "macro_event": [
+            "app.external_macro.refresh_external_macro"
+          ],
+          "ohlcv": [
+            "app.ingest.rollup_ohlcv_5m",
+            "app.ingest.upsert_ohlcv"
+          ],
+          "pipeline_heartbeat": [
+            "app.db.heartbeat",
+            "app.db.heartbeat_component"
+          ]
+        },
+        "tablas_k0": [],
+        "total": 48,
+        "total_exacto": 0
+      },
       "app.metrics.cobertura_suficiente": {
         "cota_mas_ancha_que_k0": true,
         "llamadores_hasta_k": [
@@ -21249,7 +21384,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:740",
+        "sitio": "app/metrics.py:776",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21390,7 +21525,7 @@
           "/metrics"
         ],
         "por_tabla_k0": [],
-        "sitio": "app/metrics.py:464",
+        "sitio": "app/metrics.py:494",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -21531,7 +21666,7 @@
           "/api/snapshot",
           "/metrics"
         ],
-        "sitio": "app/metrics.py:705",
+        "sitio": "app/metrics.py:741",
         "solo_por_tabla": [
           "/api/ai/context",
           "/api/ai/context/bundle",
@@ -32802,10 +32937,10 @@
     "rutas_con_campos": 84,
     "rutas_sin_campos": 10,
     "sin_clave_temporal": 27,
-    "sin_consumidor": 8,
+    "sin_consumidor": 7,
     "sin_declarar": 26,
-    "sin_llamada": 18,
-    "solo_mencion": 10,
+    "sin_llamada": 16,
+    "solo_mencion": 9,
     "tablas_alcanzadas": 35,
     "tablas_catalogo": 62
   },
@@ -36919,7 +37054,7 @@
     {
       "camino": "/api/external-macro",
       "campos": {
-        "alignment": "asignado en app/external_macro.py:433"
+        "alignment": "asignado en app/external_macro.py:481"
       },
       "campos_pendientes": [
         "la respuesta pasa por dict(), que no se puede seguir",
@@ -37057,6 +37192,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/mesa_f12a.test.js:174",
             "tests/test_dashboard_layout.py:134",
             "tests/test_deploy_wrapper.py:268"
           ],
@@ -37068,7 +37204,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 6,
+        "n_llamadas": 7,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -38977,7 +39113,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:146"
+          ],
           "menciones": [
             "tests/test_liquidation_map_ventana.py:1"
           ]
@@ -38986,7 +39124,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 5,
+        "n_llamadas": 6,
         "n_menciones": 6,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -39738,6 +39876,10 @@
         "tests": {
           "llamadas": [
             "tests/js/mesa_decide.test.js:275",
+            "tests/js/mesa_f12a.test.js:95",
+            "tests/js/mesa_f12a.test.js:232",
+            "tests/js/mesa_f12a.test.js:307",
+            "tests/js/mesa_f12a.test.js:324",
             "tests/js/mesa_remate.test.js:28",
             "tests/test_bot.py:343"
           ],
@@ -39748,7 +39890,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 17,
+        "n_llamadas": 21,
         "n_menciones": 8,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -40565,7 +40707,9 @@
           ]
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:165"
+          ],
           "menciones": [
             "tests/test_oi_context_referencia.py:1"
           ]
@@ -40573,7 +40717,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 3,
+        "n_llamadas": 4,
         "n_menciones": 4,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -42882,12 +43026,18 @@
             "static/js/07-decision-y-ciclos.js:407"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:109"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 3,
+        "n_llamadas": 4,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -43831,6 +43981,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/mesa_f12a.test.js:157",
             "tests/test_v121_hardening.py:40"
           ],
           "menciones": []
@@ -43839,7 +43990,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 0,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -43992,11 +44143,17 @@
             "static/js/07-decision-y-ciclos.js:326"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:124"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 20,
+        "n_llamadas": 21,
         "n_menciones": 2,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -44638,7 +44795,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:138"
+          ],
           "menciones": [
             "tests/js/libro_vacio_o_rancio.test.js:4",
             "tests/test_orderbook_frescura.py:1",
@@ -44649,7 +44808,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 9,
+        "n_llamadas": 10,
         "n_menciones": 6,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -44760,7 +44919,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:117"
+          ],
           "menciones": [
             "tests/test_dashboard_layout.py:160"
           ]
@@ -44768,7 +44929,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 7,
+        "n_llamadas": 8,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -45105,14 +45266,20 @@
             "harness/checks/K88-control.bash:162",
             "harness/checks/K88-control.bash:479"
           ]
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:136"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
+        "n_llamadas": 1,
         "n_menciones": 4,
         "sin_ninguno": false,
-        "solo_mencion": true
+        "solo_mencion": false
       },
       "declarada": {
         "completa": true,
@@ -45833,7 +46000,9 @@
           "menciones": []
         },
         "tests": {
-          "llamadas": [],
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:137"
+          ],
           "menciones": [
             "tests/test_signals_replay.py:1"
           ]
@@ -45841,7 +46010,7 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 1,
         "sin_ninguno": false,
         "solo_mencion": false
@@ -46571,12 +46740,18 @@
             "static/js/07-decision-y-ciclos.js:357"
           ],
           "menciones": []
+        },
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:161"
+          ],
+          "menciones": []
         }
       },
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 4,
+        "n_llamadas": 5,
         "n_menciones": 1,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -47405,12 +47580,19 @@
           "propio": false
         }
       ],
-      "consumidores": {},
+      "consumidores": {
+        "tests": {
+          "llamadas": [
+            "tests/js/mesa_f12a.test.js:153"
+          ],
+          "menciones": []
+        }
+      },
       "consumo": {
         "llamada_desde_el_panel": false,
-        "n_llamadas": 0,
+        "n_llamadas": 1,
         "n_menciones": 0,
-        "sin_ninguno": true,
+        "sin_ninguno": false,
         "solo_mencion": false
       },
       "declarada": {
@@ -47725,6 +47907,7 @@
         },
         "tests": {
           "llamadas": [
+            "tests/js/mesa_f12a.test.js:170",
             "tests/test_wyckoff.py:112"
           ],
           "menciones": []
@@ -47733,7 +47916,7 @@
       "consumo": {
         "llamada_desde_el_panel": true,
         "llega_dentro_del_sobre": true,
-        "n_llamadas": 16,
+        "n_llamadas": 17,
         "n_menciones": 2,
         "peticion_propia_del_panel": false,
         "sin_ninguno": false,
@@ -48811,7 +48994,7 @@
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
-          "sitio": "app/external_macro.py:458"
+          "sitio": "app/external_macro.py:506"
         },
         {
           "funcion": "app.scalp_logic.market_structure",
@@ -49306,13 +49489,13 @@
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:553",
+          "sitio": "app/external_macro.py:601",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:574",
+          "sitio": "app/external_macro.py:622",
           "verbo": "DELETE"
         }
       ],
@@ -49320,17 +49503,17 @@
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
-          "sitio": "app/external_macro.py:442"
+          "sitio": "app/external_macro.py:490"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:488"
+          "sitio": "app/external_macro.py:536"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:574"
+          "sitio": "app/external_macro.py:622"
         }
       ],
       "leida_por": [
@@ -49706,13 +49889,13 @@
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:564",
+          "sitio": "app/external_macro.py:612",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:576",
+          "sitio": "app/external_macro.py:624",
           "verbo": "DELETE"
         }
       ],
@@ -49725,12 +49908,12 @@
         {
           "funcion": "app.external_macro.external_macro_context",
           "origen": "literal",
-          "sitio": "app/external_macro.py:450"
+          "sitio": "app/external_macro.py:498"
         },
         {
           "funcion": "app.external_macro.refresh_external_macro",
           "origen": "literal",
-          "sitio": "app/external_macro.py:576"
+          "sitio": "app/external_macro.py:624"
         }
       ],
       "leida_por": [
@@ -49839,7 +50022,7 @@
         {
           "funcion": "app.metrics.insert_snapshot",
           "origen": "literal",
-          "sitio": "app/metrics.py:712",
+          "sitio": "app/metrics.py:748",
           "verbo": "INSERT"
         }
       ],
@@ -50553,6 +50736,11 @@
           "funcion": "app.metrics.liquidation_history_observation",
           "origen": "literal",
           "sitio": "app/metrics.py:292"
+        },
+        {
+          "funcion": "app.metrics.certified_metrics_cutoff",
+          "origen": "literal",
+          "sitio": "app/metrics.py:374"
         },
         {
           "funcion": "app.orderflow_lectura._barrido_liquidaciones",
