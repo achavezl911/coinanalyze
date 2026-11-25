@@ -298,7 +298,19 @@ async def test_collector_startup_breaks_persisted_liquidation_continuity(
     monkeypatch.setattr(scalp, "declare_liquidation_silence", declare)
     monkeypatch.setattr(scalp, "mark_feed_shard_degraded", degraded)
 
-    await reset_liquidation_feed_health(object())  # type: ignore[arg-type]
+    healthy = datetime(2026, 11, 25, 6, 59, tzinfo=UTC)
+    restored: list[tuple[Any, ...]] = []
+
+    class _PersistedShard:
+        # declare devolvio 0 (parada bajo el TOPE): la base tiene el latido sano del shard (V-08)
+        async def fetchval(self, query: str, *args: Any) -> datetime:
+            assert "FROM market_feed_health_shard" in query
+            return healthy
+
+        async def execute(self, query: str, *args: Any) -> None:
+            restored.append(args)
+
+    await reset_liquidation_feed_health(_PersistedShard())  # type: ignore[arg-type]
 
     assert connected == {"binance": False, "bybit": False}
     # H-03: el silencio anterior se declara ANTES de que el reset pise el latido

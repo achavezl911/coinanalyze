@@ -12,6 +12,7 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`blocking_requirement_keys`](#blocking-requirement-keys) | 123 | 19 | **0** | 15 ↑ | **19** |
 | [`_aware_utc`](#-aware-utc) | 72 | 15 | **0** | 21 ↑ | **15** |
 | [`_validated_window`](#-validated-window) | 78 | 15 | **0** | 21 ↑ | **15** |
+| [`record_event_stream_loss`](#record-event-stream-loss) | 363 | 0 | **0** | 27 ↑ | **0** |
 | [`expected_buckets`](#expected-buckets) | 260 | 12 | **0** | 21 ↑ | **12** |
 | [`from_record`](#from-record) | 1157 | 0 | **0** | 21 ↑ | **0** |
 | [`_cubierto_por_otro_detector`](#-cubierto-por-otro-detector) | 454 | 0 | **0** | 21 ↑ | **0** |
@@ -25,7 +26,6 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`partition_gap_by_source_coverage`](#partition-gap-by-source-coverage) | 982 | 0 | **0** | 21 ↑ | **0** |
 | [`partition_runs`](#partition-runs) | 937 | 0 | **0** | 21 ↑ | **0** |
 | [`record_data_gap`](#record-data-gap) | 302 | 0 | **21** | 21 | **21** |
-| [`record_event_stream_loss`](#record-event-stream-loss) | 363 | 0 | **0** | 21 ↑ | **0** |
 | [`recover_gap`](#recover-gap) | 1289 | 0 | **21** | 21 | **21** |
 | [`recover_unresolved_gaps`](#recover-unresolved-gaps) | 1356 | 0 | **0** | 21 ↑ | **0** |
 | [`validate_recovery`](#validate-recovery) | 1193 | 0 | **0** | 21 ↑ | **0** |
@@ -450,6 +450,98 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 23 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
+
+## record_event_stream_loss
+
+`app/data_gaps.py:363` · clave completa `app.data_gaps.record_event_stream_loss`
+
+**Radio exacto: 0 rutas** de 94 · **cota superior: 27** (mas ancha)
+
+### Por llamada — 0 rutas
+
+La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
+
+_ninguna ruta la ejecuta._
+
+### Por tabla · k=0 — 0 rutas · **exacto**
+
+_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
+impacto por dato viaja por quien la llama: mira la cota de abajo.
+
+### Por tabla · k<=2 — 27 rutas · **cota superior**
+
+**Esta cota es MAS ANCHA que el dato exacto** (27 contra 0). Parte de la diferencia puede entrar por un bucle
+de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
+**de afectadas.**
+
+Ella o alguien que la llama hasta k=2 escribe:
+
+- `data_gap` — la escribe `app.data_gaps.record_data_gap`, `app.scalp_collector.declare_liquidation_silence`
+- `market_feed_health` — la escribe `app.scalp_collector._restore_liquidation_heartbeat`
+- `market_feed_health_shard` — la escribe `app.scalp_collector._restore_liquidation_heartbeat`
+
+Y esas tablas las leen:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+
+**27 rutas se enteran SOLO por el dato**, sin
+ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
+
+- [`/api/ai/context`](../rutas/api-ai-context.md)
+- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
+- [`/api/cvd`](../rutas/api-cvd.md)
+- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
+- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
+- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
+- [`/api/daily`](../rutas/api-daily.md)
+- [`/api/dashboard/state`](../rutas/api-dashboard-state.md)
+- [`/api/desk/state`](../rutas/api-desk-state.md)
+- [`/api/entradas`](../rutas/api-entradas.md)
+- [`/api/external-macro`](../rutas/api-external-macro.md)
+- [`/api/hypothesis`](../rutas/api-hypothesis.md)
+- [`/api/liquidation-map`](../rutas/api-liquidation-map.md)
+- [`/api/liquidations`](../rutas/api-liquidations.md)
+- [`/api/mesa/decide`](../rutas/api-mesa-decide.md)
+- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
+- [`/api/ohlcv`](../rutas/api-ohlcv.md)
+- [`/api/oi`](../rutas/api-oi.md)
+- [`/api/passive-flow`](../rutas/api-passive-flow.md)
+- [`/api/profile`](../rutas/api-profile.md)
+- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
+- [`/api/scalp/alerts`](../rutas/api-scalp-alerts.md)
+- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
+- [`/api/scalp/execution-cost`](../rutas/api-scalp-execution-cost.md)
+- [`/api/scalp/summary`](../rutas/api-scalp-summary.md)
+- [`/api/swing-score`](../rutas/api-swing-score.md)
+- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
+
+<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## expected_buckets
 
@@ -1529,7 +1621,7 @@ Y esas tablas las leen:
 
 Ella o alguien que la llama hasta k=2 escribe:
 
-- `data_gap` — la escribe `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`
+- `data_gap` — la escribe `app.data_gaps.reconcile_cadence_coverage`, `app.data_gaps.record_data_gap`, `app.scalp_collector.declare_liquidation_silence`
 
 Y esas tablas las leen:
 
@@ -1581,84 +1673,6 @@ ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
 - [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
 
 <sub>k=0 es exacto. La cota k<=2 sube por 7 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
-
-## record_event_stream_loss
-
-`app/data_gaps.py:363` · clave completa `app.data_gaps.record_event_stream_loss`
-
-**Radio exacto: 0 rutas** de 94 · **cota superior: 21** (mas ancha)
-
-### Por llamada — 0 rutas
-
-La ruta **ejecuta** esta funcion. Es exacto: o esta en su cierre o no esta.
-
-_ninguna ruta la ejecuta._
-
-### Por tabla · k=0 — 0 rutas · **exacto**
-
-_no escribe ninguna tabla ella misma._ Si es una funcion pura, su
-impacto por dato viaja por quien la llama: mira la cota de abajo.
-
-### Por tabla · k<=2 — 21 rutas · **cota superior**
-
-**Esta cota es MAS ANCHA que el dato exacto** (21 contra 0). Parte de la diferencia puede entrar por un bucle
-de colector que solo comparte llamador, no dato. **Es un techo, no una lista**
-**de afectadas.**
-
-Ella o alguien que la llama hasta k=2 escribe:
-
-- `data_gap` — la escribe `app.data_gaps.record_data_gap`
-
-Y esas tablas las leen:
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd`](../rutas/api-cvd.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
-- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
-- [`/api/daily`](../rutas/api-daily.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/entradas`](../rutas/api-entradas.md)
-- [`/api/external-macro`](../rutas/api-external-macro.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
-- [`/api/ohlcv`](../rutas/api-ohlcv.md)
-- [`/api/oi`](../rutas/api-oi.md)
-- [`/api/passive-flow`](../rutas/api-passive-flow.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-- [`/api/swing-score`](../rutas/api-swing-score.md)
-- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-
-**21 rutas se enteran SOLO por el dato**, sin
-ejecutar nada de esta funcion. Son las que un grafo de llamadas no ve:
-
-- [`/api/ai/context`](../rutas/api-ai-context.md)
-- [`/api/ai/context/bundle`](../rutas/api-ai-context-bundle.md)
-- [`/api/cvd`](../rutas/api-cvd.md)
-- [`/api/cvd-matrix`](../rutas/api-cvd-matrix.md)
-- [`/api/cvd/divergence`](../rutas/api-cvd-divergence.md)
-- [`/api/cvd/spot`](../rutas/api-cvd-spot.md)
-- [`/api/daily`](../rutas/api-daily.md)
-- [`/api/desk/state`](../rutas/api-desk-state.md)
-- [`/api/entradas`](../rutas/api-entradas.md)
-- [`/api/external-macro`](../rutas/api-external-macro.md)
-- [`/api/hypothesis`](../rutas/api-hypothesis.md)
-- [`/api/liquidations`](../rutas/api-liquidations.md)
-- [`/api/mesa/entradas`](../rutas/api-mesa-entradas.md)
-- [`/api/ohlcv`](../rutas/api-ohlcv.md)
-- [`/api/oi`](../rutas/api-oi.md)
-- [`/api/passive-flow`](../rutas/api-passive-flow.md)
-- [`/api/profile`](../rutas/api-profile.md)
-- [`/api/quality/feeds`](../rutas/api-quality-feeds.md)
-- [`/api/scalp/delta-matrix`](../rutas/api-scalp-delta-matrix.md)
-- [`/api/swing-score`](../rutas/api-swing-score.md)
-- [`/api/trend-matrix`](../rutas/api-trend-matrix.md)
-
-<sub>k=0 es exacto. La cota k<=2 sube por 5 llamadores y **no es una lista de afectadas**: es un techo. Lo que este mas arriba de k=2 no se afirma en ninguno de los dos.</sub>
 
 ## recover_gap
 

@@ -28,10 +28,10 @@ Tipo declarado en la firma: `StreamingResponse`.
 LEE:
 
 - `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:898`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:1026`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:970`
 - `spot_trades_realtime` — `sql/schema.sql:329`, 10 columnas
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:404`
   - la llena `app.ws_collector.flush_realtime` (INSERT) — `app/ws_collector.py:421`

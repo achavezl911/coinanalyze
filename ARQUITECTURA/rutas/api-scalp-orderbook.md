@@ -35,8 +35,8 @@ Tipo declarado en la firma: `dict[str, Any]`.
 LEE:
 
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:1026`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:970`
 
 ## Funciones que la componen
 

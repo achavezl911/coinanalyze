@@ -194,3 +194,55 @@ async def test_prop_mudo_el_proceso_vivo_con_intentos_fallidos_y_la_reconexion_d
                       "evidence_type": "collector_outage"}]
     assert [(h["exchange"], h["desde"], h["evidencia"]) for h in await _ind(conn)] == \
         [("binance", lec.iso(desde), "collector_outage")]
+
+
+# HUELIQ R1b (V-08, Fable V1 N4): el silencio se juzga ENTERO, del ultimo latido sano al primer `ok`.
+# Con main el arranque juzgaba [latido, arranque) y reescribia el latido; el `ok` juzgaba [arranque, ok):
+# 80 s parado + 85 s reconectando = 165 s sin liquidaciones y ningun hueco declarado.
+async def _pasan(conn: asyncpg.Connection, s: int) -> None:
+    """El reloj avanza `s` segundos: todo lo guardado retrocede `s` respecto a now()."""
+    await conn.execute(
+        "UPDATE market_feed_health_shard SET updated_at = updated_at - make_interval(secs => $1) "
+        "WHERE feed='liquidations'", s)
+    await conn.execute(
+        "UPDATE data_gap SET start_ts = start_ts - make_interval(secs => $1), "
+        "end_ts = end_ts - make_interval(secs => $1) WHERE feed='liquidations'", s)
+
+
+async def _parada_y_reconexion(
+    conn: asyncpg.Connection, parada: int, reconexion: int, *, mira_latido: bool = False,
+) -> list[float]:
+    """Parado `parada` s, arranca, reconecta durante `reconexion` s y llega el primer `ok`."""
+    latido = await _planta_latido(conn, timedelta(seconds=parada))
+    await scalp.reset_liquidation_feed_health(conn)
+    if mira_latido:
+        # el arranque no da por sano un latido cuyo silencio no declaro
+        assert await _latido(conn) == latido
+    await _pasan(conn, reconexion)
+    await scalp._write_liquidation_health(conn, "binance", "ok", "subscription active")
+    filas = await conn.fetch(HUECOS + " ORDER BY start_ts")
+    assert {(f["exchange"], f["symbol"], f["evidence_type"]) for f in filas} <= \
+        {("binance", SIMBOLO, "collector_outage")}
+    return [(f["end_ts"] - f["start_ts"]).total_seconds() for f in filas]
+
+
+async def test_prop_r1b_80_s_parado_y_85_de_reconexion_es_un_hueco_de_165_s(conn) -> None:
+    duraciones = await _parada_y_reconexion(conn, 80, 85, mira_latido=True)
+
+    assert len(duraciones) == 1 and abs(duraciones[0] - 165) < 2, duraciones
+
+
+async def test_prop_r1b_200_s_parado_y_85_de_reconexion_extiende_la_fila_sin_duplicarla(conn) -> None:
+    duraciones = await _parada_y_reconexion(conn, 200, 85)
+
+    assert len(duraciones) == 1 and abs(duraciones[0] - 285) < 2, duraciones
+
+
+async def test_r1b_200_s_parado_y_ok_inmediato_es_una_fila_como_hoy(conn) -> None:
+    duraciones = await _parada_y_reconexion(conn, 200, 0)
+
+    assert len(duraciones) == 1 and abs(duraciones[0] - 200) < 2, duraciones
+
+
+async def test_control_r1b_40_s_parado_y_30_de_reconexion_no_es_un_hueco(conn) -> None:
+    assert await _parada_y_reconexion(conn, 40, 30) == []

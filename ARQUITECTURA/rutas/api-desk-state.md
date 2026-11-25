@@ -74,17 +74,19 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
+  - la llena `app.scalp_collector.declare_liquidation_silence` (UPDATE) — `app/scalp_collector.py:510`
 - `futures_trades_agg` — `sql/schema.sql:374`, 9 columnas
-  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1629`
-  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:875`
+  - la llena `app.scalp_collector.cleanup_expired_rows` (DELETE) — `app/scalp_collector.py:1681`
+  - la llena `app.scalp_collector._write_combined_minute` (INSERT) — `app/scalp_collector.py:927`
 - `futures_trades_realtime` — `sql/schema.sql:357`, 10 columnas
-  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:846`
+  - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:898`
 - `liquidations_realtime` — `sql/schema.sql:440`, 9 columnas
   - la llena `app.scalp_collector.flush_liquidations` (INSERT) — `app/scalp_collector.py:75`
 - `market_feed_health` — `sql/schema.sql:1402`, 7 columnas
   - la llena `app.db.mark_feed_connected` (INSERT) — `app/db.py:580`
   - la llena `app.db._mark_feed_unhealthy` (INSERT) — `app/db.py:609`
   - la llena `app.db._mark_feed_shard_health` (INSERT) — `app/db.py:706`
+  - la llena `app.scalp_collector._restore_liquidation_heartbeat` (UPDATE) — `app/scalp_collector.py:721`
 - `metric_baseline` — `sql/schema.sql:1351`, 14 columnas
   - la llena `app.daily_agg._store_baseline` (INSERT) — `app/daily_agg.py:824`
 - `ohlcv` — `sql/schema.sql:156`, 13 columnas
@@ -95,8 +97,8 @@ LEE:
 - `open_interest` — `sql/schema.sql:184`, 7 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:663`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
-  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:918`
-  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:974`
+  - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:1026`
+  - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:970`
 - `pipeline_heartbeat` — `sql/schema.sql:1370`, 4 columnas
   - la llena `app.db.heartbeat` (INSERT) — `app/db.py:418`
   - la llena `app.db.heartbeat_component` (INSERT) — `app/db.py:472`

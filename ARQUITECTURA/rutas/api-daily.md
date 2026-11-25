@@ -60,6 +60,7 @@ LEE:
   - la llena `app.data_gaps.archive_source_response_absence` (UPDATE) — `app/data_gaps.py:877`
   - la llena `app.libro.declara_hueco` (UPDATE) — `app/libro.py:792`
   - la llena `app.orderflow.declara_hueco` (UPDATE) — `app/orderflow.py:508`
+  - la llena `app.scalp_collector.declare_liquidation_silence` (UPDATE) — `app/scalp_collector.py:510`
 
 Identificadores detras de FROM/JOIN que **no** estan en `sql/schema.sql` y que por
 tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
