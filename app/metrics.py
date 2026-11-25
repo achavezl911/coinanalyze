@@ -361,6 +361,29 @@ async def _liquidation_history_observed(
     return observation is not None
 
 
+async def certified_metrics_cutoff(conn: asyncpg.Connection, floor: datetime) -> datetime:
+    """F9 H6: el corte de la foto es el de SU certificado de liquidaciones, no el reloj.
+
+    El ciclo de OHLCV publica a los :05:08 con el suelo de 5 min ya en :05, pero el
+    certificado de liquidaciones lo escribe el ciclo de metricas unos segundos despues: hasta
+    entonces dice :00, no cubre el suelo y el regimen salia nulo. Si el certificado va UNA
+    cubeta detras del suelo, la foto se corta en el (con su metrics_cutoff_at). Si va mas,
+    se queda el suelo y cierra en falso: un ciclo parado no se disfraza de dato.
+    """
+    rows = await conn.fetch(
+        "SELECT detail FROM pipeline_heartbeat WHERE service=$1", LIQUIDATION_HISTORY_HEARTBEAT
+    )
+    if len(rows) != 1:
+        return floor
+    try:
+        detail = json.loads(str(rows[0].get("detail") or ""))
+        certificado = datetime.fromtimestamp(int(detail["source_cutoff_ts"]), tz=UTC)
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError, OverflowError, OSError):
+        return floor
+    previo = floor - timedelta(minutes=5)
+    return previo if certificado == previo else floor
+
+
 _SPOT_CUBIERTOS_24H = segundos_cubiertos_sql(filtro="ts >= $4 - interval '24 hours'")
 _SPOT_CUBIERTOS_SESION = segundos_cubiertos_sql(filtro="ts >= $3")
 
@@ -390,9 +413,13 @@ fut AS (
     WHERE symbol = $1 AND interval = '1min'
       AND ts >= $4 - interval '25 hours' AND ts < $4
 ),
+-- M-05 / F9 H3: toda «ultima fila» lleva SUELO de edad. Sin el, un apagon hacia valer
+-- como «hace 1 h» la vela de hace un dia y como OI «actual» o «de hace 24 h» una fila de
+-- cualquier edad. Fuera del suelo la CTE no devuelve fila y la metrica sale NULL.
 price_1h AS (
     SELECT close AS value FROM ohlcv
     WHERE symbol = $1 AND interval = '1min' AND ts <= $4 - interval '1 hour'
+      AND ts > $4 - interval '65 minutes'
     ORDER BY ts DESC LIMIT 1
 ),
 spot AS (
@@ -415,11 +442,14 @@ oi_now AS (
 oi_old AS (
     SELECT oi_close AS value FROM open_interest
     WHERE symbol = $1 AND interval = '5min' AND ts < $5 - interval '24 hours'
+      AND ts >= $5 - interval '24 hours 10 minutes'
     ORDER BY ts DESC LIMIT 1
 ),
 oi_b AS (
-    SELECT oi_close AS value FROM oi_bybit
-    WHERE symbol = $1 AND interval = '5min' AND ts < $5 ORDER BY ts DESC LIMIT 1
+    SELECT oi_close AS value, ts FROM oi_bybit
+    WHERE symbol = $1 AND interval = '5min' AND ts < $5
+      AND ts >= $5 - interval '10 minutes'
+    ORDER BY ts DESC LIMIT 1
 ),
 fund AS (
     SELECT AVG(fr_close) AS value FROM funding_rate
@@ -446,7 +476,7 @@ SELECT
   spot.inst_buy, spot.inst_sell,
   spot.covered_24h AS spot_covered_24h, spot.covered_session AS spot_covered_session,
   oi_now.value AS oi_now, oi_now.ts AS oi_ts, oi_old.value AS oi_old,
-  oi_b.value AS oi_bybit,
+  oi_b.value AS oi_bybit, oi_b.ts AS oi_bybit_ts,
   fund.value AS fr_avg, pfund.value AS pfr_avg,
   liq.long_value AS long_liq, liq.short_value AS short_liq
 FROM fut
@@ -582,6 +612,9 @@ async def compute_snapshot(
         data["btr_15m"] = None
     if "fut_1h" in blocked:
         data["btr_1h"] = None
+        # La direccion de 1 h compara contra el precio de hace 1 h: con la hora bloqueada
+        # no hay referencia medida, y un price_1h de antes del hueco no lo es (F9 H3).
+        data["price_1h"] = None
     if "spot_24h" in blocked:
         for key in ("spot_cvd_24h", "spot_vol_24h", "inst_buy", "inst_sell"):
             data[key] = None
@@ -592,6 +625,7 @@ async def compute_snapshot(
             data[key] = None
     if "oi_bybit" in blocked:
         data["oi_bybit"] = None
+        data["oi_bybit_ts"] = None
     if "funding_24h" in blocked:
         data["fr_avg"] = None
     if "predicted_funding_24h" in blocked:
@@ -667,6 +701,8 @@ async def compute_snapshot(
         "cvd_spot_24h": spot_24h,
         "cvd_spot_session": spot_session,
         "oi_bybit": optional_finite(data.get("oi_bybit")),
+        # La hora de la fila de Bybit viaja con su valor: no tiene por que ser la de oi_ts.
+        "oi_bybit_at": data.get("oi_bybit_ts"),
         "liq_ratio_24h": liq_ratio,
         # Un diferencial exige AMBAS patas: restar contra una ausencia publicaria la pata
         # presente con el signo cambiado y la llamaria "diferencial".
