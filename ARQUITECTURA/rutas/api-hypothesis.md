@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `hypothesis` · `app/api.py:1533` (cuerpo hasta la 1610) · decorador en la linea 1532.
+Handler `hypothesis` · `app/api.py:1584` (cuerpo hasta la 1661) · decorador en la linea 1583.
 
 ## Parametros de entrada
 
@@ -31,89 +31,89 @@ Handler `hypothesis` · `app/api.py:1533` (cuerpo hasta la 1610) · decorador en
 
 | campo | de donde sale |
 |---|---|
-| `as_of` | literal en app/api.py:1585 |
-| `context` | literal en app/scalp_logic.py:5224 |
-| `counts` | literal en app/scalp_logic.py:5235 |
-| `data_coverage_pct` | literal en app/scalp_logic.py:5226 |
-| `direction` | literal en app/scalp_logic.py:5212 |
-| `direction_label` | literal en app/scalp_logic.py:5213 |
-| `evidence` | literal en app/scalp_logic.py:5234 |
-| `evidence.a_favor` | literal en app/scalp_logic.py:5108 |
-| `evidence.en_contra` | literal en app/scalp_logic.py:5109 |
-| `evidence.neutral` | literal en app/scalp_logic.py:5110 |
-| `evidence.no_evaluable` | literal en app/scalp_logic.py:5112 |
-| `evidence.pendiente` | literal en app/scalp_logic.py:5111 |
-| `execution` | literal en app/scalp_logic.py:5232 |
-| `execution.bands_note` | literal en app/scalp_logic.py:5543 |
-| `execution.cost_components_bps` | literal en app/scalp_logic.py:5512 |
-| `execution.cost_components_missing` | literal en app/scalp_logic.py:5513 |
-| `execution.cost_to_risk` | literal en app/scalp_logic.py:5517 |
-| `execution.cost_to_risk_band` | literal en app/scalp_logic.py:5519 |
-| `execution.cost_to_target` | literal en app/scalp_logic.py:5516 |
-| `execution.cost_to_target_band` | literal en app/scalp_logic.py:5518 |
-| `execution.horizon` | literal en app/scalp_logic.py:5508 |
-| `execution.inputs` | literal en app/scalp_logic.py:5521 |
-| `execution.missing_inputs` | literal en app/scalp_logic.py:5520 |
-| `execution.note` | literal en app/scalp_logic.py:5549 |
-| `execution.plan_coherence` | literal en app/scalp_logic.py:5540 |
-| `execution.plan_incoherencias` | literal en app/scalp_logic.py:5541 |
-| `execution.plan_warning` | literal en app/scalp_logic.py:5542 |
-| `execution.profile` | literal en app/scalp_logic.py:5506 |
-| `execution.profile_label` | literal en app/scalp_logic.py:5507 |
-| `execution.risk_bps` | literal en app/scalp_logic.py:5515 |
-| `execution.spread_warn_bps` | literal en app/scalp_logic.py:5533 |
-| `execution.spread_warning` | literal en app/scalp_logic.py:5532 |
-| `execution.status` | literal en app/scalp_logic.py:5509 |
-| `execution.target_bps` | literal en app/scalp_logic.py:5514 |
-| `execution.total_cost_bps` | literal en app/scalp_logic.py:5511 |
-| `execution.verdict` | literal en app/scalp_logic.py:5510 |
-| `hypothesis` | literal en app/scalp_logic.py:5211 |
-| `invalidations` | literal en app/scalp_logic.py:5237 |
-| `label` | literal en app/scalp_logic.py:5218 |
-| `note` | literal en app/scalp_logic.py:5245 |
-| `pending_conditions` | literal en app/scalp_logic.py:5236 |
-| `profile` | literal en app/scalp_logic.py:5223 |
-| `profile_coverage_pct` | literal en app/scalp_logic.py:5227 |
-| `setup` | literal en app/scalp_logic.py:5214 |
-| `setup_evaluation` | literal en app/scalp_logic.py:5217 |
-| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1422 |
-| `setup_evaluation.confirmation_met` | literal en app/setups.py:1423 |
-| `setup_evaluation.confirmation_total` | literal en app/setups.py:1421 |
-| `setup_evaluation.coverage_pct` | literal en app/setups.py:1417 |
-| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1419 |
-| `setup_evaluation.critical_met` | literal en app/setups.py:1420 |
-| `setup_evaluation.critical_total` | literal en app/setups.py:1418 |
-| `setup_evaluation.cumplidos` | literal en app/setups.py:1412 |
-| `setup_evaluation.direction` | literal en app/setups.py:1404 |
-| `setup_evaluation.direction_label` | literal en app/setups.py:1405 |
-| `setup_evaluation.episodio` | literal en app/setups.py:1429 |
-| `setup_evaluation.faltantes` | literal en app/setups.py:1413 |
-| `setup_evaluation.invalidaciones` | literal en app/setups.py:1410 |
-| `setup_evaluation.label` | literal en app/setups.py:1403 |
-| `setup_evaluation.min_confirmations` | literal en app/setups.py:1426 |
-| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1427 |
-| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1425 |
-| `setup_evaluation.missing_critical` | literal en app/setups.py:1424 |
-| `setup_evaluation.no_evaluables` | literal en app/setups.py:1411 |
-| `setup_evaluation.note` | literal en app/setups.py:1430 |
-| `setup_evaluation.pendientes` | literal en app/setups.py:1409 |
-| `setup_evaluation.requisitos` | literal en app/setups.py:1408 |
-| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1415 |
-| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1414 |
-| `setup_evaluation.setup` | literal en app/setups.py:1402 |
-| `setup_evaluation.state` | literal en app/setups.py:1407 |
-| `setup_evaluation.thesis` | literal en app/setups.py:1406 |
-| `setup_label` | literal en app/scalp_logic.py:5215 |
-| `setup_observables` | literal en app/scalp_logic.py:5238 |
-| `setup_state` | literal en app/scalp_logic.py:5216 |
-| `setup_zone` | literal en app/scalp_logic.py:5239 |
-| `setup_zone.breakout_boundary` | literal en app/scalp_logic.py:5243 |
-| `setup_zone.zone_center` | literal en app/scalp_logic.py:5242 |
-| `setup_zone.zone_high` | literal en app/scalp_logic.py:5241 |
-| `setup_zone.zone_low` | literal en app/scalp_logic.py:5240 |
-| `spread_bps` | literal en app/scalp_logic.py:5233 |
-| `symbol` | literal en app/api.py:1584 |
-| `timing` | literal en app/scalp_logic.py:5225 |
+| `as_of` | literal en app/api.py:1636 |
+| `context` | literal en app/scalp_logic.py:5241 |
+| `counts` | literal en app/scalp_logic.py:5252 |
+| `data_coverage_pct` | literal en app/scalp_logic.py:5243 |
+| `direction` | literal en app/scalp_logic.py:5229 |
+| `direction_label` | literal en app/scalp_logic.py:5230 |
+| `evidence` | literal en app/scalp_logic.py:5251 |
+| `evidence.a_favor` | literal en app/scalp_logic.py:5125 |
+| `evidence.en_contra` | literal en app/scalp_logic.py:5126 |
+| `evidence.neutral` | literal en app/scalp_logic.py:5127 |
+| `evidence.no_evaluable` | literal en app/scalp_logic.py:5129 |
+| `evidence.pendiente` | literal en app/scalp_logic.py:5128 |
+| `execution` | literal en app/scalp_logic.py:5249 |
+| `execution.bands_note` | literal en app/scalp_logic.py:5560 |
+| `execution.cost_components_bps` | literal en app/scalp_logic.py:5529 |
+| `execution.cost_components_missing` | literal en app/scalp_logic.py:5530 |
+| `execution.cost_to_risk` | literal en app/scalp_logic.py:5534 |
+| `execution.cost_to_risk_band` | literal en app/scalp_logic.py:5536 |
+| `execution.cost_to_target` | literal en app/scalp_logic.py:5533 |
+| `execution.cost_to_target_band` | literal en app/scalp_logic.py:5535 |
+| `execution.horizon` | literal en app/scalp_logic.py:5525 |
+| `execution.inputs` | literal en app/scalp_logic.py:5538 |
+| `execution.missing_inputs` | literal en app/scalp_logic.py:5537 |
+| `execution.note` | literal en app/scalp_logic.py:5566 |
+| `execution.plan_coherence` | literal en app/scalp_logic.py:5557 |
+| `execution.plan_incoherencias` | literal en app/scalp_logic.py:5558 |
+| `execution.plan_warning` | literal en app/scalp_logic.py:5559 |
+| `execution.profile` | literal en app/scalp_logic.py:5523 |
+| `execution.profile_label` | literal en app/scalp_logic.py:5524 |
+| `execution.risk_bps` | literal en app/scalp_logic.py:5532 |
+| `execution.spread_warn_bps` | literal en app/scalp_logic.py:5550 |
+| `execution.spread_warning` | literal en app/scalp_logic.py:5549 |
+| `execution.status` | literal en app/scalp_logic.py:5526 |
+| `execution.target_bps` | literal en app/scalp_logic.py:5531 |
+| `execution.total_cost_bps` | literal en app/scalp_logic.py:5528 |
+| `execution.verdict` | literal en app/scalp_logic.py:5527 |
+| `hypothesis` | literal en app/scalp_logic.py:5228 |
+| `invalidations` | literal en app/scalp_logic.py:5254 |
+| `label` | literal en app/scalp_logic.py:5235 |
+| `note` | literal en app/scalp_logic.py:5262 |
+| `pending_conditions` | literal en app/scalp_logic.py:5253 |
+| `profile` | literal en app/scalp_logic.py:5240 |
+| `profile_coverage_pct` | literal en app/scalp_logic.py:5244 |
+| `setup` | literal en app/scalp_logic.py:5231 |
+| `setup_evaluation` | literal en app/scalp_logic.py:5234 |
+| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1426 |
+| `setup_evaluation.confirmation_met` | literal en app/setups.py:1427 |
+| `setup_evaluation.confirmation_total` | literal en app/setups.py:1425 |
+| `setup_evaluation.coverage_pct` | literal en app/setups.py:1421 |
+| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1423 |
+| `setup_evaluation.critical_met` | literal en app/setups.py:1424 |
+| `setup_evaluation.critical_total` | literal en app/setups.py:1422 |
+| `setup_evaluation.cumplidos` | literal en app/setups.py:1416 |
+| `setup_evaluation.direction` | literal en app/setups.py:1408 |
+| `setup_evaluation.direction_label` | literal en app/setups.py:1409 |
+| `setup_evaluation.episodio` | literal en app/setups.py:1433 |
+| `setup_evaluation.faltantes` | literal en app/setups.py:1417 |
+| `setup_evaluation.invalidaciones` | literal en app/setups.py:1414 |
+| `setup_evaluation.label` | literal en app/setups.py:1407 |
+| `setup_evaluation.min_confirmations` | literal en app/setups.py:1430 |
+| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1431 |
+| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1429 |
+| `setup_evaluation.missing_critical` | literal en app/setups.py:1428 |
+| `setup_evaluation.no_evaluables` | literal en app/setups.py:1415 |
+| `setup_evaluation.note` | literal en app/setups.py:1434 |
+| `setup_evaluation.pendientes` | literal en app/setups.py:1413 |
+| `setup_evaluation.requisitos` | literal en app/setups.py:1412 |
+| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1419 |
+| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1418 |
+| `setup_evaluation.setup` | literal en app/setups.py:1406 |
+| `setup_evaluation.state` | literal en app/setups.py:1411 |
+| `setup_evaluation.thesis` | literal en app/setups.py:1410 |
+| `setup_label` | literal en app/scalp_logic.py:5232 |
+| `setup_observables` | literal en app/scalp_logic.py:5255 |
+| `setup_state` | literal en app/scalp_logic.py:5233 |
+| `setup_zone` | literal en app/scalp_logic.py:5256 |
+| `setup_zone.breakout_boundary` | literal en app/scalp_logic.py:5260 |
+| `setup_zone.zone_center` | literal en app/scalp_logic.py:5259 |
+| `setup_zone.zone_high` | literal en app/scalp_logic.py:5258 |
+| `setup_zone.zone_low` | literal en app/scalp_logic.py:5257 |
+| `spread_bps` | literal en app/scalp_logic.py:5250 |
+| `symbol` | literal en app/api.py:1635 |
+| `timing` | literal en app/scalp_logic.py:5242 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -200,16 +200,16 @@ Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4657`
-- `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:5064`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4674`
+- `app.scalp_logic.hypothesis_evidence` — `app/scalp_logic.py:5081`
 - `app.scalp_logic.price_barriers` — `app/scalp_logic.py:1309`
-- `app.scalp_logic.profile_view` — `app/scalp_logic.py:4872`
+- `app.scalp_logic.profile_view` — `app/scalp_logic.py:4889`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2523`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
-- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6319`
-- `app.setups.build_setup_context` — `app/setups.py:1174`
+- `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6336`
+- `app.setups.build_setup_context` — `app/setups.py:1178`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
 <details><summary>Alcanzables de forma indirecta (70)</summary>
@@ -219,13 +219,13 @@ Llamadas directas del handler:
 - `app.interpretation._barrier_zones` — `app/interpretation.py:779`
 - `app.interpretation.number` — `app/interpretation.py:10`
 - `app.interpretation.price_barrier_read` — `app/interpretation.py:877`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
-- `app.scalp_logic._atr` — `app/scalp_logic.py:3239`
-- `app.scalp_logic._banda` — `app/scalp_logic.py:5404`
-- `app.scalp_logic._bps` — `app/scalp_logic.py:5330`
+- `app.scalp_logic._atr` — `app/scalp_logic.py:3256`
+- `app.scalp_logic._banda` — `app/scalp_logic.py:5421`
+- `app.scalp_logic._bps` — `app/scalp_logic.py:5347`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
 - `app.scalp_logic._complete_tail_values` — `app/scalp_logic.py:965`
@@ -234,56 +234,56 @@ Llamadas directas del handler:
 - `app.scalp_logic._dsr` — `app/scalp_logic.py:2426`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:507`
-- `app.scalp_logic._flow_bias` — `app/scalp_logic.py:4859`
+- `app.scalp_logic._flow_bias` — `app/scalp_logic.py:4876`
 - `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2609`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2617`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4461`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4431`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4443`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:519`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:563`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4625`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4541`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4642`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4558`
 - `app.scalp_logic._resample_highs_lows` — `app/scalp_logic.py:1232`
 - `app.scalp_logic._structure_from_swings` — `app/scalp_logic.py:2377`
 - `app.scalp_logic._swings` — `app/scalp_logic.py:2363`
-- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3228`
+- `app.scalp_logic._tr_series` — `app/scalp_logic.py:3245`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:73`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.bars_incomplete_inside` — `app/scalp_logic.py:1303`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
-- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5337`
-- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5413`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4793`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2915`
+- `app.scalp_logic.coherencia_del_plan` — `app/scalp_logic.py:5354`
+- `app.scalp_logic.execution_assessment` — `app/scalp_logic.py:5430`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4810`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2932`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
-- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2854`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2871`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2861`
 - `app.setups._apertura` — `app/setups.py:814`
-- `app.setups._bars_closed_beyond` — `app/setups.py:872`
+- `app.setups._bars_closed_beyond` — `app/setups.py:876`
 - `app.setups._breakout_frontier` — `app/setups.py:757`
-- `app.setups._gap_in` — `app/setups.py:865`
-- `app.setups._last_pivots` — `app/setups.py:991`
-- `app.setups._level_defended` — `app/setups.py:1067`
+- `app.setups._gap_in` — `app/setups.py:869`
+- `app.setups._last_pivots` — `app/setups.py:995`
+- `app.setups._level_defended` — `app/setups.py:1071`
 - `app.setups._norm_bars` — `app/setups.py:793`
 - `app.setups._obs` — `app/setups.py:732`
-- `app.setups._pullback` — `app/setups.py:998`
-- `app.setups._retest_done` — `app/setups.py:955`
-- `app.setups._returned_inside` — `app/setups.py:911`
+- `app.setups._pullback` — `app/setups.py:1002`
+- `app.setups._retest_done` — `app/setups.py:959`
+- `app.setups._returned_inside` — `app/setups.py:915`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups._structure_event` — `app/setups.py:674`
 - `app.setups._tolerance` — `app/setups.py:778`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.episodio` — `app/setups.py:842`
-- `app.setups.evaluate_setup` — `app/setups.py:1312`
+- `app.setups.evaluate_setup` — `app/setups.py:1316`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
-- `app.setups.setup_observables` — `app/setups.py:1130`
+- `app.setups.setup_observables` — `app/setups.py:1134`
 
 </details>
 
@@ -303,10 +303,10 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | — | `app/api.py:1556` | el propio handler |
-| 422 | — | `app/api.py:1560` | el propio handler |
-| 422 | — | `app/api.py:1564` | el propio handler |
-| 422 | — | `app/api.py:1568` | el propio handler |
+| 422 | — | `app/api.py:1607` | el propio handler |
+| 422 | — | `app/api.py:1611` | el propio handler |
+| 422 | — | `app/api.py:1615` | el propio handler |
+| 422 | — | `app/api.py:1619` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

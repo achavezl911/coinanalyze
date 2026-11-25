@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_delta_matrix` · `app/api.py:1488` (cuerpo hasta la 1513) · decorador en la linea 1487.
+Handler `scalp_delta_matrix` · `app/api.py:1539` (cuerpo hasta la 1564) · decorador en la linea 1538.
 
 ## Parametros de entrada
 
@@ -74,30 +74,30 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4657`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4674`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 
 <details><summary>Alcanzables de forma indirecta (19)</summary>
 
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
 - `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2609`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2617`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4625`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4541`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4461`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4431`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4443`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4642`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4558`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2915`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2932`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
-- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2854`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2871`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2861`
 
 </details>
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `flow_spot_vs_perp` · `app/api.py:1911` (cuerpo hasta la 1933) · decorador en la linea 1910.
+Handler `flow_spot_vs_perp` · `app/api.py:1962` (cuerpo hasta la 1984) · decorador en la linea 1961.
 
 ## Parametros de entrada
 
@@ -22,18 +22,18 @@ Handler `flow_spot_vs_perp` · `app/api.py:1911` (cuerpo hasta la 1933) · decor
 
 | campo | de donde sale |
 |---|---|
-| `buckets` | literal en app/scalp_logic.py:6149 |
-| `buckets_with_both_legs` | literal en app/scalp_logic.py:6150 |
-| `coverage_pct` | literal en app/scalp_logic.py:6151 |
-| `interval` | literal en app/scalp_logic.py:6147 |
-| `reason` | literal en app/scalp_logic.py:6081 |
-| `rows` | literal en app/scalp_logic.py:6154 |
-| `spot_symbol` | literal en app/scalp_logic.py:6145 |
-| `state_counts` | literal en app/scalp_logic.py:6153 |
-| `status` | literal en app/scalp_logic.py:6152 |
-| `symbol` | literal en app/scalp_logic.py:6144 |
-| `unit` | literal en app/scalp_logic.py:6148 |
-| `venue` | literal en app/scalp_logic.py:6146 |
+| `buckets` | literal en app/scalp_logic.py:6166 |
+| `buckets_with_both_legs` | literal en app/scalp_logic.py:6167 |
+| `coverage_pct` | literal en app/scalp_logic.py:6168 |
+| `interval` | literal en app/scalp_logic.py:6164 |
+| `reason` | literal en app/scalp_logic.py:6098 |
+| `rows` | literal en app/scalp_logic.py:6171 |
+| `spot_symbol` | literal en app/scalp_logic.py:6162 |
+| `state_counts` | literal en app/scalp_logic.py:6170 |
+| `status` | literal en app/scalp_logic.py:6169 |
+| `symbol` | literal en app/scalp_logic.py:6161 |
+| `unit` | literal en app/scalp_logic.py:6165 |
+| `venue` | literal en app/scalp_logic.py:6163 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -56,15 +56,15 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declara_ventana` — `app/api.py:1886`
+- `app.api.declara_ventana` — `app/api.py:1937`
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.api.ventana_pedida` — `app/api.py:1853`
-- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:6060`
+- `app.api.ventana_pedida` — `app/api.py:1904`
+- `app.scalp_logic.spot_perp_flow` — `app/scalp_logic.py:6077`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
-- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4793`
+- `app.scalp_logic.flow_confirmation` — `app/scalp_logic.py:4810`
 
 </details>
 
@@ -83,12 +83,12 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 422 | hace falta «desde» | `app/api.py:1870` | una funcion de su cierre |
-| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1873` | una funcion de su cierre |
-| 422 | — | `app/api.py:1878` | una funcion de su cierre |
-| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1880` | una funcion de su cierre |
-| 422 | hasta tiene que ser posterior a desde | `app/api.py:1882` | una funcion de su cierre |
-| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1925` | el propio handler |
+| 422 | hace falta «desde» | `app/api.py:1921` | una funcion de su cierre |
+| 422 | «hasta» sin «desde» no acota nada | `app/api.py:1924` | una funcion de su cierre |
+| 422 | — | `app/api.py:1929` | una funcion de su cierre |
+| 422 | desde/hasta necesitan zona horaria explicita | `app/api.py:1931` | una funcion de su cierre |
+| 422 | hasta tiene que ser posterior a desde | `app/api.py:1933` | una funcion de su cierre |
+| 422 | interval debe ser 4hour o daily: son los que Coinalyze sirve con historia | `app/api.py:1976` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

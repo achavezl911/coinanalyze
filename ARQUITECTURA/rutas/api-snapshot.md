@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `snapshot` · `app/api.py:812` (cuerpo hasta la 828) · decorador en la linea 811.
+Handler `snapshot` · `app/api.py:863` (cuerpo hasta la 879) · decorador en la linea 862.
 
 ## Parametros de entrada
 
@@ -71,7 +71,7 @@ LEE:
 
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:751`
 
 ## Funciones que la componen
 
@@ -80,7 +80,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.latest_snapshot` — `app/api.py:664`
+- `app.api.latest_snapshot` — `app/api.py:715`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
 
@@ -100,7 +100,7 @@ Libreria de terceros, builtins o despacho dinamico. El analisis estatico se para
 | codigo | detalle | donde | de quien |
 |---|---|---|---|
 | 404 | Unknown symbol | `app/api.py:262` | una funcion de su cierre |
-| 404 | No data | `app/api.py:818` | el propio handler |
+| 404 | No data | `app/api.py:869` | el propio handler |
 
 ## Superficie · quien la consume (medido)
 

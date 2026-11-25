@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_summary` · `app/api.py:1480` (cuerpo hasta la 1484) · decorador en la linea 1479.
+Handler `scalp_summary` · `app/api.py:1531` (cuerpo hasta la 1535) · decorador en la linea 1530.
 
 ## Parametros de entrada
 
@@ -81,7 +81,7 @@ Handler `scalp_summary` · `app/api.py:1480` (cuerpo hasta la 1484) · decorador
 | `spot_price` | literal en app/scalp_logic.py:870 |
 | `spread_bps` | literal en app/scalp_logic.py:877 |
 | `state` | literal en app/scalp_logic.py:850 |
-| `symbol` | literal en app/api.py:1484 |
+| `symbol` | literal en app/api.py:1535 |
 | `vwap_dist_pct` | literal en app/scalp_logic.py:918 |
 | `wall_down_pct` | literal en app/scalp_logic.py:882 |
 | `wall_up_pct` | literal en app/scalp_logic.py:881 |
@@ -132,7 +132,7 @@ Llamadas directas del handler:
 
 <details><summary>Alcanzables de forma indirecta (21)</summary>
 
-- `app.metrics.current_nyse_start` — `app/metrics.py:49`
+- `app.metrics.current_nyse_start` — `app/metrics.py:52`
 - `app.scalp_logic._as_utc_datetime` — `app/scalp_logic.py:548`
 - `app.scalp_logic._closed_5m_oi_bounds` — `app/scalp_logic.py:99`
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`

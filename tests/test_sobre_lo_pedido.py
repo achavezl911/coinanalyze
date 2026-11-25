@@ -1,8 +1,9 @@
-"""M-03, paso 1 de 2: el sobre de las series dice su EDAD y los cubos sin declarar de lo PEDIDO.
+"""M-03: el sobre de las series dice su EDAD y los cubos sin declarar de lo PEDIDO.
 
 La ventana servida sale de las filas, asi que una serie que se paro hace 8 h salia `clean`:
-el hueco del final quedaba fuera de lo que se miraba. Este paso SOLO ANADE `as_of`,
-`age_seconds` y `requested_window` a `data_gaps`; `status` y `complete` no cambian (P08).
+el hueco del final quedaba fuera de lo que se miraba. El paso 1 anadio `as_of`,
+`age_seconds` y `requested_window` a `data_gaps`; el veredicto de P08 (SOBRE R2) vive en
+tests/test_sobre_r2_retraso.py.
 """
 
 from __future__ import annotations
@@ -67,8 +68,8 @@ async def test_m03_serie_parada_hace_8_h_dice_su_edad_y_sus_cubos_sin_declarar(m
     assert gaps["as_of"] == (T - 8 * HORA).isoformat()
     assert gaps["requested_window"]["window_start"] == (T - 10 * HORA).isoformat()
     assert gaps["requested_window"]["window_end"] == T.isoformat()
-    # ESTE PASO SOLO ANADE: la ventana servida y su veredicto son los de antes (P08 los cambia).
-    assert gaps["status"] == "clean"
+    # La ventana servida sigue siendo la de las filas; el veredicto ya no (P08).
+    assert gaps["status"] == "undeclared"
     assert gaps["undeclared_buckets"] == 0
     assert gaps["window_end"] == (T - 8 * HORA).isoformat()
 
@@ -81,7 +82,7 @@ async def test_m03_con_el_hueco_declarado_quedan_sin_declarar_solo_60(monkeypatc
     assert len(gaps["requested_window"]["declared"]) == 1
     assert gaps["requested_window"]["undeclared_buckets"] == 60
     assert gaps["declared"] == []  # la ventana servida no lo ve, igual que antes
-    assert gaps["status"] == "clean"
+    assert gaps["status"] == "undeclared"  # 60 sin declarar, tolerados 2 (P08)
 
 
 @pytest.mark.asyncio

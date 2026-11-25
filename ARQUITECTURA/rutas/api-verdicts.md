@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `verdicts` · `app/api.py:2361` (cuerpo hasta la 2447) · decorador en la linea 2360.
+Handler `verdicts` · `app/api.py:2412` (cuerpo hasta la 2498) · decorador en la linea 2411.
 
 ## Parametros de entrada
 
@@ -20,18 +20,18 @@ Handler `verdicts` · `app/api.py:2361` (cuerpo hasta la 2447) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:2440 |
-| `coverage.served_window` | literal en app/api.py:2440 |
+| `coverage` | literal en app/api.py:2491 |
+| `coverage.served_window` | literal en app/api.py:2491 |
 | `coverage.served_window.complete` | literal en app/data_gaps.py:294 |
 | `coverage.served_window.expected_buckets` | literal en app/data_gaps.py:292 |
 | `coverage.served_window.observed_buckets` | literal en app/data_gaps.py:293 |
 | `coverage.served_window.sources` | literal en app/data_gaps.py:295 |
 | `coverage.served_window.window_end` | literal en app/data_gaps.py:291 |
 | `coverage.served_window.window_start` | literal en app/data_gaps.py:290 |
-| `logic_version` | literal en app/api.py:2438 |
-| `note` | literal en app/api.py:2441 |
-| `rows` | literal en app/api.py:2439 |
-| `symbol` | literal en app/api.py:2437 |
+| `logic_version` | literal en app/api.py:2489 |
+| `note` | literal en app/api.py:2492 |
+| `rows` | literal en app/api.py:2490 |
+| `symbol` | literal en app/api.py:2488 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -53,7 +53,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api._session_window` — `app/api.py:645`
+- `app.api._session_window` — `app/api.py:696`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
@@ -62,7 +62,7 @@ Llamadas directas del handler:
 
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:78`
-- `app.metrics.session_bounds` — `app/metrics.py:60`
+- `app.metrics.session_bounds` — `app/metrics.py:63`
 
 </details>
 

@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `oi` · `app/api.py:1182` (cuerpo hasta la 1228) · decorador en la linea 1181.
+Handler `oi` · `app/api.py:1233` (cuerpo hasta la 1279) · decorador en la linea 1232.
 
 ## Parametros de entrada
 
@@ -20,25 +20,25 @@ Handler `oi` · `app/api.py:1182` (cuerpo hasta la 1228) · decorador en la line
 
 | campo | de donde sale |
 |---|---|
-| `coverage` | literal en app/api.py:622 |
-| `coverage.served_window` | literal en app/api.py:623 |
-| `coverage.unit` | literal en app/api.py:565 |
-| `data_gaps` | literal en app/api.py:628 |
-| `data_gaps.age_seconds` | literal en app/api.py:639 |
-| `data_gaps.as_of` | literal en app/api.py:638 |
-| `data_gaps.declared` | literal en app/api.py:636 |
-| `data_gaps.exchanges` | literal en app/api.py:630 |
-| `data_gaps.feed` | literal en app/api.py:629 |
-| `data_gaps.market` | literal en app/api.py:631 |
-| `data_gaps.requested_window` | literal en app/api.py:640 |
-| `data_gaps.status` | literal en app/api.py:635 |
-| `data_gaps.symbol` | literal en app/api.py:632 |
-| `data_gaps.undeclared_buckets` | literal en app/api.py:637 |
-| `data_gaps.window_end` | literal en app/api.py:634 |
-| `data_gaps.window_start` | literal en app/api.py:633 |
-| `interval` | literal en app/api.py:620 |
-| `rows` | literal en app/api.py:621 |
-| `symbol` | literal en app/api.py:619 |
+| `coverage` | literal en app/api.py:678 |
+| `coverage.served_window` | literal en app/api.py:678 |
+| `coverage.unit` | literal en app/api.py:603 |
+| `data_gaps` | literal en app/api.py:679 |
+| `data_gaps.age_seconds` | literal en app/api.py:690 |
+| `data_gaps.as_of` | literal en app/api.py:689 |
+| `data_gaps.declared` | literal en app/api.py:687 |
+| `data_gaps.exchanges` | literal en app/api.py:681 |
+| `data_gaps.feed` | literal en app/api.py:680 |
+| `data_gaps.market` | literal en app/api.py:682 |
+| `data_gaps.requested_window` | literal en app/api.py:691 |
+| `data_gaps.status` | literal en app/api.py:686 |
+| `data_gaps.symbol` | literal en app/api.py:683 |
+| `data_gaps.undeclared_buckets` | literal en app/api.py:688 |
+| `data_gaps.window_end` | literal en app/api.py:685 |
+| `data_gaps.window_start` | literal en app/api.py:684 |
+| `interval` | literal en app/api.py:676 |
+| `rows` | literal en app/api.py:677 |
+| `symbol` | literal en app/api.py:675 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -78,21 +78,22 @@ tanto NO se afirman como tabla (pueden ser CTE, alias, funcion o particion):
 
 ## Funciones que la componen
 
-15 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
+16 funciones del arbol son alcanzables desde este handler. **Tocar cualquiera
 de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 
 Llamadas directas del handler:
 
-- `app.api.declared_series_response` — `app/api.py:519`
+- `app.api.declared_series_response` — `app/api.py:557`
 - `app.api.historical_interval_value` — `app/api.py:266`
 - `app.api.mask_gapped_series_rows` — `app/api.py:296`
 - `app.api.records` — `app/api.py:273`
 - `app.api.validate_symbol` — `app/api.py:260`
 
-<details><summary>Alcanzables de forma indirecta (10)</summary>
+<details><summary>Alcanzables de forma indirecta (11)</summary>
 
-- `app.api.lo_pedido` — `app/api.py:446`
-- `app.api.minutos_de_las_filas` — `app/api.py:406`
+- `app.api.cubos_tolerados` — `app/api.py:428`
+- `app.api.lo_pedido` — `app/api.py:476`
+- `app.api.minutos_de_las_filas` — `app/api.py:436`
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:78`
 - `app.data_gaps.align_down` — `app/data_gaps.py:247`
@@ -100,7 +101,7 @@ Llamadas directas del handler:
 - `app.data_gaps.coverage_entry` — `app/data_gaps.py:268`
 - `app.data_gaps.declared_gap_windows` — `app/data_gaps.py:212`
 - `app.data_gaps.expected_buckets` — `app/data_gaps.py:260`
-- `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:986`
+- `app.orderflow_lectura._barrido_liquidaciones` — `app/orderflow_lectura.py:991`
 
 </details>
 
@@ -179,6 +180,7 @@ significa que ese arreglo de dos lineas no es de dos lineas:
 | `app.api.historical_interval_value` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.api.mask_gapped_series_rows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-api.md) |
 | `app.data_gaps.declared_gap_windows` | 7 | **0** | 0 | **7** | [impacto](../impacto/app-data_gaps.md) |
+| `app.api.cubos_tolerados` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.declared_series_response` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.lo_pedido` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |
 | `app.api.minutos_de_las_filas` | 6 | **0** | 0 | **6** | [impacto](../impacto/app-api.md) |

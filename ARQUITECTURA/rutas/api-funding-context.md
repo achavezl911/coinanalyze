@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `funding_context_endpoint` · `app/api.py:2075` (cuerpo hasta la 2078) · decorador en la linea 2074.
+Handler `funding_context_endpoint` · `app/api.py:2126` (cuerpo hasta la 2129) · decorador en la linea 2125.
 
 ## Parametros de entrada
 
@@ -18,16 +18,16 @@ Handler `funding_context_endpoint` · `app/api.py:2075` (cuerpo hasta la 2078) �
 
 | campo | de donde sale |
 |---|---|
-| `annualized_pct` | literal en app/scalp_logic.py:3755 |
-| `coverage` | literal en app/scalp_logic.py:3757 |
-| `current_pct` | literal en app/scalp_logic.py:3750 |
-| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3752 |
-| `history_avg_pct` | literal en app/scalp_logic.py:3756 |
-| `next_funding_time_utc` | literal en app/scalp_logic.py:3758 |
-| `note` | literal en app/scalp_logic.py:3766 |
-| `predicted_pct` | literal en app/scalp_logic.py:3751 |
-| `regime` | literal en app/scalp_logic.py:3759 |
-| `symbol` | literal en app/scalp_logic.py:3749 |
+| `annualized_pct` | literal en app/scalp_logic.py:3772 |
+| `coverage` | literal en app/scalp_logic.py:3774 |
+| `current_pct` | literal en app/scalp_logic.py:3767 |
+| `divergence_pred_minus_current` | literal en app/scalp_logic.py:3769 |
+| `history_avg_pct` | literal en app/scalp_logic.py:3773 |
+| `next_funding_time_utc` | literal en app/scalp_logic.py:3775 |
+| `note` | literal en app/scalp_logic.py:3783 |
+| `predicted_pct` | literal en app/scalp_logic.py:3768 |
+| `regime` | literal en app/scalp_logic.py:3776 |
+| `symbol` | literal en app/scalp_logic.py:3766 |
 
 Forma de la respuesta segun el AST: objeto.
 
@@ -50,7 +50,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3697`
+- `app.scalp_logic.funding_context` — `app/scalp_logic.py:3714`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 

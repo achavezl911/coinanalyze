@@ -539,7 +539,7 @@ La escriben:
 La escriben:
 
 - `app.daily_agg.apply_retention` — **DELETE** en `app/daily_agg.py:684`
-- `app.metrics.insert_snapshot` — **INSERT** en `app/metrics.py:748`
+- `app.metrics.insert_snapshot` — **INSERT** en `app/metrics.py:751`
 
 **Si cambia el contenido o el esquema de `metrics_snapshot`, estas 9 rutas lo notan:**
 

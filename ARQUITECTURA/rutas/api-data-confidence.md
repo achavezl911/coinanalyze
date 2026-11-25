@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `data_confidence` · `app/api.py:3274` (cuerpo hasta la 3278) · decorador en la linea 3273.
+Handler `data_confidence` · `app/api.py:3325` (cuerpo hasta la 3329) · decorador en la linea 3324.
 
 ## Parametros de entrada
 
@@ -18,7 +18,7 @@ Handler `data_confidence` · `app/api.py:3274` (cuerpo hasta la 3278) · decorad
 
 | campo | de donde sale |
 |---|---|
-| `rows` | literal en app/api.py:3278 |
+| `rows` | literal en app/api.py:3329 |
 | `rows.collectors_stale` | asignado en app/ai_context.py:603 |
 | `rows.flow_8h_complete` | asignado en app/ai_context.py:572 |
 | `rows.quality_score` | asignado en app/ai_context.py:615 |
@@ -37,7 +37,7 @@ LEE:
   - la llena `app.scalp_collector._write_combined_realtime` (INSERT) — `app/scalp_collector.py:898`
 - `metrics_snapshot` — `sql/schema.sql:1036`, 35 columnas
   - la llena `app.daily_agg.apply_retention` (DELETE) — `app/daily_agg.py:684`
-  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:748`
+  - la llena `app.metrics.insert_snapshot` (INSERT) — `app/metrics.py:751`
 - `orderbook_snapshot` — `sql/schema.sql:388`, 18 columnas
   - la llena `app.scalp_collector._write_combined_books` (INSERT) — `app/scalp_collector.py:1026`
   - la llena `app.scalp_collector.flush_books` (INSERT) — `app/scalp_collector.py:970`

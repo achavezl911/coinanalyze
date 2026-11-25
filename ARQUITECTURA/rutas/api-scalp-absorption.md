@@ -4,7 +4,7 @@
 > el proximo `arquitectura` lo pisa y K88 se pone ROJO. Lo que falte aqui se arregla
 > en el generador, no en el fichero.
 
-Handler `scalp_absorption` · `app/api.py:1953` (cuerpo hasta la 1958) · decorador en la linea 1952.
+Handler `scalp_absorption` · `app/api.py:2004` (cuerpo hasta la 2009) · decorador en la linea 2003.
 
 ## Parametros de entrada
 
@@ -46,7 +46,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5682`
+- `app.scalp_logic.scalp_absorption` — `app/scalp_logic.py:5699`
 
 <details><summary>Alcanzables de forma indirecta (6)</summary>
 
