@@ -12,22 +12,22 @@ El radio POR TABLA va con **dos numeros**: `k=0` es lo que la funcion escribe el
 | [`oi_price_reading`](#oi-price-reading) | 228 | 10 | **0** | 11 ↑ | **10** |
 | [`_sign`](#-sign) | 95 | 10 | **0** | 0 | **10** |
 | [`_apertura`](#-apertura) | 814 | 2 | **0** | 0 | **2** |
-| [`_bars_closed_beyond`](#-bars-closed-beyond) | 872 | 2 | **0** | 0 | **2** |
+| [`_bars_closed_beyond`](#-bars-closed-beyond) | 876 | 2 | **0** | 0 | **2** |
 | [`_breakout_frontier`](#-breakout-frontier) | 757 | 2 | **0** | 0 | **2** |
-| [`_gap_in`](#-gap-in) | 865 | 2 | **0** | 0 | **2** |
-| [`_last_pivots`](#-last-pivots) | 991 | 2 | **0** | 0 | **2** |
-| [`_level_defended`](#-level-defended) | 1067 | 2 | **0** | 0 | **2** |
+| [`_gap_in`](#-gap-in) | 869 | 2 | **0** | 0 | **2** |
+| [`_last_pivots`](#-last-pivots) | 995 | 2 | **0** | 0 | **2** |
+| [`_level_defended`](#-level-defended) | 1071 | 2 | **0** | 0 | **2** |
 | [`_norm_bars`](#-norm-bars) | 793 | 2 | **0** | 0 | **2** |
 | [`_obs`](#-obs) | 732 | 2 | **0** | 0 | **2** |
-| [`_pullback`](#-pullback) | 998 | 2 | **0** | 0 | **2** |
-| [`_retest_done`](#-retest-done) | 955 | 2 | **0** | 0 | **2** |
-| [`_returned_inside`](#-returned-inside) | 911 | 2 | **0** | 0 | **2** |
+| [`_pullback`](#-pullback) | 1002 | 2 | **0** | 0 | **2** |
+| [`_retest_done`](#-retest-done) | 959 | 2 | **0** | 0 | **2** |
+| [`_returned_inside`](#-returned-inside) | 915 | 2 | **0** | 0 | **2** |
 | [`_structure_event`](#-structure-event) | 674 | 2 | **0** | 0 | **2** |
 | [`_tolerance`](#-tolerance) | 778 | 2 | **0** | 0 | **2** |
-| [`build_setup_context`](#build-setup-context) | 1174 | 2 | **0** | 0 | **2** |
+| [`build_setup_context`](#build-setup-context) | 1178 | 2 | **0** | 0 | **2** |
 | [`episodio`](#episodio) | 842 | 2 | **0** | 0 | **2** |
-| [`evaluate_setup`](#evaluate-setup) | 1312 | 2 | **0** | 0 | **2** |
-| [`setup_observables`](#setup-observables) | 1130 | 2 | **0** | 0 | **2** |
+| [`evaluate_setup`](#evaluate-setup) | 1316 | 2 | **0** | 0 | **2** |
+| [`setup_observables`](#setup-observables) | 1134 | 2 | **0** | 0 | **2** |
 | [`split_hypothesis`](#split-hypothesis) | 88 | 2 | **0** | 0 | **2** |
 
 ## classify_oi
@@ -216,7 +216,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _bars_closed_beyond
 
-`app/setups.py:872` · clave completa `app.setups._bars_closed_beyond`
+`app/setups.py:876` · clave completa `app.setups._bars_closed_beyond`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -264,7 +264,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _gap_in
 
-`app/setups.py:865` · clave completa `app.setups._gap_in`
+`app/setups.py:869` · clave completa `app.setups._gap_in`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -288,7 +288,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _last_pivots
 
-`app/setups.py:991` · clave completa `app.setups._last_pivots`
+`app/setups.py:995` · clave completa `app.setups._last_pivots`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -312,7 +312,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _level_defended
 
-`app/setups.py:1067` · clave completa `app.setups._level_defended`
+`app/setups.py:1071` · clave completa `app.setups._level_defended`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -384,7 +384,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _pullback
 
-`app/setups.py:998` · clave completa `app.setups._pullback`
+`app/setups.py:1002` · clave completa `app.setups._pullback`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -408,7 +408,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _retest_done
 
-`app/setups.py:955` · clave completa `app.setups._retest_done`
+`app/setups.py:959` · clave completa `app.setups._retest_done`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -432,7 +432,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## _returned_inside
 
-`app/setups.py:911` · clave completa `app.setups._returned_inside`
+`app/setups.py:915` · clave completa `app.setups._returned_inside`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -504,7 +504,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## build_setup_context
 
-`app/setups.py:1174` · clave completa `app.setups.build_setup_context`
+`app/setups.py:1178` · clave completa `app.setups.build_setup_context`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -552,7 +552,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## evaluate_setup
 
-`app/setups.py:1312` · clave completa `app.setups.evaluate_setup`
+`app/setups.py:1316` · clave completa `app.setups.evaluate_setup`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 
@@ -576,7 +576,7 @@ _ni ella ni sus llamadores hasta k=2 escriben ninguna tabla._
 
 ## setup_observables
 
-`app/setups.py:1130` · clave completa `app.setups.setup_observables`
+`app/setups.py:1134` · clave completa `app.setups.setup_observables`
 
 **Radio exacto: 2 rutas** de 94 · **cota superior: 2** (igual al exacto)
 

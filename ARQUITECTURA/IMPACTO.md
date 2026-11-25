@@ -386,22 +386,22 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.scalp_logic.liquidation_burst`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1815` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.setup_confirmation_bundle`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:2523` | 2 | **0** | 0 | **2** |
 | [`app.setups._apertura`](impacto/app-setups.md) | `app/setups.py:814` | 2 | **0** | 0 | **2** |
-| [`app.setups._bars_closed_beyond`](impacto/app-setups.md) | `app/setups.py:872` | 2 | **0** | 0 | **2** |
+| [`app.setups._bars_closed_beyond`](impacto/app-setups.md) | `app/setups.py:876` | 2 | **0** | 0 | **2** |
 | [`app.setups._breakout_frontier`](impacto/app-setups.md) | `app/setups.py:757` | 2 | **0** | 0 | **2** |
-| [`app.setups._gap_in`](impacto/app-setups.md) | `app/setups.py:865` | 2 | **0** | 0 | **2** |
-| [`app.setups._last_pivots`](impacto/app-setups.md) | `app/setups.py:991` | 2 | **0** | 0 | **2** |
-| [`app.setups._level_defended`](impacto/app-setups.md) | `app/setups.py:1067` | 2 | **0** | 0 | **2** |
+| [`app.setups._gap_in`](impacto/app-setups.md) | `app/setups.py:869` | 2 | **0** | 0 | **2** |
+| [`app.setups._last_pivots`](impacto/app-setups.md) | `app/setups.py:995` | 2 | **0** | 0 | **2** |
+| [`app.setups._level_defended`](impacto/app-setups.md) | `app/setups.py:1071` | 2 | **0** | 0 | **2** |
 | [`app.setups._norm_bars`](impacto/app-setups.md) | `app/setups.py:793` | 2 | **0** | 0 | **2** |
 | [`app.setups._obs`](impacto/app-setups.md) | `app/setups.py:732` | 2 | **0** | 0 | **2** |
-| [`app.setups._pullback`](impacto/app-setups.md) | `app/setups.py:998` | 2 | **0** | 0 | **2** |
-| [`app.setups._retest_done`](impacto/app-setups.md) | `app/setups.py:955` | 2 | **0** | 0 | **2** |
-| [`app.setups._returned_inside`](impacto/app-setups.md) | `app/setups.py:911` | 2 | **0** | 0 | **2** |
+| [`app.setups._pullback`](impacto/app-setups.md) | `app/setups.py:1002` | 2 | **0** | 0 | **2** |
+| [`app.setups._retest_done`](impacto/app-setups.md) | `app/setups.py:959` | 2 | **0** | 0 | **2** |
+| [`app.setups._returned_inside`](impacto/app-setups.md) | `app/setups.py:915` | 2 | **0** | 0 | **2** |
 | [`app.setups._structure_event`](impacto/app-setups.md) | `app/setups.py:674` | 2 | **0** | 0 | **2** |
 | [`app.setups._tolerance`](impacto/app-setups.md) | `app/setups.py:778` | 2 | **0** | 0 | **2** |
-| [`app.setups.build_setup_context`](impacto/app-setups.md) | `app/setups.py:1174` | 2 | **0** | 0 | **2** |
+| [`app.setups.build_setup_context`](impacto/app-setups.md) | `app/setups.py:1178` | 2 | **0** | 0 | **2** |
 | [`app.setups.episodio`](impacto/app-setups.md) | `app/setups.py:842` | 2 | **0** | 0 | **2** |
-| [`app.setups.evaluate_setup`](impacto/app-setups.md) | `app/setups.py:1312` | 2 | **0** | 0 | **2** |
-| [`app.setups.setup_observables`](impacto/app-setups.md) | `app/setups.py:1130` | 2 | **0** | 0 | **2** |
+| [`app.setups.evaluate_setup`](impacto/app-setups.md) | `app/setups.py:1316` | 2 | **0** | 0 | **2** |
+| [`app.setups.setup_observables`](impacto/app-setups.md) | `app/setups.py:1134` | 2 | **0** | 0 | **2** |
 | [`app.setups.split_hypothesis`](impacto/app-setups.md) | `app/setups.py:88` | 2 | **0** | 0 | **2** |
 | [`app.scalp_collector._write_ladders`](impacto/app-scalp_collector.md) | `app/scalp_collector.py:937` | 0 | **1** | 20 ↑ | **1** |
 | [`app.api.health`](impacto/app-api.md) | `app/api.py:4138` | 1 | **0** | 14 ↑ | **1** |

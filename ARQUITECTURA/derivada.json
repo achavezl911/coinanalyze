@@ -2723,8 +2723,8 @@
     },
     "app.setups._bars_closed_beyond": {
       "fichero": "app/setups.py",
-      "linea": 872,
-      "sitio": "`app/setups.py:872`"
+      "linea": 876,
+      "sitio": "`app/setups.py:876`"
     },
     "app.setups._breakout_frontier": {
       "fichero": "app/setups.py",
@@ -2733,18 +2733,18 @@
     },
     "app.setups._gap_in": {
       "fichero": "app/setups.py",
-      "linea": 865,
-      "sitio": "`app/setups.py:865`"
+      "linea": 869,
+      "sitio": "`app/setups.py:869`"
     },
     "app.setups._last_pivots": {
       "fichero": "app/setups.py",
-      "linea": 991,
-      "sitio": "`app/setups.py:991`"
+      "linea": 995,
+      "sitio": "`app/setups.py:995`"
     },
     "app.setups._level_defended": {
       "fichero": "app/setups.py",
-      "linea": 1067,
-      "sitio": "`app/setups.py:1067`"
+      "linea": 1071,
+      "sitio": "`app/setups.py:1071`"
     },
     "app.setups._norm_bars": {
       "fichero": "app/setups.py",
@@ -2758,18 +2758,18 @@
     },
     "app.setups._pullback": {
       "fichero": "app/setups.py",
-      "linea": 998,
-      "sitio": "`app/setups.py:998`"
+      "linea": 1002,
+      "sitio": "`app/setups.py:1002`"
     },
     "app.setups._retest_done": {
       "fichero": "app/setups.py",
-      "linea": 955,
-      "sitio": "`app/setups.py:955`"
+      "linea": 959,
+      "sitio": "`app/setups.py:959`"
     },
     "app.setups._returned_inside": {
       "fichero": "app/setups.py",
-      "linea": 911,
-      "sitio": "`app/setups.py:911`"
+      "linea": 915,
+      "sitio": "`app/setups.py:915`"
     },
     "app.setups._sign": {
       "fichero": "app/setups.py",
@@ -2788,8 +2788,8 @@
     },
     "app.setups.build_setup_context": {
       "fichero": "app/setups.py",
-      "linea": 1174,
-      "sitio": "`app/setups.py:1174`"
+      "linea": 1178,
+      "sitio": "`app/setups.py:1178`"
     },
     "app.setups.classify_oi": {
       "fichero": "app/setups.py",
@@ -2803,8 +2803,8 @@
     },
     "app.setups.evaluate_setup": {
       "fichero": "app/setups.py",
-      "linea": 1312,
-      "sitio": "`app/setups.py:1312`"
+      "linea": 1316,
+      "sitio": "`app/setups.py:1316`"
     },
     "app.setups.oi_price_reading": {
       "fichero": "app/setups.py",
@@ -2813,8 +2813,8 @@
     },
     "app.setups.setup_observables": {
       "fichero": "app/setups.py",
-      "linea": 1130,
-      "sitio": "`app/setups.py:1130`"
+      "linea": 1134,
+      "sitio": "`app/setups.py:1134`"
     },
     "app.setups.split_hypothesis": {
       "fichero": "app/setups.py",
@@ -29252,7 +29252,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:872",
+        "sitio": "app/setups.py:876",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29294,7 +29294,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:865",
+        "sitio": "app/setups.py:869",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29314,7 +29314,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:991",
+        "sitio": "app/setups.py:995",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29333,7 +29333,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:1067",
+        "sitio": "app/setups.py:1071",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29396,7 +29396,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:998",
+        "sitio": "app/setups.py:1002",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29415,7 +29415,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:955",
+        "sitio": "app/setups.py:959",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29434,7 +29434,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:911",
+        "sitio": "app/setups.py:915",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29526,7 +29526,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:1174",
+        "sitio": "app/setups.py:1178",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29633,7 +29633,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:1312",
+        "sitio": "app/setups.py:1316",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -29720,7 +29720,7 @@
         ],
         "por_tabla": [],
         "por_tabla_k0": [],
-        "sitio": "app/setups.py:1130",
+        "sitio": "app/setups.py:1134",
         "solo_por_tabla": [],
         "tablas_escritas": {},
         "tablas_k0": [],
@@ -37785,33 +37785,33 @@
         "profile_coverage_pct": "literal en app/scalp_logic.py:5227",
         "setup": "literal en app/scalp_logic.py:5214",
         "setup_evaluation": "literal en app/scalp_logic.py:5217",
-        "setup_evaluation.confirmation_evaluable": "literal en app/setups.py:1422",
-        "setup_evaluation.confirmation_met": "literal en app/setups.py:1423",
-        "setup_evaluation.confirmation_total": "literal en app/setups.py:1421",
-        "setup_evaluation.coverage_pct": "literal en app/setups.py:1417",
-        "setup_evaluation.critical_evaluable": "literal en app/setups.py:1419",
-        "setup_evaluation.critical_met": "literal en app/setups.py:1420",
-        "setup_evaluation.critical_total": "literal en app/setups.py:1418",
-        "setup_evaluation.cumplidos": "literal en app/setups.py:1412",
-        "setup_evaluation.direction": "literal en app/setups.py:1404",
-        "setup_evaluation.direction_label": "literal en app/setups.py:1405",
-        "setup_evaluation.episodio": "literal en app/setups.py:1429",
-        "setup_evaluation.faltantes": "literal en app/setups.py:1413",
-        "setup_evaluation.invalidaciones": "literal en app/setups.py:1410",
-        "setup_evaluation.label": "literal en app/setups.py:1403",
-        "setup_evaluation.min_confirmations": "literal en app/setups.py:1426",
-        "setup_evaluation.min_coverage_pct": "literal en app/setups.py:1427",
-        "setup_evaluation.missing_confirmation": "literal en app/setups.py:1425",
-        "setup_evaluation.missing_critical": "literal en app/setups.py:1424",
-        "setup_evaluation.no_evaluables": "literal en app/setups.py:1411",
-        "setup_evaluation.note": "literal en app/setups.py:1430",
-        "setup_evaluation.pendientes": "literal en app/setups.py:1409",
-        "setup_evaluation.requisitos": "literal en app/setups.py:1408",
-        "setup_evaluation.requisitos_evaluables": "literal en app/setups.py:1415",
-        "setup_evaluation.requisitos_totales": "literal en app/setups.py:1414",
-        "setup_evaluation.setup": "literal en app/setups.py:1402",
-        "setup_evaluation.state": "literal en app/setups.py:1407",
-        "setup_evaluation.thesis": "literal en app/setups.py:1406",
+        "setup_evaluation.confirmation_evaluable": "literal en app/setups.py:1426",
+        "setup_evaluation.confirmation_met": "literal en app/setups.py:1427",
+        "setup_evaluation.confirmation_total": "literal en app/setups.py:1425",
+        "setup_evaluation.coverage_pct": "literal en app/setups.py:1421",
+        "setup_evaluation.critical_evaluable": "literal en app/setups.py:1423",
+        "setup_evaluation.critical_met": "literal en app/setups.py:1424",
+        "setup_evaluation.critical_total": "literal en app/setups.py:1422",
+        "setup_evaluation.cumplidos": "literal en app/setups.py:1416",
+        "setup_evaluation.direction": "literal en app/setups.py:1408",
+        "setup_evaluation.direction_label": "literal en app/setups.py:1409",
+        "setup_evaluation.episodio": "literal en app/setups.py:1433",
+        "setup_evaluation.faltantes": "literal en app/setups.py:1417",
+        "setup_evaluation.invalidaciones": "literal en app/setups.py:1414",
+        "setup_evaluation.label": "literal en app/setups.py:1407",
+        "setup_evaluation.min_confirmations": "literal en app/setups.py:1430",
+        "setup_evaluation.min_coverage_pct": "literal en app/setups.py:1431",
+        "setup_evaluation.missing_confirmation": "literal en app/setups.py:1429",
+        "setup_evaluation.missing_critical": "literal en app/setups.py:1428",
+        "setup_evaluation.no_evaluables": "literal en app/setups.py:1415",
+        "setup_evaluation.note": "literal en app/setups.py:1434",
+        "setup_evaluation.pendientes": "literal en app/setups.py:1413",
+        "setup_evaluation.requisitos": "literal en app/setups.py:1412",
+        "setup_evaluation.requisitos_evaluables": "literal en app/setups.py:1419",
+        "setup_evaluation.requisitos_totales": "literal en app/setups.py:1418",
+        "setup_evaluation.setup": "literal en app/setups.py:1406",
+        "setup_evaluation.state": "literal en app/setups.py:1411",
+        "setup_evaluation.thesis": "literal en app/setups.py:1410",
         "setup_label": "literal en app/scalp_logic.py:5215",
         "setup_observables": "literal en app/scalp_logic.py:5238",
         "setup_state": "literal en app/scalp_logic.py:5216",
