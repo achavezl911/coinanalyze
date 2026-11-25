@@ -18,13 +18,13 @@ Handler `quality_feeds` · `app/api.py:1776` (cuerpo hasta la 1788) · decorador
 
 | campo | de donde sale |
 |---|---|
-| `collectors` | literal en app/scalp_logic.py:5673 |
-| `contexts` | literal en app/scalp_logic.py:5674 |
-| `contexts.intraday` | literal en app/scalp_logic.py:5676 |
-| `contexts.macro` | literal en app/scalp_logic.py:5677 |
-| `contexts.scalp` | literal en app/scalp_logic.py:5675 |
-| `metrics` | literal en app/scalp_logic.py:4337 |
-| `note` | literal en app/scalp_logic.py:4338 |
+| `collectors` | literal en app/scalp_logic.py:5690 |
+| `contexts` | literal en app/scalp_logic.py:5691 |
+| `contexts.intraday` | literal en app/scalp_logic.py:5693 |
+| `contexts.macro` | literal en app/scalp_logic.py:5694 |
+| `contexts.scalp` | literal en app/scalp_logic.py:5692 |
+| `metrics` | literal en app/scalp_logic.py:4354 |
+| `note` | literal en app/scalp_logic.py:4355 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -107,7 +107,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5639`
+- `app.scalp_logic.feed_quality_view` — `app/scalp_logic.py:5656`
 
 <details><summary>Alcanzables de forma indirecta (45)</summary>
 
@@ -120,39 +120,39 @@ Llamadas directas del handler:
 - `app.scalp_logic._closed_window_move_pct` — `app/scalp_logic.py:595`
 - `app.scalp_logic._coverage_status` — `app/scalp_logic.py:571`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
-- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4223`
+- `app.scalp_logic._feed_status` — `app/scalp_logic.py:4240`
 - `app.scalp_logic._first_present` — `app/scalp_logic.py:507`
 - `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`
 - `app.scalp_logic._flow_imbalance` — `app/scalp_logic.py:2609`
 - `app.scalp_logic._flow_rate` — `app/scalp_logic.py:2617`
 - `app.scalp_logic._flow_windows` — `app/scalp_logic.py:2654`
-- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4444`
-- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4414`
-- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4426`
-- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4188`
+- `app.scalp_logic._gap_and_baseline` — `app/scalp_logic.py:4461`
+- `app.scalp_logic._gap_threshold_seconds` — `app/scalp_logic.py:4431`
+- `app.scalp_logic._gap_too_large` — `app/scalp_logic.py:4443`
+- `app.scalp_logic._liquidation_feed_quality_status` — `app/scalp_logic.py:4205`
 - `app.scalp_logic._liquidation_window_measured` — `app/scalp_logic.py:519`
 - `app.scalp_logic._measured_event_sum` — `app/scalp_logic.py:563`
-- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4625`
-- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4541`
+- `app.scalp_logic._oi_change_pct` — `app/scalp_logic.py:4642`
+- `app.scalp_logic._realtime_flow` — `app/scalp_logic.py:4558`
 - `app.scalp_logic._utc_now` — `app/scalp_logic.py:73`
 - `app.scalp_logic.as_float` — `app/scalp_logic.py:925`
 - `app.scalp_logic.baseline_band` — `app/scalp_logic.py:139`
 - `app.scalp_logic.basis_quality` — `app/scalp_logic.py:236`
 - `app.scalp_logic.classify_absorption` — `app/scalp_logic.py:198`
 - `app.scalp_logic.compute_scalp_summary` — `app/scalp_logic.py:633`
-- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4346`
-- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4657`
-- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:4063`
-- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2915`
+- `app.scalp_logic.data_quality` — `app/scalp_logic.py:4363`
+- `app.scalp_logic.delta_matrix` — `app/scalp_logic.py:4674`
+- `app.scalp_logic.feed_quality` — `app/scalp_logic.py:4080`
+- `app.scalp_logic.futures_flow_windows` — `app/scalp_logic.py:2932`
 - `app.scalp_logic.load_baselines` — `app/scalp_logic.py:163`
-- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4497`
-- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4252`
+- `app.scalp_logic.max_internal_gap` — `app/scalp_logic.py:4514`
+- `app.scalp_logic.metric_quality` — `app/scalp_logic.py:4269`
 - `app.scalp_logic.resolve_matrix_as_of` — `app/scalp_logic.py:2597`
 - `app.scalp_logic.scalp_bias_label` — `app/scalp_logic.py:297`
 - `app.scalp_logic.scalp_context` — `app/scalp_logic.py:330`
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
-- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2854`
-- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2844`
+- `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2871`
+- `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2861`
 - `app.setups._sign` — `app/setups.py:95`
 - `app.setups.classify_oi` — `app/setups.py:162`
 - `app.setups.oi_price_reading` — `app/setups.py:228`

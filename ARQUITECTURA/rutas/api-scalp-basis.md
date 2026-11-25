@@ -18,7 +18,7 @@ Handler `scalp_basis` · `app/api.py:3258` (cuerpo hasta la 3261) · decorador e
 
 | campo | de donde sale |
 |---|---|
-| `symbol` | literal en app/scalp_logic.py:5870 |
+| `symbol` | literal en app/scalp_logic.py:5887 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -52,7 +52,7 @@ de ellas puede cambiar esta ruta**; es la mitad de abajo del radio de impacto.
 Llamadas directas del handler:
 
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5838`
+- `app.scalp_logic.scalp_basis` — `app/scalp_logic.py:5855`
 
 <details><summary>Alcanzables de forma indirecta (2)</summary>
 
