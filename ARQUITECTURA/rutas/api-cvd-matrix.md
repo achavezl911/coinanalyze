@@ -92,8 +92,8 @@ Llamadas directas del handler:
 
 - `app.config.get_settings` — `app/config.py:308`
 - `app.data_gaps.blocking_requirement_keys` — `app/data_gaps.py:123`
-- `app.metrics.cobertura_suficiente` — `app/metrics.py:41`
-- `app.metrics.optional_finite` — `app/metrics.py:79`
+- `app.metrics.cobertura_suficiente` — `app/metrics.py:44`
+- `app.metrics.optional_finite` — `app/metrics.py:82`
 - `app.scalp_logic._cvd_src` — `app/scalp_logic.py:2934`
 - `app.scalp_logic._explicit_as_of` — `app/scalp_logic.py:2591`
 - `app.scalp_logic._flow_coverage_reason` — `app/scalp_logic.py:2624`

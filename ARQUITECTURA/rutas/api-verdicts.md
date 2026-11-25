@@ -62,7 +62,7 @@ Llamadas directas del handler:
 
 - `app.data_gaps._aware_utc` — `app/data_gaps.py:72`
 - `app.data_gaps._validated_window` — `app/data_gaps.py:78`
-- `app.metrics.session_bounds` — `app/metrics.py:60`
+- `app.metrics.session_bounds` — `app/metrics.py:63`
 
 </details>
 
