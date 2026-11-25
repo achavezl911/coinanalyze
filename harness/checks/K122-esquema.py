@@ -24,6 +24,21 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 CREA = re.compile(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-z_][a-z0-9_]*)\b(?!\s+PARTITION\s+OF)", re.I)
+DOLAR = re.compile(r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$")
+# ESQUEMA R1 (V-04) envuelve las ordenes en `SELECT esquema_ddl($ddl$<orden>$ddl$[, 'superada_por']);`: la orden
+# que casa el regex empieza DENTRO del literal, y lo que le sigue (`$ddl$);`) no es suyo
+ENVUELTA = re.compile(r"esquema_ddl\(\s*(\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$)\s*\Z", re.I)
+
+
+def _orden(sql: str, i: int) -> str:
+    """La orden que empieza en i: la sentencia, o si va dentro de esquema_ddl($tag$...$tag$), el literal y su `;`."""
+    m = ENVUELTA.search(sql, max(0, i - 200), i)
+    if not m:
+        return _sentencia(sql, i)
+    k = sql.find(m.group(1), i)
+    if k < 0:
+        raise SystemExit(f"K122-esquema: esquema_ddl({m.group(1)} sin cerrar desde el caracter {i} de sql/schema.sql")
+    return _sentencia(sql[i:k].rstrip() + ";", 0)
 
 
 def _sentencia(sql: str, i: int) -> str:
@@ -33,6 +48,13 @@ def _sentencia(sql: str, i: int) -> str:
         if sql.startswith("--", j):
             k = sql.find("\n", j)
             j = len(sql) if k < 0 else k
+            continue
+        d = DOLAR.match(sql, j)
+        if d:  # $tag$ ... $tag$: literal entero, con sus `;` y parentesis
+            k = sql.find(d.group(0), d.end())
+            k = len(sql) if k < 0 else k + len(d.group(0))
+            out.append(sql[j:k])
+            j = k
             continue
         c = sql[j]
         if c == "'":
@@ -66,9 +88,9 @@ def ddl(tablas: tuple[str, ...], schema: Path | None = None) -> str:
         if re.search(r"\)\s*PARTITION\s+BY", crea, re.I):
             partes.append(f"CREATE TABLE {t}_banco PARTITION OF {t} DEFAULT;")
         for m in re.finditer(rf"CREATE\s+(?:UNIQUE\s+)?INDEX\b[^;]*?\bON\s+(?:ONLY\s+)?{t}\b", sql, re.I):
-            partes.append(_sentencia(sql, m.start()))
+            partes.append(_orden(sql, m.start()))
         for m in re.finditer(rf"ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?{t}\b", sql, re.I):
-            s = _sentencia(sql, m.start())
+            s = _orden(sql, m.start())
             if re.search(r"\bADD\s+COLUMN\b", s, re.I):
                 partes.append(s)
     return "\n".join(partes) + "\n"
