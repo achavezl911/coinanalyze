@@ -35,6 +35,20 @@ UNIT_DIR=/etc/systemd/system
 # despliegue, wait_db_quiet negaria el esquema.
 OPTIONAL_STOP=(coinalyze-recupera.timer coinalyze-recupera.service)
 OPTIONAL_START=(coinalyze-recupera.timer)
+# Las que la API arrastra (deploy/140/coinalyze-{orderflow,libro,bot}.service: PartOf= y WantedBy= coinalyze-api). Un
+# `systemctl restart coinalyze-api` normal las reinicia; el camino parcial (R1) reinicia la API con
+# --job-mode=ignore-requirements y a cada una solo si le toca.
+PARTOF_API=(coinalyze-orderflow coinalyze-libro coinalyze-bot)
+# REINICIO R1. El punto de entrada de cada unidad, el de su ExecStart (tests/test_deploy_reinicio.py lo comprueba).
+# Si sql/schema.sql no cambia, solo se reinicia la API y la unidad cuyo cierre de imports (scripts/cierre_imports.py)
+# cambia respecto del release del que corre; las demas siguen con su codigo en memoria y la poda no les borra el release.
+declare -A ENTRY=(
+  [coinalyze-api]=app.api [coinalyze-ingest]=app.ingest [coinalyze-ws]=app.ws_collector
+  [coinalyze-scalp]=app.scalp_collector [coinalyze-daily]=app.daily_agg
+  [coinalyze-orderflow]=app.orderflow [coinalyze-libro]=app.libro [coinalyze-bot]=app.bot
+)
+CIERRE=scripts/cierre_imports.py
+PROC=/proc
 
 KEEP_RELEASES=5
 SMOKE_URL=http://127.0.0.1:8000
@@ -191,15 +205,99 @@ restart_services(){
   start_optional
 }
 
+# Las unidades del despliegue: SERVICES y las arrastradas por la API que esten instaladas.
+deploy_units(){
+  printf '%s\n' "${SERVICES[@]}"
+  local u
+  for u in "${PARTOF_API[@]}"; do [ -f "$UNIT_DIR/$u.service" ] && printf '%s\n' "$u"; done
+  return 0
+}
+
+# El release del que corre de verdad una unidad viva: el cwd de su MainPID (systemd entra en current y el kernel
+# resuelve el enlace). Nada si no corre; «?» si corre y su cwd no se lee o no esta en un release.
+running_release(){
+  local pid cwd r
+  pid="$(systemctl show -p MainPID --value "$1" 2>/dev/null || true)"
+  case "$pid" in ''|0|*[!0-9]*) return 0 ;; esac
+  cwd="$(readlink -f "$PROC/$pid/cwd" 2>/dev/null)" || cwd=""
+  case "$cwd" in
+    "$RELEASES"/?*) r="${cwd#"$RELEASES"/}"; printf '%s\n' "${r%%/*}" ;;
+    *) echo '?' ;;
+  esac
+  return 0
+}
+
+# Ninguna release de la que corra una unidad viva se borra, este donde este en el orden; si de una unidad viva no se
+# sabe de que release corre, no se poda nada (no se sabe cual protege).
 prune_releases(){
-  local d kept=0 all=()
+  local d r u kept=0 all=() vivos=" "
+  while IFS= read -r u; do
+    r="$(running_release "$u")"
+    [ "$r" != '?' ] || { log "prune skipped: cannot tell which release running $u executes"; return 0; }
+    [ -z "$r" ] || vivos+="$r "
+  done < <(deploy_units)
   while IFS= read -r d; do all+=("$d"); done < <(ls -1dt "$RELEASES"/*/ 2>/dev/null || true)
   for d in "${all[@]}"; do
     case "$d" in */legacy-*/) continue ;; esac
     kept=$((kept+1))
-    [ "$kept" -gt "$KEEP_RELEASES" ] && rm -rf "$d"
+    [ "$kept" -gt "$KEEP_RELEASES" ] || continue
+    r="$(basename "$d")"
+    case "$vivos" in *" $r "*) log "prune: keeping $r (a running service executes it)"; continue ;; esac
+    rm -rf "$d"
   done
   return 0
+}
+
+# Decide que unidades se reinician (R1). Deja la lista en PLAN y devuelve 0; devuelve 1 si toca el camino completo de
+# siempre (parar todo, esquema, arrancar todo): esquema distinto byte a byte, o una decision que no se puede tomar.
+# La API se reinicia siempre (sirve static/ de su release). Cada linea del plan va al log con su motivo.
+PLAN=()
+plan_restarts(){
+  local cand="$1" cur="$2" u r out ver why specs=()
+  PLAN=()
+  if ! cmp -s "$cur/sql/schema.sql" "$cand/sql/schema.sql"; then
+    log "restart plan: sql/schema.sql changed -> stop all, apply schema, restart all"
+    return 1
+  fi
+  [ -f "$cand/$CIERRE" ] || { log "restart plan: candidate has no $CIERRE -> stop all, restart all"; return 1; }
+  while IFS= read -r u; do
+    r="$(running_release "$u")"
+    if [ "$u" = coinalyze-api ]; then
+      PLAN+=("$u"); log "restart plan: $u restart (always: the API serves static/ from its release)"
+    elif [ "$r" = '?' ] || { [ -n "$r" ] && [ ! -d "$RELEASES/$r" ]; }; then
+      PLAN+=("$u"); log "restart plan: $u restart (running release unknown: ${r})"
+    elif [ -z "$r" ]; then
+      # Parada: una de SERVICES se arranca, como hoy; una arrastrada por la API (el bot, p. ej.) se deja como esta.
+      case " ${PARTOF_API[*]} " in
+        *" $u "*) log "restart plan: $u keep (not running; left as is)" ;;
+        *) PLAN+=("$u"); log "restart plan: $u restart (not running)" ;;
+      esac
+    else
+      specs+=("$u=${ENTRY[$u]:?no ENTRY for $u}=$RELEASES/$r")
+    fi
+  done < <(deploy_units)
+  [ "${#specs[@]}" -eq 0 ] && return 0
+  out="$(python3 -I "$cand/$CIERRE" decide "$cand" "${specs[@]}")" \
+    || { log "restart plan: $CIERRE failed -> stop all, apply schema, restart all"; return 1; }
+  while read -r u ver why; do
+    log "restart plan: $u $ver $why"
+    [ "$ver" = keep ] || PLAN+=("$u")
+  done <<< "$out"
+  return 0
+}
+
+# Reinicia solo las unidades de la lista: la API sin arrastrar a sus PartOf, las demas una a una.
+restart_units(){
+  SMOKE_SINCE="$(date +%s)"
+  local u rc=0
+  for u in "$@"; do
+    if [ "$u" = coinalyze-api ]; then
+      systemctl restart --job-mode=ignore-requirements "$u" || rc=1
+    else
+      systemctl restart "$u" || rc=1
+    fi
+  done
+  return "$rc"
 }
 
 ensure_units(){
@@ -362,6 +460,8 @@ DEPLOY_PREV=""
 DEPLOY_SERVICES_QUIESCED=0
 DEPLOY_SWITCHED=0
 DEPLOY_SUCCESS=0
+DEPLOY_PARTIAL=0
+DEPLOY_RESTARTED=()
 
 deploy_exit_guard(){
   local rc=$?
@@ -379,7 +479,10 @@ deploy_exit_guard(){
     # If services were stopped, start them. If the candidate had already been
     # switched in and started, restart after restoring the old symlink so the
     # processes actually execute the previous release.
-    if [ "$DEPLOY_SWITCHED" = 1 ]; then
+    # Camino parcial (R1): se vuelven a reiniciar las mismas, ya sobre el release anterior; las demas no se tocaron.
+    if [ "$DEPLOY_SWITCHED" = 1 ] && [ "$DEPLOY_PARTIAL" = 1 ]; then
+      restart_units "${DEPLOY_RESTARTED[@]}"
+    elif [ "$DEPLOY_SWITCHED" = 1 ]; then
       restart_services
     elif [ "$DEPLOY_SERVICES_QUIESCED" = 1 ]; then
       start_services
@@ -489,25 +592,40 @@ cmd_deploy(){
   DEPLOY_PREV="$prev"
   DEPLOY_GUARD_ARMED=1
 
-  # Quiesce application DB clients BEFORE DDL. Arm the service-recovery
-  # flag BEFORE the stop call so even a partial stop is recovered by the EXIT guard.
-  DEPLOY_SERVICES_QUIESCED=1
-  stop_services
+  local kept=()
+  if plan_restarts "$rel" "$RELEASES/$prev"; then
+    # R1: el esquema no cambia -> nada se para ni se aplica; se cambia current y se reinicia solo el PLAN.
+    DEPLOY_PARTIAL=1
+    DEPLOY_RESTARTED=("${PLAN[@]}")
+    mapfile -t kept < <(deploy_units | grep -vxF -f <(printf '%s\n' "${PLAN[@]}"))
+    switch_to "$rel"
+    DEPLOY_SWITCHED=1
+    log "current -> $rel"
+    ensure_units
+    restart_units "${PLAN[@]}"
+    log "restarted: ${PLAN[*]}; kept running: ${kept[*]:-none} (no schema change; reasons above)"
+  else
+    # Quiesce application DB clients BEFORE DDL. Arm the service-recovery
+    # flag BEFORE the stop call so even a partial stop is recovered by the EXIT guard.
+    DEPLOY_SERVICES_QUIESCED=1
+    stop_services
 
-  wait_db_quiet || die "application DB sessions remain after service stop; refusing schema apply" 15
+    wait_db_quiet || die "application DB sessions remain after service stop; refusing schema apply" 15
 
-  # Candidate schema is applied while current still points to the old release.
-  # This requires migrations to remain rollback-compatible with the previous code.
-  apply_schema "$rel/sql/schema.sql" || die "schema apply failed" 6
+    # Candidate schema is applied while current still points to the old release.
+    # This requires migrations to remain rollback-compatible with the previous code.
+    apply_schema "$rel/sql/schema.sql" || die "schema apply failed" 6
 
-  # Only after schema succeeds may the candidate become current.
-  switch_to "$rel"
-  DEPLOY_SWITCHED=1
-  log "current -> $rel"
+    # Only after schema succeeds may the candidate become current.
+    switch_to "$rel"
+    DEPLOY_SWITCHED=1
+    log "current -> $rel"
 
-  ensure_units
-  start_services
-  DEPLOY_SERVICES_QUIESCED=0
+    ensure_units
+    start_services
+    DEPLOY_SERVICES_QUIESCED=0
+    log "restarted: $(deploy_units | tr '\n' ' ')(full path: stop all, schema, start all)"
+  fi
 
   if ! smoke; then
     die "smoke test failed for $commit" 10
@@ -556,9 +674,9 @@ cmd_status(){
   echo "active_release: $(active_sha || echo none)"
   echo "services:"
   local s
-  for s in "${SERVICES[@]}"; do
-    printf '  %s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || true)"
-  done
+  while IFS= read -r s; do
+    printf '  %s %s release=%s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null || true)" "$(running_release "$s")"
+  done < <(deploy_units)
 
   echo "releases:"
   local d
