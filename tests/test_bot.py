@@ -328,6 +328,8 @@ def _mundo(posiciones: list[list[dict]], vistas: list):
             return httpx.Response(200, json={"retCode": 0, "result": {"list": posiciones[k]}})
         if p == "/v5/market/risk-limit":
             return httpx.Response(200, json={"retCode": 0, "result": {"list": TRAMOS["BTCUSDT"]}})
+        if p == "/v5/account/info":  # MARGEN R1: la posicion de este mundo es AISLADA (su liqPrice es la de la formula)
+            return httpx.Response(200, json={"retCode": 0, "result": {"marginMode": "ISOLATED_MARGIN", "unifiedMarginStatus": 5}})
         if p == "/v5/position/closed-pnl":
             return httpx.Response(200, json={"retCode": 0, "result": {"list": [{
                 "symbol": "BTCUSDT", "orderId": "o-1", "side": "Sell", "closedSize": "0.004", "avgEntryPrice": "110000",

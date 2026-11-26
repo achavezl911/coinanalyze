@@ -23,7 +23,8 @@ BASE = "https://api.bybit.com"
 RECV = "5000"
 # ponytail: sin la ruta de la cartera (wallet-balance): ni C2 ni C3 la usan; se anade (es de lectura) cuando algo la pida
 # /v5/execution/list (BOT-4a): las ejecuciones del historial (app/bot/historial.py); es un GET de lectura
-PRIVADAS = ("/v5/user/query-api", "/v5/position/list", "/v5/position/closed-pnl", "/v5/execution/list")
+# /v5/account/info (MARGEN R1): el modo de margen de la cuenta (modo_margen); es un GET de lectura
+PRIVADAS = ("/v5/user/query-api", "/v5/position/list", "/v5/position/closed-pnl", "/v5/execution/list", "/v5/account/info")
 PUBLICAS = ("/v5/market/risk-limit", "/v5/market/instruments-info", "/v5/market/tickers")
 ERRORES = {
     10003: "Bybit dice que la clave no es valida",
@@ -119,8 +120,34 @@ def posiciones(d: dict) -> list[dict]:
             "entrada": num("avgPrice"), "marca": num("markPrice"), "apalancamiento": num("leverage"),
             "liquidacion": num("liqPrice"), "stop": num("stopLoss") or None, "objetivo": num("takeProfit") or None,
             "margen": num("positionIM"), "pnl_abierto": num("unrealisedPnl"),
+            "trade_mode": p.get("tradeMode") if isinstance(p.get("tradeMode"), int) else None,
         })
     return out
+
+
+# MARGEN R1 (V-17): marginMode de /v5/account/info. ponytail: de memoria, NO contrastado con la doc publica en esta sesion
+# (WebFetch sin permiso): en una cuenta UNIFICADA el modo es de la cuenta (ISOLATED_MARGIN aislado; REGULAR_MARGIN y
+# PORTFOLIO_MARGIN cruzado) y el tradeMode de position/list esta obsoleto (siempre 0); solo en la clasica
+# (unifiedMarginStatus 1) el tradeMode vale por posicion. Un tradeMode 1 solo puede ser aislado, venga de donde venga.
+MODOS = {"ISOLATED_MARGIN": "aislado", "REGULAR_MARGIN": "cruzado", "PORTFOLIO_MARGIN": "cruzado"}
+
+
+def modo_margen(cuenta: dict | None, p: dict) -> tuple[str | None, str | None]:
+    """(modo, motivo): «aislado», «cruzado» o None (desconocido, y motivo dice por que). Lo que no se entiende es
+    DESCONOCIDO, nunca cruzado: con desconocido el bot no juzga la liquidacion, con cruzado deja de compararla."""
+    if p.get("trade_mode") == 1:
+        return "aislado", None
+    if cuenta is None:
+        return None, "sin leer account/info"
+    e = error(cuenta)
+    if e:
+        return None, e
+    r = objeto(cuenta).get("result")
+    r = r if isinstance(r, dict) else {}
+    if r.get("unifiedMarginStatus") == 1:
+        return None, "cuenta clasica: el modo va por posicion y su tradeMode 0 no se ha contrastado"
+    m = MODOS.get(r.get("marginMode"))
+    return (m, None) if m else (None, f"marginMode ilegible: {str(r.get('marginMode'))[:40]}")
 
 
 def lado_cierre(entrada: float | None, salida: float | None, cantidad: float | None, pnl: float | None) -> int | None:
