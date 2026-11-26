@@ -5,4 +5,3 @@ graphify-out/
 .git/
 .venv/
 .claude/
-.codex/

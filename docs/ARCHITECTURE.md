@@ -1,7 +1,7 @@
 # Arquitectura DEV / CI-CD / Producción
 
 Este documento describe el entorno **real** implementado para desarrollar y desplegar
-Coinalyze con Codex y Claude Code, usando GitHub como única fuente de verdad.
+Coinalyze con Claude Code y otro asistente de código, usando GitHub como única fuente de verdad.
 
 ## Diagrama
 
@@ -12,14 +12,14 @@ Coinalyze con Codex y Claude Code, usando GitHub como única fuente de verdad.
              │ push/PR           │ CI (self-hosted)  │ workflow_dispatch (deploy)
              ▼                   ▼                    ▼
    ┌───────────────────────────────────────────────────────────────┐
-   │  LXC 143  coin-cicd   (10.10.100.2, vlan10, Debian 13)         │
+   │  LXC 143  coin-cicd   (<IP_DEV>, vlan10, Debian 13)            │
    │  DEV + IA + CI/CD  —  NO producción                            │
    │                                                                │
    │  usuario devops:                                               │
    │    /srv/coinanalyze/repo            (clon base de main)        │
-   │    /srv/coinanalyze/worktrees/codex/<tarea>   (rama codex/*)   │
+   │    /srv/coinanalyze/worktrees/otro/<tarea>    (rama otro/*)    │
    │    /srv/coinanalyze/worktrees/claude/<tarea>  (rama claude/*)  │
-   │    git · gh · Codex CLI · Claude Code · python3.13 · node20    │
+   │    git · gh · otro CLI · Claude Code · python3.13 · node20     │
    │                                                                │
    │  usuario github-runner:                                        │
    │    /opt/actions-runner  (GitHub Actions self-hosted runner)    │
@@ -30,7 +30,7 @@ Coinalyze con Codex y Claude Code, usando GitHub como única fuente de verdad.
                                  │ artefacto coinalyze-<sha>.tgz + sha256
                                  ▼
    ┌───────────────────────────────────────────────────────────────┐
-   │  LXC 140  coinalyze-final  (10.151.1.6 vlan151, Debian 13)     │
+   │  LXC 140  coinalyze-final  (<IP_INTERNA> vlan151, Debian 13)   │
    │  PRODUCCIÓN                                                     │
    │                                                                │
    │  coinalyze-deploy ──sudo──> /usr/local/sbin/deploy-coinalyze   │
@@ -52,12 +52,12 @@ Coinalyze con Codex y Claude Code, usando GitHub como única fuente de verdad.
 
 | Origen | Destino | Resultado |
 |---|---|---|
-| Windows `10.10.100.101` | DEV `10.10.100.2:22` | ✓ (VS Code Remote-SSH directo) |
-| DEV `10.10.100.2` | prod `10.151.1.6:22/8443/8090` | ✓ (deploy + smoke) |
-| DEV `10.10.100.2` | prod `150.1.7.140` (red plana) | ✗ aislada — no se usa |
-| DEV → Internet (GitHub/apt/npm) | vía gw `10.10.100.1` | ✓ |
+| Windows `<IP_ESTACION>` | DEV `<IP_DEV>:22` | ✓ (VS Code Remote-SSH directo) |
+| DEV `<IP_DEV>` | prod `<IP_INTERNA>:22/8443/8090` | ✓ (deploy + smoke) |
+| DEV `<IP_DEV>` | prod `<IP_RED_PLANA>` (red plana) | ✗ aislada — no se usa |
+| DEV → Internet (GitHub/apt/npm) | vía gw `<GATEWAY>` | ✓ |
 
-`10.10.100.0/28` ya está en el allowlist de nginx/API de prod.
+`<CIDR_GESTION>` ya está en el allowlist de nginx/API de prod.
 
 ## Principios
 

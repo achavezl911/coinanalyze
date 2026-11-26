@@ -52,7 +52,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K109-banco.py:173`, `harness/checks/K109-banco.py:174`, `harness/checks/K109-banco.py:175`, `harness/checks/K109-footprint.py:283` _(+47)_ | `harness/checks/K109-banco.py:9`, `harness/checks/K109-banco.py:16`, `harness/checks/K109-lo-pintado-es-lo-servido.sh:4`, `harness/checks/K112-banco.py:2` _(+30)_ |
 | **panel-html** | `static/index.html:91` | — |
-| **readme** | — | `README.md:42`, `README.md:52` |
+| **readme** | — | `README.md:65`, `README.md:70` |
 | **tests** | `tests/js/espacio.test.js:10`, `tests/js/espacio.test.js:36`, `tests/js/espacio.test.js:37`, `tests/js/flujo_trazos.test.js:2` _(+3)_ | `tests/js/flujo_ind_refresco.test.js:2`, `tests/js/flujo_trazos.test.js:4`, `tests/js/flujo_trazos.test.js:153`, `tests/js/libro_pantalla.test.js:8` _(+2)_ |
 
 **La llama el panel: es superficie de producto.**

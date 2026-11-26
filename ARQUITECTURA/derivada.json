@@ -37369,7 +37369,8 @@
         "readme": {
           "llamadas": [],
           "menciones": [
-            "README.md:59"
+            "README.md:55",
+            "README.md:88"
           ]
         },
         "tests": {
@@ -37386,7 +37387,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 7,
-        "n_menciones": 11,
+        "n_menciones": 12,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -40321,7 +40322,7 @@
         "readme": {
           "llamadas": [],
           "menciones": [
-            "README.md:36"
+            "README.md:76"
           ]
         },
         "tests": {
@@ -41546,12 +41547,6 @@
             "harness/checks/K111-banco.py:348"
           ]
         },
-        "readme": {
-          "llamadas": [],
-          "menciones": [
-            "README.md:43"
-          ]
-        },
         "tests": {
           "llamadas": [
             "tests/js/libro_hueco_vivo.test.js:89",
@@ -41563,7 +41558,7 @@
       "consumo": {
         "llamada_desde_el_panel": false,
         "n_llamadas": 12,
-        "n_menciones": 4,
+        "n_menciones": 3,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -48852,8 +48847,8 @@
         "readme": {
           "llamadas": [],
           "menciones": [
-            "README.md:42",
-            "README.md:52"
+            "README.md:65",
+            "README.md:70"
           ]
         },
         "tests": {
@@ -48983,8 +48978,8 @@
         "readme": {
           "llamadas": [],
           "menciones": [
-            "README.md:47",
-            "README.md:52"
+            "README.md:67",
+            "README.md:70"
           ]
         },
         "tests": {
@@ -49124,7 +49119,7 @@
         "readme": {
           "llamadas": [],
           "menciones": [
-            "README.md:32"
+            "README.md:60"
           ]
         },
         "tests": {
@@ -49323,7 +49318,7 @@
         "readme": {
           "llamadas": [],
           "menciones": [
-            "README.md:39"
+            "README.md:63"
           ]
         },
         "tests": {
