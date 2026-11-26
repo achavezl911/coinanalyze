@@ -1,7 +1,7 @@
 {
  "enviar": [
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:00:00+00:00)\n\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:00:00+00:00)\n\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "neutral",
@@ -16,7 +16,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:05:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▼ BAJISTA (patron LH_LL, cierre 90,100.25)\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts) · 6.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en en_valor, media)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:05:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▼ BAJISTA (patron LH_LL, cierre 90,100.25)\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts) · 6.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en en_valor, media)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -32,7 +32,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:07:00+00:00)\n\n- ETHUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 3,050.00)\n- BTCUSDT_PERP.A · REDISTRIBUCION silenciosa 4h (precio en sobre_valor, alta)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:07:00+00:00)\n\n- ETHUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 3,050.00)\n- BTCUSDT_PERP.A · REDISTRIBUCION silenciosa 4h (precio en sobre_valor, alta)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -48,7 +48,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:10:00+00:00)\n\n- ETHUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 3,050.00)\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $2.5M → cascada BAJISTA (longs) · 25.0x baseline\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:10:00+00:00)\n\n- ETHUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 3,050.00)\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $2.5M → cascada BAJISTA (longs) · 25.0x baseline\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -80,7 +80,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:20:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 91,500.00)\n- ETHUSDT_PERP.A · liquidaciones masivas 5m: $12.0M → cascada BAJISTA (longs) · 12.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en sobre_valor, alta)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:20:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 91,500.00)\n- ETHUSDT_PERP.A · liquidaciones masivas 5m: $12.0M → cascada BAJISTA (longs) · 12.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en sobre_valor, alta)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -99,7 +99,7 @@
  ],
  "sombra": [
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:00:00+00:00)\n\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:00:00+00:00)\n\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "neutral",
@@ -114,7 +114,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:05:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▼ BAJISTA (patron LH_LL, cierre 90,100.25)\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts) · 6.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en en_valor, media)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:05:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▼ BAJISTA (patron LH_LL, cierre 90,100.25)\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $3.0M → squeeze ALCISTA (shorts) · 6.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en en_valor, media)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -130,7 +130,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:07:00+00:00)\n\n- ETHUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 3,050.00)\n- BTCUSDT_PERP.A · REDISTRIBUCION silenciosa 4h (precio en sobre_valor, alta)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:07:00+00:00)\n\n- ETHUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 3,050.00)\n- BTCUSDT_PERP.A · REDISTRIBUCION silenciosa 4h (precio en sobre_valor, alta)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -146,7 +146,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:10:00+00:00)\n\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $2.5M → cascada BAJISTA (longs) · 25.0x baseline\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:10:00+00:00)\n\n- SOLUSDT_PERP.A · liquidaciones masivas 5m: $2.5M → cascada BAJISTA (longs) · 25.0x baseline\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",
@@ -178,7 +178,7 @@
    }
   },
   {
-   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:20:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 91,500.00)\n- ETHUSDT_PERP.A · liquidaciones masivas 5m: $12.0M → cascada BAJISTA (longs) · 12.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en sobre_valor, alta)\n\nDetalle con IA: /chatgpt o /preview",
+   "texto": "⚠️ ESTRUCTURA / LIQUIDACIONES (2026-11-26T10:20:00+00:00)\n\n- BTCUSDT_PERP.A · estructura 1h (medio): giro ▲ ALCISTA (patron HH_HL, cierre 91,500.00)\n- ETHUSDT_PERP.A · liquidaciones masivas 5m: $12.0M → cascada BAJISTA (longs) · 12.0x baseline\n- BTCUSDT_PERP.A · REACUMULACION silenciosa 1h (precio en sobre_valor, alta)\n\nDetalle: preguntame por el activo (por ejemplo, como esta BTC).",
    "envia": true,
    "kv": {
     "passive:BTCUSDT_PERP.A:1h": "reacumulacion_silenciosa",

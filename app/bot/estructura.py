@@ -9,7 +9,7 @@ clases de linea (su analyzer.py del 11-26, copia en x1-tmp/ref-bridge):
                         confianza alta o media
 de /api/ai/context/bundle (o /api/ai/context con un solo simbolo), perfil default. Aqui va lo MISMO, con los mismos
 nombres de variable, los mismos valores por defecto y el mismo texto, byte a byte (tests/test_bot_estructura.py lo
-compara con el bridge). La anti-repeticion es la suya: la estructura se apunta solo cuando no hay aviso o cuando el aviso
+compara con el bridge), salvo el pie (PIE, ESTRUCTURA R3). La anti-repeticion es la suya: la estructura se apunta solo cuando no hay aviso o cuando el aviso
 se entrego; el flujo pasivo se apunta al calcular; la rafaga de liquidaciones, cuando se entrego.
 
 Lo que NO se trae: la divergencia CVD (detect_cvd_divergence_alerts) y build_alert_text. En alert_only el bridge la
@@ -27,6 +27,9 @@ from typing import Any
 
 MODOS = ("apagado", "sombra", "enviar")
 SIMBOLOS = ["BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"]  # config.py:148 del bridge
+# ESTRUCTURA R3: el pie del bridge remitia a dos ordenes suyas que el bot no tiene. El bot contesta preguntas libres
+# (AYUDA, servicio.py): el detalle se le pide asi. Es lo unico en que el texto difiere del bridge.
+PIE = "Detalle: preguntame por el activo (por ejemplo, como esta BTC)."
 
 _DECISIVO = {"alcista", "bajista"}
 _FLECHA = {"alcista": "▲ ALCISTA", "bajista": "▼ BAJISTA"}
@@ -178,7 +181,7 @@ def construye(generado: str, filas: list[dict], est: dict, u: Umbrales, ahora: f
             kv[k] = str(ahora_es)
     if not lineas:
         return None
-    return "\n".join([f"⚠️ ESTRUCTURA / LIQUIDACIONES ({generado})", "", *lineas, "", "Detalle con IA: /chatgpt o /preview"])
+    return "\n".join([f"⚠️ ESTRUCTURA / LIQUIDACIONES ({generado})", "", *lineas, "", PIE])
 
 
 def registra(filas: list[dict], est: dict) -> None:

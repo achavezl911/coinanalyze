@@ -5,6 +5,10 @@ La referencia NO esta en el repo (copia del 11-26 de /opt/coinalyze-ai-bridge en
 Cada paso es el modo alert_only de scheduler.py:159-182 (run_once): build_structural_alert; sin texto,
 record_structural_state; con texto, send_message y, si Telegram no lanza, mark_structural_alert_sent. La carga entra
 como en analyzer.py:589-599 (collect_payload por /api/ai/context/bundle).
+
+UNA sustitucion declarada (ESTRUCTURA R3), la unica diferencia con la referencia: la ultima linea de cada texto (el pie
+«Detalle con IA: ...», que remite a dos ordenes del bridge que el bot no tiene) se cambia por app.bot.estructura.PIE.
+Ver sustituye_pie.
 """
 
 from __future__ import annotations
@@ -16,6 +20,17 @@ import sys
 import types
 
 AQUI = pathlib.Path(__file__).parent / "fixtures"
+sys.path.insert(0, str(AQUI.parents[1]))
+from app.bot.estructura import PIE  # noqa: E402
+
+PIE_REFERENCIA = "Detalle con IA: /"  # el principio del pie del bridge (analyzer.py, build_structural_alert)
+
+
+def sustituye_pie(texto: str) -> str:
+    """La sustitucion declarada: el resto del texto queda byte a byte como lo da la referencia."""
+    cuerpo, sep, pie = texto.rpartition("\n\n")
+    assert sep and pie.startswith(PIE_REFERENCIA) and "\n" not in pie, pie
+    return cuerpo + sep + PIE
 
 
 def referencia(ruta: str):
@@ -71,6 +86,7 @@ def corre(an, cargas: dict, kw: dict, con_fallos: bool) -> list:
         payload = an.MarketPayload(generated_at=str(b.get("generated_at")), symbols=[x for x in b["symbols"] if isinstance(x, dict)],
                                    local_alerts=b.get("local_alerts") or [], health={"status": "ok"})
         texto = an.build_structural_alert(payload, st, now=p["ahora"], **kw)
+        texto = sustituye_pie(texto) if texto else texto
         if not texto:
             an.record_structural_state(payload, st)
         elif not (con_fallos and p["falla_envio"]):
