@@ -1,0 +1,716 @@
+{
+ "umbrales": {
+  "LIQ_BURST_FLOOR_USD": "2000000",
+  "LIQ_BURST_MULT": "4",
+  "MIN_SEND_INTERVAL_SECONDS": "240"
+ },
+ "pasos": [
+  {
+   "ahora": 1000.0,
+   "falla_envio": false,
+   "carga": {
+    "generated_at": "2026-11-26T10:00:00+00:00",
+    "profile": "default",
+    "symbols": [
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "BTCUSDT_PERP.A",
+      "snapshot": {
+       "price": 91234.5
+      },
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "alcista",
+        "structure": "HH_HL",
+        "close": 91234.5,
+        "bias_method": "pivotes"
+       },
+       "4h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 91010.0,
+        "bias_method": "pivotes"
+       },
+       "1d": {
+        "group": "long",
+        "bias": null,
+        "structure": "HH_LL",
+        "close": 90500.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "en_valor",
+       "horizons": {
+        "1h": {
+         "reading": "neutral",
+         "confidence": "baja"
+        },
+        "4h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "baja"
+        },
+        "8h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "media"
+        },
+        "12h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        }
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1000000.0,
+       "short_liq": 500000.0,
+       "total": 1500000.0,
+       "events": 3,
+       "baseline_5m": 200000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "ETHUSDT_PERP.A",
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 3021.456,
+        "bias_method": "pivotes"
+       },
+       "9d": "no-es-dict"
+      },
+      "passive_flow": {
+       "location": "bajo_valor",
+       "horizons": {
+        "1h": "no-es-dict"
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 0.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "asset": "SOLUSDT_PERP.A",
+      "structure_horizons": null,
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1000000.0,
+       "short_liq": 2000000.0,
+       "total": 3000000.0,
+       "events": 3,
+       "baseline_5m": 0.0
+      }
+     },
+     "basura"
+    ],
+    "local_alerts": []
+   }
+  },
+  {
+   "ahora": 1300.0,
+   "falla_envio": false,
+   "carga": {
+    "generated_at": "2026-11-26T10:05:00+00:00",
+    "profile": "default",
+    "symbols": [
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "BTCUSDT_PERP.A",
+      "snapshot": {
+       "price": 91234.5
+      },
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 90100.25,
+        "bias_method": "pivotes"
+       },
+       "4h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 91010.0,
+        "bias_method": "pivotes"
+       },
+       "1d": {
+        "group": "long",
+        "bias": null,
+        "structure": "HH_LL",
+        "close": 90500.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "en_valor",
+       "horizons": {
+        "1h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "media"
+        },
+        "4h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "baja"
+        },
+        "8h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "media"
+        },
+        "12h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        }
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1000000.0,
+       "short_liq": 500000.0,
+       "total": 1500000.0,
+       "events": 3,
+       "baseline_5m": 200000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "ETHUSDT_PERP.A",
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 3021.456,
+        "bias_method": "pivotes"
+       },
+       "9d": "no-es-dict",
+       "3d": {
+        "group": "long",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 2999.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "bajo_valor",
+       "horizons": {
+        "1h": "no-es-dict"
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 0.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "asset": "SOLUSDT_PERP.A",
+      "structure_horizons": null,
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1000000.0,
+       "short_liq": 2000000.0,
+       "total": 3000000.0,
+       "events": 3,
+       "baseline_5m": 500000.0
+      }
+     },
+     "basura"
+    ],
+    "local_alerts": []
+   }
+  },
+  {
+   "ahora": 1420.0,
+   "falla_envio": true,
+   "carga": {
+    "generated_at": "2026-11-26T10:07:00+00:00",
+    "profile": "default",
+    "symbols": [
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "BTCUSDT_PERP.A",
+      "snapshot": {
+       "price": 91234.5
+      },
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 90100.25,
+        "bias_method": "pivotes"
+       },
+       "4h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 91010.0,
+        "bias_method": "pivotes"
+       },
+       "1d": {
+        "group": "long",
+        "bias": null,
+        "structure": "HH_LL",
+        "close": 90500.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "sobre_valor",
+       "horizons": {
+        "1h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "media"
+        },
+        "4h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "alta"
+        },
+        "8h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "media"
+        },
+        "12h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        }
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1000000.0,
+       "short_liq": 500000.0,
+       "total": 1500000.0,
+       "events": 3,
+       "baseline_5m": 200000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "ETHUSDT_PERP.A",
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "alcista",
+        "structure": "HH_HL",
+        "close": 3050.0,
+        "bias_method": "pivotes"
+       },
+       "9d": "no-es-dict",
+       "3d": {
+        "group": "long",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 2999.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "bajo_valor",
+       "horizons": {
+        "1h": "no-es-dict"
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 0.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "asset": "SOLUSDT_PERP.A",
+      "structure_horizons": null,
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1500000.0,
+       "short_liq": 1000000.0,
+       "total": 2500000.0,
+       "events": 3,
+       "baseline_5m": 100000.0
+      }
+     },
+     "basura"
+    ],
+    "local_alerts": []
+   }
+  },
+  {
+   "ahora": 1700.0,
+   "falla_envio": false,
+   "carga": {
+    "generated_at": "2026-11-26T10:10:00+00:00",
+    "profile": "default",
+    "symbols": [
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "BTCUSDT_PERP.A",
+      "snapshot": {
+       "price": 91234.5
+      },
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 90100.25,
+        "bias_method": "pivotes"
+       },
+       "4h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 91010.0,
+        "bias_method": "pivotes"
+       },
+       "1d": {
+        "group": "long",
+        "bias": null,
+        "structure": "HH_LL",
+        "close": 90500.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "sobre_valor",
+       "horizons": {
+        "1h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "media"
+        },
+        "4h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "alta"
+        },
+        "8h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "media"
+        },
+        "12h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        }
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1000000.0,
+       "short_liq": 500000.0,
+       "total": 1500000.0,
+       "events": 3,
+       "baseline_5m": 200000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "ETHUSDT_PERP.A",
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "alcista",
+        "structure": "HH_HL",
+        "close": 3050.0,
+        "bias_method": "pivotes"
+       },
+       "9d": "no-es-dict",
+       "3d": {
+        "group": "long",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 2999.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "bajo_valor",
+       "horizons": {
+        "1h": "no-es-dict"
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 0.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "asset": "SOLUSDT_PERP.A",
+      "structure_horizons": null,
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 1500000.0,
+       "short_liq": 1000000.0,
+       "total": 2500000.0,
+       "events": 3,
+       "baseline_5m": 100000.0
+      }
+     },
+     "basura"
+    ],
+    "local_alerts": []
+   }
+  },
+  {
+   "ahora": 2000.0,
+   "falla_envio": false,
+   "carga": {
+    "generated_at": "2026-11-26T10:15:00+00:00",
+    "profile": "default",
+    "symbols": [
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "BTCUSDT_PERP.A",
+      "snapshot": {
+       "price": 91234.5
+      },
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 90100.25,
+        "bias_method": "pivotes"
+       },
+       "4h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 91010.0,
+        "bias_method": "pivotes"
+       },
+       "1d": {
+        "group": "long",
+        "bias": null,
+        "structure": "HH_LL",
+        "close": 90500.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "sobre_valor",
+       "horizons": {
+        "1h": {
+         "reading": "neutral",
+         "confidence": "media"
+        },
+        "4h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "alta"
+        },
+        "8h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "media"
+        },
+        "12h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        }
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 6000000.0,
+       "short_liq": 3000000.0,
+       "total": 9000000.0,
+       "events": 3,
+       "baseline_5m": 3000000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "ETHUSDT_PERP.A",
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "alcista",
+        "structure": "HH_HL",
+        "close": 3050.0,
+        "bias_method": "pivotes"
+       },
+       "9d": "no-es-dict",
+       "3d": {
+        "group": "long",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 2999.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "bajo_valor",
+       "horizons": {
+        "1h": "no-es-dict"
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 0.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "asset": "SOLUSDT_PERP.A",
+      "structure_horizons": null,
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 400000.0
+      }
+     },
+     "basura"
+    ],
+    "local_alerts": []
+   }
+  },
+  {
+   "ahora": 2300.0,
+   "falla_envio": false,
+   "carga": {
+    "generated_at": "2026-11-26T10:20:00+00:00",
+    "profile": "default",
+    "symbols": [
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "BTCUSDT_PERP.A",
+      "snapshot": {
+       "price": 91234.5
+      },
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "alcista",
+        "structure": "HH_HL",
+        "close": 91500.0,
+        "bias_method": "pivotes"
+       },
+       "4h": {
+        "group": "med",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 91010.0,
+        "bias_method": "pivotes"
+       },
+       "1d": {
+        "group": "long",
+        "bias": null,
+        "structure": "HH_LL",
+        "close": 90500.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "sobre_valor",
+       "horizons": {
+        "1h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        },
+        "4h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "alta"
+        },
+        "8h": {
+         "reading": "redistribucion_silenciosa",
+         "confidence": "media"
+        },
+        "12h": {
+         "reading": "reacumulacion_silenciosa",
+         "confidence": "alta"
+        }
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 6000000.0,
+       "short_liq": 3000000.0,
+       "total": 9000000.0,
+       "events": 3,
+       "baseline_5m": 3000000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "symbol": "ETHUSDT_PERP.A",
+      "structure_horizons": {
+       "1h": {
+        "group": "med",
+        "bias": "alcista",
+        "structure": "HH_HL",
+        "close": 3050.0,
+        "bias_method": "pivotes"
+       },
+       "9d": "no-es-dict",
+       "3d": {
+        "group": "long",
+        "bias": "bajista",
+        "structure": "LH_LL",
+        "close": 2999.0,
+        "bias_method": "pivotes"
+       }
+      },
+      "passive_flow": {
+       "location": "bajo_valor",
+       "horizons": {
+        "1h": "no-es-dict"
+       }
+      },
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 10000000.0,
+       "short_liq": 2000000.0,
+       "total": 12000000.0,
+       "events": 3,
+       "baseline_5m": 1000000.0
+      }
+     },
+     {
+      "schema_version": "ai_context.v3",
+      "asset": "SOLUSDT_PERP.A",
+      "structure_horizons": null,
+      "liq_burst": {
+       "window": "5m",
+       "long_liq": 0.0,
+       "short_liq": 0.0,
+       "total": 0.0,
+       "events": 3,
+       "baseline_5m": 400000.0
+      }
+     },
+     "basura"
+    ],
+    "local_alerts": []
+   }
+  }
+ ]
+}

@@ -2,7 +2,7 @@
   "rutas": {
     "/": "af7169de1004d5d5",
     "/api/ai/context": "1dc8d541cf81aeb5",
-    "/api/ai/context/bundle": "5c1298a143fe4d6d",
+    "/api/ai/context/bundle": "9aa61258a377e6cd",
     "/api/ai/profiles": "df23e3e737e3a14e",
     "/api/baselines": "7915503ee67aca87",
     "/api/carry/matriz": "694144590fcb07c0",

@@ -4,6 +4,8 @@
 # root antes de bajar de usuario; nadie lee ni copia ese fichero. Un aviso al aparecer y otro al resolverse (estado en
 # StateDirectory). La instala el OPERADOR con el temporizador (instruccion en la entrega del remate 1). El puente no se toca.
 # Mismo usuario y mismas dos lineas que el bot: el release es root:coinalyze 750 y coinalyze.env root:coinalyze 640.
+# Llega a 140 A MANO (deploy-coinalyze no copia unidades: solo repunta las de SERVICES): install -m 644 desde el release
+# a /etc/systemd/system y systemctl daemon-reload.
 [Unit]
 Description=Coinalyze bot (BOT-2): interruptor de hombre muerto, avisa por el bot del puente si el bot cae
 After=network-online.target postgresql.service
@@ -15,6 +17,9 @@ Group=coinalyze-ai
 SupplementaryGroups=coinalyze
 WorkingDirectory=/opt/coinalyze/current
 EnvironmentFile=/etc/coinalyze-ai-bridge/coinalyze-ai-bridge.env
+# ESTRUCTURA R1: el fichero propio del bot (opcional: el guion). Va DESPUES, asi que lo que defina pisa al del puente;
+# con TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID aqui, el interruptor no depende del puente para avisar
+EnvironmentFile=-/etc/coinalyze-bot/coinalyze-bot.env
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/opt/coinalyze/current/.venv/bin/python -m app.bot.vigia
 StateDirectory=coinalyze-bot-vigia
