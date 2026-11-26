@@ -133,10 +133,10 @@ Llamadas directas del handler:
 - `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:119`
 - `app.entradas.resultados.guardar` — `app/entradas/resultados.py:104`
 - `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:89`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:349`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:371`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:156`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:199`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:357`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:379`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:164`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:207`
 - `app.entradas.vista._ancla_no_puede` — `app/entradas/vista.py:580`
 - `app.entradas.vista._base` — `app/entradas/vista.py:335`
 - `app.entradas.vista._de` — `app/entradas/vista.py:514`

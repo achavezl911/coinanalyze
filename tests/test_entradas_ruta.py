@@ -261,3 +261,33 @@ def test_la_referencia_ya_medido_lleva_su_cita_y_no_la_condena_la_red():
     for item in ref["items"]:
         assert item["cita"].startswith(("harness/COLA.md:", "harness/hechos.tsv:")), item
     assert RUTA.fracciones_servidas({"referencia_ya_medido": ref}) == []
+
+
+# R-02 (V-15): las dos cifras brutas «YA MEDIDO» llevan su etiqueta de cota optimista al lado; las cifras,
+# los campos y el resto de la referencia, como estaban.
+_BRUTAS = {"+3.48 pp (n = 112 282, error tipico 0.15)",
+           "la mejor da +2.11 bps brutos; harian falta < 1.05 bps por lado"}
+
+
+def _etiquetadas(ref: dict) -> None:
+    valores = {item["valor"] for item in ref["items"]}
+    assert valores >= _BRUTAS, valores
+    for item in ref["items"]:
+        if item["valor"] in _BRUTAS:
+            assert set(item) == {"que", "valor", "cita", "etiqueta"}, item
+            assert "cota optimista" in item["etiqueta"] and "30 s" in item["etiqueta"], item
+            assert "R-02" in item["etiqueta"], item
+        else:
+            assert set(item) == {"que", "valor", "cita"}, item
+
+
+def test_las_dos_cifras_brutas_llevan_la_etiqueta_r02():
+    _etiquetadas(RUTA.REFERENCIA_YA_MEDIDO)
+    assert RUTA.fracciones_servidas({"referencia_ya_medido": RUTA.REFERENCIA_YA_MEDIDO}) == []
+
+
+async def test_la_respuesta_trae_la_etiqueta_r02_junto_a_cada_cifra_bruta(conn):
+    connection, _ = conn
+    await _con_esquema(connection)
+    respuesta = await RUTA.construir(connection, **_por_defecto())
+    _etiquetadas(respuesta["referencia_ya_medido"])

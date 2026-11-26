@@ -25,25 +25,25 @@ Handler `entradas` · `app/api.py:1501` (cuerpo hasta la 1527) · decorador en l
 
 | campo | de donde sale |
 |---|---|
-| `cuentas` | literal en app/entradas/ruta.py:335 |
-| `disponible` | literal en app/entradas/ruta.py:328 |
-| `generador` | literal en app/entradas/ruta.py:329 |
-| `generador.motivo` | literal en app/entradas/ruta.py:331 |
-| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:330 |
-| `motivo` | literal en app/entradas/ruta.py:222 |
-| `papel` | literal en app/entradas/ruta.py:344 |
-| `por_lado` | literal en app/entradas/ruta.py:333 |
-| `reglamento` | literal en app/entradas/ruta.py:334 |
-| `reglamento.disponible` | literal en app/entradas/ruta.py:230 |
-| `reglamento.motivo` | literal en app/entradas/ruta.py:230 |
-| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:236 |
-| `resultados` | literal en app/entradas/ruta.py:336 |
-| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:342 |
-| `resultados.cambios_e3` | literal en app/entradas/ruta.py:341 |
-| `resultados.convenciones` | literal en app/entradas/ruta.py:340 |
-| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:339 |
-| `resultados.que_es` | literal en app/entradas/ruta.py:337 |
-| `resultados.resolutor` | literal en app/entradas/ruta.py:338 |
+| `cuentas` | literal en app/entradas/ruta.py:343 |
+| `disponible` | literal en app/entradas/ruta.py:336 |
+| `generador` | literal en app/entradas/ruta.py:337 |
+| `generador.motivo` | literal en app/entradas/ruta.py:339 |
+| `generador.ultimos_latidos` | literal en app/entradas/ruta.py:338 |
+| `motivo` | literal en app/entradas/ruta.py:230 |
+| `papel` | literal en app/entradas/ruta.py:352 |
+| `por_lado` | literal en app/entradas/ruta.py:341 |
+| `reglamento` | literal en app/entradas/ruta.py:342 |
+| `reglamento.disponible` | literal en app/entradas/ruta.py:238 |
+| `reglamento.motivo` | literal en app/entradas/ruta.py:238 |
+| `reglamento.registro_en_base` | asignado en app/entradas/ruta.py:244 |
+| `resultados` | literal en app/entradas/ruta.py:344 |
+| `resultados.barrido_emparejado` | literal en app/entradas/ruta.py:350 |
+| `resultados.cambios_e3` | literal en app/entradas/ruta.py:349 |
+| `resultados.convenciones` | literal en app/entradas/ruta.py:348 |
+| `resultados.huella_convenciones` | literal en app/entradas/ruta.py:347 |
+| `resultados.que_es` | literal en app/entradas/ruta.py:345 |
+| `resultados.resolutor` | literal en app/entradas/ruta.py:346 |
 
 **Lo que de esta respuesta NO se sabe** (y por eso no se rellena):
 
@@ -102,7 +102,7 @@ Llamadas directas del handler:
 
 - `app.api.rechaza_parametros_desconocidos` — `app/api.py:2770`
 - `app.api.validate_symbol` — `app/api.py:260`
-- `app.entradas.ruta.construir` — `app/entradas/ruta.py:199`
+- `app.entradas.ruta.construir` — `app/entradas/ruta.py:207`
 
 <details><summary>Alcanzables de forma indirecta (47)</summary>
 
@@ -150,9 +150,9 @@ Llamadas directas del handler:
 - `app.entradas.resultados.de_filas` — `app/entradas/resultados.py:119`
 - `app.entradas.resultados.guardar` — `app/entradas/resultados.py:104`
 - `app.entradas.resultados.resolver_fila` — `app/entradas/resultados.py:89`
-- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:349`
-- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:371`
-- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:156`
+- `app.entradas.ruta._hipotesis` — `app/entradas/ruta.py:357`
+- `app.entradas.ruta._reglamento` — `app/entradas/ruta.py:379`
+- `app.entradas.ruta._resumen` — `app/entradas/ruta.py:164`
 
 </details>
 
