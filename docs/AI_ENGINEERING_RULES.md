@@ -1,6 +1,6 @@
 # AI Engineering Rules — coinanalyze
 
-> **Documento maestro compartido.** Tanto Codex (ver [`AGENTS.md`](../AGENTS.md)) como
+> **Documento maestro compartido.** Tanto el otro asistente (ver [`AGENTS.md`](../AGENTS.md)) como
 > Claude Code (ver [`CLAUDE.md`](../CLAUDE.md)) DEBEN leer y cumplir este documento antes de
 > tocar el código. Si una instrucción de este archivo entra en conflicto con una petición
 > puntual, gana este archivo salvo que el humano responsable lo autorice explícitamente.
@@ -23,7 +23,7 @@
 2. **`main` representa código aprobado.** Solo entra vía Pull Request mergeado.
 3. **Nunca modificar `main` directamente.** Ni commit ni push directo a `main`.
 4. **Cada cambio requiere una rama independiente**, creada desde `origin/main` con un worktree
-   propio: `codex/<tarea>` o `claude/<tarea>` (ver "Flujo de trabajo").
+   propio: `<agente>/<tarea>`, p. ej. `claude/<tarea>` (ver "Flujo de trabajo").
 5. **Cada implementación requiere tests.** Código nuevo sin pruebas no se considera terminado.
 6. **Ejecutar `pytest` antes de cada push** y dejar constancia del resultado.
 7. **Ejecutar `ruff check .` antes de cada push.** El árbol debe quedar limpio de lint.
@@ -56,7 +56,7 @@ tocar producción por SSH; manipular secretos productivos; reescribir historia c
 ## Flujo de trabajo (resumen)
 
 ```
-tarea → coin-worktree-create <codex|claude> <slug>   # rama desde origin/main
+tarea → coin-worktree-create <agente> <slug>   # rama desde origin/main
       → editar en /srv/coinanalyze/worktrees/<agent>/<slug>
       → ruff check .  &&  pytest
       → git diff → git add → git commit
@@ -66,7 +66,7 @@ tarea → coin-worktree-create <codex|claude> <slug>   # rama desde origin/main
 
 Detalle completo en [`DEVELOPMENT_WORKFLOW.md`](DEVELOPMENT_WORKFLOW.md).
 
-## Colaboración Codex + Claude
+## Colaboración entre asistentes
 
 - Un worktree por agente y por tarea: **nunca** dos agentes en el mismo worktree a la vez.
 - Si un agente implementa una feature, el otro puede actuar como **reviewer del PR**.

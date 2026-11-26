@@ -1,7 +1,7 @@
 # Graphify — knowledge graph del repositorio
 
 Graphify convierte el código, SQL, configs y docs del repo en un **grafo de conocimiento
-consultable** para que Codex y Claude Code entiendan la arquitectura sin recorrer el repo entero
+consultable** para que los asistentes de código (Claude Code y otro) entiendan la arquitectura sin recorrer el repo entero
 en cada sesión. **Es una herramienta auxiliar: el código fuente siempre tiene precedencia sobre
 el grafo.** Si Graphify falla, los agentes deben seguir trabajando leyendo el source normalmente.
 
@@ -16,12 +16,11 @@ uv tool install "graphifyy[sql]"     # paquete graphifyy, CLI graphify; extra sq
 graphify --version                   # 0.9.36
 ```
 
-Registro project-scoped de la skill (ya versionado en el repo: `.claude/`, `.codex/`, y secciones
+Registro project-scoped de la skill (ya versionado en el repo: `.claude/`, y secciones
 en `AGENTS.md`/`CLAUDE.md`):
 
 ```bash
 graphify install --project --platform claude
-graphify install --project --platform codex
 ```
 
 ## Generar / actualizar el grafo
@@ -56,7 +55,7 @@ directo** de Claude para no invalidar el prompt cache: Claude usa `graphify quer
 `graph.json` por dentro y devuelve solo lo relevante), no carga el `graph.json` completo.
 
 `.graphifyignore` excluye del grafo lo que no es arquitectura propia: `static/vendor/` (JS
-minificado de terceros), `graphify-out/`, `.git/`, `.venv/`, `.claude/`, `.codex/`. Esto **no**
+minificado de terceros), `graphify-out/`, `.git/`, `.venv/`, `.claude/`. Esto **no**
 afecta runtime (vendor sigue versionado y sirviéndose en prod); solo limpia el grafo (sin él, los
 god-nodes se llenan de símbolos minificados sin valor).
 
@@ -77,17 +76,16 @@ La regla GRAPH-FIRST está en `docs/AI_ENGINEERING_RULES.md`, `AGENTS.md` y `CLA
   strict)**: sugieren consultar el grafo antes de búsquedas amplias, **sin bloquear** lecturas. El
   modo `--strict` (bloquea la primera lectura hasta correr un `graphify query`) queda documentado
   como opción futura tras más pruebas.
-- El hook de Codex (`.codex/hooks.json`) es un **no-op** intencional (Codex Desktop rechaza
-  `additionalContext` en PreToolUse); la guía de Codex viene de `AGENTS.md`.
+- El otro asistente no tiene hook de graphify en el repo; su guía viene de `AGENTS.md`.
 - **NO se instaló** el git hook `post-commit` de auto-rebuild (`graphify hook install`). Motivo:
-  con múltiples worktrees (`codex/*`, `claude/*`) que comparten el git dir común, un rebuild
+  con múltiples worktrees (`claude/*` y los de otros asistentes) que comparten el git dir común, un rebuild
   automático por commit puede actuar sobre el working tree equivocado o mezclar ramas. En su lugar
   la actualización es **manual y por rama** (`graphify update .`), lo que garantiza que un commit de
-  Codex no corrompe el grafo de Claude. Cada worktree regenera su propio `graph.json` bajo demanda.
+  un asistente no corrompe el grafo de otro. Cada worktree regenera su propio `graph.json` bajo demanda.
 
 ## Merge driver para `graph.json`
 
-Para evitar conflictos cuando dos ramas (p. ej. `codex/*` y `claude/*`) modifican `graph.json`,
+Para evitar conflictos cuando dos ramas (p. ej. dos ramas `claude/*`) modifican `graph.json`,
 Graphify ofrece un merge driver de unión. Registro **local** (una vez por clon):
 
 ```bash

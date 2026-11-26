@@ -10,7 +10,7 @@ pasaba el `ai_context` íntegro y ya lo entregaba como documento JSON único cua
 los 4096 caracteres de Telegram; lo único que faltaba era pedir el perfil completo.
 
 Resultado: ~446 KB / ~106 k tokens con 90 sesiones de `daily_history` por símbolo, para
-pegar en una IA por web. No consume tokens de OpenAI.
+pegar en una IA por web. No consume tokens de la API de pago del bridge.
 
 ## Aplicar
 

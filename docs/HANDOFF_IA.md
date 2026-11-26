@@ -130,14 +130,14 @@ bloques, con 90 sesiones de `daily_history` cada uno.
 
 | perfil | sesiones diarias | divergencias intradía | uso |
 |---|---|---|---|
-| `lite` | 0 | no | `/chatgpt-lite` |
-| `default` | 0 | no | `/chatgpt`, alertas automáticas |
-| `pro` | 30 | sí | `/chatgpt-pro` |
+| `lite` | 0 | no | comando de análisis lite del bridge |
+| `default` | 0 | no | comando de análisis por defecto, alertas automáticas |
+| `pro` | 30 | sí | comando de análisis pro del bridge |
 | `max` | 90 | sí | **`/preview`** → documento JSON en Telegram, para pegar en una IA web |
 
 El bridge (`/opt/coinalyze-ai-bridge`) **no recorta** el `ai_context`:
 `summarize_for_prompt` lo deja pasar íntegro si `schema_version` empieza por `ai_context`.
-`/preview` no gasta tokens de OpenAI y entrega el JSON como documento único cuando supera
+`/preview` no gasta tokens de la API del modelo y entrega el JSON como documento único cuando supera
 los 4096 caracteres de Telegram (límite de documento: 50 MB).
 
 ## 5. Trampas ya pisadas — no las repitas

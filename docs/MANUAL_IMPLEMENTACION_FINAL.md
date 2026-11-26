@@ -37,7 +37,7 @@ Coinalyze AI Telegram Bridge
         ↓ HTTPS 8443 + Basic Auth + X-Internal-Token
 Dashboard /api/ai/context
         ↓
-OpenAI Responses API / fallback compatible
+API del modelo de lenguaje (proveedor externo) / fallback compatible
         ↓
 Canal Telegram de salida
 ```
@@ -273,10 +273,8 @@ COINALYZE_BASIC_AUTH_PASSWORD="PASSWORD_DASHBOARD"
 COINALYZE_TLS_VERIFY="false"
 USE_DASHBOARD_AI_CONTEXT="true"
 
-OPENAI_API_KEY="sk-..."
-OPENAI_MODEL="gpt-5.5"
-OPENAI_LITE_MODEL="gpt-5.5"
-OPENAI_PRO_MODEL="gpt-5.5-pro"
+# + clave de la API del modelo y modelo normal, lite y pro: sus variables son las que
+#   lee el codigo del bridge (no versionado en este repo)
 
 TELEGRAM_BOT_TOKEN="TOKEN_BOTFATHER"
 TELEGRAM_COMMAND_CHAT_IDS='["628219977"]'
@@ -322,9 +320,8 @@ Desde chat privado autorizado:
 /preview ETH
 /preview SOL
 /preview ALL
-/chatgpt-lite ETH
-/chatgpt ETH
-/chatgpt-pro ETH
+# + los comandos de analisis lite, default y pro con ETH
+#   (nombres exactos en `recommended_for` de `GET /api/ai/profiles`)
 ```
 
 `/preview` publica el payload completo en una sola entrega:
@@ -408,7 +405,7 @@ Rotar obligatoriamente:
 - `COINALYZE_API_KEY`;
 - `API_INTERNAL_TOKEN`;
 - contraseña Basic Auth del Dashboard;
-- `OPENAI_API_KEY`;
+- la clave de la API del modelo de lenguaje;
 - `TELEGRAM_BOT_TOKEN`.
 
 ## 16. Controles de seguridad finales
@@ -419,7 +416,7 @@ Rotar obligatoriamente:
 - `API_INTERNAL_TOKEN` no debe estar vacío.
 - `/etc/coinalyze/coinalyze.env` debe quedar `0640 root:coinalyze`.
 - `/etc/coinalyze-ai-bridge/coinalyze-ai-bridge.env` debe quedar restringido al usuario/grupo del servicio.
-- No publiques logs con tokens de Telegram, OpenAI ni Coinalyze.
+- No publiques logs con tokens de Telegram, del proveedor del modelo ni de Coinalyze.
 - Si se usa certificado autofirmado, el Bridge puede usar `COINALYZE_TLS_VERIFY=false`; en producción formal usa CA interna y cambia a `true`.
 
 ## 17. Troubleshooting mínimo
@@ -464,4 +461,4 @@ La instalación se considera funcional cuando:
 - el Dashboard abre por `https://IP:8443` desde una IP permitida;
 - el Bridge pasa `health`;
 - `/status` y `/preview ETH` responden desde Telegram;
-- `/chatgpt-lite ETH` genera análisis y publica en el canal configurado.
+- el comando de análisis lite con ETH (ver `GET /api/ai/profiles`) genera análisis y publica en el canal configurado.

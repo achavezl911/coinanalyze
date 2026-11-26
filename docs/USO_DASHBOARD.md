@@ -290,16 +290,17 @@ Comandos:
 - /preview BTC: payload de contexto sin IA.
 - /preview ETH: payload de contexto sin IA.
 - /preview SOL: payload de contexto sin IA.
-- /chatgpt-lite ETH: analisis breve.
-- /chatgpt ETH: analisis normal.
-- /chatgpt-pro ETH: analisis mas profundo.
+- comando de analisis lite + ETH: analisis breve.
+- comando de analisis por defecto + ETH: analisis normal.
+- comando de analisis pro + ETH: analisis mas profundo.
+- (nombres exactos en `recommended_for` de `GET /api/ai/profiles`).
 
 Uso sugerido:
 
 - Usa /status antes de pedir analisis.
 - Usa /preview cuando quieras auditar datos crudos.
-- Usa /chatgpt-lite para lectura rapida.
-- Usa /chatgpt-pro solo cuando el mercado justifique mayor detalle.
+- Usa el comando lite para lectura rapida.
+- Usa el comando pro solo cuando el mercado justifique mayor detalle.
 
 ## 22. Problemas comunes
 

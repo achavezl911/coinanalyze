@@ -16,7 +16,7 @@ Referencia operativa del entorno DEV/CI-CD (LXC 143) y del deploy a producción 
 
 | Usuario | Host | Rol | Privilegio |
 |---|---|---|---|
-| `devops` | LXC 143 | desarrollo, Codex/Claude, git/gh | login por clave; en grupo sudo (sin NOPASSWD) |
+| `devops` | LXC 143 | desarrollo, asistentes de código, git/gh | login por clave; en grupo sudo (sin NOPASSWD) |
 | `github-runner` | LXC 143 | CI runner | sin sudo, solo su grupo |
 | `coinalyze` | LXC 140 | runtime de la app | dueño de servicios; sin sudo |
 | `coinalyze-deploy` | LXC 140 | recibe artefacto (el wrapper lo ignora y baja el commit de GitHub) y llama al wrapper | sudo SOLO a `/usr/local/sbin/deploy-coinalyze` |
@@ -30,7 +30,7 @@ Claves SSH:
 
 ```bash
 # --- DEV (ssh coin-cicd) ---
-coin-worktree-create <codex|claude> <slug>     # nueva tarea/rama
+coin-worktree-create <agente> <slug>     # nueva tarea/rama
 coin-worktree-list
 cd /srv/coinanalyze/repo && git fetch origin && git -C . log --oneline -3
 
@@ -63,7 +63,7 @@ cat /var/lib/coinalyze/deployment.json
 ## Mantenimiento del LXC DEV
 
 - Actualizaciones: `sudo apt update && sudo apt upgrade` (Claude Code se actualiza por apt;
-  Codex con `npm install -g @openai/codex@latest` como devops).
+  el otro asistente, con su propio instalador como devops).
 - Timezone: `America/Mexico_City`. onboot=1.
 - Backup del contenedor: `vzdump 143` desde Proxmox (storage `local`).
 

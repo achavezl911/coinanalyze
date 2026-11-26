@@ -1,7 +1,7 @@
 # Arquitectura DEV / CI-CD / Producción
 
 Este documento describe el entorno **real** implementado para desarrollar y desplegar
-Coinalyze con Codex y Claude Code, usando GitHub como única fuente de verdad.
+Coinalyze con Claude Code y otro asistente de código, usando GitHub como única fuente de verdad.
 
 ## Diagrama
 
@@ -17,9 +17,9 @@ Coinalyze con Codex y Claude Code, usando GitHub como única fuente de verdad.
    │                                                                │
    │  usuario devops:                                               │
    │    /srv/coinanalyze/repo            (clon base de main)        │
-   │    /srv/coinanalyze/worktrees/codex/<tarea>   (rama codex/*)   │
+   │    /srv/coinanalyze/worktrees/otro/<tarea>    (rama otro/*)    │
    │    /srv/coinanalyze/worktrees/claude/<tarea>  (rama claude/*)  │
-   │    git · gh · Codex CLI · Claude Code · python3.13 · node20    │
+   │    git · gh · otro CLI · Claude Code · python3.13 · node20     │
    │                                                                │
    │  usuario github-runner:                                        │
    │    /opt/actions-runner  (GitHub Actions self-hosted runner)    │
