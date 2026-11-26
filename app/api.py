@@ -3787,17 +3787,17 @@ async def ai_context_bundle(
 async def ai_profiles() -> dict[str, Any]:
     return {
         "profiles": {
-            "lite": {"purpose": "mínimo costo y menor payload", "recommended_for": "/chatgpt-lite"},
-            "default": {"purpose": "operativa diaria", "recommended_for": "/chatgpt"},
+            "lite": {"purpose": "mínimo costo y menor payload", "recommended_for": "consultas frecuentes de bajo coste"},
+            "default": {"purpose": "operativa diaria", "recommended_for": "análisis rutinario"},
             "pro": {
                 "purpose": "análisis extendido bajo demanda, incluye 30 sesiones de histórico diario",
-                "recommended_for": "/chatgpt-pro",
+                "recommended_for": "análisis bajo demanda",
             },
             "max": {
                 "purpose": "sin recortes: 90 sesiones de CVD diario, divergencias intradía, "
                 "veredictos pasados. Pensado para pegar el JSON en una IA por web, "
                 "donde el coste en tokens no es la restricción",
-                "recommended_for": "/preview",
+                "recommended_for": "revisión manual del JSON completo",
             },
         },
         "endpoints": [
