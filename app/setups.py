@@ -590,6 +590,7 @@ def _eval_continuacion(ctx: dict[str, Any], signo: int) -> list[dict[str, Any]]:
     )
     retroceso = ctx.get("pullback_pct")
     # Z-04: un retroceso cuenta si tiene TAMANO (>= LEVEL_TOL_ATR_MULT ATR), no si es distinto de 0.
+    # V-13: medido en cierres (`_pullback`); en las velas de 140 cumple ~76 %, no el 99.9 %.
     retroceso_atr = ctx.get("pullback_atr")
     defendido = ctx.get("level_defended")
     vwap = ctx.get("vwap_dist_pct")
@@ -609,7 +610,7 @@ def _eval_continuacion(ctx: dict[str, Any], signo: int) -> list[dict[str, Any]]:
             else (CUMPLE if retroceso_atr >= LEVEL_TOL_ATR_MULT else PENDIENTE),
             "sin retroceso medido" if retroceso is None
             else f"{retroceso:+.2f}% sin ATR para medir su tamano" if retroceso_atr is None
-            else f"{retroceso:+.2f}% = {retroceso_atr:.2f} ATR (minimo {LEVEL_TOL_ATR_MULT})",
+            else f"{retroceso:+.2f}% · {retroceso_atr:.2f} ATR en cierres (minimo {LEVEL_TOL_ATR_MULT})",
             nivel=CRITICAL,
         ),
         _req(
@@ -1056,11 +1057,18 @@ def _pullback(
         return _obs(None, OBS_UNAVAILABLE, timeframe=tf, source=source, as_of=as_of,
                     coverage="impulso de rango nulo")
     pullback_pct = (pb_extreme - impulse_end[1]) / impulse_end[1] * 100
-    pullback_atr = abs(impulse_end[1] - pb_extreme) / atr if atr else None
+    # V-13: el TAMANO del retroceso se mide en CIERRES, del cierre mas extremo del tramo
+    # [extremo del impulso, valle] al valle de cierres. Desde la mecha del pivote no podia fallar:
+    # con k=2 el pivote tiene dos velas detras y su extremo ya distaba >= 0.40 ATR (p5 0.98).
+    valle = min(posteriores, key=lambda b: signo * b["close"])
+    cima = signo * max(signo * b["close"] for b in bars if impulse_end[0] <= b["ts"] <= valle["ts"])
+    pullback_atr = abs(cima - valle["close"]) / atr if atr else None
     return _obs(
         round(pullback_pct, 4), OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
         sample_count=len(posteriores), coverage="impulso y retroceso medidos",
         pullback_atr=round(pullback_atr, 4) if pullback_atr is not None else None,
+        pullback_wick_atr=round(abs(impulse_end[1] - pb_extreme) / atr, 4) if atr else None,
+        pullback_close_top=cima, pullback_close_extreme=valle["close"],
         impulse_start=impulse_start[0], impulse_end=impulse_end[0],
         pullback_start=impulse_end[0], pullback_low=pb_extreme if signo > 0 else None,
         pullback_high=pb_extreme if signo < 0 else None,
@@ -1103,23 +1111,29 @@ def _level_defended(
                     defended_level_type="swing_low" if signo > 0 else "swing_high",
                     defended_level_price=level, defended_level_ts=level_ts,
                     defense_from_ts=desde, coverage="sin velas posteriores suficientes")
-    # Aceptacion INVALIDANTE al otro lado: dos cierres claramente pasados el nivel.
+    # Aceptacion INVALIDANTE al otro lado: dos cierres claramente pasados el nivel, o el ULTIMO
+    # cierre pasado (V-14). Reaccion: el ultimo cierre vuelve a su lado MAS ALLA de la tolerancia;
+    # `cierre > extremo` solo fallaba con la vela cerrando en su minimo (1 de 1404 a 15 m).
+    ultimo = posteriores[-1]["close"]
     if signo > 0:
         aceptados = sum(1 for b in posteriores if b["close"] < level - tol)
         extremo = min(b["low"] for b in posteriores)
         toco = extremo <= level + tol
-        reacciono = posteriores[-1]["close"] > extremo
+        fuera = ultimo < level - tol
+        reacciono = ultimo > level + tol
     else:
         aceptados = sum(1 for b in posteriores if b["close"] > level + tol)
         extremo = max(b["high"] for b in posteriores)
         toco = extremo >= level - tol
-        reacciono = posteriores[-1]["close"] < extremo
+        fuera = ultimo > level + tol
+        reacciono = ultimo < level - tol
     tipo = "swing_low" if signo > 0 else "swing_high"
-    if aceptados >= 2:
+    if aceptados >= 2 or fuera:
         return _obs(False, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
                     defended_level_type=tipo, defended_level_price=level, defended_level_ts=level_ts,
                     defense_from_ts=desde,
-                    coverage=f"nivel perdido: {aceptados} cierres aceptados al otro lado")
+                    coverage=f"nivel perdido: {aceptados} cierres aceptados al otro lado"
+                    + (", el ultimo incluido" if fuera else ""))
     if toco and reacciono:
         return _obs(True, OBS_MEASURED, timeframe=tf, source=source, as_of=as_of,
                     defended_level_type=tipo, defended_level_price=level, defended_level_ts=level_ts,

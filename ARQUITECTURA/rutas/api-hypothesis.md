@@ -76,33 +76,33 @@ Handler `hypothesis` · `app/api.py:1584` (cuerpo hasta la 1661) · decorador en
 | `profile_coverage_pct` | literal en app/scalp_logic.py:5244 |
 | `setup` | literal en app/scalp_logic.py:5231 |
 | `setup_evaluation` | literal en app/scalp_logic.py:5234 |
-| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1426 |
-| `setup_evaluation.confirmation_met` | literal en app/setups.py:1427 |
-| `setup_evaluation.confirmation_total` | literal en app/setups.py:1425 |
-| `setup_evaluation.coverage_pct` | literal en app/setups.py:1421 |
-| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1423 |
-| `setup_evaluation.critical_met` | literal en app/setups.py:1424 |
-| `setup_evaluation.critical_total` | literal en app/setups.py:1422 |
-| `setup_evaluation.cumplidos` | literal en app/setups.py:1416 |
-| `setup_evaluation.direction` | literal en app/setups.py:1408 |
-| `setup_evaluation.direction_label` | literal en app/setups.py:1409 |
-| `setup_evaluation.episodio` | literal en app/setups.py:1433 |
-| `setup_evaluation.faltantes` | literal en app/setups.py:1417 |
-| `setup_evaluation.invalidaciones` | literal en app/setups.py:1414 |
-| `setup_evaluation.label` | literal en app/setups.py:1407 |
-| `setup_evaluation.min_confirmations` | literal en app/setups.py:1430 |
-| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1431 |
-| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1429 |
-| `setup_evaluation.missing_critical` | literal en app/setups.py:1428 |
-| `setup_evaluation.no_evaluables` | literal en app/setups.py:1415 |
-| `setup_evaluation.note` | literal en app/setups.py:1434 |
-| `setup_evaluation.pendientes` | literal en app/setups.py:1413 |
-| `setup_evaluation.requisitos` | literal en app/setups.py:1412 |
-| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1419 |
-| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1418 |
-| `setup_evaluation.setup` | literal en app/setups.py:1406 |
-| `setup_evaluation.state` | literal en app/setups.py:1411 |
-| `setup_evaluation.thesis` | literal en app/setups.py:1410 |
+| `setup_evaluation.confirmation_evaluable` | literal en app/setups.py:1440 |
+| `setup_evaluation.confirmation_met` | literal en app/setups.py:1441 |
+| `setup_evaluation.confirmation_total` | literal en app/setups.py:1439 |
+| `setup_evaluation.coverage_pct` | literal en app/setups.py:1435 |
+| `setup_evaluation.critical_evaluable` | literal en app/setups.py:1437 |
+| `setup_evaluation.critical_met` | literal en app/setups.py:1438 |
+| `setup_evaluation.critical_total` | literal en app/setups.py:1436 |
+| `setup_evaluation.cumplidos` | literal en app/setups.py:1430 |
+| `setup_evaluation.direction` | literal en app/setups.py:1422 |
+| `setup_evaluation.direction_label` | literal en app/setups.py:1423 |
+| `setup_evaluation.episodio` | literal en app/setups.py:1447 |
+| `setup_evaluation.faltantes` | literal en app/setups.py:1431 |
+| `setup_evaluation.invalidaciones` | literal en app/setups.py:1428 |
+| `setup_evaluation.label` | literal en app/setups.py:1421 |
+| `setup_evaluation.min_confirmations` | literal en app/setups.py:1444 |
+| `setup_evaluation.min_coverage_pct` | literal en app/setups.py:1445 |
+| `setup_evaluation.missing_confirmation` | literal en app/setups.py:1443 |
+| `setup_evaluation.missing_critical` | literal en app/setups.py:1442 |
+| `setup_evaluation.no_evaluables` | literal en app/setups.py:1429 |
+| `setup_evaluation.note` | literal en app/setups.py:1448 |
+| `setup_evaluation.pendientes` | literal en app/setups.py:1427 |
+| `setup_evaluation.requisitos` | literal en app/setups.py:1426 |
+| `setup_evaluation.requisitos_evaluables` | literal en app/setups.py:1433 |
+| `setup_evaluation.requisitos_totales` | literal en app/setups.py:1432 |
+| `setup_evaluation.setup` | literal en app/setups.py:1420 |
+| `setup_evaluation.state` | literal en app/setups.py:1425 |
+| `setup_evaluation.thesis` | literal en app/setups.py:1424 |
 | `setup_label` | literal en app/scalp_logic.py:5232 |
 | `setup_observables` | literal en app/scalp_logic.py:5255 |
 | `setup_state` | literal en app/scalp_logic.py:5233 |
@@ -209,7 +209,7 @@ Llamadas directas del handler:
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2523`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
 - `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6336`
-- `app.setups.build_setup_context` — `app/setups.py:1178`
+- `app.setups.build_setup_context` — `app/setups.py:1192`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
 <details><summary>Alcanzables de forma indirecta (70)</summary>
@@ -265,25 +265,25 @@ Llamadas directas del handler:
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
 - `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2871`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2861`
-- `app.setups._apertura` — `app/setups.py:814`
-- `app.setups._bars_closed_beyond` — `app/setups.py:876`
-- `app.setups._breakout_frontier` — `app/setups.py:757`
-- `app.setups._gap_in` — `app/setups.py:869`
-- `app.setups._last_pivots` — `app/setups.py:995`
-- `app.setups._level_defended` — `app/setups.py:1071`
-- `app.setups._norm_bars` — `app/setups.py:793`
-- `app.setups._obs` — `app/setups.py:732`
-- `app.setups._pullback` — `app/setups.py:1002`
-- `app.setups._retest_done` — `app/setups.py:959`
-- `app.setups._returned_inside` — `app/setups.py:915`
+- `app.setups._apertura` — `app/setups.py:815`
+- `app.setups._bars_closed_beyond` — `app/setups.py:877`
+- `app.setups._breakout_frontier` — `app/setups.py:758`
+- `app.setups._gap_in` — `app/setups.py:870`
+- `app.setups._last_pivots` — `app/setups.py:996`
+- `app.setups._level_defended` — `app/setups.py:1079`
+- `app.setups._norm_bars` — `app/setups.py:794`
+- `app.setups._obs` — `app/setups.py:733`
+- `app.setups._pullback` — `app/setups.py:1003`
+- `app.setups._retest_done` — `app/setups.py:960`
+- `app.setups._returned_inside` — `app/setups.py:916`
 - `app.setups._sign` — `app/setups.py:95`
-- `app.setups._structure_event` — `app/setups.py:674`
-- `app.setups._tolerance` — `app/setups.py:778`
+- `app.setups._structure_event` — `app/setups.py:675`
+- `app.setups._tolerance` — `app/setups.py:779`
 - `app.setups.classify_oi` — `app/setups.py:162`
-- `app.setups.episodio` — `app/setups.py:842`
-- `app.setups.evaluate_setup` — `app/setups.py:1316`
+- `app.setups.episodio` — `app/setups.py:843`
+- `app.setups.evaluate_setup` — `app/setups.py:1330`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
-- `app.setups.setup_observables` — `app/setups.py:1134`
+- `app.setups.setup_observables` — `app/setups.py:1148`
 
 </details>
 
