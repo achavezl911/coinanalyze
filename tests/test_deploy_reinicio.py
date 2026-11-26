@@ -17,7 +17,18 @@ import sys
 import time
 from pathlib import Path
 
-from test_deploy_wrapper import NUEVO, VIEJO, ROOT, _banco, _current, _despliega, _log, _release, _tar, _x
+from test_deploy_wrapper import (
+    NUEVO,
+    ROOT,
+    VIEJO,
+    _banco,
+    _current,
+    _despliega,
+    _log,
+    _release,
+    _tar,
+    _x,
+)
 
 PARTOF = ("coinalyze-orderflow", "coinalyze-libro", "coinalyze-bot")
 SERVICIOS = ("coinalyze-api", "coinalyze-ingest", "coinalyze-ws", "coinalyze-scalp", "coinalyze-daily")
