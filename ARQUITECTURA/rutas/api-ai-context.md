@@ -402,7 +402,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | **checks** | `harness/checks/K101-un-nombre-dos-cosas.sh:126`, `harness/checks/K101-un-nombre-dos-cosas.sh:207`, `harness/checks/K102-mesa.py:672`, `harness/checks/K102-mesa.py:710` _(+30)_ | `harness/checks/K101-un-nombre-dos-cosas.sh:26`, `harness/checks/K102-control.bash:914`, `harness/checks/K102-mesa.py:667`, `harness/checks/K31-eslabon5.sh:60` _(+10)_ |
 | **panel** | `static/js/02-canal.js:40`, `static/js/02-canal.js:55`, `static/js/02-canal.js:59`, `static/js/10-contexto-y-estructura.js:927` _(+8)_ | — |
 | **panel-html** | `static/index.html:85` | — |
-| **tests** | `tests/js/panel_sobre.test.js:96`, `tests/test_bot.py:342`, `tests/test_bot_estructura.py:105` | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:115`, `tests/test_pr22_cvd_semantics.py:1198` |
+| **tests** | `tests/js/panel_sobre.test.js:96`, `tests/test_bot.py:342`, `tests/test_bot_estructura.py:106` | `tests/test_metrics_endpoint.py:222`, `tests/test_orderbook_frescura.py:116`, `tests/test_p0_data_integrity.py:115`, `tests/test_pr22_cvd_semantics.py:1198` |
 
 **La llama el panel: es superficie de producto.**
 

@@ -33944,7 +33944,7 @@
           "llamadas": [
             "tests/js/panel_sobre.test.js:96",
             "tests/test_bot.py:342",
-            "tests/test_bot_estructura.py:105"
+            "tests/test_bot_estructura.py:106"
           ],
           "menciones": [
             "tests/test_metrics_endpoint.py:222",
@@ -34464,7 +34464,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_bot_estructura.py:21"
+            "tests/test_bot_estructura.py:22"
           ],
           "menciones": [
             "tests/genera_dorado_estructura.py:7",

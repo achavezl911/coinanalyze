@@ -361,7 +361,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K31-eslabon5.sh:65` | — |
-| **tests** | `tests/test_bot_estructura.py:21` | `tests/genera_dorado_estructura.py:7`, `tests/test_bot_estructura.py:4` |
+| **tests** | `tests/test_bot_estructura.py:22` | `tests/genera_dorado_estructura.py:7`, `tests/test_bot_estructura.py:4` |
 
 **No la llama el panel**, pero si 2 linea(s) de codigo fuera de el.
 Es **instrumento interno** — o una ruta que el panel dejo de usar y nadie retiro.
