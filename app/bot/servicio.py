@@ -37,6 +37,7 @@ from app.bot import auditor, calc, calidad, historial, llm, vidas
 from app.bot import bybit as bb
 from app.bot import centinela as cen
 from app.bot import estructura as est
+from app.bot import seguimiento as seg
 from app.bot import sesgo as ses
 from app.bot import sombra as sb
 
@@ -45,7 +46,7 @@ SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_
 VEREDICTOS = ("A FAVOR", "EN CONTRA", "NO EVALUABLE")
 PARTE_HORA_UTC = calidad.PARTE_HORA_UTC  # 13: 07:00 en Ciudad de Mexico; vive en calidad, que cuenta los partes que tocaban
 # lo de bot_estado que solo el bot sabe y carga() recupera: sin cargar no se escribe encima (remate 9)
-GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avisada", "estructura")
+GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avisada", "estructura", "seguimiento")
 UMBRALES_CLAVE = (14, 7, 3, 1)  # dias que le quedan a la clave de Bybit: Telegram avisa una vez al cruzar cada uno (R10)
 RETRASO_AVISO = 10  # min de retraso de las velas de un activo a partir de los que se avisa (BOT-SEGURIDAD B2)
 CLAVE_VALE_S = 7200  # sin una lectura buena de query-api en 2 h, «solo lectura» deja de valer (BOT-SEGURIDAD B4)
@@ -403,6 +404,11 @@ class Bot:
         # ESTRUCTURA R1: los avisos del bridge (app/bot/estructura.py), con BOT_ESTRUCTURA=apagado|sombra|enviar
         self.estructura_u, av = est.Umbrales.desde(e)
         self.estructura = self.estado["estructura"] = est.nuevo()
+        # SEGUIMIENTO R1: con una posicion abierta, su activo en vivo (app/bot/seguimiento.py), BOT_SEGUIMIENTO=apagado|sombra|enviar
+        self.seguimiento_c, sg = seg.Config.desde(e)
+        self.seguimiento = self.estado["seguimiento"] = seg.nuevo()
+        self.seguimiento_cache: dict = {}  # las colas de 30 d / 7 d por activo, una lectura por hora (no se guarda)
+        av = av + sg
         for a in avisos + av:
             self.anota("CONFIGURACION", a, "configuracion")
 
@@ -514,6 +520,9 @@ class Bot:
                                                                                                     "ordenes", "nota"} <= set(x)} \
             if isinstance(pend, dict) else {}
         self.restaura_estructura(guardado.get("estructura") if isinstance(guardado, dict) else None)
+        x = seg.restaura(guardado.get("seguimiento") if isinstance(guardado, dict) else None)
+        if x is not None:
+            self.seguimiento = self.estado["seguimiento"] = x
         av = guardado.get("clave_avisada") if isinstance(guardado, dict) else None
         self.clave_avisada = {k: [u for u in x if u in UMBRALES_CLAVE] for k, x in av.items() if isinstance(x, list)} \
             if isinstance(av, dict) else {}
@@ -559,7 +568,7 @@ class Bot:
         # es un objeto, entero: lo que no se entiende tampoco se pisa
         propio = {"libro": self.libro.estado(), "cierres_pendientes": self.cierres_pendientes,
                   "correcciones_pendientes": self.correcciones_pendientes, "clave_avisada": self.clave_avisada,
-                  "estructura": self.estructura}
+                  "estructura": self.estructura, "seguimiento": self.seguimiento}
         for k in GUARDADO:
             if self.cargado:
                 self.estado[k] = propio[k]
@@ -1329,6 +1338,7 @@ class Bot:
             f"gasto API: hoy {s['gasto_hoy']:.2f} de {s['tope']:.2f} USD · ayer {s['gasto_ayer']:.2f} · esfuerzo {self.esfuerzo}",
             f"Telegram: {s['telegram']} · informe semanal: {s['informe']}",
             self.texto_estructura(),
+            self.texto_seguimiento(),
             f"errores: {errores}",
         ] + ([] if self.cargado else ["ESTADO SIN CARGAR: avisos de seguridad si; evaluaciones, cierres, parte e informe esperan"]))
 
@@ -1543,6 +1553,29 @@ class Bot:
         return (f"estructura (avisos del bridge): {u.modo} · {len(av)} en 24 h, {sum(1 for x in av if x[1])} enviados"
                 f" · cada {int(u.intervalo)} s, {len(u.simbolos)} activos")
 
+    async def tic_seguimiento(self):
+        """SEGUIMIENTO R1: con una posicion abierta (la ultima lectura buena de position/list), los avisos de su activo. En
+        sombra se calculan, van al journal (SEGUIMIENTO ...) y se cuentan en bot_estado; NO se mandan ni van a bot_evento.
+        Solo lectura: ninguna ruta de ordenes."""
+        c = self.seguimiento_c
+        if c.modo == "apagado":
+            return
+        ahora = time.time()
+        for ev in await seg.tic(self.db, self.bybit_ultima or [], self.seguimiento, self.seguimiento_cache, ahora):
+            enviada = False
+            if not ev["contenido"]:
+                enviada = await self.manda(ev["texto"]) if c.modo == "enviar" else False
+                seg.cuenta(self.seguimiento, ahora, ev["tipo"], enviada)
+            log.info("SEGUIMIENTO modo=%s tipo=%s activo=%s enviada=%s contenido=%s %s", c.modo, ev["tipo"], ev["activo"],
+                     enviada, ev["contenido"], ev["texto"].replace("\n", " | "))
+
+    def texto_seguimiento(self) -> str:
+        if self.seguimiento_c.modo == "apagado":
+            return "seguimiento (por posicion): apagado (BOT_SEGUIMIENTO)"
+        ahora = time.time()
+        av = [x for x in self.seguimiento["avisos"] if ahora - x[0] < 86400]
+        return f"seguimiento (por posicion): {self.seguimiento_c.modo} · {len(av)} en 24 h, {sum(1 for x in av if x[1])} enviados"
+
     async def cada(self, nombre: str, periodo: float, fn):
         while True:
             try:
@@ -1623,7 +1656,8 @@ class Bot:
             self.anota(causa(e), f"aviso de arranque: {type(e).__name__} {str(e)[:120]}", "arranque")
         await asyncio.gather(self.cada("centinela", 60, self.tic_minuto), self.cada("bybit", 60, self.tic_bybit),
                              self.cada("telegram", 1, self.tic_telegram),
-                             self.cada("estructura", self.estructura_u.intervalo, self.tic_estructura))
+                             self.cada("estructura", self.estructura_u.intervalo, self.tic_estructura),
+                             self.cada("seguimiento", 60, self.tic_seguimiento))
 
 
 async def principal():
