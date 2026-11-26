@@ -12,8 +12,8 @@ El Dashboard es una herramienta de analisis de microestructura y derivados. No e
 
 ## 2. Acceso
 
-- URL operativa de ESTE panel: https://10.151.1.6:8443/panel
-- Desde la campana 133 (2026-10), la raiz https://10.151.1.6:8443 abre la Mesa de operacion,
+- URL operativa de ESTE panel: https://<IP_INTERNA>:8443/panel
+- Desde la campana 133 (2026-10), la raiz https://<IP_INTERNA>:8443 abre la Mesa de operacion,
   que no es el panel de esta guia; desde la mesa se llega aqui con el enlace «PANEL ANTERIOR».
 - Usuario: operator
 - La contrasena es la definida en Basic Auth del despliegue.
@@ -279,27 +279,10 @@ Estado ok significa que no faltan servicios criticos ni simbolos. Si aparece deg
 
 Si dos bloques principales se contradicen, baja confianza. Si tres o mas bloques coinciden, el escenario es mas robusto.
 
-## 21. Uso con Telegram
+## 21. Avisos de Telegram (del bridge, a mover al bot)
 
-El Bridge de Telegram permite consultar analisis bajo demanda.
-
-Comandos:
-
-- /status: estado del sistema.
-- /usage: uso del Bridge/IA.
-- /preview BTC: payload de contexto sin IA.
-- /preview ETH: payload de contexto sin IA.
-- /preview SOL: payload de contexto sin IA.
-- /chatgpt-lite ETH: analisis breve.
-- /chatgpt ETH: analisis normal.
-- /chatgpt-pro ETH: analisis mas profundo.
-
-Uso sugerido:
-
-- Usa /status antes de pedir analisis.
-- Usa /preview cuando quieras auditar datos crudos.
-- Usa /chatgpt-lite para lectura rapida.
-- Usa /chatgpt-pro solo cuando el mercado justifique mayor detalle.
+Los avisos deterministas de estructura y liquidaciones llegan por Telegram desde un servicio
+aparte, no versionado en este repo, y se moverán al bot. El panel no depende de él.
 
 ## 22. Problemas comunes
 

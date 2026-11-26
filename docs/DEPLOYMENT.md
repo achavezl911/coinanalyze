@@ -1,6 +1,6 @@
 # Despliegue a producción
 
-Producción es el **LXC 140 `coinalyze-final`** (`10.151.1.6`). El despliegue es **manual y con
+Producción es el **LXC 140 `coinalyze-final`** (`<IP_INTERNA>`). El despliegue es **manual y con
 guardas**, disparado desde GitHub Actions (`workflow_dispatch`), y ejecutado a través del wrapper
 root que constituye el límite de confianza.
 
@@ -42,7 +42,7 @@ El workflow (en el runner self-hosted) hace:
 3. Construye `coinalyze-<sha>.tgz` (excluye `.git`, `.github`, `.venv`, caches, `graphify-out`).
 4. Calcula **SHA256**.
 5. Carga la clave de deploy desde el secret `DEPLOY_SSH_KEY`; host key de prod embebida.
-6. `scp` del artefacto a `coinalyze-deploy@10.151.1.6:incoming/`.
+6. `scp` del artefacto a `coinalyze-deploy@<IP_INTERNA>:incoming/`.
 7. `ssh ... sudo -n /usr/local/sbin/deploy-coinalyze deploy <artefacto> <sha256> <commit>` (el wrapper solo usa `<commit>`; acepta también `deploy <commit>`).
 8. Limpia el artefacto remoto y la clave local.
 

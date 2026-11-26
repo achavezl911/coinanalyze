@@ -181,7 +181,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K106-banco.py:52`, `harness/checks/K107-control.bash:73`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:35`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:37` _(+2)_ | `harness/checks/K107-control.bash:9`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:5`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:11`, `harness/checks/K107-el-resultado-que-sale-de-su-plan.sh:13` _(+3)_ |
-| **readme** | — | `README.md:59` |
+| **readme** | — | `README.md:55`, `README.md:88` |
 | **tests** | `tests/test_entradas_ruta.py:72` | `tests/test_entradas_resultados_postgres.py:248`, `tests/test_entradas_ruta.py:1`, `tests/test_entradas_vista.py:10` |
 
 **No la llama el panel**, pero si 7 linea(s) de codigo fuera de el.

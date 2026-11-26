@@ -10,7 +10,7 @@ incertidumbre, se dice.
 ## 1. Qué es
 
 Dashboard interno de microestructura y scalping para perpetuos **BTC, ETH y SOL**. Corre en
-el **LXC 140 (`coinalyze-final`)** del Proxmox `150.1.7.13`, IP interna `10.151.1.6`.
+el **LXC 140 (`coinalyze-final`)** del Proxmox `<IP_PROXMOX>`, IP interna `<IP_INTERNA>`.
 
 - Código: `/opt/coinalyze` (los servicios corren **directo del árbol**, con
   `WorkingDirectory=/opt/coinalyze`; `update.sh` además hace `pip install` en el venv).
@@ -130,15 +130,10 @@ bloques, con 90 sesiones de `daily_history` cada uno.
 
 | perfil | sesiones diarias | divergencias intradía | uso |
 |---|---|---|---|
-| `lite` | 0 | no | `/chatgpt-lite` |
-| `default` | 0 | no | `/chatgpt`, alertas automáticas |
-| `pro` | 30 | sí | `/chatgpt-pro` |
-| `max` | 90 | sí | **`/preview`** → documento JSON en Telegram, para pegar en una IA web |
-
-El bridge (`/opt/coinalyze-ai-bridge`) **no recorta** el `ai_context`:
-`summarize_for_prompt` lo deja pasar íntegro si `schema_version` empieza por `ai_context`.
-`/preview` no gasta tokens de OpenAI y entrega el JSON como documento único cuando supera
-los 4096 caracteres de Telegram (límite de documento: 50 MB).
+| `lite` | 0 | no | payload mínimo |
+| `default` | 0 | no | operativa diaria |
+| `pro` | 30 | sí | análisis extendido bajo demanda |
+| `max` | 90 | sí | JSON completo para revisión manual |
 
 ## 5. Trampas ya pisadas — no las repitas
 
@@ -152,13 +147,11 @@ los 4096 caracteres de Telegram (límite de documento: 50 MB).
 4. **Repintado**: `refresh()` corre cada 15 s. Toda función `render*` debe **reemplazar** su
    contenedor, no hacer `append`. Un `replaceChildren()` dentro de una guarda de salida
    temprana **no cuenta**. Hay test que lo vigila.
-5. **El bridge se instala como COPIA en site-packages**: tras editar
-   `/opt/coinalyze-ai-bridge/src` hay que `pip install --no-deps .` y reiniciar.
-6. **No pongas texto dentro del SVG de las barras**: usa `preserveAspectRatio="none"` y
+5. **No pongas texto dentro del SVG de las barras**: usa `preserveAspectRatio="none"` y
    deforma el texto ~12×. Las etiquetas van en una rejilla HTML aparte.
-7. **Verifica antes de afirmar.** El comentario `coinalyze_aggregate` llevaba versiones en
+6. **Verifica antes de afirmar.** El comentario `coinalyze_aggregate` llevaba versiones en
    el código y era falso. Los números están a una consulta de distancia.
-8. **Aplicar `schema.sql` a la BD de producción requiere autorización del usuario** (el
+7. **Aplicar `schema.sql` a la BD de producción requiere autorización del usuario** (el
    clasificador de permisos lo bloquea, y con razón). `update.sh` sí lo hace como parte de
    su flujo normal.
 
@@ -219,7 +212,7 @@ file:/etc/coinalyze/backup.key`; el árbol vive bajo `rootfs/` dentro del tar).
 ## 9. Prompt sugerido para arrancar una IA con este contexto
 
 > Vas a trabajar sobre el Coinalyze Operator Dashboard v1.3.7 (LXC 140 en Proxmox
-> 150.1.7.13). Lee `docs/HANDOFF_IA.md` completo antes de proponer nada. Reglas de la casa:
+> <IP_PROXMOX>). Lee `docs/HANDOFF_IA.md` completo antes de proponer nada. Reglas de la casa:
 > (1) verifica contra los datos reales antes de afirmar cualquier cosa sobre procedencia o
 > semántica — en este proyecto ya se propagó un error por fiarse de un comentario;
 > (2) nunca presentes un número sin su universo de venues y su frescura; (3) si un dato no

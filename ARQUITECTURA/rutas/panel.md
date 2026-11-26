@@ -52,7 +52,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 |---|---|---|
 | **checks** | `harness/checks/K102-sobre-plantado.py:262`, `harness/checks/K43-control.bash:179`, `harness/checks/K44-control.bash:918`, `harness/checks/K44-control.bash:919` _(+9)_ | `harness/checks/K102-sobre-plantado.py:258`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:48`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:50`, `harness/checks/K44-el-sobre-que-nadie-pide.sh:248` _(+1)_ |
 | **panel-html** | — | `static/index.html:89` |
-| **readme** | — | `README.md:39` |
+| **readme** | — | `README.md:63` |
 | **tests** | `tests/js/harness.js:169`, `tests/test_espacio_cabeceras.py:62`, `tests/test_la_puerta.py:43`, `tests/test_la_puerta.py:110` _(+2)_ | `tests/js/harness.js:168`, `tests/test_la_puerta.py:3`, `tests/test_la_puerta.py:124` |
 
 **No la llama el panel**, pero si 19 linea(s) de codigo fuera de el.

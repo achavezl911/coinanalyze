@@ -1,6 +1,6 @@
 # Auditoría v1.3.8 — semántica de flujo, componentes muertos y cobertura declarada
 
-Todo lo que sigue se verificó contra la base viva del LXC 140 (`150.1.7.13`) el 2026-08-04
+Todo lo que sigue se verificó contra la base viva del LXC 140 (`<IP_PROXMOX>`) el 2026-08-04
 antes y después de tocar el código. Donde hay incertidumbre, se dice.
 
 ---
