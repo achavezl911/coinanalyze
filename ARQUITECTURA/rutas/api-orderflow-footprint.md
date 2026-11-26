@@ -80,7 +80,6 @@ comentario no tiene consumidor, tiene quien habla de ella.
 | donde | llamadas | menciones |
 |---|---|---|
 | **checks** | `harness/checks/K108-orderflow.py:881`, `harness/checks/K108-orderflow.py:883`, `harness/checks/K108-orderflow.py:919`, `harness/checks/K108-orderflow.py:921` _(+6)_ | `harness/checks/K109-banco.py:12`, `harness/checks/K111-banco.py:23`, `harness/checks/K111-banco.py:348` |
-| **readme** | — | `README.md:43` |
 | **tests** | `tests/js/libro_hueco_vivo.test.js:89`, `tests/test_espacio_cabeceras.py:62` | — |
 
 **No la llama el panel**, pero si 12 linea(s) de codigo fuera de el.
