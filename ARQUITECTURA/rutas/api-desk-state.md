@@ -149,7 +149,7 @@ Llamadas directas del handler:
 - `app.scalp_logic.setup_confirmation_bundle` — `app/scalp_logic.py:2523`
 - `app.scalp_logic.structure_detail` — `app/scalp_logic.py:2434`
 - `app.scalp_logic.trend_matrix` — `app/scalp_logic.py:6336`
-- `app.setups.build_setup_context` — `app/setups.py:1178`
+- `app.setups.build_setup_context` — `app/setups.py:1192`
 
 <details><summary>Alcanzables de forma indirecta (71)</summary>
 
@@ -204,25 +204,25 @@ Llamadas directas del handler:
 - `app.scalp_logic.score_component` — `app/scalp_logic.py:322`
 - `app.scalp_logic.spot_con_guarda` — `app/scalp_logic.py:2871`
 - `app.scalp_logic.spot_flow_windows` — `app/scalp_logic.py:2861`
-- `app.setups._apertura` — `app/setups.py:814`
-- `app.setups._bars_closed_beyond` — `app/setups.py:876`
-- `app.setups._breakout_frontier` — `app/setups.py:757`
-- `app.setups._gap_in` — `app/setups.py:869`
-- `app.setups._last_pivots` — `app/setups.py:995`
-- `app.setups._level_defended` — `app/setups.py:1071`
-- `app.setups._norm_bars` — `app/setups.py:793`
-- `app.setups._obs` — `app/setups.py:732`
-- `app.setups._pullback` — `app/setups.py:1002`
-- `app.setups._retest_done` — `app/setups.py:959`
-- `app.setups._returned_inside` — `app/setups.py:915`
+- `app.setups._apertura` — `app/setups.py:815`
+- `app.setups._bars_closed_beyond` — `app/setups.py:877`
+- `app.setups._breakout_frontier` — `app/setups.py:758`
+- `app.setups._gap_in` — `app/setups.py:870`
+- `app.setups._last_pivots` — `app/setups.py:996`
+- `app.setups._level_defended` — `app/setups.py:1079`
+- `app.setups._norm_bars` — `app/setups.py:794`
+- `app.setups._obs` — `app/setups.py:733`
+- `app.setups._pullback` — `app/setups.py:1003`
+- `app.setups._retest_done` — `app/setups.py:960`
+- `app.setups._returned_inside` — `app/setups.py:916`
 - `app.setups._sign` — `app/setups.py:95`
-- `app.setups._structure_event` — `app/setups.py:674`
-- `app.setups._tolerance` — `app/setups.py:778`
+- `app.setups._structure_event` — `app/setups.py:675`
+- `app.setups._tolerance` — `app/setups.py:779`
 - `app.setups.classify_oi` — `app/setups.py:162`
-- `app.setups.episodio` — `app/setups.py:842`
-- `app.setups.evaluate_setup` — `app/setups.py:1316`
+- `app.setups.episodio` — `app/setups.py:843`
+- `app.setups.evaluate_setup` — `app/setups.py:1330`
 - `app.setups.oi_price_reading` — `app/setups.py:228`
-- `app.setups.setup_observables` — `app/setups.py:1134`
+- `app.setups.setup_observables` — `app/setups.py:1148`
 - `app.setups.split_hypothesis` — `app/setups.py:88`
 
 </details>

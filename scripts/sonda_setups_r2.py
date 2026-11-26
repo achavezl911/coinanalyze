@@ -14,12 +14,17 @@ otro llamador de `_oi_check`), y cuenta:
         (`defense_from_ts` == `pullback_start`) contra un nivel anterior a ellas
         (`defended_level_ts` < `defense_from_ts`). El codigo viejo incluia la vela del pivote
         (`ts >= level_ts`), que toca su propio nivel por construccion: cuenta siempre.
+  V-13/14  % de «cumple» de «retroceso previo» y de «defensa del nivel» entre las continuaciones que
+        los EVALUAN (estado no `no_evaluable`), en cualquier estado del setup: un requisito CRITICO que
+        cumple en mas del TECHO_CUMPLE % no discrimina (Fable V3 N1/N2: 3650 de 3652 a 15 m). Mide sin
+        que haga falta una continuacion CONFIRMADO en el instante (N3: «0 de 0» antes y despues).
 
 LEVEL_TOL_ATR_MULT se lee de app/setups.py del arbol (no se importa app/).
 
 rc=0  ninguno de los dos.
-rc=1  hay al menos uno (los imprime).
-rc=2  alguna respuesta no se leyo (ruta caida, error...): NO es un cero.
+rc=1  hay al menos uno (los imprime), o un requisito de V-13/14 cumple en mas del TECHO_CUMPLE %.
+rc=2  alguna respuesta no se leyo (ruta caida, error...), o ninguna continuacion evalua un requisito
+      de V-13/14: NO es un cero.
 """
 
 from __future__ import annotations
@@ -40,6 +45,8 @@ PERFILES = ("intradia", "swing")
 DIRECCIONES = ("long", "short")
 SETUPS = ("ruptura", "continuacion", "reversion")
 REQ_OI = ("open interest", "respuesta de futuros (OI)")
+REQ_CONT = ("retroceso previo", "defensa del nivel")
+TECHO_CUMPLE = 95.0  # % de «cumple»; en las velas de 140 la rama da ~76 % y ~22 %, main 99.9 % y ~39 %
 SETUPS_PY = Path(__file__).resolve().parent.parent / "app" / "setups.py"
 
 
@@ -91,6 +98,20 @@ def z04(d: dict, tol: float) -> list[str]:
     return fallos
 
 
+def tasas_cont(resultados: list) -> dict[str, tuple[int, int]]:
+    """(cumple, evaluados) de cada requisito de REQ_CONT en las continuaciones leidas."""
+    out = {r: (0, 0) for r in REQ_CONT}
+    for t, d in resultados:
+        if "_error" in d or t[3] != "continuacion":
+            continue
+        for q in d["setup_evaluation"].get("requisitos") or []:
+            r = q.get("requisito")
+            if r in out and q.get("estado") != "no_evaluable":
+                c, n = out[r]
+                out[r] = (c + (q.get("estado") == "cumple"), n + 1)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--salida", type=Path, default=None, help="guarda cada respuesta entera")
@@ -126,14 +147,21 @@ def main() -> int:
         n04 += bool(f4)
         for x in f4:
             print(f"Z-04 {' '.join(t)} · {x}")
+    rojo_cont = sin_juzgar = False
+    for r, (c, n) in tasas_cont(resultados).items():
+        pct = 100 * c / n if n else None
+        rojo_cont |= pct is not None and pct > TECHO_CUMPLE
+        sin_juzgar |= pct is None
+        print(f"V-13/14 {r}: cumple {c} de {n} evaluados"
+              + (f" ({pct:.0f} %, techo {TECHO_CUMPLE:.0f} %)" if n else " · SIN JUZGAR"))
     for t, e in errores:
         print(f"ERROR {' '.join(t)} · {e}")
     print(f"respuestas {len(resultados) - len(errores)}/{len(resultados)} · "
           f"Z-03 {n03} de {n_oi} requisitos de OI evaluados · "
           f"Z-04 {n04} de {n_cont} continuaciones CONFIRMADO (tolerancia {tol} ATR)")
-    if errores:
+    if errores or sin_juzgar:
         return 2
-    return 1 if n03 or n04 else 0
+    return 1 if n03 or n04 or rojo_cont else 0
 
 
 if __name__ == "__main__":
