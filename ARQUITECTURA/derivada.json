@@ -50245,6 +50245,16 @@
           "sitio": "app/api.py:3847"
         },
         {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_LIQ",
+          "sitio": "app/bot/seguimiento.py:56"
+        },
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_LIQ_COLA",
+          "sitio": "app/bot/seguimiento.py:62"
+        },
+        {
           "funcion": "app.orderflow_lectura.indicadores",
           "origen": "constante SUELTAS_SQL",
           "sitio": "app/orderflow_lectura.py:945"
@@ -50615,6 +50625,16 @@
           "sitio": "app/api.py:961"
         },
         {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_VELAS",
+          "sitio": "app/bot/seguimiento.py:45"
+        },
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_RANGO",
+          "sitio": "app/bot/seguimiento.py:51"
+        },
+        {
           "funcion": "app.daily_agg.persist_verdicts",
           "origen": "literal",
           "sitio": "app/daily_agg.py:416"
@@ -50946,6 +50966,11 @@
           "funcion": "app.api.oi",
           "origen": "literal",
           "sitio": "app/api.py:1243"
+        },
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_OI",
+          "sitio": "app/bot/seguimiento.py:70"
         },
         {
           "funcion": "app.daily_agg.apply_retention",
@@ -52022,23 +52047,23 @@
     "bot_crudo": {
       "escritores": [
         {
-          "funcion": "app.bot.servicio.Bot.crudo_lectura",
-          "origen": "literal",
-          "sitio": "app/bot/servicio.py:983",
-          "verbo": "DELETE"
-        },
-        {
           "funcion": "app.bot.servicio.Bot.en_crudo",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:991",
+          "sitio": "app/bot/servicio.py:1000",
           "verbo": "INSERT"
+        },
+        {
+          "funcion": "app.bot.servicio.Bot.crudo_lectura",
+          "origen": "literal",
+          "sitio": "app/bot/servicio.py:992",
+          "verbo": "DELETE"
         }
       ],
       "lectores": [
         {
           "funcion": "app.bot.servicio.Bot.crudo_lectura",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:983"
+          "sitio": "app/bot/servicio.py:992"
         }
       ]
     },
@@ -52047,7 +52072,7 @@
         {
           "funcion": "app.bot.servicio.Bot.latido",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:574",
+          "sitio": "app/bot/servicio.py:583",
           "verbo": "INSERT"
         },
         {
@@ -52061,7 +52086,7 @@
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:481"
+          "sitio": "app/bot/servicio.py:487"
         },
         {
           "funcion": "app.bot.vigia.pasada",
@@ -52085,19 +52110,19 @@
         {
           "funcion": "app.bot.servicio.Bot.evalua",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1120",
+          "sitio": "app/bot/servicio.py:1129",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.bot.servicio.Bot.cierre",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1164",
+          "sitio": "app/bot/servicio.py:1173",
           "verbo": "INSERT"
         },
         {
           "funcion": "app.bot.servicio.Bot.correccion",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1215",
+          "sitio": "app/bot/servicio.py:1224",
           "verbo": "INSERT"
         }
       ],
@@ -52105,42 +52130,42 @@
         {
           "funcion": "app.bot.servicio.Bot.cierre",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1161"
+          "sitio": "app/bot/servicio.py:1170"
         },
         {
           "funcion": "app.bot.servicio.Bot.apertura_de",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1183"
+          "sitio": "app/bot/servicio.py:1192"
         },
         {
           "funcion": "app.bot.servicio.Bot.apertura_de",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1189"
+          "sitio": "app/bot/servicio.py:1198"
         },
         {
           "funcion": "app.bot.servicio.Bot.correccion",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1207"
+          "sitio": "app/bot/servicio.py:1216"
         },
         {
           "funcion": "app.bot.servicio.Bot.correccion",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1209"
+          "sitio": "app/bot/servicio.py:1218"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1355"
+          "sitio": "app/bot/servicio.py:1365"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:468"
+          "sitio": "app/bot/servicio.py:474"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:497"
+          "sitio": "app/bot/servicio.py:503"
         }
       ]
     },
@@ -52149,7 +52174,7 @@
         {
           "funcion": "app.bot.servicio.Bot.evento",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:446",
+          "sitio": "app/bot/servicio.py:452",
           "verbo": "INSERT"
         },
         {
@@ -52163,52 +52188,52 @@
         {
           "funcion": "app.bot.servicio.Bot.salud",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1279"
+          "sitio": "app/bot/servicio.py:1288"
         },
         {
           "funcion": "app.bot.servicio.Bot.alertas_24h",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1287"
+          "sitio": "app/bot/servicio.py:1296"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1347"
+          "sitio": "app/bot/servicio.py:1357"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1366"
+          "sitio": "app/bot/servicio.py:1376"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:463"
+          "sitio": "app/bot/servicio.py:469"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:478"
+          "sitio": "app/bot/servicio.py:484"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:520"
+          "sitio": "app/bot/servicio.py:529"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:522"
+          "sitio": "app/bot/servicio.py:531"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:524"
+          "sitio": "app/bot/servicio.py:533"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:535"
+          "sitio": "app/bot/servicio.py:544"
         },
         {
           "funcion": "app.bot.vigia.pasada",
@@ -52237,7 +52262,7 @@
         {
           "funcion": "app.bot.servicio.Bot.opus",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:629",
+          "sitio": "app/bot/servicio.py:638",
           "verbo": "INSERT"
         }
       ],
@@ -52245,22 +52270,22 @@
         {
           "funcion": "app.bot.servicio.Bot.salud",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1277"
+          "sitio": "app/bot/servicio.py:1286"
         },
         {
           "funcion": "app.bot.servicio.Bot.gasto",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1337"
+          "sitio": "app/bot/servicio.py:1347"
         },
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1364"
+          "sitio": "app/bot/servicio.py:1374"
         },
         {
           "funcion": "app.bot.servicio.Bot.gastado_hoy",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:458"
+          "sitio": "app/bot/servicio.py:464"
         }
       ]
     },
@@ -52269,7 +52294,7 @@
         {
           "funcion": "app.bot.servicio.Bot.operaciones",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1018",
+          "sitio": "app/bot/servicio.py:1027",
           "verbo": "INSERT"
         }
       ],
@@ -52277,12 +52302,12 @@
         {
           "funcion": "app.bot.servicio.Bot.cifras_semana",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:1362"
+          "sitio": "app/bot/servicio.py:1372"
         },
         {
           "funcion": "app.bot.servicio.Bot.carga",
           "origen": "literal",
-          "sitio": "app/bot/servicio.py:490"
+          "sitio": "app/bot/servicio.py:496"
         }
       ]
     },
@@ -52696,6 +52721,11 @@
         }
       ],
       "lectores": [
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_GRANDES",
+          "sitio": "app/bot/seguimiento.py:76"
+        },
         {
           "funcion": "app.orderflow._poda_vuelta",
           "origen": "literal",
