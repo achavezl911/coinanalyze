@@ -87,7 +87,7 @@ def test_main_es_b460c4c():
     r = subprocess.run(["git", "-C", str(ROOT), "show", "b460c4c:sql/schema.sql"], capture_output=True, text=True)
     if r.returncode != 0:
         pytest.skip("b460c4c no esta en este clon (la CI clona con profundidad 1)")
-    assert MAIN_SQL == r.stdout
+    assert r.stdout == MAIN_SQL
 
 
 async def test_a_base_nueva_admite_estructura(conn):
