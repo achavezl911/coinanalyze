@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 
 from app.bot import estructura as est
 from app.bot import servicio as sv
@@ -119,3 +120,27 @@ async def test_el_estado_de_anti_repeticion_sobrevive_al_reinicio(monkeypatch):
     assert len(otro.estructura["avisos"]) == 2
     otro.restaura_estructura("ilegible")  # lo que no se entiende no tumba la carga
     assert otro.estructura["kv"] == bot.estructura["kv"]
+
+
+ORDEN = re.compile(r"(?<![\w/])/[a-z]\w*")
+
+
+def _ordenes_del_bot() -> set[str]:
+    """Las ordenes que atiende Servicio.atiende (servicio.py): las «/x» de sus `orden in (...)` y `orden == "..."`."""
+    fuente = pathlib.Path(sv.__file__).read_text(encoding="utf-8")
+    cuerpo = fuente.split("async def atiende(", 1)[1].split("\n    async def ", 1)[0]
+    return set(re.findall(r'"(/[a-z]+)"', " ".join(re.findall(r'orden (?:in \([^)]*\)|== "[^"]*")', cuerpo))))
+
+
+def test_el_aviso_no_remite_a_ordenes_que_el_bot_no_atiende():
+    """ESTRUCTURA R3: el pie copiado del bridge remitia a dos ordenes del bridge que el bot no tiene (y nombraba al asistente
+    ajeno que PURGA quito del repo). Ningun texto del dorado (= el del bot, por la prueba de equivalencia) nombra una «/x» que
+    el bot no atienda, y todos acaban en el pie del bot."""
+    ordenes = _ordenes_del_bot()
+    assert {"/calc", "/evalua", "/estado", "/ayuda"} <= ordenes, ordenes  # el extractor ve las ordenes
+    textos = [d["texto"] for v in DORADO.values() for d in v if d["texto"]]
+    assert len(textos) == 10
+    ajenas = sorted({o for t in textos for o in ORDEN.findall(t)} - ordenes)
+    assert not ajenas, f"el aviso remite a ordenes que el bot no atiende: {ajenas}"
+    assert {t.rsplit("\n", 1)[1] for t in textos} == {est.PIE}
+    assert not set(ORDEN.findall(est.PIE)) - ordenes
