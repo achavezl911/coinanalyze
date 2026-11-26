@@ -69,7 +69,7 @@ siguen en `None` de forma fail-closed.
   CPI/NFP/PPI/JOLTS/FOMC y flujo ETF BTC opcional mediante `COINGLASS_API_KEY`.
 - Clasifica el entorno como favorable/mixto/restrictivo y explica conflictos con el sesgo
   interno sin fabricar probabilidades ni convertir el macro en gatillo de entrada.
-- Inyecta `external_macro_context` en `/api/ai/context` y, por extensión, en `/preview`.
+- Inyecta `external_macro_context` en `/api/ai/context` y, por extensión, en el payload completo que publicaba el bridge.
 
 Dashboard interno de microestructura y scalping para BTC, ETH y SOL. Incluye API privada para contexto IA, PostgreSQL local, colectores systemd, UI web y nginx como único punto remoto.
 
@@ -249,7 +249,7 @@ tendencia de semanas de un pico aislado.
   delta, y primeras emisiones inmutables de veredictos capturadas por sesión con su
   provenance y retorno desde el precio observable. Pensado para pegar el JSON en una IA por
   web, donde el coste en tokens no es la restricción.
-- El bridge de Telegram usa `max` en `/preview` (`TELEGRAM_PREVIEW_PROFILE`), que ya
+- El bridge de Telegram usa `max` en su envío del payload completo, que ya
   entregaba el payload como documento JSON único. Resultado: **~446 KB, ~106 k tokens**,
   muy por debajo del límite de 50 MB de Telegram.
 - Corregido de paso: `compact_value` no manejaba `date` (que no es subclase de `datetime`),

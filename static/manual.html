@@ -17,7 +17,7 @@ h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
 <li><a href="#parte-iv-microestructura-y-ejecucion-scalping">Parte IV — Microestructura y ejecución (scalping)</a></li>
 <li><a href="#parte-v-como-se-relacionan-mapa-de-dependencias">Parte V — Cómo se relacionan (mapa de dependencias)</a></li>
 <li><a href="#parte-vi-lecturas-combinadas-setups">Parte VI — Lecturas combinadas (setups)</a></li>
-<li><a href="#parte-vii-alertas-automaticas-de-telegram">Parte VII — Alertas automáticas de Telegram</a></li>
+<li><a href="#parte-vii-alertas-automaticas-de-telegram">Parte VII — Alertas automáticas de Telegram (del bridge, a mover al bot)</a></li>
 <li><a href="#parte-viii-rutina-de-lectura-sugerida">Parte VIII — Rutina de lectura sugerida</a></li>
 <li><a href="#parte-ix-errores-de-interpretacion-a-evitar">Parte IX — Errores de interpretación a evitar</a></li></ul></nav>
 <h1>Manual de interpretación — Dashboard Coinalyze</h1>
@@ -201,8 +201,8 @@ h2{scroll-margin-top:70px;} h3{scroll-margin-top:70px;}
 <h3 id="setup-e-capitulacion-suelo-de-corto-plazo-long-contrarian">Setup E — Capitulación / suelo de corto plazo (LONG contrarian)</h3>
 <p>Pico de long_liq · ratio &gt;&gt; 1 · OI desplomándose · CVD spot girando positivo · funding neutro/negativo. <strong>Lectura:</strong> el desapalancamiento forzado con demanda spot puede marcar un suelo local. Alto riesgo, requiere confirmación. <strong>Invalidación:</strong> las liquidaciones siguen sin que el spot acumule.</p>
 <hr>
-<h2 id="parte-vii-alertas-automaticas-de-telegram">Parte VII — Alertas automáticas de Telegram</h2>
-<p>El bot ya <strong>no</strong> manda alertas de scalping muy corto. Ahora avisa solo cuando puede venir un <strong>movimiento grande o un cambio de estructura</strong>, con dos disparadores deterministas (sin costo de IA; el análisis con IA sigue bajo demanda con los comandos de análisis del bridge y <code>/preview</code>):</p>
+<h2 id="parte-vii-alertas-automaticas-de-telegram">Parte VII — Alertas automáticas de Telegram (del bridge, a mover al bot)</h2>
+<p>El bot ya <strong>no</strong> manda alertas de scalping muy corto. Ahora avisa solo cuando puede venir un <strong>movimiento grande o un cambio de estructura</strong>, con dos disparadores deterministas (sin costo de IA):</p>
 <ul>
 <li><strong>Cambio de estructura:</strong> cuando el patrón de pivotes de un horizonte se voltea (HH/HL ↔ LH/LL) respecto al último estado avisado. Horizontes medios <strong>1h/4h/8h</strong> y largos <strong>1d/3d/9d</strong>. Es *edge-triggered*: avisa una vez por giro, no repite mientras la estructura se mantiene. Te da nivel, dirección y el patrón.</li>
 <li><strong>Liquidaciones masivas:</strong> cuando el total de liquidaciones de 5m supera su umbral relativo al baseline. Distingue <strong>cascada bajista</strong> (longs liquidados) de <strong>squeeze alcista</strong> (shorts liquidados), con el múltiplo sobre baseline.</li>

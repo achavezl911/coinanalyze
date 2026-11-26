@@ -8,8 +8,8 @@
 ## Contexto de la plataforma
 
 - **GitHub** (`github.com/achavezl911/coinanalyze`) es la **única fuente de verdad** del código.
-- El desarrollo ocurre en el **LXC 143 `coin-cicd`** (`10.10.100.2`), NO en producción.
-- Producción es el **LXC 140 `coinalyze-final`** (`10.151.1.6`): API FastAPI, colectores,
+- El desarrollo ocurre en el **LXC 143 `coin-cicd`** (`<IP_DEV>`), NO en producción.
+- Producción es el **LXC 140 `coinalyze-final`** (`<IP_INTERNA>`): API FastAPI, colectores,
   PostgreSQL 17 y nginx. Los servicios corren como el usuario `coinalyze` desde `/opt/coinalyze`.
 - Los secretos de producción viven **solo** en `/etc/coinalyze/coinalyze.env` (LXC 140) y
   **nunca** en el repositorio ni en el entorno de los agentes.

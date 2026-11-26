@@ -5,7 +5,7 @@ Todo el desarrollo ocurre en el **LXC 143 `coin-cicd`** como usuario `devops`. N
 ## Acceso desde Windows
 
 ```bash
-ssh coin-cicd        # alias en ~/.ssh/config -> devops@10.10.100.2, clave coin-cicd_ed25519
+ssh coin-cicd        # alias en ~/.ssh/config -> devops@<IP_DEV>, clave coin-cicd_ed25519
 ```
 
 En VS Code: **Remote-SSH → Connect to Host → coin-cicd**, y abre la carpeta del worktree

@@ -6,10 +6,10 @@ Referencia operativa del entorno DEV/CI-CD (LXC 143) y del deploy a producción 
 
 | Recurso | Valor |
 |---|---|
-| Proxmox | `prox` 150.1.7.13 (PVE 9.2.2, Debian 13) |
-| DEV/CI-CD | LXC **143** `coin-cicd`, `10.10.100.2/28` vlan10, gw `10.10.100.1`, DNS `10.10.100.4,1.1.1.1` |
+| Proxmox | `prox` <IP_PROXMOX> (PVE 9.2.2, Debian 13) |
+| DEV/CI-CD | LXC **143** `coin-cicd`, `<IP_DEV>/<PREFIJO>` vlan10, gw `<GATEWAY>`, DNS `<DNS_INTERNO>,1.1.1.1` |
 | DEV recursos | 4 vCPU / 4 GB / 2 GB swap / rootfs 30 GB en storage `local` |
-| Producción | LXC **140** `coinalyze-final`, `10.151.1.6` vlan151 |
+| Producción | LXC **140** `coinalyze-final`, `<IP_INTERNA>` vlan151 |
 | Repo | github.com/achavezl911/coinanalyze (default `main`) |
 
 ## Usuarios y privilegios
@@ -22,8 +22,8 @@ Referencia operativa del entorno DEV/CI-CD (LXC 143) y del deploy a producción 
 | `coinalyze-deploy` | LXC 140 | recibe artefacto (el wrapper lo ignora y baja el commit de GitHub) y llama al wrapper | sudo SOLO a `/usr/local/sbin/deploy-coinalyze` |
 
 Claves SSH:
-- `~/.ssh/coin-cicd_ed25519` (Windows) → `devops@10.10.100.2`.
-- `~devops/.ssh/coinalyze_deploy_ed25519` (LXC 143) → `coinalyze-deploy@10.151.1.6`; la privada
+- `~/.ssh/coin-cicd_ed25519` (Windows) → `devops@<IP_DEV>`.
+- `~devops/.ssh/coinalyze_deploy_ed25519` (LXC 143) → `coinalyze-deploy@<IP_INTERNA>`; la privada
   también en el secret `DEPLOY_SSH_KEY`.
 
 ## Comandos frecuentes
