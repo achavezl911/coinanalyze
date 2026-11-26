@@ -3361,7 +3361,7 @@ $$;
 CREATE TABLE IF NOT EXISTS bot_evento (
     ts timestamptz NOT NULL DEFAULT now(),
     tipo text NOT NULL CHECK (tipo IN ('rafaga', 'clase', 'stop', 'liquidacion', 'sin_stop', 'bybit', 'arranque',
-                                       'parte', 'informe', 'validacion', 'vigia')),
+                                       'parte', 'informe', 'validacion', 'vigia', 'estructura')),
     symbol text,
     minuto timestamptz,
     lado smallint CHECK (lado IN (-1, 1)),
@@ -3372,6 +3372,25 @@ CREATE TABLE IF NOT EXISTS bot_evento (
 SELECT esquema_ddl($ddl$CREATE UNIQUE INDEX IF NOT EXISTS bot_evento_unico ON bot_evento (tipo, symbol, minuto) WHERE tipo IN ('rafaga', 'clase')$ddl$);
 SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_evento_minuto_idx ON bot_evento (minuto)$ddl$);
 SELECT esquema_ddl($ddl$CREATE INDEX IF NOT EXISTS bot_evento_tipo_ts_idx ON bot_evento (tipo, ts)$ddl$);
+-- ESTRUCTURA R2 >>>
+-- 'estructura' (los avisos del bridge en el bot, ESTRUCTURA R1) en una base existente: el CHECK de tipo de otro
+-- nombre que no la admite se quita, y bot_evento_tipo_check se sustituye solo si su definicion no es ya esta
+-- (esquema_ddl compara con pg_get_constraintdef; al dia, no bloquea). El ADD revalida la tabla con AccessExclusive:
+-- bot_evento es pequena (683 filas en 140 el 2026-11-26) y el envoltorio del despliegue para los servicios antes.
+DO $$
+DECLARE
+    c record;
+BEGIN
+    FOR c IN SELECT conname FROM pg_constraint
+             WHERE conrelid = 'bot_evento'::regclass AND contype = 'c' AND conname <> 'bot_evento_tipo_check'
+               AND conname ~ '^\w+$' AND pg_get_constraintdef(oid) ~ '\mtipo\M'
+               AND pg_get_constraintdef(oid) !~ '''estructura''' LOOP
+        PERFORM esquema_ddl(format('ALTER TABLE bot_evento DROP CONSTRAINT IF EXISTS %s', c.conname));
+    END LOOP;
+END $$;
+SELECT esquema_ddl($ddl$ALTER TABLE bot_evento ADD CONSTRAINT bot_evento_tipo_check CHECK (tipo IN ('rafaga', 'clase',
+    'stop', 'liquidacion', 'sin_stop', 'bybit', 'arranque', 'parte', 'informe', 'validacion', 'vigia', 'estructura'))$ddl$);
+-- <<< ESTRUCTURA R2
 
 CREATE TABLE IF NOT EXISTS bot_evaluacion (
     id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

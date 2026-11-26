@@ -109,7 +109,7 @@ async def test_b_actualizacion_desde_main_dos_veces(conn):
     primera = await _aplica(conn, SCHEMA_SQL)
     segunda = await _aplica(conn, SCHEMA_SQL)
     assert any("ADD CONSTRAINT bot_evento_tipo_check" in a for a in primera), primera
-    assert not [a for a in segunda if "bot_evento" in a], segunda  # idempotente: la segunda no toca la tabla
+    assert not [a for a in segunda if a.startswith("esquema_ddl: aplica")], segunda  # idempotente: no ejecuta nada
 
     assert [tuple(f) for f in await conn.fetch("SELECT tipo, symbol, minuto, detalle FROM bot_evento ORDER BY tipo")] == antes
     await _estructura(conn)
