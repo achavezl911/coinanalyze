@@ -379,10 +379,10 @@ fichero de su modulo**: `impacto/<modulo>.md`.
 | [`app.entradas.resultados.de_filas`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:119` | 2 | **0** | 2 ↑ | **2** |
 | [`app.entradas.resultados.guardar`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:104` | 2 | **2** | 2 | **2** |
 | [`app.entradas.resultados.resolver_fila`](impacto/app-entradas-resultados.md) | `app/entradas/resultados.py:89` | 2 | **0** | 2 ↑ | **2** |
-| [`app.entradas.ruta._hipotesis`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:349` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._reglamento`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:371` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta._resumen`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:156` | 2 | **0** | 0 | **2** |
-| [`app.entradas.ruta.construir`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:199` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._hipotesis`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:357` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._reglamento`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:379` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta._resumen`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:164` | 2 | **0** | 0 | **2** |
+| [`app.entradas.ruta.construir`](impacto/app-entradas-ruta.md) | `app/entradas/ruta.py:207` | 2 | **0** | 0 | **2** |
 | [`app.field_disambiguation.build`](impacto/app-field_disambiguation.md) | `app/field_disambiguation.py:72` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.horizon_structure`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:1758` | 2 | **0** | 0 | **2** |
 | [`app.scalp_logic.hypothesis_evidence`](impacto/app-scalp_logic.md) | `app/scalp_logic.py:5081` | 2 | **0** | 0 | **2** |

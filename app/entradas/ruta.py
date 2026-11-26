@@ -40,6 +40,12 @@ from app.entradas import reglamento as R
 from app.entradas import resolutor as RES
 from app.entradas import resultados as RS
 
+# R-02 (V-15, Fable V3 N4): estas dos cifras son BRUTAS y su entrada es reference_price, un precio en tiempo
+# real aceptado con hasta 30 s de edad: la entrada pudo ser ANTERIOR a la decision. P23 las etiqueto en
+# entregas/; la respuesta lleva la misma etiqueta junto a cada una. Las cifras no se tocan.
+ETIQUETA_R02 = ("cota optimista: la entrada del bruto se tomo con hasta 30 s de adelanto sobre la decision "
+                "(R-02); no se recalcula")
+
 REFERENCIA_YA_MEDIDO = {
     "rotulo": "YA MEDIDO · sobre la senal scalp del sistema, NO sobre estos candidatos",
     "items": [
@@ -47,6 +53,7 @@ REFERENCIA_YA_MEDIDO = {
             "que": "ventaja direccional de la senal scalp a 1 min sobre una moneda lanzada",
             "valor": "+3.48 pp (n = 112 282, error tipico 0.15)",
             "cita": "harness/COLA.md:10695 (COLA 101)",
+            "etiqueta": ETIQUETA_R02,
         },
         {
             "que": "la misma ventaja fuera de muestra (12 dias que la conclusion no vio)",
@@ -58,6 +65,7 @@ REFERENCIA_YA_MEDIDO = {
             "que": "con la comision dentro, ninguna de las diez celdas medidas queda en positivo",
             "valor": "la mejor da +2.11 bps brutos; harian falta < 1.05 bps por lado",
             "cita": "harness/COLA.md:11143-11145 (COLA 103)",
+            "etiqueta": ETIQUETA_R02,
         },
         {
             "que": "el giro real long <-> short, la mejor medida del sistema",
