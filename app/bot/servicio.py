@@ -36,6 +36,7 @@ import httpx
 from app.bot import auditor, calc, calidad, historial, llm, vidas
 from app.bot import bybit as bb
 from app.bot import centinela as cen
+from app.bot import estructura as est
 from app.bot import sesgo as ses
 from app.bot import sombra as sb
 
@@ -44,7 +45,7 @@ SECRETOS = ("ANTHROPIC_API_KEY", "BYBIT_API_KEY", "BYBIT_API_SECRET", "TELEGRAM_
 VEREDICTOS = ("A FAVOR", "EN CONTRA", "NO EVALUABLE")
 PARTE_HORA_UTC = calidad.PARTE_HORA_UTC  # 13: 07:00 en Ciudad de Mexico; vive en calidad, que cuenta los partes que tocaban
 # lo de bot_estado que solo el bot sabe y carga() recupera: sin cargar no se escribe encima (remate 9)
-GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avisada")
+GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avisada", "estructura")
 UMBRALES_CLAVE = (14, 7, 3, 1)  # dias que le quedan a la clave de Bybit: Telegram avisa una vez al cruzar cada uno (R10)
 RETRASO_AVISO = 10  # min de retraso de las velas de un activo a partir de los que se avisa (BOT-SEGURIDAD B2)
 CLAVE_VALE_S = 7200  # sin una lectura buena de query-api en 2 h, «solo lectura» deja de valer (BOT-SEGURIDAD B4)
@@ -399,7 +400,10 @@ class Bot:
             "anthropic": {"clave": bool(e.get("ANTHROPIC_API_KEY")), "tope_usd": self.tope, "esfuerzo": self.esfuerzo},
             "datos": None, "api": None, "validacion": None, "informe": None, "errores": {},
         }
-        for a in avisos:
+        # ESTRUCTURA R1: los avisos del bridge (app/bot/estructura.py), con BOT_ESTRUCTURA=apagado|sombra|enviar
+        self.estructura_u, av = est.Umbrales.desde(e)
+        self.estructura = self.estado["estructura"] = est.nuevo()
+        for a in avisos + av:
             self.anota("CONFIGURACION", a, "configuracion")
 
     def anota(self, nombre: str, texto: str, op: str | None = None):
@@ -509,6 +513,7 @@ class Bot:
         self.correcciones_pendientes = {k: x for k, x in pend.items() if isinstance(x, dict) and {"id", "pnl", "pnl_antes", "orden",
                                                                                                     "ordenes", "nota"} <= set(x)} \
             if isinstance(pend, dict) else {}
+        self.restaura_estructura(guardado.get("estructura") if isinstance(guardado, dict) else None)
         av = guardado.get("clave_avisada") if isinstance(guardado, dict) else None
         self.clave_avisada = {k: [u for u in x if u in UMBRALES_CLAVE] for k, x in av.items() if isinstance(x, list)} \
             if isinstance(av, dict) else {}
@@ -553,7 +558,8 @@ class Bot:
         # el vigia y K117 leen) y lo guardado se queda como estaba, para que la carga lo recupere identico. Si lo guardado no
         # es un objeto, entero: lo que no se entiende tampoco se pisa
         propio = {"libro": self.libro.estado(), "cierres_pendientes": self.cierres_pendientes,
-                  "correcciones_pendientes": self.correcciones_pendientes, "clave_avisada": self.clave_avisada}
+                  "correcciones_pendientes": self.correcciones_pendientes, "clave_avisada": self.clave_avisada,
+                  "estructura": self.estructura}
         for k in GUARDADO:
             if self.cargado:
                 self.estado[k] = propio[k]
@@ -1322,6 +1328,7 @@ class Bot:
             f"alertas 24 h: {sum(al.values())} ({', '.join(f'{k} {n}' for k, n in al.items()) or 'ninguna'}) · ultima: {s['ultima_alerta']}",
             f"gasto API: hoy {s['gasto_hoy']:.2f} de {s['tope']:.2f} USD · ayer {s['gasto_ayer']:.2f} · esfuerzo {self.esfuerzo}",
             f"Telegram: {s['telegram']} · informe semanal: {s['informe']}",
+            self.texto_estructura(),
             f"errores: {errores}",
         ] + ([] if self.cargado else ["ESTADO SIN CARGAR: avisos de seguridad si; evaluaciones, cierres, parte e informe esperan"]))
 
@@ -1503,6 +1510,39 @@ class Bot:
         await self.manda(historial.resumen(datos, destino != self.historial_ruta))
 
     # ---------- bucles ----------
+    def restaura_estructura(self, guardado):
+        """La anti-repeticion de los avisos del bridge, de bot_estado; lo que no se entiende no pisa lo que hay."""
+        x = est.restaura(guardado)
+        if x is not None:
+            self.estructura = self.estado["estructura"] = x
+
+    async def tic_estructura(self):
+        """ESTRUCTURA R1: lo que el bridge hace en alert_only (su scheduler.py:159-182), cada ANALYSIS_INTERVAL_SECONDS.
+        En sombra se calcula, se apunta (journal, bot_evento y /estado) y NO se manda; la anti-repeticion avanza como si
+        se hubiera entregado, para que el registro diga lo mismo que el dueno habria recibido."""
+        u = self.estructura_u
+        if u.modo == "apagado":
+            return
+        generado, filas = est.paquete(await self.api(est.ruta(u)), u)
+        ahora, s = time.time(), self.estructura
+        texto = est.construye(generado, filas, s, u, ahora)
+        if not texto:
+            return est.registra(filas, s)
+        enviada = await self.manda(texto) if u.modo == "enviar" else False
+        if enviada or u.modo == "sombra":  # el bridge marca solo si Telegram no fallo
+            est.marca(filas, s, u, ahora)
+        s["avisos"] = [x for x in s["avisos"] if ahora - x[0] < 86400] + [[ahora, enviada]]
+        log.info("ESTRUCTURA modo=%s enviada=%s %s", u.modo, enviada, texto.replace("\n", " | "))
+        await self.evento("estructura", None, None, enviada, detalle={"modo": u.modo, "generated_at": generado, "texto": texto})
+
+    def texto_estructura(self) -> str:
+        u, ahora = self.estructura_u, time.time()
+        if u.modo == "apagado":
+            return "estructura (avisos del bridge): apagado (BOT_ESTRUCTURA)"
+        av = [x for x in self.estructura["avisos"] if ahora - x[0] < 86400]
+        return (f"estructura (avisos del bridge): {u.modo} · {len(av)} en 24 h, {sum(1 for x in av if x[1])} enviados"
+                f" · cada {int(u.intervalo)} s, {len(u.simbolos)} activos")
+
     async def cada(self, nombre: str, periodo: float, fn):
         while True:
             try:
@@ -1582,7 +1622,8 @@ class Bot:
         except Exception as e:
             self.anota(causa(e), f"aviso de arranque: {type(e).__name__} {str(e)[:120]}", "arranque")
         await asyncio.gather(self.cada("centinela", 60, self.tic_minuto), self.cada("bybit", 60, self.tic_bybit),
-                             self.cada("telegram", 1, self.tic_telegram))
+                             self.cada("telegram", 1, self.tic_telegram),
+                             self.cada("estructura", self.estructura_u.intervalo, self.tic_estructura))
 
 
 async def principal():
