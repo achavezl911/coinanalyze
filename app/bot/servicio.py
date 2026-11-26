@@ -48,6 +48,7 @@ GUARDADO = ("libro", "cierres_pendientes", "correcciones_pendientes", "clave_avi
 UMBRALES_CLAVE = (14, 7, 3, 1)  # dias que le quedan a la clave de Bybit: Telegram avisa una vez al cruzar cada uno (R10)
 RETRASO_AVISO = 10  # min de retraso de las velas de un activo a partir de los que se avisa (BOT-SEGURIDAD B2)
 CLAVE_VALE_S = 7200  # sin una lectura buena de query-api en 2 h, «solo lectura» deja de valer (BOT-SEGURIDAD B4)
+MARGEN_CADA = 600  # s que vale la lectura buena de account/info (el modo de margen, MARGEN R1): cambia a mano, rara vez
 RUTAS = {"escala": "low", "pregunta": "medium", "evalua": "high"}  # de partida (Alejandro, 2026-10-24); se cambia por entorno
 
 
@@ -76,7 +77,7 @@ REGLAS QUE NO SE ROMPEN
 6. Escribes en espanol, texto plano (sin markdown), corto: como mucho 8 lineas salvo que la tarea diga otra cosa.
 
 SU FORMA DE OPERAR (para poner en contexto lo que veas)
-- Opera a mano perpetuos lineales USDT en margen aislado. El tamano sale del riesgo: lo que pierde hasta el stop, con
+- Opera a mano perpetuos lineales USDT. El tamano sale del riesgo: lo que pierde hasta el stop, con
   comision, es como mucho {perdida_max:g} USD por operacion. Apalancamiento por omision {apalancamiento:g}x: solo decide el margen y
   la liquidacion, no el riesgo.
 - No hay stop ni objetivo por omision: el stop y el objetivo son LOS DE LA POSICION que evaluas, tal como vienen en sus
@@ -84,6 +85,9 @@ SU FORMA DE OPERAR (para poner en contexto lo que veas)
 - Comision taker de Bybit: {taker * 1e4:g} puntos basicos por lado. Con el stop y el objetivo de la posicion, el
   equilibrio de acierto es (stop + comision) / (objetivo + stop); si la perdida al stop con comision pasa de
   {perdida_max:g} USD, lo dices.
+- El modo de margen viene en la posicion (modo_margen, leido de Bybit): «aislado», «cruzado» o null (desconocido). En
+  CRUZADO todo el saldo respalda la posicion: la liquidacion que da Bybit es la buena y NO cuadra con el apalancamiento
+  ni con el margen de la posicion (no lo senales ni pidas revisarla). Con null no la juzgues contra el apalancamiento.
 - La liquidacion depende del apalancamiento de la posicion: si viene, mira que quede por detras del stop; a menos de
   {liq_veces:g} veces la distancia al stop hay poco colchon y lo dices.
 - Mira el flujo de corto plazo: CVD, delta, operaciones grandes, liquidaciones, interes abierto, funding y el libro; y los
@@ -373,6 +377,7 @@ class Bot:
         self.crudo_podado = 0.0
         self.validadas: set = set()
         self.validaciones: dict = {}  # B5: la ultima validacion de CADA simbolo (la tolerancia solo vale para el mismo)
+        self.margen_cuenta: tuple = (0.0, None)  # MARGEN R1: (monotonic, la ultima account/info buena)
         self.tareas: set = set()  # lo que va fuera de los bucles (Opus): que el latido y las alertas no esperen
         self.turno = None  # la tarea de la ultima respuesta: la siguiente sale despues (en orden)
         self.clave_proxima = self.ops_leidas = 0.0
@@ -1017,9 +1022,27 @@ class Bot:
             log.info("bot_operacion: cerradas nuevas de %s", sorted(nuevas))
         return nuevas
 
+    async def modo_margen(self, p: dict) -> dict:
+        """MARGEN R1 (V-17): {"modo_margen", "modo_margen_motivo"} de la posicion (bybit.modo_margen). account/info se lee
+        como mucho cada MARGEN_CADA s; un fallo pasajero (bybit.transitorio) no se guarda y se reintenta; todo fallo da desconocido."""
+        if self.bybit is None:
+            return {"modo_margen": None, "modo_margen_motivo": "sin clave de Bybit"}
+        t, cuenta = self.margen_cuenta
+        if cuenta is None or time.monotonic() - t > MARGEN_CADA:
+            try:
+                cuenta = bb.objeto(await self.bybit.get("/v5/account/info"))
+            except Exception as e:  # noqa: BLE001 - leer el modo no tumba la evaluacion: da desconocido
+                cuenta = {"retCode": -1, "retMsg": f"account/info no contesta: {type(e).__name__}"}
+            self.margen_cuenta = (0.0, None) if bb.transitorio(cuenta) else (time.monotonic(), cuenta)
+        modo, motivo = bb.modo_margen(cuenta, p)
+        return {"modo_margen": modo, "modo_margen_motivo": motivo}
+
     async def valida(self, p: dict):
-        """La liquidacion de la formula contra la que da Bybit para una posicion real: se registra una vez por posicion."""
+        """La liquidacion de la formula contra la que da Bybit para una posicion real: se registra una vez por posicion.
+        MARGEN R1: solo en margen AISLADO (la formula es la aislada); cruzado o desconocido no se compara."""
         if not p.get("liquidacion") or not p.get("entrada") or not p.get("cantidad") or not p.get("apalancamiento"):
+            return
+        if (await self.modo_margen(p))["modo_margen"] != "aislado":
             return
         try:
             t = (await self.bybit.get("/v5/market/risk-limit", category="linear", symbol=p["symbol"]))["result"]["list"]
@@ -1044,6 +1067,8 @@ class Bot:
         sobre caidos o el INSERT fallido; el dictamen va en detalle.auditor del MISMO INSERT (la tabla sigue solo-anadir)."""
         v_dec, dec, ctx, texto, liq, horas, llamada = "NO EVALUABLE", {}, {}, None, "", {"posicion": ahora_iso()}, None
         v_opus, de_opus, t_aud = None, "NO EVALUABLE (no se le pregunto)", datetime.now(UTC)
+        if p.get("liquidacion"):  # MARGEN R1: Opus y la linea de la liquidacion saben si va en cruzado o aislado
+            p = p | await self.modo_margen(p)
         try:
             ctx, dec = await self.sobre(p["symbol"])
             # el instante del auditor: lo que Opus pudo saber, justo despues de leer sobre y DECIDE y antes de llamarle
@@ -1071,7 +1096,7 @@ class Bot:
             aud = {"version": auditor.VERSION, "estado": "NO EVALUABLE", "razon": f"error: {error_aud}"}
         linea_aud = auditor.linea(dictamen, error_aud)
         if p.get("liquidacion"):
-            liq = f"\nliquidacion Bybit {p['liquidacion']:g} · formula: {calc.nota_validacion(self.validaciones.get(p['symbol']), p['symbol'])}"
+            liq = f"\n{calc.nota_liquidacion(p, self.validaciones.get(p['symbol']))}"
         # en memoria ANTES de registrar (si la base falla no se vuelve a evaluar ni a pagar cada minuto: bug 3), y solo el
         # PRIMER veredicto: es el que se puntua (un /evalua a mano se registra, pero no lo pisa: bug 5)
         if motivo.startswith("posicion nueva"):  # solo la automatica se puntua: un /evalua a mano puede caer en una lectura

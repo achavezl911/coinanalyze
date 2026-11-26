@@ -9,7 +9,8 @@ valores por omision de antes (10 USD x 50, stop a -0.6 %, objetivo a +2 %).
 Liquidacion (aislada): MM = valor x MMR - mmDeduction del tramo cuyo riskLimitValue cubre el valor de la posicion;
 largo: entrada - (IM - MM) / cantidad; corto: entrada + (IM - MM) / cantidad, con IM = valor / apalancamiento.
 ponytail: formula de memoria, NO contrastada con la doc publica en BOT-2 (WebFetch sin permiso para su dominio); la
-primera posicion real la mide: valida() pone al lado la liqPrice que da Bybit y la diferencia.
+primera posicion real la mide: valida() pone al lado la liqPrice que da Bybit y la diferencia (MARGEN R1: solo si la
+posicion va en AISLADO; en cruzado la liquidacion depende de todo el saldo y la formula no aplica).
 """
 
 from __future__ import annotations
@@ -130,6 +131,20 @@ def nota_validacion(v: dict | None, simbolo: str | None = None) -> str:
     base = f"validada contra Bybit: {d:.2f} % de la distancia a la liquidacion en {v['symbol']} {v['dia']}"
     return base if d <= VALIDA_DIST_PCT else (f"OJO: se separo de Bybit {d:.2f} % de la distancia a la liquidacion (>"
                                               f" {VALIDA_DIST_PCT:g} %) en {v['symbol']} {v['dia']}: no fiable")
+
+
+def nota_liquidacion(p: dict, v: dict | None) -> str:
+    """MARGEN R1 (V-17): la linea de la liquidacion de una posicion real (Bot.evalua). La formula de arriba es la de margen
+    AISLADO: solo con p["modo_margen"] == "aislado" se compara con ella (nota_validacion). En CRUZADO todo el saldo respalda
+    la posicion y la de Bybit es la que vale; sin modo (None) se dice y no se juzga."""
+    liq, entrada, modo = p["liquidacion"], p.get("entrada"), p.get("modo_margen")
+    pct = f" ({(liq / entrada - 1) * 100:+.2f} % de la entrada)" if entrada else ""
+    if modo == "aislado":
+        return f"liquidacion Bybit {liq:g} · formula: {nota_validacion(v, p['symbol'])}"
+    if modo == "cruzado":
+        return f"margen cruzado: la liquidacion depende de todo el saldo; Bybit la pone en {liq:g}{pct}"
+    return (f"modo de margen desconocido ({p.get('modo_margen_motivo') or 'sin leer'}): la liquidacion no se compara con la"
+            f" formula aislada; Bybit la pone en {liq:g}{pct}")
 
 
 def texto(r: dict, simbolo: str, validacion: dict | None = None) -> str:

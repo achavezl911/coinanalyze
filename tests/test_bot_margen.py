@@ -82,7 +82,7 @@ async def test_cruzado_el_caso_del_dueno_no_dice_no_fiable_y_da_la_de_bybit():
     (m,) = mandados
     assert "no fiable" not in m and "compruebala" not in m, m  # lo que dijo el 11-26
     assert "margen cruzado" in m and "114.411" in m and "todo el saldo" in m, m
-    assert '"margen": "cruzado"' in a_opus[0]  # Opus recibe el modo en la POSICION
+    assert '"modo_margen": "cruzado"' in a_opus[0]  # Opus recibe el modo en la POSICION
     assert "cruzado" in sv.ESTABLE and "compruebala" not in sv.ESTABLE  # y sabe que hacer con el
 
 
@@ -100,7 +100,7 @@ async def test_modo_desconocido_se_dice_y_no_se_juzga():
     await bot.evalua(posicion(), "/evalua")
     (m,) = mandados
     assert "no fiable" not in m and "modo de margen desconocido" in m and "114.411" in m, m
-    assert '"margen": null' in a_opus[0]
+    assert '"modo_margen": null' in a_opus[0]
 
 
 async def test_valida_solo_compara_una_posicion_aislada():
