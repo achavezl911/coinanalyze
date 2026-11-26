@@ -133,6 +133,12 @@ def nota_validacion(v: dict | None, simbolo: str | None = None) -> str:
                                               f" {VALIDA_DIST_PCT:g} %) en {v['symbol']} {v['dia']}: no fiable")
 
 
+def vigente(v: dict | None, modo: str | None) -> dict | None:
+    """MARGEN R2: una validacion solo cuenta si se hizo en AISLADO y el modo de ahora tambien lo es. La que no lleva modo
+    (las de antes de MARGEN R1, como la de SOL del 11-26, hecha sobre una cruzada) se ignora por regla: no se borra."""
+    return v if v and v.get("modo_margen") == "aislado" and modo == "aislado" else None
+
+
 def nota_liquidacion(p: dict, v: dict | None) -> str:
     """MARGEN R1 (V-17): la linea de la liquidacion de una posicion real (Bot.evalua). La formula de arriba es la de margen
     AISLADO: solo con p["modo_margen"] == "aislado" se compara con ella (nota_validacion). En CRUZADO todo el saldo respalda
@@ -140,7 +146,7 @@ def nota_liquidacion(p: dict, v: dict | None) -> str:
     liq, entrada, modo = p["liquidacion"], p.get("entrada"), p.get("modo_margen")
     pct = f" ({(liq / entrada - 1) * 100:+.2f} % de la entrada)" if entrada else ""
     if modo == "aislado":
-        return f"liquidacion Bybit {liq:g} · formula: {nota_validacion(v, p['symbol'])}"
+        return f"liquidacion Bybit {liq:g} · formula: {nota_validacion(vigente(v, modo), p['symbol'])}"
     if modo == "cruzado":
         return f"margen cruzado: la liquidacion depende de todo el saldo; Bybit la pone en {liq:g}{pct}"
     return (f"modo de margen desconocido ({p.get('modo_margen_motivo') or 'sin leer'}): la liquidacion no se compara con la"

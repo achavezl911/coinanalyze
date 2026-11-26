@@ -515,14 +515,20 @@ class Bot:
         self.parte_hoy = await self.db.fetchval("SELECT max((ts AT TIME ZONE 'UTC')::date) FROM bot_evento WHERE tipo = 'parte'")
         self.informes_enviados = {r[0] for r in await self.db.fetch(
             "SELECT detalle->>'semana' FROM bot_evento WHERE tipo = 'informe' AND ts >= now() - interval '60 days'")}
+        # MARGEN R2: solo las validaciones hechas en AISLADO (calc.vigente); las de antes, sin modo, se quedan en la base
         for v in await self.db.fetch("SELECT DISTINCT ON (detalle->>'symbol') detalle, (ts AT TIME ZONE 'UTC')::date d"
-                                     " FROM bot_evento WHERE tipo = 'validacion' ORDER BY detalle->>'symbol', ts DESC"):
+                                     " FROM bot_evento WHERE tipo = 'validacion' AND detalle->>'modo_margen' = 'aislado'"
+                                     " ORDER BY detalle->>'symbol', ts DESC"):
             d = json.loads(v["detalle"])
-            x = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"], "dif_dist_pct": d.get("dif_dist_pct")}
+            if d.get("modo_margen") != "aislado":
+                continue
+            x = {"symbol": d["symbol"], "dia": str(v["d"]), "dif_pct": d["dif_pct"], "dif_dist_pct": d.get("dif_dist_pct"),
+                 "modo_margen": "aislado"}
             self.validaciones[d["symbol"]] = x
             if not self.estado["validacion"] or x["dia"] >= self.estado["validacion"]["dia"]:
                 self.estado["validacion"] = x
-        self.validadas = {r[0] for r in await self.db.fetch("SELECT detalle->>'posicion' FROM bot_evento WHERE tipo = 'validacion'")}
+        self.validadas = {r[0] for r in await self.db.fetch("SELECT detalle->>'posicion' FROM bot_evento WHERE tipo = 'validacion'"
+                                                            " AND detalle->>'modo_margen' = 'aislado'")}
 
     async def recarga(self) -> bool:
         """(remate 9) El reintento de carga() si el arranque no pudo: desde el tic de Bybit Y desde el del minuto (con Bybit
@@ -1055,12 +1061,12 @@ class Bot:
         dist = abs(p["entrada"] - p["liquidacion"])
         dd = round(abs(f - p["liquidacion"]) / dist * 100, 4) if dist else None
         self.estado["validacion"] = {"symbol": p["symbol"], "dia": datetime.now(UTC).strftime("%Y-%m-%d"), "dif_pct": round(dif, 4),
-                                     "dif_dist_pct": dd}
+                                     "dif_dist_pct": dd, "modo_margen": "aislado"}
         self.validaciones[p["symbol"]] = self.estado["validacion"]
         self.validadas.add(p["id"])
         await self.evento("validacion", p["symbol"], int(time.time() // 60), False,
                           detalle={"posicion": p["id"], "symbol": p["symbol"], "bybit": p["liquidacion"], "formula": f,
-                                   "mmr": mmr, "dif_pct": round(dif, 4), "dif_dist_pct": dd})
+                                   "mmr": mmr, "dif_pct": round(dif, 4), "dif_dist_pct": dd, "modo_margen": "aislado"})
 
     async def evalua(self, p: dict, motivo: str):
         """AUDITOR R1: el mensaje EMPIEZA por la linea del auditor (app/bot/auditor.py), siempre, tambien con Opus o el
@@ -1230,7 +1236,8 @@ class Bot:
         r = calc.calcula(n[0], *n[1:3], paso=ins["lotSizeFilter"]["qtyStep"], tramos=t,
                          funding=float(tk["fundingRate"]) if tk.get("fundingRate") else None,
                          funding_h=float(ins.get("fundingInterval") or 480) / 60, **a)
-        return calc.texto(r, s, self.validaciones.get(s) or self.estado["validacion"])
+        modo = (await self.modo_margen({}))["modo_margen"]  # MARGEN R2: el de la cuenta (sin posicion, sin tradeMode)
+        return calc.texto(r, s, calc.vigente(self.validaciones.get(s) or self.estado["validacion"], modo))
 
     async def prueba(self) -> str:
         """B6: un aviso de MUESTRA con el formato de un «stop cerca» (el texto de cen.alertas_posicion sobre una posicion

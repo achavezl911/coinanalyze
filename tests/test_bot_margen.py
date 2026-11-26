@@ -87,10 +87,10 @@ async def test_cruzado_el_caso_del_dueno_no_dice_no_fiable_y_da_la_de_bybit():
 
 
 async def test_aislado_compara_con_la_formula_como_hoy():
-    bot, mandados, a_opus = montado(AISLADA)
+    bot, mandados, a_opus = montado(AISLADA, CASO | {"modo_margen": "aislado"})  # MARGEN R2: sin modo no cuenta
     await bot.evalua(posicion(), "/evalua")
     assert "no fiable" in mandados[0] and "formula:" in mandados[0], mandados  # > 2 %: avisa
-    bot, mandados, _ = montado(AISLADA, CASO | {"dif_dist_pct": 0.8})
+    bot, mandados, _ = montado(AISLADA, CASO | {"dif_dist_pct": 0.8, "modo_margen": "aislado"})
     await bot.evalua(posicion(), "/evalua")
     assert "validada contra Bybit: 0.80 %" in mandados[0], mandados
 

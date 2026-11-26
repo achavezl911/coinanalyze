@@ -67,9 +67,11 @@ class _Base:
     async def fetch(self, sql, *a):
         if "tipo = 'validacion'" not in sql:
             return []
+        filas = [(d, dia) for d, dia in self.filas  # el filtro del WHERE por el modo, si lo lleva
+                 if "modo_margen' = 'aislado'" not in sql or d.get("modo_margen") == "aislado"]
         if "DISTINCT ON" in sql:
-            return [{"detalle": json.dumps(d), "d": dia} for d, dia in self.filas]
-        return [(d["posicion"],) for d, _ in self.filas]
+            return [{"detalle": json.dumps(d), "d": dia} for d, dia in filas]
+        return [(d["posicion"],) for d, _ in filas]
 
     async def fetchval(self, *a):
         return None
