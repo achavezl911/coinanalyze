@@ -2,7 +2,8 @@
 # prodsql "<SQL>"  ->  SELECT en 140, sesion de SOLO LECTURA. La contrasena no viaja
 # por la linea de comandos: sale del coinalyze.env del propio 140, dentro de 140.
 set -eu
-B=/srv/coinanalyze/harness; . "$B/env"
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 q="$*"
 [ -n "$q" ] || { echo 'uso: prodsql "SELECT ..."' >&2; exit 2; }
 case "$q" in

@@ -8,8 +8,9 @@
 # No es un documento: se genera cada vez. Por eso no se queda viejo y no hay nada
 # que mantener. Si algo aqui no cuadra con el 143, manda el 143.
 set -u
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 B=/srv/coinanalyze/harness
-. "$B/env" 2>/dev/null || true
 R=${REPO:-/srv/coinanalyze/repo}
 
 cat <<'CAB'

@@ -3,7 +3,8 @@
 # Freno, no frontera: al otro lado mandan los permisos del usuario. Sirve para que un
 # despiste no borre nada, no para autorizarte a intentarlo.
 set -eu
-B=/srv/coinanalyze/harness; . "$B/env"
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 cmd="$*"
 [ -n "$cmd" ] || { echo "uso: prod <comando de lectura>" >&2; exit 2; }
 case " $cmd " in

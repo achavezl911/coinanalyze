@@ -19,7 +19,8 @@
 #
 # `TODO=1` lo salta, igual que salta el corte, y entonces hay que decir por que.
 set -eu
-B=/srv/coinanalyze/harness; . "$B/env"
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 f=${1:?uso: leer <fichero> <patron | ini fin>}
 if [ $# -lt 2 ] && [ "${TODO:-0}" != "1" ] && [ -f "$f" ]; then
   n=$(wc -c < "$f")
