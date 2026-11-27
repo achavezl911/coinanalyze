@@ -407,7 +407,7 @@ class Bot:
         # SEGUIMIENTO R1: con una posicion abierta, su activo en vivo (app/bot/seguimiento.py), BOT_SEGUIMIENTO=apagado|sombra|enviar
         self.seguimiento_c, sg = seg.Config.desde(e)
         self.seguimiento = self.estado["seguimiento"] = seg.nuevo()
-        self.seguimiento_cache: dict = {}  # las colas de 30 d / 7 d por activo, una lectura por hora (no se guarda)
+        self.seguimiento_cache: dict = {}  # las colas de 30 d por activo, fijadas a las 00:00Z (no se guarda)
         av = av + sg
         for a in avisos + av:
             self.anota("CONFIGURACION", a, "configuracion")
@@ -1554,27 +1554,30 @@ class Bot:
                 f" · cada {int(u.intervalo)} s, {len(u.simbolos)} activos")
 
     async def tic_seguimiento(self):
-        """SEGUIMIENTO R1: con una posicion abierta (la ultima lectura buena de position/list), los avisos de su activo. En
-        sombra se calculan, van al journal (SEGUIMIENTO ...) y se cuentan en bot_estado; NO se mandan ni van a bot_evento.
-        Solo lectura: ninguna ruta de ordenes."""
+        """SEGUIMIENTO R2 (Fable I18): con una posicion abierta (la ultima lectura buena de position/list), un mensaje por
+        activo cada 30 min con lo que coincida. En sombra se calcula, va al journal (SEGUIMIENTO ...) y se cuenta en
+        bot_estado; NO se manda ni va a bot_evento. Lo de solo registro (absorcion, grandes de contado, rango de 4 h) va
+        siempre solo al journal. Solo lectura: ninguna ruta de ordenes."""
         c = self.seguimiento_c
         if c.modo == "apagado":
             return
         ahora = time.time()
         for ev in await seg.tic(self.db, self.bybit_ultima or [], self.seguimiento, self.seguimiento_cache, ahora):
             enviada = False
-            if not ev["contenido"]:
+            if ev["tipo"] == "mensaje":
                 enviada = await self.manda(ev["texto"]) if c.modo == "enviar" else False
-                seg.cuenta(self.seguimiento, ahora, ev["tipo"], enviada)
-            log.info("SEGUIMIENTO modo=%s tipo=%s activo=%s enviada=%s contenido=%s %s", c.modo, ev["tipo"], ev["activo"],
-                     enviada, ev["contenido"], ev["texto"].replace("\n", " | "))
+                seg.cuenta(self.seguimiento, ahora, ev["senales"], enviada)
+            log.info("SEGUIMIENTO modo=%s tipo=%s senal=%s activo=%s enviada=%s %s", c.modo, ev["tipo"],
+                     "+".join(ev.get("senales") or [ev.get("senal", "")]), ev["activo"], enviada, ev["texto"].replace("\n", " | "))
 
     def texto_seguimiento(self) -> str:
         if self.seguimiento_c.modo == "apagado":
             return "seguimiento (por posicion): apagado (BOT_SEGUIMIENTO)"
         ahora = time.time()
         av = [x for x in self.seguimiento["avisos"] if ahora - x[0] < 86400]
-        return f"seguimiento (por posicion): {self.seguimiento_c.modo} · {len(av)} en 24 h, {sum(1 for x in av if x[1])} enviados"
+        n = seg.por_senal(av)
+        return (f"seguimiento (por posicion): {self.seguimiento_c.modo} · {len(av)} mensajes en 24 h, {sum(1 for x in av if x[1])}"
+                f" enviados · por senal: {', '.join(f'{k} {n[k]}' for k in seg.AVISAN if k in n) or 'ninguna'}")
 
     async def cada(self, nombre: str, periodo: float, fn):
         while True:

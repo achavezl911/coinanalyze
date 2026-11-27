@@ -78,11 +78,14 @@ def rafagas_del_dia(filas: dict, dia: int, hasta: int | dict, u: rf.Umbrales = U
 
 
 def alertas_posicion(p: dict) -> list[tuple[str, str]]:
-    """(tipo, texto) para una posicion abierta: sin stop, stop cerca (>= 70 % del camino) o liquidacion cerca."""
+    """(tipo, texto) para una posicion abierta: sin stop, stop cerca (le queda <= 30 % de |entrada - stop| a la marca) o
+    liquidacion cerca. SEGUIMIENTO R2 (Fable I18): vale tambien con el stop movido a BENEFICIO; antes solo se admitia el stop
+    del lado de la perdida y un stop en beneficio no avisaba nunca. Con el stop en la entrada exacta la vara es 0: solo
+    avisa si la marca ya lo cruzo."""
     out, e, m, lado = [], p["entrada"], p["marca"], p["lado"]
     if not p.get("stop"):
         out.append(("sin_stop", f"{p['symbol']} sin stop puesto"))
-    elif e and m and (e - p["stop"]) * lado > 0 and (e - m) / (e - p["stop"]) >= STOP_CERCA:
+    elif e and m and (m - p["stop"]) * lado <= (1 - STOP_CERCA) * abs(e - p["stop"]):
         out.append(("stop", f"{p['symbol']} a {(m / p['stop'] - 1) * 100 * lado:+.2f} % del stop ({p['stop']:g}), marca {m:g}"))
     liq = p.get("liquidacion")
     if liq and m and abs(m / liq - 1) * 100 < LIQ_CERCA_PCT:
