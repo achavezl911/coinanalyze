@@ -13,7 +13,8 @@ Dashboard interno de microestructura y scalping para perpetuos **BTC, ETH y SOL*
 el **LXC 140 (`coinalyze-final`)** del Proxmox `<IP_PROXMOX>`, IP interna `<IP_INTERNA>`.
 
 - Código: `/opt/coinalyze` (los servicios corren **directo del árbol**, con
-  `WorkingDirectory=/opt/coinalyze`; `update.sh` además hace `pip install` en el venv).
+  `WorkingDirectory=/opt/coinalyze`; el `scripts/update.sh` legado además hacía `pip install` en el venv; se
+  retiró, D-03: ver §5.1).
 - Config: `/etc/coinalyze/coinalyze.env` (systemd `EnvironmentFile`).
 - Servicios: `coinalyze-{api,ingest,ws,scalp,daily}` + `nginx` + `coinalyze-ai-bridge`.
 - PostgreSQL local. Acceso: `runuser -u postgres -- psql -d coinalyze`.
@@ -82,8 +83,8 @@ del dashboard. No la uses.
 
 **v1.3.2 — auditoría.** `/metrics` devolvía 500 desde hacía versiones (`KeyError: 'detail'`:
 el `SELECT` no pedía la columna que el render usaba) y el smoke test solo probaba 3
-endpoints. El `.tar.gz` de despliegue traía solo `app/static/tests`, y como `update.sh` hace
-`rsync --delete`, usarlo como decía el README borraba `sql/`, `deploy/`, `scripts/` y
+endpoints. El `.tar.gz` de despliegue traía solo `app/static/tests`, y como `update.sh` (legado, hoy
+retirado) hacía `rsync --delete`, usarlo como decía el README borraba `sql/`, `deploy/`, `scripts/` y
 abortaba. Además: `trend_matrix` medía el OI de `1d`/`3d` sobre ~60 sesiones; dos
 definiciones distintas de "absorción"; lags saliendo como string en el JSON.
 
@@ -152,8 +153,8 @@ bloques, con 90 sesiones de `daily_history` cada uno.
 6. **Verifica antes de afirmar.** El comentario `coinalyze_aggregate` llevaba versiones en
    el código y era falso. Los números están a una consulta de distancia.
 7. **Aplicar `schema.sql` a la BD de producción requiere autorización del usuario** (el
-   clasificador de permisos lo bloquea, y con razón). `update.sh` sí lo hace como parte de
-   su flujo normal.
+   clasificador de permisos lo bloquea, y con razón). El `scripts/update.sh` legado lo hacía
+   como parte de su flujo; se retiró (D-03) y hoy lo aplica `deploy-production.yml` antes de mover `current`.
 
 ## 6. Límites duros — no se pueden salvar sin feeds nuevos
 

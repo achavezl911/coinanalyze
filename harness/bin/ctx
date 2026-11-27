@@ -2,7 +2,9 @@
 # ctx  ->  el paquete de reanudacion. Primera orden de cada sesion, y primera orden
 # despues de cualquier compactacion. Cuesta ~1.5k tokens y te devuelve al sitio.
 set -u
-B=/srv/coinanalyze/harness; . "$B/env" 2>/dev/null || true
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
+B=/srv/coinanalyze/harness
 echo "=== ESTADO ==="
 [ -f "$B/ESTADO.md" ] && cat "$B/ESTADO.md" || echo "(sin ESTADO: es la primera sesion)"
 echo

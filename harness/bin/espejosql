@@ -1,7 +1,8 @@
 #!/bin/sh
 # espejosql "<SQL>"  ->  contra el espejo de 143. AQUI SI SE PUEDE ESCRIBIR.
 set -eu
-B=/srv/coinanalyze/harness; . "$B/env"
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 [ -n "${1:-}" ] || { echo 'uso: espejosql "SELECT ..."' >&2; exit 2; }
 # MISMA ZONA QUE prodsql Y QUE LA APP, por la misma razon (ver prodsql). Si solo se
 # arreglara prodsql, los DOS canales de medida discreparian entre si, y el espejo es

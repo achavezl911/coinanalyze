@@ -6,7 +6,8 @@
 # Una linea JSON por minuto: {"t": <iso>, "h": <healthz entero>}.
 set -uo pipefail
 S=/srv/coinanalyze/harness/estado/healthz-serie.jsonl
-B=/srv/coinanalyze/harness; . "$B/env" 2>/dev/null
+# El env, por _entorno: desde la copia de root de 143 no carga uno que otro usuario puede cambiar (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 c=$(curl -sS -k --netrc-file "$NETRC" --max-time 20 "$API_PROD/api/healthz" 2>/dev/null)
 [ -n "$c" ] || c='{"error":"sin respuesta"}'
 # UNA MUESTRA, UNA LINEA. El 2026-09-04T17:17:01Z, durante el despliegue, nginx contesto una

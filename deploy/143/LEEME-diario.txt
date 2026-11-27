@@ -4,6 +4,15 @@ DIARIO DE ENTRADAS EN SOMBRA (fase 2) · instalacion en 143, la hace el OPERADOR
   mkdir -p /srv/coinanalyze/diario/buzon
   bash /srv/coinanalyze/repo/deploy/143/instala.sh     (copia congelada de main en /opt/coinalyze-143/current; las
      unidades del diario corren DESDE ELLA con /usr/bin/python3 -E -s: ni el venv ni el harness del arbol, E-01)
+  EL ENV DE ROOT, una vez (V45 N3): la copia NO carga /srv/coinanalyze/harness/env, que devops puede cambiar
+  renombrando harness/ (harness/bin/_entorno); sin este fichero TODOS los guiones de su harness/bin que cargan env
+  (api, _corta, prod, prodsql... ; el bot semanal usa prod y prodsql) fallan cerrado con rc 4:
+  install -d -o root -g root -m 755 /etc/coinalyze-143
+  install -o root -g root -m 600 /srv/coinanalyze/harness/secretos/api.netrc /etc/coinalyze-143/api.netrc
+  sed 's#^NETRC=[^ ]*#NETRC=/etc/coinalyze-143/api.netrc#' /srv/coinanalyze/harness/env \
+    | install -o root -g root -m 644 /dev/stdin /etc/coinalyze-143/env
+  grep -vnE '^[[:space:]]*(#|$|[A-Z_]+=)' /etc/coinalyze-143/env    (nada: solo VAR=valor y comentarios; leelo)
+  grep -E '^(PROD_SSH_KEY|PROD_KNOWN_HOSTS|NETRC)=' /etc/coinalyze-143/env   (bajo /root o /etc/coinalyze-143; NINGUNA en /srv)
 
 Comprobar:  systemctl list-timers 'coinalyze-diario-*'
             journalctl -u coinalyze-diario-cuarto -n 5      (una linea JSON por pasada; rc 1 = un canal fallo)

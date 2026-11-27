@@ -48,8 +48,10 @@
 #               4            falta el netrc
 # Vigilado por harness/checks/K94-el-canal-que-no-puede-fallar.sh, que desde hoy tiene a `api`
 # entre sus sujetos.
+#
+# EL ENV, POR _entorno (Fable V45 N3): desde la copia de root de 143 no se carga un env que devops puede cambiar.
 set -eu
-B=/srv/coinanalyze/harness; . "$B/env"
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 
 cuerpo=$(mktemp) || exit 2
 errf=$(mktemp) || exit 2
