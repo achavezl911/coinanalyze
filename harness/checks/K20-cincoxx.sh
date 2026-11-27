@@ -15,7 +15,8 @@
 #   4xx   -> el barrido no sabe llamar a esa ruta (parametro nuevo, o mal valor).
 #            Tambien es fallo: un check que se salta lo que no entiende pasa a verde
 #            sin haber probado nada.
-#   parametro obligatorio desconocido -> se para y lo dice, en vez de omitirlo.
+#   parametro obligatorio desconocido -> se para y lo dice, en vez de omitirlo. Antes de
+#            rendirse lo intenta rellenar desde la declaracion de la ruta (K20-rellena.py).
 #
 # Salida 2 = NO MEDIDO: solo si no hay repo/venv o si la API no contesta a nada.
 set -uo pipefail
@@ -39,8 +40,18 @@ PY="${VENV_PY:-$REPO/.venv/bin/python}"
 RUTAS_PROD=$("$B/bin/prod" "grep -oE '^@app\.(get|post)\(\"[^\"]+\"' /opt/coinalyze/current/app/api.py | sed -E 's/.*\"(.*)\"/\1/' | sort -u" 2>/dev/null | grep -E '^/' | sort -u | tr '\n' ' ')
 [ -n "${RUTAS_PROD// /}" ] || { echo "NO MEDIDO: no se pudo enumerar las rutas del release de 140"; exit 2; }
 
-salida=$(cd "$REPO" && RUTAS_PROD="$RUTAS_PROD" "$PY" - "$API_PROD" "$NETRC" <<'PY' 2>&1
+# Un parametro obligatorio que VALORES no conoce se rellena desde la declaracion de la ruta
+# (K20-rellena.py: el validador que su manejador ya llama decide que forma vale). Si no se
+# puede, PARAM y ROJO, como antes. Control: K20-control.bash.
+RELLENA="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/K20-rellena.py"
+[ -r "$RELLENA" ] || { echo "NO MEDIDO: falta $RELLENA"; exit 2; }
+
+salida=$(cd "$REPO" && RUTAS_PROD="$RUTAS_PROD" K20_RELLENA="$RELLENA" "$PY" - "$API_PROD" "$NETRC" <<'PY' 2>&1
 import json, subprocess, sys, urllib.parse
+import importlib.util
+_spec = importlib.util.spec_from_file_location("k20_rellena", __import__("os").environ["K20_RELLENA"])
+k20_rellena = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(k20_rellena)
 
 base, netrc = sys.argv[1], sys.argv[2]
 
@@ -113,11 +124,14 @@ for ruta, metodos in sorted(spec["paths"].items()):
         if not p.get("required"):
             continue
         nombre = p["name"]
-        if nombre not in VALORES:
+        valor = VALORES.get(nombre)
+        if valor is None:
+            valor = k20_rellena.rellenar(app, ruta, nombre, VALORES)
+        if valor is None:
             desconocidos.append("%s(%s)" % (ruta, nombre))
             falta = True
             break
-        query[nombre] = VALORES[nombre]
+        query[nombre] = valor
     if falta:
         continue
     destino = ruta + ("?" + urllib.parse.urlencode(query) if query else "")
