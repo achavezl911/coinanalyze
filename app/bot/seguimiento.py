@@ -2,14 +2,16 @@
 
 I18 (entregas/fable/fable-i18, 08-18..11-26, dos mitades y nulo emparejado): ninguna senal da DIRECCION (el retorno a 15 min
 no se separa del nulo); casi todas anuncian MAS MOVIMIENTO en 15 min (x1.3-2.4); el precio NO respeta ningun nivel mas que
-una linea al azar. Por eso los textos dicen «sin lado medido» y nunca «soporte» ni «resistencia»; A FAVOR / EN CONTRA solo
-describe hacia donde empuja la senal respecto de la posicion.
+una linea al azar. Por eso los textos dicen «sin lado medido» y nunca «soporte» ni «resistencia». AVISOS R1 (Fable v6, H2):
+tampoco «A FAVOR / EN CONTRA de tu LARGO|CORTO»: I18 midio ese lado NULO. El estado del OI («entran largos») se queda:
+dice quien entra, no adonde va el precio.
 
 AVISAN (la TABLA de I18): LIQ, GRA (perpetuo), OI, RUPTURA de ayer / 24 h / 7 dias y DIV. SOLO REGISTRO (journal, nunca al
 dueno): ABS (absorcion), GRA_CONT (grandes de contado) y RNG4 (ruptura del rango de 4 h). El nivel CERCA (<= 0.5 ATR) es una
 linea de contexto dentro del mensaje, nunca un aviso. Antiruido de I18: aviso = el estado pasa de NO a SI y han pasado >= 30
-min del anterior del mismo activo, senal y lado (ruptura: 60 min por nivel y sentido). Un solo mensaje por activo cada 30
-min que junta lo que coincida. Percentiles sobre los 30 d anteriores (grandes: 10 d), fijados a las 00:00Z.
+min del anterior del mismo activo, senal y lado (ruptura: 60 min por nivel y sentido). AVISOS R1 (H4): un aviso sale en el
+tic en que nace; si su activo tuvo mensaje hace menos de 10 min, espera a cumplirlos y se junta con lo que coincida (antes,
+30 min: un aviso podia esperar 29 y su efecto medido dura 15). Percentiles sobre los 30 d anteriores (grandes: 10 d), fijados a las 00:00Z.
 
 Trampas de los datos (I18, REGLAS COMUNES): liquidations y open_interest de 5 min llevan el ts de APERTURA (el bloque se
 conoce 5 min despues; sin fila = 0); oi_close va en USD, asi que el cambio se mide NETO del precio; spot_trades_agg y
@@ -40,7 +42,7 @@ MISMO_NIVEL_ATR = 0.25  # dos niveles a menos de esto son el mismo: se nombra el
 ATR_VELAS, ATR_MIN = 14, 15  # ATR = 14 velas de 15 min cerradas
 DIAS, DIAS_GRA = 30, 10
 ENFRIA_MIN, ENFRIA_RUPTURA_MIN = 30, 60
-MENSAJE_MIN = 30  # un mensaje por activo cada 30 min
+MENSAJE_MIN = 10  # un mensaje por activo cada 10 min como mucho: el retraso maximo de un aviso (AVISOS R1, H4)
 VELAS_LEIDAS = 1500  # 24 h + la hora que el nivel de 24 h deja fuera + el ATR
 AVISAN = ("LIQ", "GRA", "OI", "RUPTURA", "DIV")
 NIVELES = ("7 dias", "24 h", "ayer")  # del mas ancho al mas estrecho
@@ -378,10 +380,9 @@ def _r(p: dict) -> float | None:
 def _mensaje(activo: str, p: dict, pend: list, ctx: list) -> str:
     pos, r = "LARGO" if p["lado"] > 0 else "CORTO", _r(p)
     lineas = [f"{activo} · seguimiento de tu {pos}" + (f" ({r:+.2f} R)" if r is not None else "")]
-    for t, _, texto, lado in pend:
+    for t, _, texto, _lado in pend:  # el lado de la senal NO se dice (AVISOS R1, H2): I18 lo midio nulo
         uno, _, dos = texto.partition(" / ")
-        tag = "" if not lado else ("A FAVOR" if lado * p["lado"] > 0 else "EN CONTRA") + f" de tu {pos} · "
-        lineas += [f"{int(t // 60) // 60 % 24:02d}:{int(t // 60) % 60:02d}Z {tag}{uno}", f"  {dos}"]
+        lineas += [f"{int(t // 60) // 60 % 24:02d}:{int(t // 60) % 60:02d}Z {uno}", f"  {dos}"]
     return "\n".join(lineas + [f"Contexto: {x}" for x in ctx])
 
 

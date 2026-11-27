@@ -27,6 +27,11 @@ SELECT split_part(symbol, '_', 1), (extract(epoch FROM ts)::bigint / 60)::int, h
    AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
 """
 STOP_CERCA = 0.7  # recorrido de la entrada al stop que dispara la alerta
+# AVISOS R1 (Fable v6, H1): con el stop en BENEFICIO, 0.3 x |entrada - stop| crece con la ganancia (100/130/138 avisaba a
+# 8 del stop) y no protege nada que no este ya asegurado. Tope de la vara en % del stop. PROVISIONAL: sin medida detras,
+# es el orden de un tic de ruido de 1 min en BTC/ETH/SOL; se cambia aqui y en ningun sitio mas.
+STOP_BENEFICIO_PCT = 0.5
+REARMA_VARAS = 2  # el aviso del stop en beneficio se rearma cuando la marca se aleja mas de estas varas
 LIQ_CERCA_PCT = 0.5
 LEYENDA = "ALERTA, no entrada · sin ventaja medida tras una rafaga (BOT-1)"
 
@@ -77,15 +82,32 @@ def rafagas_del_dia(filas: dict, dia: int, hasta: int | dict, u: rf.Umbrales = U
     return out
 
 
+def stop_en_beneficio(p: dict) -> bool:
+    s, e = p.get("stop"), p.get("entrada")
+    return bool(s and e and (s - e) * p["lado"] > 0)
+
+
+def vara_stop(p: dict) -> float:
+    """Lo que le puede quedar a la marca hasta el stop para avisar: 30 % de |entrada - stop| del lado de la perdida (como
+    siempre); en BENEFICIO, ademas, como mucho STOP_BENEFICIO_PCT del stop (AVISOS R1, H1)."""
+    v = (1 - STOP_CERCA) * abs(p["entrada"] - p["stop"])
+    return min(v, STOP_BENEFICIO_PCT / 100 * abs(p["stop"])) if stop_en_beneficio(p) else v
+
+
+def lejos_del_stop(p: dict) -> bool:
+    """La marca a mas de REARMA_VARAS varas del stop: el aviso del stop en beneficio se rearma."""
+    return bool(p.get("stop") and p.get("marca")) and (p["marca"] - p["stop"]) * p["lado"] > REARMA_VARAS * vara_stop(p)
+
+
 def alertas_posicion(p: dict) -> list[tuple[str, str]]:
-    """(tipo, texto) para una posicion abierta: sin stop, stop cerca (le queda <= 30 % de |entrada - stop| a la marca) o
-    liquidacion cerca. SEGUIMIENTO R2 (Fable I18): vale tambien con el stop movido a BENEFICIO; antes solo se admitia el stop
-    del lado de la perdida y un stop en beneficio no avisaba nunca. Con el stop en la entrada exacta la vara es 0: solo
-    avisa si la marca ya lo cruzo."""
+    """(tipo, texto) para una posicion abierta: sin stop, stop cerca (a la marca le queda <= vara_stop) o liquidacion cerca.
+    SEGUIMIENTO R2 (Fable I18): vale tambien con el stop movido a BENEFICIO; antes solo se admitia el stop del lado de la
+    perdida y un stop en beneficio no avisaba nunca. Con el stop en la entrada exacta la vara es 0: solo avisa si la marca
+    ya lo cruzo."""
     out, e, m, lado = [], p["entrada"], p["marca"], p["lado"]
     if not p.get("stop"):
         out.append(("sin_stop", f"{p['symbol']} sin stop puesto"))
-    elif e and m and (m - p["stop"]) * lado <= (1 - STOP_CERCA) * abs(e - p["stop"]):
+    elif e and m and (m - p["stop"]) * lado <= vara_stop(p):
         out.append(("stop", f"{p['symbol']} a {(m / p['stop'] - 1) * 100 * lado:+.2f} % del stop ({p['stop']:g}), marca {m:g}"))
     liq = p.get("liquidacion")
     if liq and m and abs(m / liq - 1) * 100 < LIQ_CERCA_PCT:

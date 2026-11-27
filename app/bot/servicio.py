@@ -363,6 +363,7 @@ class Bot:
         self.intentos: dict = {}  # id -> evaluaciones intentadas; proxima_eval: id -> cuando se puede volver a intentar
         self.proxima_eval: dict = {}
         self.avisados: set = set()  # (symbol:side:updatedTime, tipo) de cada aviso de seguridad (remate 7: sin la identidad)
+        self.rearme_stop: dict = {}  # clave:entrada -> vuelta del aviso del stop en BENEFICIO (AVISOS R1, H1)
         self.fallidos: set = set()  # los que Telegram no entrego: se reintentan, y van al registro una sola vez (B1)
         self.vigia_retraso: dict = {}  # activo -> clave del retraso en curso (B2); avisados_vigia: las entregadas
         self.avisados_vigia: set = set()
@@ -934,7 +935,10 @@ class Bot:
         """De que va un aviso de seguridad, sin la identidad. sin_stop: symbol:side:updatedTime (una vida nueva siempre trae
         otro; repetirlo con cada updatedTime nuevo es un recordatorio aceptable). stop y liquidacion, por su CONDICION (remate
         8, R6: por updatedTime se repetian, y con ellos el ESCALADO PAGADO, con cada funding): la posicion (clave y entrada) y
-        el nivel del stop, o la banda de distancia a la liquidacion (de LIQ_CERCA_PCT / 2)."""
+        el nivel del stop, o la banda de distancia a la liquidacion (de LIQ_CERCA_PCT / 2). AVISOS R1 (H1): con el stop en
+        BENEFICIO, sin el nivel (subirlo repetia el aviso) y con la vuelta de rearme_stop: uno mientras la marca siga cerca."""
+        if tipo == "stop" and cen.stop_en_beneficio(p):
+            return f"{p['clave']}:{p.get('entrada')}:stop_beneficio:{self.rearme_stop.get(self._pos_stop(p), 0)}"
         if tipo == "stop":
             return f"{p['clave']}:{p.get('entrada')}:stop:{p.get('stop')}"
         if tipo == "liquidacion":
@@ -943,13 +947,28 @@ class Bot:
             return f"{p['clave']}:{p.get('entrada')}:liquidacion:{banda}"
         return f"{p['clave']}:{p.get('actualizada')}"
 
+    @staticmethod
+    def _pos_stop(p: dict) -> str:
+        return f"{p['clave']}:{p.get('entrada')}"
+
+    def rearma_stop(self, p: dict):
+        """El aviso del stop en BENEFICIO se rearma (otra vuelta, otra clave) cuando la marca se aleja mas de
+        cen.REARMA_VARAS varas del stop y la vuelta en curso ya se aviso (o fallo)."""
+        if not (cen.stop_en_beneficio(p) and cen.lejos_del_stop(p)):
+            return
+        while (self.clave_aviso(p, "stop"), "stop") in self.avisados | self.fallidos:
+            k = self._pos_stop(p)
+            self.rearme_stop[k] = self.rearme_stop.get(k, 0) + 1
+
     async def seguridad(self, lista: list) -> list:
         """LOS AVISOS DE SEGURIDAD -sin stop, stop cerca, liquidacion cerca- sobre la lectura cruda, una vez por clave_aviso y
         tipo, cada posicion en su try (remate 8: una que hacia lanzar a alertas_posicion callaba a las demas en ese tic).
-        -> [(clave, tipo, texto)] de los que salieron (para el ESCALADO de las vidas presentes)."""
+        -> [(clave, tipo, texto)] de los que salieron (para el ESCALADO de las vidas presentes). El stop en BENEFICIO no
+        escala (AVISOS R1, H1): la perdida que el escalado pagado quiere evitar ya no existe."""
         disparados = []
         for p in lista:
             try:
+                self.rearma_stop(p)
                 for tipo, txt in cen.alertas_posicion(p):
                     visto = self.clave_aviso(p, tipo)
                     if (visto, tipo) in self.avisados:
@@ -967,7 +986,7 @@ class Bot:
                         self.fallidos.add((visto, tipo))
                     await self.evento(tipo, p["symbol"], int(time.time() // 60), ok,
                                       detalle={"visto": visto, "texto": txt, "entradas": {"posicion": p, "leida": ahora_iso()}})
-                    if ok:
+                    if ok and not (tipo == "stop" and cen.stop_en_beneficio(p)):
                         disparados.append((p["clave"], tipo, txt))
             except Exception as e:
                 self.anota(causa(e), f"seguridad de {p.get('clave')}: {type(e).__name__} {str(e)[:120]}", "seguridad")
@@ -1555,8 +1574,8 @@ class Bot:
 
     async def tic_seguimiento(self):
         """SEGUIMIENTO R2 (Fable I18): con una posicion abierta (la ultima lectura buena de position/list), un mensaje por
-        activo cada 30 min con lo que coincida. En sombra se calcula, va al journal (SEGUIMIENTO ...) y se cuenta en
-        bot_estado; NO se manda ni va a bot_evento. Lo de solo registro (absorcion, grandes de contado, rango de 4 h) va
+        activo cada 10 min como mucho con lo que coincida (AVISOS R1, H4). En sombra se calcula, va al journal
+        (SEGUIMIENTO ...) y se cuenta en bot_estado; NO se manda ni va a bot_evento. Lo de solo registro (absorcion, grandes de contado, rango de 4 h) va
         siempre solo al journal. Solo lectura: ninguna ruta de ordenes."""
         c = self.seguimiento_c
         if c.modo == "apagado":

@@ -9,11 +9,16 @@ clases de linea (su analyzer.py del 11-26, copia en x1-tmp/ref-bridge):
                         confianza alta o media
 de /api/ai/context/bundle (o /api/ai/context con un solo simbolo), perfil default. Aqui va lo MISMO, con los mismos
 nombres de variable, los mismos valores por defecto y el mismo texto, byte a byte (tests/test_bot_estructura.py lo
-compara con el bridge), salvo el pie (PIE, ESTRUCTURA R3). La anti-repeticion es la suya: la estructura se apunta solo cuando no hay aviso o cuando el aviso
+compara con el bridge), salvo el pie (PIE, ESTRUCTURA R3) y las palabras de AVISOS R1 (H3, abajo). La anti-repeticion es la suya: la estructura se apunta solo cuando no hay aviso o cuando el aviso
 se entrego; el flujo pasivo se apunta al calcular; la rafaga de liquidaciones, cuando se entrego.
 
 Lo que NO se trae: la divergencia CVD (detect_cvd_divergence_alerts) y build_alert_text. En alert_only el bridge la
 calcula y la mete en local_alerts, pero el mensaje que manda (build_structural_alert) no la lee: nunca llego al dueno.
+
+AVISOS R1 (Fable v6, H3; Fable I18: ninguna senal da direccion): las palabras del bridge que anunciaban adonde va el
+precio (giro ALCISTA/BAJISTA con flechas, cascada BAJISTA, squeeze ALCISTA, REACUMULACION/REDISTRIBUCION) y el icono de la
+cabecera se cambian por el hecho medido. La decision de enviar y la anti-repeticion no cambian: la prueba de equivalencia
+compara el texto con el dorado del bridge mas su tabla de sustituciones (tests/test_bot_estructura.py, SUSTITUCIONES).
 
 Funciones puras: el estado es un dict serializable {"kv", "t", "avisos"} que el bot guarda en bot_estado.
 """
@@ -32,8 +37,11 @@ SIMBOLOS = ["BTCUSDT_PERP.A", "ETHUSDT_PERP.A", "SOLUSDT_PERP.A"]  # config.py:1
 PIE = "Detalle: preguntame por el activo (por ejemplo, como esta BTC)."
 
 _DECISIVO = {"alcista", "bajista"}
-_FLECHA = {"alcista": "▲ ALCISTA", "bajista": "▼ BAJISTA"}
-_PASIVO = {"reacumulacion_silenciosa": "REACUMULACION silenciosa", "redistribucion_silenciosa": "REDISTRIBUCION silenciosa"}
+# el hecho detras de cada valor del sobre: bias alcista/bajista = patron HH_HL/LH_LL (app/setups.py:1265); la lectura del
+# flujo pasivo = ventas/compras agresivas absorbidas con el CVD de contado opuesto (app/scalp_logic.py, _classify_passive)
+_GIRO = {"alcista": "pasa a maximos y minimos mas altos", "bajista": "pasa a maximos y minimos mas bajos"}
+_PASIVO = {"reacumulacion_silenciosa": "ventas agresivas absorbidas y contado comprando",
+           "redistribucion_silenciosa": "compras agresivas absorbidas y contado vendiendo"}
 
 
 @dataclass
@@ -137,8 +145,8 @@ def rafagas(filas: list[dict], u: Umbrales) -> list[dict]:
         total, base = float(lb.get("total") or 0.0), float(lb.get("baseline_5m") or 0.0)
         if total <= 0 or total < max(u.piso, u.mult * base):
             continue
-        lado = "cascada BAJISTA (longs)" if float(lb.get("long_liq") or 0.0) >= float(lb.get("short_liq") or 0.0) \
-            else "squeeze ALCISTA (shorts)"
+        lado = "sobre todo de largos" if float(lb.get("long_liq") or 0.0) >= float(lb.get("short_liq") or 0.0) \
+            else "sobre todo de cortos"
         out.append({"symbol": _sym(item), "total": total, "side": lado,
                     "mult_txt": f" · {total / base:.1f}x baseline" if base > 0 else ""})
     return out
@@ -168,20 +176,20 @@ def construye(generado: str, filas: list[dict], est: dict, u: Umbrales, ahora: f
         if antes and antes != s["bias"]:
             grupo = "medio" if s["group"] == "med" else "largo"
             lineas.append(f"- {s['symbol']} · estructura {s['horizon']} ({grupo}): "
-                          f"giro {_FLECHA[s['bias']]} (patron {s['structure']}, cierre {_px(s['close'])})")
+                          f"{_GIRO[s['bias']]} (patron {s['structure']}, cierre {_px(s['close'])})")
     for r in rafagas(filas, u):
         if ahora - (t.get(f"liqburst:{r['symbol']}", 0.0) or 0.0) >= u.enfriamiento:
-            lineas.append(f"- {r['symbol']} · liquidaciones masivas 5m: {_usd(r['total'])} → {r['side']}{r['mult_txt']}")
+            lineas.append(f"- {r['symbol']} · liquidaciones masivas 5m: {_usd(r['total'])}, {r['side']}{r['mult_txt']}")
     for p in pasivos(filas):
         k = f"passive:{p['symbol']}:{p['horizon']}"
         antes, ahora_es = kv.get(k), p["state"]
         if antes and antes != ahora_es and ahora_es != "neutral":
-            lineas.append(f"- {p['symbol']} · {p['label']} {p['horizon']} (precio en {p['location']}, {p['confidence']})")
+            lineas.append(f"- {p['symbol']} · flujo pasivo {p['horizon']}: {p['label']} (precio en {p['location']}, {p['confidence']})")
         if antes != ahora_es:
             kv[k] = str(ahora_es)
     if not lineas:
         return None
-    return "\n".join([f"⚠️ ESTRUCTURA / LIQUIDACIONES ({generado})", "", *lineas, "", PIE])
+    return "\n".join([f"ESTRUCTURA / LIQUIDACIONES ({generado})", "", *lineas, "", PIE])
 
 
 def registra(filas: list[dict], est: dict) -> None:
