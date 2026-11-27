@@ -55,6 +55,30 @@ GUARDA=${K114_CTL_GUARDA:-/tmp/k114-control-salidas}
 rm -rf "$GUARDA"; mkdir -p "$GUARDA"
 guarda() { cp "$T/sal" "$GUARDA/$1.sal"; }
 
+# EL CANAL DE PRODUCCION del css (estatico(), sin K114_BASE): por harness/bin/api, no por urlopen
+# (el certificado propio de 140 lo tumbaba: NO MEDIDO). Un bin/api de mentira que FALLA tiene que
+# dar K113.Canal -NO MEDIDO, nunca un css vacio que «no dice» el color-, y uno que contesta, su css.
+mkdir -p "$T/canal/bin"
+printf '#!/bin/bash\necho "api: contesto HTTP 502" >&2\nexit 5\n' > "$T/canal/bin/api"
+canal=$(cd "$AQUI" && K111_HARNESS="$T/canal" K111_BASE="" K114_BASE="" "$PY" -c '
+import importlib.util, sys
+s = importlib.util.spec_from_file_location("k114", "K114-raton-libro.py"); m = importlib.util.module_from_spec(s)
+s.loader.exec_module(m)
+try:
+    m.estatico("/static/flujo/flujo.css"); print("sin_excepcion")
+except m.K113.Canal as e:
+    print("canal", str(e)[:80])
+' 2>&1 | tail -1)
+comprueba canal_caido_nomed "$([ "${canal%% *}" = canal ] && echo 0 || echo 1)" "$canal"
+printf '#!/bin/bash\n[ "$TODO" = 1 ] || exit 9\necho ":root{--comprador: #12ab34}"\n' > "$T/canal/bin/api"
+canal=$(cd "$AQUI" && K111_HARNESS="$T/canal" K111_BASE="" K114_BASE="" "$PY" -c '
+import importlib.util
+s = importlib.util.spec_from_file_location("k114", "K114-raton-libro.py"); m = importlib.util.module_from_spec(s)
+s.loader.exec_module(m)
+print("lee", m.estatico("/static/flujo/flujo.css").strip())
+' 2>&1 | tail -1)
+comprueba canal_lee_con_todo "$([ "$canal" = "lee :root{--comprador: #12ab34}" ] && echo 0 || echo 1)" "$canal"
+
 echo "== el sujeto: las fotos de produccion en una base desechable y el banco del ARBOL en $P"
 createdb -h "$H" "$DB" || exit 2
 "$PY" "$BANCO" carga "$(dsn "$DB")" > "$T/carga" 2>&1 || { echo "control: la carga fallo: $(tail -1 "$T/carga")"; exit 2; }

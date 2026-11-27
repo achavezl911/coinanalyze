@@ -36,6 +36,7 @@ import os
 import pathlib
 import random
 import re
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -136,6 +137,29 @@ class Vista(K113.Vista):
         if accion == self.arrastra:  # el destino del arrastre tambien va en coordenadas del lienzo
             a = (r[0] + a[0], r[1] + a[1]) + tuple(a[2:])
         await accion(r[0] + x, r[1] + y, *a, **kw)
+
+
+def estatico(ruta: str) -> str:
+    """Un fichero estatico del sujeto. El arbol servido (K111_BASE, http local) se lee directo; PRODUCCION
+    por el MISMO canal que los demas checks, harness/bin/api (nginx 8443 + netrc), y no con urlopen: el
+    certificado de 140 es propio y urlopen lo rechazaba (CERTIFICATE_VERIFY_FAILED -> K114 NO MEDIDO,
+    verify-rojos-20261127T1926Z). TODO=1 porque el corte de 8 KB de bin/api daria un css a medias.
+    Un canal caido es K113.Canal (NO MEDIDO), nunca un css vacio."""
+    if K111.BASE:
+        try:
+            with urllib.request.urlopen(urllib.request.Request(K111.raiz() + ruta), timeout=20) as r:
+                return r.read().decode("utf-8", "replace")
+        except OSError as exc:
+            raise K113.Canal(f"no se pudo leer {ruta}: {exc}") from exc
+    try:
+        r = subprocess.run(["bash", f"{K111.H}/bin/api", ruta], capture_output=True, timeout=60,
+                           env={**os.environ, "TODO": "1"})
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise K113.Canal(f"no se pudo leer {ruta} por bin/api: {exc}") from exc
+    if r.returncode != 0 or not r.stdout.strip():
+        raise K113.Canal(f"no se pudo leer {ruta} por bin/api (rc={r.returncode}): "
+                         f"{r.stderr.decode('utf-8', 'replace').strip()[:200]}")
+    return r.stdout.decode("utf-8", "replace")
 
 
 async def abre(K, vista: str, ancho: int, alto: int, cab: dict, vivo: bool, recorrido) -> dict:
@@ -628,11 +652,7 @@ async def aspecto(v: Vista, J, pref: str) -> dict:
     if min(des.values()) < 20:
         J.mal("E", pref, "E-02: compra y venta del mapa se separan dE2000 " + ", ".join(f"{k} {x:.1f}" for k, x in des.items()))
     for ruta in ("/static/flujo/flujo.css", "/static/mesa/mesa.css"):
-        try:
-            with urllib.request.urlopen(urllib.request.Request(K111.raiz() + ruta, headers=K111.cabecera()), timeout=20) as r:
-                m = re.search(r"--comprador:\s*(#[0-9a-fA-F]{6})", r.read().decode("utf-8", "replace"))
-        except OSError as exc:
-            raise K113.Canal(f"no se pudo leer {ruta}: {exc}") from exc
+        m = re.search(r"--comprador:\s*(#[0-9a-fA-F]{6})", estatico(ruta))
         if not m or m.group(1).lower() != t["compra"].lower() or t["comprador"].lower() != t["compra"].lower():
             J.mal("E", pref, f"E-02: el mapa pinta el comprador {t['compra']}, la pagina lo llama {t['comprador']} y {ruta} "
                              f"{m.group(1) if m else 'no lo dice'}")
