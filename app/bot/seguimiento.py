@@ -7,11 +7,17 @@ tampoco «A FAVOR / EN CONTRA de tu LARGO|CORTO»: I18 midio ese lado NULO. El e
 dice quien entra, no adonde va el precio.
 
 AVISAN (la TABLA de I18): LIQ, GRA (perpetuo), OI, RUPTURA de ayer / 24 h / 7 dias y DIV. SOLO REGISTRO (journal, nunca al
-dueno): ABS (absorcion), GRA_CONT (grandes de contado) y RNG4 (ruptura del rango de 4 h). El nivel CERCA (<= 0.5 ATR) es una
+dueno): ABS (absorcion), CONT (grandes de contado) y RNG4 (ruptura del rango de 4 h). El nivel CERCA (<= 0.5 ATR) es una
 linea de contexto dentro del mensaje, nunca un aviso. Antiruido de I18: aviso = el estado pasa de NO a SI y han pasado >= 30
 min del anterior del mismo activo, senal y lado (ruptura: 60 min por nivel y sentido). AVISOS R1 (H4): un aviso sale en el
 tic en que nace; si su activo tuvo mensaje hace menos de 10 min, espera a cumplirlos y se junta con lo que coincida (antes,
 30 min: un aviso podia esperar 29 y su efecto medido dura 15). Percentiles sobre los 30 d anteriores (grandes: 10 d), fijados a las 00:00Z.
+
+SEGUIMIENTO R3 (Fable I19, 39 meses de Binance, P1 y P3): GRA se confirma tal cual. CONT pasa de «cualquier grande de
+contado en el minuto» (10.6 por dia y activo, rango15 x1.33 / x1.24) a la regla de GRA sobre el contado (p99.9 de 10 d,
+~2.5 por dia y activo) y SIGUE en solo registro. El aviso de GRA lleva una linea de GRADO, sin lado: AMBOS (CONT del mismo
+lado en el mismo minuto, x3.31 / x2.85) o RACIMO (>= 3 minutos en estado GRA del mismo lado en 15 min, x3.49 / x2.82).
+Ninguno paga la comision (P4) y el lado a 240 min es pequeno: nada de esto dice direccion.
 
 Trampas de los datos (I18, REGLAS COMUNES): liquidations y open_interest de 5 min llevan el ts de APERTURA (el bloque se
 conoce 5 min despues; sin fila = 0); oi_close va en USD, asi que el cambio se mide NETO del precio; spot_trades_agg y
@@ -32,6 +38,11 @@ MODOS = ("apagado", "sombra", "enviar")
 # ---------- la especificacion de Fable I18 (TABLA DE ESPECIFICACION) ----------
 LIQ_Q = 0.995  # LIQ: USD liquidados de un lado en el bloque de 5 min >= p99.5 de los bloques de 30 d (sin fila = 0)
 GRA_Q = 0.999  # GRA: USD de grandes de perpetuo (venues sin _spot) de un lado en 1 min >= p99.9 de TODOS los minutos de 10 d
+CONT_Q = 0.999  # CONT (solo registro): la misma regla sobre el contado (*_spot). I19 P1: 2.5 por dia y activo, x1.59 / x1.46
+RACHA_MIN = 15  # RACIMO (grado de GRA): >= RACHA_N minutos en estado GRA del mismo lado en los ultimos 15 min, contando el
+RACHA_N = 3  # del aviso. I19 P3: rango15 x3.49 / x2.82 (el minuto suelto, x1.94 / x1.79); 0.16 por dia y activo
+GRADO_AMBOS = "Coincide con contado grande del mismo lado: despues el movimiento ha sido aun mayor (unas 3 veces lo normal)."
+GRADO_RACIMO = "Es el minuto {} de una racha en 15 min: despues el movimiento ha sido aun mayor (unas 3 veces lo normal)."
 OI_Q = 0.99  # OI: |dOI| >= p99 de 30 d, dOI = dln(oi_close) - dln(precio) del bloque de 5 min
 DIV_Q = 0.90  # DIV: delta de 5 min de contado y de perpetuo con signos opuestos, cada uno >= su p90 de 30 d
 ABS_Q = 0.95  # ABS (solo registro): |delta de 5 min| >= p95 de 30 d ...
@@ -99,6 +110,13 @@ SELECT (extract(epoch FROM ts)::bigint / 60)::int, compra, sum(usd)::float8
    AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
  GROUP BY 1, 2
 """
+SQL_GRANDES_COLA_CONT = """
+SELECT (extract(epoch FROM ts)::bigint / 60)::int, compra, sum(usd)::float8
+  FROM orderflow_grande
+ WHERE symbol = $1 AND right(venue, 5) = '_spot'
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ GROUP BY 1, 2
+"""
 # por bloque de 5 min y exchange: el `combined` se descarta en Python (_por_bloque), donde lo ve la prueba
 SQL_FLUJO_PERP = """
 SELECT (extract(epoch FROM ts)::bigint / 300 * 5)::int, exchange, sum(buy_vol_usd - sell_vol_usd)
@@ -131,8 +149,9 @@ class Config:
 
 def nuevo() -> dict:
     """El estado (va a bot_estado): SI/NO de cada senal, el ultimo aviso de cada una, lo que espera al mensaje de su activo
-    ([t, senal, texto, lado]), la hora del ultimo mensaje por activo y los mensajes de 24 h ([t, enviado, «LIQ+OI»])."""
-    return {"vivo": {}, "enfria": {}, "pend": {}, "msg_t": {}, "avisos": []}
+    ([t, senal, texto, lado]), la hora del ultimo mensaje por activo, los mensajes de 24 h ([t, enviado, «LIQ+OI»]) y los
+    minutos en estado GRA de los ultimos 15 por activo y lado (R3, RACIMO)."""
+    return {"vivo": {}, "enfria": {}, "pend": {}, "msg_t": {}, "avisos": [], "racha": {}}
 
 
 def restaura(g) -> dict | None:
@@ -140,13 +159,14 @@ def restaura(g) -> dict | None:
     if not isinstance(g, dict):
         return None
     num = (int, float)
-    d = {k: x if isinstance(x := g.get(k), dict) else {} for k in ("vivo", "enfria", "pend", "msg_t")}
+    d = {k: x if isinstance(x := g.get(k), dict) else {} for k in ("vivo", "enfria", "pend", "msg_t", "racha")}
     return {"vivo": {str(k): v for k, v in d["vivo"].items() if isinstance(v, bool)},
             "enfria": {str(k): float(v) for k, v in d["enfria"].items() if isinstance(v, num)},
             "pend": {str(a): [list(x) for x in v if isinstance(x, list) and len(x) == 4] for a, v in d["pend"].items()
                      if isinstance(v, list)},
             "msg_t": {str(a): float(v) for a, v in d["msg_t"].items() if isinstance(v, num)},
-            "avisos": [list(x) for x in g.get("avisos") or [] if isinstance(x, list) and len(x) == 3 and isinstance(x[0], num)]}
+            "avisos": [list(x) for x in g.get("avisos") or [] if isinstance(x, list) and len(x) == 3 and isinstance(x[0], num)],
+            "racha": {str(k): [int(m) for m in v if isinstance(m, int)] for k, v in d["racha"].items() if isinstance(v, list)}}
 
 
 def cuenta(estado: dict, ahora_s: float, senales: list, enviado: bool):
@@ -204,6 +224,7 @@ async def _colas(db, activo: str, sym: str, dia: int) -> dict:
     a30, n5 = dia - DIAS * 1440, DIAS * 288
     liq = await db.fetch(SQL_LIQ5, sym, a30, dia)
     gra = await db.fetch(SQL_GRANDES_COLA, activo, dia - DIAS_GRA * 1440, dia)
+    gco = await db.fetch(SQL_GRANDES_COLA_CONT, activo, dia - DIAS_GRA * 1440, dia)
     oi = {int(m): float(x) for m, x in await db.fetch(SQL_OI, sym, a30, dia)}
     px = {int(m): float(x) for m, x in await db.fetch(SQL_CIERRES5, sym, a30, dia)}
     doi = [abs(r[0]) for b in oi if (r := _doi(oi, px, b))]
@@ -212,6 +233,7 @@ async def _colas(db, activo: str, sym: str, dia: int) -> dict:
     ohl = [abs(float(x)) for _, x in await db.fetch(SQL_DELTA_OHLCV, sym, a30, dia)]
     return {"liq": {"long": _pctl0([float(r[1]) for r in liq], n5, LIQ_Q), "short": _pctl0([float(r[2]) for r in liq], n5, LIQ_Q)},
             "gra": {c: _pctl0([float(s) for _, cc, s in gra if bool(cc) is c], DIAS_GRA * 1440, GRA_Q) for c in (True, False)},
+            "cont": {c: _pctl0([float(s) for _, cc, s in gco if bool(cc) is c], DIAS_GRA * 1440, CONT_Q) for c in (True, False)},
             "oi": _pctl(doi, OI_Q),
             "div_perp": _pctl([abs(x) for x in perp.values()], DIV_Q), "div_cont": _pctl([abs(x) for x in cont.values()], DIV_Q),
             "abs_perp": _pctl(ohl, ABS_Q), "abs_cont": _pctl([abs(x) for x in cont.values()], ABS_Q)}
@@ -271,7 +293,7 @@ def senales(d: dict, activo: str, ahora: int) -> tuple[list[dict], list[str]]:
         out.append(_c("LIQ", f"LIQ|{lado_liq}", x > 0 and x >= co["liq"][lado_liq], lado,
                       f"{activo}: {x / 1e6:.2f} M$ de {nombre} liquidados en 5 min, mas que el {LIQ_Q * 100:g} % de los bloques"
                       " del ultimo mes. / Tras algo asi el precio se ha movido en 15 min casi el doble de lo normal; sin lado medido."))
-    # GRA: grandes de perpetuo del minuto cerrado, por lado; los de contado, solo registro
+    # GRA: grandes de perpetuo del minuto cerrado, por lado; CONT (los de contado, la misma regla), solo registro
     perp, cont = {True: 0.0, False: 0.0}, {True: [0.0, 0], False: [0.0, 0]}
     for _, venue, compra, usd in d["grandes"]:
         if str(venue).endswith("_spot"):
@@ -285,8 +307,9 @@ def senales(d: dict, activo: str, ahora: int) -> tuple[list[dict], list[str]]:
                       f"{activo}: {x / 1e6:.2f} M$ de {que} agresiva en operaciones grandes de perpetuo en 1 min, de los minutos"
                       " mas cargados de 10 dias. / Dice quien empuja ahora; despues hay mas movimiento del normal, sin lado medido."))
         usd, n = cont[compra]
-        out.append(_c("GRA_CONT", f"GRA_CONT|{int(compra)}", n > 0, 1 if compra else -1,
-                      f"{activo}: {n} operaciones grandes de {que} de contado en 1 min ({usd / 1e6:.2f} M$)", registro=True))
+        out.append(_c("CONT", f"CONT|{int(compra)}", usd > 0 and usd >= co["cont"][compra], 1 if compra else -1,
+                      f"{activo}: {usd / 1e6:.2f} M$ de {que} en {n} operaciones grandes de contado en 1 min, de los minutos mas"
+                      " cargados de 10 dias", registro=True))
     # DIV: contado y perpetuo del bloque, sin `combined`
     dc, dpp = _por_bloque(d["cont"]).get(b, 0.0), _por_bloque(d["perp"]).get(b, 0.0)
     out.append(_c("DIV", "DIV", dc * dpp < 0 and abs(dc) >= co["div_cont"] and abs(dpp) >= co["div_perp"], None,
@@ -377,12 +400,23 @@ def _r(p: dict) -> float | None:
     return (m - e) * lado / abs(e - s)
 
 
+def _grado(cand: dict, cands: list, estado: dict, activo: str, ahora: int) -> list[str]:
+    """R3: lleva la cuenta de los minutos en estado GRA de cada lado (15 min) y, si es un GRA, sus lineas de grado (I19)."""
+    if cand["senal"] != "GRA":
+        return []
+    k = f"{activo}|{cand['lado']}"
+    vistos = [m for m in estado["racha"].get(k, []) if m >= ahora - RACHA_MIN and m != ahora - 1]
+    estado["racha"][k] = vistos = (vistos + [ahora - 1]) if cand["valor"] else vistos
+    out = [GRADO_AMBOS] if any(c["senal"] == "CONT" and c["lado"] == cand["lado"] and c["valor"] for c in cands) else []
+    return (out + [GRADO_RACIMO.format(len(vistos))]) if len(vistos) >= RACHA_N else out
+
+
 def _mensaje(activo: str, p: dict, pend: list, ctx: list) -> str:
     pos, r = "LARGO" if p["lado"] > 0 else "CORTO", _r(p)
     lineas = [f"{activo} · seguimiento de tu {pos}" + (f" ({r:+.2f} R)" if r is not None else "")]
     for t, _, texto, _lado in pend:  # el lado de la senal NO se dice (AVISOS R1, H2): I18 lo midio nulo
-        uno, _, dos = texto.partition(" / ")
-        lineas += [f"{int(t // 60) // 60 % 24:02d}:{int(t // 60) % 60:02d}Z {uno}", f"  {dos}"]
+        uno, *resto = texto.split(" / ")
+        lineas += [f"{int(t // 60) // 60 % 24:02d}:{int(t // 60) % 60:02d}Z {uno}"] + [f"  {x}" for x in resto]
     return "\n".join(lineas + [f"Contexto: {x}" for x in ctx])
 
 
@@ -394,7 +428,8 @@ async def tic(db, posiciones: list, estado: dict, cache: dict, ahora_s: float) -
         sym = str(p.get("symbol") or "")
         if sym.endswith("USDT") and p.get("lado") in (1, -1):
             por_activo.setdefault(sym[:-4], p)
-    for k in ("vivo", "enfria"):
+    estado.setdefault("racha", {})
+    for k in ("vivo", "enfria", "racha"):
         estado[k] = {x: y for x, y in estado[k].items() if x.split("|")[0] in por_activo}
     for k in ("pend", "msg_t"):
         estado[k] = {x: y for x, y in estado[k].items() if x in por_activo}
@@ -402,12 +437,14 @@ async def tic(db, posiciones: list, estado: dict, cache: dict, ahora_s: float) -
     for activo, p in por_activo.items():
         cands, ctx = senales(await lee(db, activo, ahora, cache), activo, ahora)
         for cand in cands:
+            grado = _grado(cand, cands, estado, activo, ahora)
             if not _decide(cand, estado, ahora_s, activo):
                 continue
             if cand["registro"]:
                 out.append({"tipo": "registro", "senal": cand["senal"], "activo": activo, "texto": cand["texto"]})
             else:
-                estado["pend"].setdefault(activo, []).append([ahora_s, cand["senal"], cand["texto"], cand["lado"]])
+                texto = " / ".join([cand["texto"], *grado])
+                estado["pend"].setdefault(activo, []).append([ahora_s, cand["senal"], texto, cand["lado"]])
         pend = estado["pend"].get(activo)
         if pend and ahora_s - estado["msg_t"].get(activo, -math.inf) >= MENSAJE_MIN * 60:
             out.append({"tipo": "mensaje", "activo": activo, "senales": [x[1] for x in pend], "texto": _mensaje(activo, p, pend, ctx)})
