@@ -34622,7 +34622,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:268"
+            "tests/test_deploy_wrapper.py:273"
           ],
           "menciones": []
         }
@@ -36300,7 +36300,7 @@
         },
         "tests": {
           "llamadas": [
-            "tests/test_deploy_wrapper.py:268",
+            "tests/test_deploy_wrapper.py:273",
             "tests/test_metrics_endpoint.py:253",
             "tests/test_v121_hardening.py:35",
             "tests/test_v150_desk_snapshot.py:130"
@@ -37644,7 +37644,7 @@
           "llamadas": [
             "tests/js/mesa_f12a.test.js:174",
             "tests/test_dashboard_layout.py:134",
-            "tests/test_deploy_wrapper.py:268"
+            "tests/test_deploy_wrapper.py:273"
           ],
           "menciones": [
             "tests/test_dashboard_layout.py:130"
@@ -38099,7 +38099,7 @@
         "tests": {
           "llamadas": [
             "tests/test_bot_r3.py:337",
-            "tests/test_deploy_wrapper.py:260",
+            "tests/test_deploy_wrapper.py:265",
             "tests/test_smoke_arranque.py:39"
           ],
           "menciones": [
@@ -38108,7 +38108,7 @@
             "tests/test_cobertura_proveedor.py:7",
             "tests/test_deploy_health_gate.py:38",
             "tests/test_deploy_health_gate.py:144",
-            "tests/test_deploy_wrapper.py:54",
+            "tests/test_deploy_wrapper.py:56",
             "tests/test_ingest_health.py:236",
             "tests/test_smoke_arranque.py:1"
           ]
@@ -47505,13 +47505,13 @@
         "tests": {
           "llamadas": [
             "tests/test_deploy_health_gate.py:170",
-            "tests/test_deploy_wrapper.py:268",
+            "tests/test_deploy_wrapper.py:273",
             "tests/test_smoke_arranque.py:40"
           ],
           "menciones": [
             "tests/test_deploy_health_gate.py:42",
             "tests/test_deploy_health_gate.py:148",
-            "tests/test_deploy_wrapper.py:72"
+            "tests/test_deploy_wrapper.py:74"
           ]
         }
       },

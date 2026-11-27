@@ -16,6 +16,8 @@ import tarfile
 import time
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "token-de-prueba-que-no-sale-en-argv"
 NUEVO = "a" * 40
@@ -91,6 +93,9 @@ shift 3
 exec "$@"
 """
 
+# pg_dump en formato plano acaba con esta marca (y en 17.6+ un \unrestrict detras): un volcado sin ella esta a medias.
+PG_DUMP_BUENO = "#!/bin/sh\nprintf 'volcado\\n--\\n-- PostgreSQL database dump complete\\n--\\n\\n\\\\unrestrict k\\n'\n"
+
 
 def _x(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8")
@@ -113,7 +118,7 @@ def _banco(tmp_path: Path, *, recupera: bool = False, smoke_max: int = 3) -> dic
     _x(bin_ / "systemctl", SYSTEMCTL)
     _x(bin_ / "curl", CURL)
     _x(bin_ / "python3", PYTHON3)
-    _x(bin_ / "pg_dump", "#!/bin/sh\necho volcado\n")
+    _x(bin_ / "pg_dump", PG_DUMP_BUENO)
     _x(bin_ / "psql", "#!/bin/sh\necho 0\n")
     _x(bin_ / "chown", "#!/bin/sh\necho \"$*\" >> \"$SB/chown.log\"\n")
     _x(bin_ / "runuser", RUNUSER)
@@ -409,3 +414,51 @@ def test_el_volcado_nuevo_poda_los_predeploy_previos_y_deja_el_mas_reciente(tmp_
     assert len(quedan) == 2 and len(nuevo) == 1 and previos[-1].name in quedan, quedan
     assert all(f.exists() for f in ajenos) and not (bk / f"{previos[0].name}.sha256").exists()
     assert r.stderr.count("pruned pre-deploy backup:") == 3
+    assert sorted(p.name for p in bk.iterdir()) == sorted(quedan + [f.name for f in ajenos])  # PODA R2: ni temporal
+
+
+# PODA R2 (fable-v45 N4): el volcado que falla dejaba su fichero a medias (un gzip valido) y la poda de ANTES del volcado
+# se quedaba con «el mas nuevo por mtime»: con dos fallos seguidos, ese era el de medias y quedaban 0 predeploy enteros.
+A_MEDIAS = {
+    "pg_dump_cae": "#!/bin/sh\necho 'volcado a med'\nexit 1\n",
+    "pg_dump_da_0_sin_la_marca": "#!/bin/sh\necho 'volcado a med'\n",
+}
+
+
+def _previos(bk: Path) -> list[Path]:
+    """4 predeploy enteros de hace 4..1 dias; el de hace 1 dia es el del release activo."""
+    bk.mkdir()
+    ahora = time.time()
+    previos = []
+    for i, dias in enumerate((4, 3, 2, 1)):
+        f = bk / f"predeploy-{'c' * 39}{i}-2026112{i}000000.sql.gz"
+        f.write_text("entero", encoding="utf-8")
+        os.utime(f, (ahora - dias * 86400, ahora - dias * 86400))
+        previos.append(f)
+    return previos
+
+
+@pytest.mark.parametrize("doble", sorted(A_MEDIAS))
+def test_un_volcado_fallido_no_deja_el_fichero_a_medias_ni_poda(tmp_path, doble):
+    b = _banco(tmp_path)
+    _x(b["sb"] / "bin" / "pg_dump", A_MEDIAS[doble])
+    bk = b["sb"] / "backups"
+    previos = _previos(bk)
+    r = _despliega(b)
+    assert r.returncode == 5, r.stderr[-2000:]
+    assert sorted(p.name for p in bk.iterdir()) == sorted(p.name for p in previos), "ni a medias, ni temporal, ni poda"
+    assert _current(b) == VIEJO and _log(b, "systemctl.log") == ""
+
+
+def test_dos_volcados_fallidos_seguidos_dejan_el_ultimo_predeploy_entero(tmp_path):
+    b = _banco(tmp_path)
+    _x(b["sb"] / "bin" / "pg_dump", A_MEDIAS["pg_dump_cae"])
+    bk = b["sb"] / "backups"
+    previos = _previos(bk)
+    for _ in range(2):
+        r = _despliega(b)
+        assert r.returncode == 5, r.stderr[-2000:]
+        time.sleep(1.1)  # el nombre lleva la fecha al segundo: dos fallos, dos ficheros
+    enteros = [p for p in bk.glob("predeploy-*.sql.gz") if p.read_bytes() == b"entero"]
+    assert previos[-1] in enteros, sorted(p.name for p in bk.iterdir())
+    assert not list(bk.glob(f"*{NUEVO}*")), sorted(p.name for p in bk.iterdir())

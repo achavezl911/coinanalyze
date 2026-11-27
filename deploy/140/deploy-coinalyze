@@ -325,19 +325,28 @@ do_backup(){
   mkdir -p "$BACKUPDIR"
   chmod 700 "$BACKUPDIR"
 
-  # Poda ANTES del volcado nuevo: se queda el predeploy mas reciente (el del release activo); tras este, quedan 2.
-  local f n=0
-  while IFS= read -r -d '' f; do
-    n=$((n + 1)); [ "$n" -le 1 ] && continue
-    f=${f#* }; rm -f -- "$f" "$f.sha256"; log "pruned pre-deploy backup: $f"
-  done < <(find "$BACKUPDIR" -maxdepth 1 -type f -name 'predeploy-*.sql.gz' -printf '%T@ %p\0' | LC_ALL=C sort -z -rn)
-
+  # Se vuelca a un temporal (fuera del patron predeploy-*) y solo uno ENTERO -rc 0 y la marca final de pg_dump en
+  # formato plano- pasa a su nombre; uno a medias se borra y no se poda nada (PODA R2). Un temporal de un deploy
+  # matado lo barre el siguiente (el flock garantiza que no es de otro en marcha).
+  find "$BACKUPDIR" -maxdepth 1 -type f -name '.predeploy-*.part' -delete
   local out="$BACKUPDIR/predeploy-$1-$(date -u +%Y%m%d%H%M%S).sql.gz"
-  PGPASSWORD="${PG_PASSWORD:-}" pg_dump \
+  local tmp="$BACKUPDIR/.${out##*/}.part"
+  if ! PGPASSWORD="${PG_PASSWORD:-}" pg_dump \
     -h "${PG_HOST:-127.0.0.1}" \
     -p "${PG_PORT:-5432}" \
     -U "${PG_USER:?}" \
-    "${PG_DB:?}" | gzip > "$out" || die "DB backup failed" 5
+    "${PG_DB:?}" | gzip > "$tmp" \
+    || ! gzip -dc "$tmp" | tail -c 1024 | grep -- '-- PostgreSQL database dump complete' >/dev/null; then
+    rm -f -- "$tmp"; die "DB backup failed" 5
+  fi
+  mv -- "$tmp" "$out"
+
+  # Poda TRAS el volcado entero: se quedan el nuevo y el predeploy anterior mas reciente (el del release activo).
+  local f n=0
+  while IFS= read -r -d '' f; do
+    n=$((n + 1)); [ "$n" -le 2 ] && continue
+    f=${f#* }; rm -f -- "$f" "$f.sha256"; log "pruned pre-deploy backup: $f"
+  done < <(find "$BACKUPDIR" -maxdepth 1 -type f -name 'predeploy-*.sql.gz' -printf '%T@ %p\0' | LC_ALL=C sort -z -rn)
 
   log "pre-deploy DB backup: $out"
   find "$BACKUPDIR" -name 'predeploy-*.sql.gz' -mtime +14 -delete 2>/dev/null || true
