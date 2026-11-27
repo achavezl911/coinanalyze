@@ -121,8 +121,8 @@ async def test_a_bis_oi_neto_del_precio_da_el_estado_por_los_dos_signos():
     oi = [(m, 1e6) for m in range(M0 - 43200, M0 - 5, 5)] + [(M0 - 5, 1.01e6)]
     t = textos(await tic(Base(M0, velas=velas(M0, cambia), oi=oi), seg.nuevo(), {}, M0))
     assert "el interes abierto sube" in t and "precio bajando: entran cortos" in t and "sin lado medido" in t, t
-    linea = next(x for x in t.split("\n") if "interes abierto" in x)
-    assert "A FAVOR" in linea, linea  # entran cortos: a favor de un CORTO
+    # AVISOS R1 (H2): el lado de la senal respecto de la posicion no se dice; I18 lo midio NULO
+    assert "A FAVOR" not in t and "EN CONTRA" not in t, t
 
 
 # ---------- (b) liq5m y oi5m: el bloque cuenta cuando ha CERRADO ----------
@@ -186,20 +186,20 @@ async def test_e_ningun_texto_dice_soporte_ni_resistencia_y_el_nivel_cerca_va_de
     assert len(mensajes(await tic(Base(M0), seg.nuevo(), {}, M0))) == 0  # el nivel cerca solo, sin aviso
 
 
-# ---------- (f) un solo mensaje por activo cada 30 min que junta lo que coincida ----------
-async def test_f_un_mensaje_por_activo_cada_30_min_junta_lo_que_coincide():
+# ---------- (f) AVISOS R1 (H4): un aviso sale en el tic en que nace; tras un mensaje del activo, espera a sus 10 min ----------
+async def test_f_un_aviso_a_los_2_min_de_un_mensaje_sale_a_los_10():
     liq = LIQ_HIST + [(M0 - 5, 1.5e6, 0.0)]
     b = Base(M0, liq5=liq, grandes=GRA_HIST + [(M0 - 1, "binance_usdm", True, 2e6)])
     estado, cache = seg.nuevo(), {}
     ev = mensajes(await tic(b, estado, cache, M0))
     assert len(ev) == 1 and ev[0]["activo"] == "SOL", ev
     assert "liquidados" in ev[0]["texto"] and "operaciones grandes de perpetuo" in ev[0]["texto"], ev
-    b.esc["grandes"] = GRA_HIST + [(M0 + 9, "bybit_linear", False, 3e6)]
-    assert not mensajes(await tic(b, estado, cache, M0 + 10))  # dentro de los 30 min: se guarda
-    for m in range(M0 + 11, M0 + 30):
-        assert not mensajes(await tic(b, estado, cache, m))
-    ev = mensajes(await tic(b, estado, cache, M0 + 30))
+    b.esc["grandes"] = GRA_HIST + [(M0 + 1, "bybit_linear", False, 3e6)]
+    for m in range(M0 + 2, M0 + 10):  # nace a los 2 min del mensaje: espera a que se cumplan 10 (antes, 30)
+        assert not mensajes(await tic(b, estado, cache, m)), m
+    ev = mensajes(await tic(b, estado, cache, M0 + 10))
     assert len(ev) == 1 and "venta agresiva" in ev[0]["texto"] and "liquidados" not in ev[0]["texto"], ev
+    assert ev[0]["texto"].split("\n")[1].startswith("12:02Z "), ev  # con la hora en que nacio
 
 
 async def test_ruptura_es_un_cierre_de_5_min_con_margen_y_la_mecha_no():
@@ -208,8 +208,7 @@ async def test_ruptura_es_un_cierre_de_5_min_con_margen_y_la_mecha_no():
     rompe = {m: plano(m, 101.0) for m in range(M0 - 5, M0)}
     t = textos(await tic(Base(M0, velas=velas(M0, rompe)), seg.nuevo(), {}, M0))
     assert "cierre de 5 min por encima del maximo de" in t and "vuelve a cerrar dentro" in t, t
-    linea = next(x for x in t.split("\n") if "por encima del maximo" in x)
-    assert "EN CONTRA" in linea, linea
+    assert "A FAVOR" not in t and "EN CONTRA" not in t, t  # AVISOS R1 (H2)
 
 
 async def test_sin_posicion_abierta_no_se_calcula_nada():
