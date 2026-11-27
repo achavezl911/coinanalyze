@@ -136,14 +136,16 @@ async def test_b_un_bloque_de_5_min_abierto_no_cuenta_y_al_cerrar_si():
 
 async def test_b_bis_el_oi_del_bloque_abierto_no_cuenta():
     oi = [(m, 1e6) for m in range(M0 - 43200, M0, 5)] + [(M0, 1.05e6)]
-    t = textos(await tic(Base(M0 + 3, oi=oi), seg.nuevo(), {}, M0 + 3))
+    # el bloque cerrado, sin cambio de OI ni de precio; el abierto [M0, M0+5), con el precio y el OI subiendo (main lo avisa)
+    quieto = velas(M0 + 3, {m: plano(m, 100.0) for m in range(M0 - 15, M0)} | {m: plano(m, 100.3) for m in range(M0, M0 + 3)})
+    t = textos(await tic(Base(M0 + 3, oi=oi, velas=quieto), seg.nuevo(), {}, M0 + 3))
     assert "interes abierto" not in t, t
 
 
 # ---------- (c) el exchange `combined` no se suma con los demas ----------
 async def test_c_div_no_suma_combined_con_binance_y_bybit():
-    hist_c = [(M0 - 500 - 5 * k, "binance", 1e5 if k % 2 else -1e5) for k in range(60)]
-    hist_p = [(M0 - 500 - 5 * k, "binance", 1e5 if k % 2 else -1e5) for k in range(60)]
+    hist_c = [(M0 - 1000 - 5 * k, "binance", 1e5 if k % 2 else -1e5) for k in range(60)]
+    hist_p = [(M0 - 1000 - 5 * k, "binance", 1e5 if k % 2 else -1e5) for k in range(60)]
     cont = hist_c + [(M0 - 5, "binance", 3e5), (M0 - 5, "bybit", 2e5), (M0 - 5, "combined", 5e5)]
     perp = hist_p + [(M0 - 5, "binance", -4e5), (M0 - 5, "combined", -4e5)]
     t = textos(await tic(Base(M0, cont=cont, perp=perp), seg.nuevo(), {}, M0))
@@ -163,7 +165,8 @@ async def test_d_absorcion_y_grande_de_contado_no_avisan_solo_registro():
 async def test_d_bis_ruptura_del_rango_de_4_h_solo_registro():
     # el rango de [i-240, i-30) se estrecha a 100 +-0.02; las 24 h siguen con su maximo en ~100.15 y el cierre queda debajo
     cambia = {m: plano(m, 100.0) for m in range(M0 - 240, M0 - 5)} | {m: plano(m, 100.11) for m in range(M0 - 5, M0)}
-    ev = await tic(Base(M0, velas=velas(M0, cambia)), seg.nuevo(), {}, M0)
+    oi = [(m, 1e6) for m in range(M0 - 43200, M0 - 5, 5)] + [(M0 - 5, 1.0011e6)]  # oi en USD sigue al precio: dOI ~ 0
+    ev = await tic(Base(M0, velas=velas(M0, cambia), oi=oi), seg.nuevo(), {}, M0)
     assert "RNG4" in registro(ev), ev
     assert not mensajes(ev), ev
 
@@ -176,8 +179,10 @@ async def test_e_ningun_texto_dice_soporte_ni_resistencia_y_el_nivel_cerca_va_de
     for b in (Base(M0), Base(M0, liq5=liq), Base(M0, velas=velas(M0, rompe))):
         todo += textos(await tic(b, seg.nuevo(), {}, M0)) + "\n"
     assert "soporte" not in todo.lower() and "resistencia" not in todo.lower(), todo
-    t = textos(await tic(Base(M0, liq5=liq), seg.nuevo(), {}, M0))
-    assert "Maximo de 24 h en" in t and "ATR" in t, t  # el maximo de 24 h (~100.15) a <= 0.5 ATR: linea de contexto
+    arriba = velas(M0, {m: plano(m, 100.1) for m in range(M0 - 5, M0)})
+    t = textos(await tic(Base(M0, liq5=liq, velas=arriba), seg.nuevo(), {}, M0))
+    # el maximo (~100.15, el mismo en 7 d, 24 h y ayer: se nombra el mas ancho) a <= 0.5 ATR: linea de contexto, no aviso
+    assert "Contexto: Maximo de 7 dias en 100.15, a " in t and t.count("seguimiento de tu") == 1, t
     assert len(mensajes(await tic(Base(M0), seg.nuevo(), {}, M0))) == 0  # el nivel cerca solo, sin aviso
 
 
