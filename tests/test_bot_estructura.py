@@ -5,6 +5,10 @@ El bridge de Telegram de 140 (coinalyze-ai-bridge, fuera del repo) manda en modo
 (tests/fixtures/estructura_r1_cargas.json) por la REFERENCIA (tests/genera_dorado_estructura.py, que importa la copia del
 bridge de x1-tmp; el dorado se commitea, la referencia no) y por el bot: el MISMO texto, la MISMA decision de enviar y el
 MISMO estado de anti-repeticion paso a paso, con un envio que falla en medio. Todo con dobles: ni red ni filas del dueno.
+
+AVISOS R1 (H3): la decision y el estado siguen IDENTICOS a la referencia; el texto es el del dorado con SUSTITUCIONES (las
+palabras del bridge que nombran una direccion sin medirla -Fable I18: ninguna senal la da- y el icono, por el hecho que
+miden). El dorado no se regenera: la tabla se aplica aqui y cada fila tiene que morder al menos una vez.
 """
 
 from __future__ import annotations
@@ -19,6 +23,31 @@ from app.bot import servicio as sv
 FIX = pathlib.Path(__file__).parent / "fixtures"
 CARGAS = json.loads((FIX / "estructura_r1_cargas.json").read_text(encoding="utf-8"))
 DORADO = json.loads((FIX / "estructura_r1_dorado.json").read_text(encoding="utf-8"))
+# (patron de la referencia, texto del bot). alcista/bajista del giro = HH_HL/LH_LL (app/setups.py:1265); la lectura del
+# flujo pasivo, app/scalp_logic.py:_classify_passive (ventas o compras agresivas absorbidas, con el CVD de contado opuesto)
+SUSTITUCIONES = [
+    (r"^⚠️ ESTRUCTURA / LIQUIDACIONES", "ESTRUCTURA / LIQUIDACIONES"),
+    (r"giro ▲ ALCISTA \(", "pasa a maximos y minimos mas altos ("),
+    (r"giro ▼ BAJISTA \(", "pasa a maximos y minimos mas bajos ("),
+    (r" → cascada BAJISTA \(longs\)", ", sobre todo de largos"),
+    (r" → squeeze ALCISTA \(shorts\)", ", sobre todo de cortos"),
+    (r"REACUMULACION silenciosa (\w+) ", r"flujo pasivo \1: ventas agresivas absorbidas y contado comprando "),
+    (r"REDISTRIBUCION silenciosa (\w+) ", r"flujo pasivo \1: compras agresivas absorbidas y contado vendiendo "),
+]
+
+
+def sustituye(texto: str) -> str:
+    for a, b in SUSTITUCIONES:
+        texto = re.sub(a, b, texto, flags=re.M)
+    return texto
+
+
+def test_cada_sustitucion_muerde_en_el_dorado():
+    textos = [d["texto"] for v in DORADO.values() for d in v if d["texto"]]
+    for a, _ in SUSTITUCIONES:
+        assert any(re.search(a, t, flags=re.M) for t in textos), a
+
+
 BUNDLE = "/api/ai/context/bundle?symbols=BTCUSDT_PERP.A,ETHUSDT_PERP.A,SOLUSDT_PERP.A&profile=default&bucket_bps=10"
 
 
@@ -65,10 +94,10 @@ async def test_enviar_da_el_mismo_texto_decision_y_anti_repeticion_que_el_bridge
     bot, mandados, rutas = montado("enviar")
     async for i, d, nuevos in _corre(bot, mandados, rutas, monkeypatch, DORADO["enviar"]):
         if d["envia"]:
-            assert mandados.pop() == d["texto"], i
+            assert mandados.pop() == sustituye(d["texto"]), i
             (ev,) = nuevos
             assert ev["tipo"] == "estructura" and ev["symbol"] is None, ev
-            assert ev["enviada"] == (not CARGAS["pasos"][i]["falla_envio"]) and ev["detalle"]["texto"] == d["texto"], (i, ev)
+            assert ev["enviada"] == (not CARGAS["pasos"][i]["falla_envio"]) and ev["detalle"]["texto"] == sustituye(d["texto"]), (i, ev)
             assert ev["detalle"]["modo"] == "enviar", ev
         else:
             assert not nuevos, (i, nuevos)
@@ -80,7 +109,7 @@ async def test_sombra_calcula_y_registra_sin_enviar(monkeypatch):
     for modo in (None, "sombra", "SOMBRA "):  # por defecto, SOMBRA
         bot, mandados, rutas = montado(modo)
         async for i, d, nuevos in _corre(bot, mandados, rutas, monkeypatch, DORADO["sombra"]):
-            assert [x["detalle"]["texto"] for x in nuevos] == ([d["texto"]] if d["envia"] else []), (modo, i, nuevos)
+            assert [x["detalle"]["texto"] for x in nuevos] == ([sustituye(d["texto"])] if d["envia"] else []), (modo, i, nuevos)
             assert all(x["enviada"] is False and x["detalle"]["modo"] == "sombra" for x in nuevos), nuevos
         assert not mandados, mandados
         assert bot.texto_estructura().startswith("estructura (avisos del bridge): sombra · 5 en 24 h, 0 enviados"), bot.texto_estructura()
