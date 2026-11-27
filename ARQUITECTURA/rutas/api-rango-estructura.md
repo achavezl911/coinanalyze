@@ -150,7 +150,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K43-foto-unica.sh:168`, `harness/checks/K43-foto-unica.sh:462` | `harness/checks/K43-foto-unica.sh:98` |
+| **checks** | `harness/checks/K20-control.bash:69`, `harness/checks/K43-foto-unica.sh:168`, `harness/checks/K43-foto-unica.sh:462` | `harness/checks/K20-control.bash:5`, `harness/checks/K20-rellena.py:7`, `harness/checks/K43-foto-unica.sh:98` |
 | **panel** | `static/js/07-decision-y-ciclos.js:226`, `static/js/10-contexto-y-estructura.js:714` | — |
 | **tests** | `tests/test_funding_una_sola_escala.py:87` | `tests/test_funding_una_sola_escala.py:13`, `tests/test_ventana_elegible.py:71` |
 

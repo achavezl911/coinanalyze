@@ -136,7 +136,7 @@ comentario no tiene consumidor, tiene quien habla de ella.
 
 | donde | llamadas | menciones |
 |---|---|---|
-| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:68`, `harness/checks/K20-cincoxx.sh:83` _(+7)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K43-foto-unica.sh:569` |
+| **checks** | `harness/checks/K02-cobertura-hueco.sh:81`, `harness/checks/K03-hueco-declarado.sh:46`, `harness/checks/K20-cincoxx.sh:79`, `harness/checks/K20-cincoxx.sh:94` _(+8)_ | `harness/checks/K02-cobertura-hueco.sh:78`, `harness/checks/K03-hueco-declarado.sh:7`, `harness/checks/K20-control.bash:12`, `harness/checks/K20-control.bash:14` _(+2)_ |
 | **panel** | `static/js/07-decision-y-ciclos.js:244` | — |
 | **tests** | — | `tests/test_huecos_r1_apagon_postgres.py:36`, `tests/test_huecos_r1_apagon_postgres.py:150`, `tests/test_ohlcv_sin_precio.py:1`, `tests/test_p1_timeframes_and_spot.py:52` _(+3)_ |
 
