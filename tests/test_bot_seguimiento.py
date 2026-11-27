@@ -63,10 +63,11 @@ class Base:
             return [x for x in e["liq5"] if a[1] <= x[0] < a[2]]
         if self._es(sql, "SQL_CIERRES5"):
             return [(m, x[2]) for m, x in sorted(v.items()) if m % 5 == 4 and a[1] <= m < a[2]]
-        if self._es(sql, "SQL_GRANDES_COLA"):
+        if self._es(sql, "SQL_GRANDES_COLA") or self._es(sql, "SQL_GRANDES_COLA_CONT"):  # perpetuo / contado (R3)
             n: dict = {}
+            spot = self._es(sql, "SQL_GRANDES_COLA_CONT")
             for m, venue, compra, usd in e["grandes"]:
-                if a[1] <= m < a[2] and not venue.endswith("_spot"):
+                if a[1] <= m < a[2] and venue.endswith("_spot") is spot:
                     n[(m, compra)] = n.get((m, compra), 0.0) + usd
             return [(m, c, s) for (m, c), s in n.items()]
         if self._es(sql, "SQL_FLUJO_PERP") or self._es(sql, "SQL_FLUJO_CONT"):
@@ -153,13 +154,13 @@ async def test_c_div_no_suma_combined_con_binance_y_bybit():
 
 
 # ---------- (d) absorcion, grandes de contado y rango de 4 h: solo registro ----------
-async def test_d_absorcion_y_grande_de_contado_no_avisan_solo_registro():
+async def test_d_absorcion_no_avisa_solo_registro():  # la grande de contado (CONT), en test_bot_seguimiento_r3.py
     cambia = {m: (100.05, 99.95, 100.0, 900.0 if m >= M0 - 5 else 500.0, 1000.0) for m in range(M0 - 6, M0)}  # precio quieto
     b = Base(M0, velas=velas(M0, cambia), grandes=[(M0 - 1, "coinbase_spot", False, 1.2e6)])
     ev = await tic(b, seg.nuevo(), {}, M0)
     t = textos(ev)
     assert "absorcion" not in t and "contado" not in t, t
-    assert {"ABS", "GRA_CONT"} <= registro(ev), ev
+    assert "ABS" in registro(ev), ev
 
 
 async def test_d_bis_ruptura_del_rango_de_4_h_solo_registro():
