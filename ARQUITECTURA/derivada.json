@@ -50055,6 +50055,16 @@
       ],
       "lectores_del_arbol": [
         {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_FLUJO_PERP",
+          "sitio": "app/bot/seguimiento.py:102"
+        },
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_FLUJO_PERP",
+          "sitio": "app/bot/seguimiento.py:102"
+        },
+        {
           "funcion": "app.daily_agg.compute_session",
           "origen": "constante SESSION_QUERY",
           "sitio": "app/daily_agg.py:78"
@@ -50190,6 +50200,16 @@
           "sitio": "app/api.py:1293"
         },
         {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_LIQ5",
+          "sitio": "app/bot/seguimiento.py:76"
+        },
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_LIQ5",
+          "sitio": "app/bot/seguimiento.py:76"
+        },
+        {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
           "sitio": "app/daily_agg.py:675"
@@ -50243,16 +50263,6 @@
           "funcion": "app.api.prometheus_metrics",
           "origen": "literal",
           "sitio": "app/api.py:3847"
-        },
-        {
-          "funcion": "app.bot.seguimiento.lee",
-          "origen": "constante SQL_LIQ",
-          "sitio": "app/bot/seguimiento.py:56"
-        },
-        {
-          "funcion": "app.bot.seguimiento.lee",
-          "origen": "constante SQL_LIQ_COLA",
-          "sitio": "app/bot/seguimiento.py:62"
         },
         {
           "funcion": "app.orderflow_lectura.indicadores",
@@ -50627,12 +50637,22 @@
         {
           "funcion": "app.bot.seguimiento.lee",
           "origen": "constante SQL_VELAS",
-          "sitio": "app/bot/seguimiento.py:45"
+          "sitio": "app/bot/seguimiento.py:49"
         },
         {
           "funcion": "app.bot.seguimiento.lee",
           "origen": "constante SQL_RANGO",
-          "sitio": "app/bot/seguimiento.py:51"
+          "sitio": "app/bot/seguimiento.py:56"
+        },
+        {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_CIERRES5",
+          "sitio": "app/bot/seguimiento.py:62"
+        },
+        {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_DELTA_OHLCV",
+          "sitio": "app/bot/seguimiento.py:69"
         },
         {
           "funcion": "app.daily_agg.persist_verdicts",
@@ -50968,9 +50988,14 @@
           "sitio": "app/api.py:1243"
         },
         {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_OI",
+          "sitio": "app/bot/seguimiento.py:82"
+        },
+        {
           "funcion": "app.bot.seguimiento.lee",
           "origen": "constante SQL_OI",
-          "sitio": "app/bot/seguimiento.py:70"
+          "sitio": "app/bot/seguimiento.py:82"
         },
         {
           "funcion": "app.daily_agg.apply_retention",
@@ -51938,6 +51963,16 @@
           "sitio": "app/api.py:1398"
         },
         {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_FLUJO_CONT",
+          "sitio": "app/bot/seguimiento.py:109"
+        },
+        {
+          "funcion": "app.bot.seguimiento.lee",
+          "origen": "constante SQL_FLUJO_CONT",
+          "sitio": "app/bot/seguimiento.py:109"
+        },
+        {
           "funcion": "app.daily_agg.apply_retention",
           "origen": "literal",
           "sitio": "app/daily_agg.py:681"
@@ -52724,7 +52759,12 @@
         {
           "funcion": "app.bot.seguimiento.lee",
           "origen": "constante SQL_GRANDES",
-          "sitio": "app/bot/seguimiento.py:76"
+          "sitio": "app/bot/seguimiento.py:88"
+        },
+        {
+          "funcion": "app.bot.seguimiento._colas",
+          "origen": "constante SQL_GRANDES_COLA",
+          "sitio": "app/bot/seguimiento.py:94"
         },
         {
           "funcion": "app.orderflow._poda_vuelta",
