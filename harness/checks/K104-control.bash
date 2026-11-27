@@ -402,6 +402,45 @@ comprueba "L5 con la linea vieja (12 h) NO la condena: rc=$RC, sin dia cerrado" 
   "$([ "$RC" != 1 ] && dice 'liquidations_realtime(ventana SCALP_TRADE_RETENTION_HOURS' && echo si || echo no)"
 
 echo
+echo "N · suelo · predicted_funding_rate con dias:HARD_DATA_RETENTION_DAYS@<dia> (365 en el env de 140)"
+# Hasta el SUELO (incluido) la tabla se podo con una retencion anterior de 90 d: esos dias ya no
+# pueden volver y no son perdida. Despues del suelo, dentro de los 365, un dia que encoge SI lo es.
+# El suelo se lee de la declaracion de verdad; censos nuevos (cm con la linea real, cs sin el @).
+SUELO=$(awk -F'\t' '$1=="predicted_funding_rate"{print $3}' "$DECL"); SUELO=${SUELO#*@}
+case "$SUELO" in 20[0-9][0-9]-[01][0-9]-[0-3][0-9]) ;; *) SUELO="" ;; esac
+comprueba "N0 la declaracion real lleva suelo (@$SUELO)" "$([ -n "$SUELO" ] && echo si || echo no)"
+KS=$(( ( $(date -u -d "$(date -u +%F)" +%s) - $(date -u -d "${SUELO:-2000-01-01}" +%s) ) / 86400 ))
+m "DROP TABLE IF EXISTS liquidations_realtime;
+   CREATE TABLE liquidations_realtime (id bigint PRIMARY KEY, ts timestamptz NOT NULL);
+   INSERT INTO liquidations_realtime SELECT k*100+i, (current_date - k)::timestamptz + interval '10 hours'
+     FROM generate_series(0,25) k, generate_series(1,20) i;
+   CREATE TABLE predicted_funding_rate (id bigint PRIMARY KEY, ts timestamptz NOT NULL);
+   INSERT INTO predicted_funding_rate SELECT k*100+i, (current_date - k)::timestamptz + interval '10 hours'
+     FROM generate_series(0,$((KS + 5))) k, generate_series(1,20) i;"
+printf 'SNAPSHOT_RETENTION_DAYS=7\nLIQ_REALTIME_RETENTION_DAYS=30\nHARD_DATA_RETENTION_DAYS=365\n' > "$DIR/ret.tsv"
+sed 's#^\(predicted_funding_rate\tts\tdias:HARD_DATA_RETENTION_DAYS\)@[0-9-]*#\1#' "$DECL" > "$DIR/decl-sin-suelo.tsv"
+corre_sin() {
+  OUT=$(env K104_SUJETO=local K104_BASE="$BD" K104_TABLAS="$DIR/decl-sin-suelo.tsv" K104_RETENCIONES="$DIR/ret.tsv" \
+            K104_CENSO="$DIR/cn-sin.tsv" timeout -k 5 300 bash "$CHK" 2>&1); RC=$?
+}
+corre "$DIR/cn-suelo.tsv"; corre_sin
+corre "$DIR/cn-suelo.tsv"; r1=$RC; corre_sin
+comprueba "N1 gemelo sin tocar: rc=0 con suelo y sin el (rc=$r1, rc=$RC)" "$([ "$r1" = 0 ] && [ "$RC" = 0 ] && echo si || echo no)"
+DIAV=$(date -u -d "${SUELO:-2000-01-01} -2 days" +%F)
+m "DELETE FROM predicted_funding_rate WHERE ts::date='$DIAV' AND id % 4 = 0;"
+corre "$DIR/cn-suelo.tsv"
+comprueba "N2 el $DIAV, de ANTES del suelo, encoge: no condena (rc=$RC)" "$([ "$RC" = 0 ] && echo si || echo no)"
+corre_sin
+comprueba "N3 el plantado muerde: sin el @ ese mismo dia SI condena (rc=$RC)" \
+  "$([ "$RC" = 1 ] && diceE "predicted_funding_rate +$DIAV +antes 20 +ahora 15" && echo si || echo no)"
+DIA20=$(D 20)
+m "DELETE FROM predicted_funding_rate WHERE ts::date='$DIA20' AND id % 4 = 0;"
+corre "$DIR/cn-suelo.tsv"
+comprueba "N4 el $DIA20, DENTRO de la retencion y despues del suelo, condena (rc=$RC)" "$([ "$RC" = 1 ] && echo si || echo no)"
+comprueba "N5 nombra predicted_funding_rate $DIA20 antes 20 ahora 15, y solo ese dia" \
+  "$(diceE "predicted_funding_rate +$DIA20 +antes 20 +ahora 15" && diceE 'PERDIDA SILENCIOSA en .*: 1 dia' && ! dice "$DIAV" && echo si || echo no)"
+
+echo
 total=$((pasan+fallos))
 echo "$pasan de $total pasan · $fallos fallan${sinmat:+ · SIN MATERIAL:$sinmat}"
 [ "$fallos" -eq 0 ] || exit 1
