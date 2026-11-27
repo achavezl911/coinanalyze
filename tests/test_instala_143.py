@@ -139,11 +139,15 @@ def test_e01a_los_canales_de_la_copia_corren_su_propio_corta(tmp_path):
         texto = (ROOT / "harness/bin" / c).read_text(encoding="utf-8")
         assert '"$B/bin/_corta"' not in texto and CORTA_SUYO in texto, c
     texto = (ROOT / "harness/bin/prod").read_text(encoding="utf-8")
-    assert texto.count("B=/srv/coinanalyze/harness;") == 1
-    texto = texto.replace("B=/srv/coinanalyze/harness;", f"B={tmp_path}/arbol/harness;")  # hace de /srv/coinanalyze/harness
+    # el env, por _entorno (COPIA R3): en la copia, el _entorno con la ruta del dia apuntando al «arbol»
+    assert texto.count('. "$(dirname "$(readlink -f "$0")")/_entorno"') == 1 and "/srv/coinanalyze/harness" not in texto
+    entorno = (ROOT / "harness/bin/_entorno").read_text(encoding="utf-8")
+    entorno = entorno.replace("/srv/coinanalyze/harness", f"{tmp_path}/arbol/harness").replace(
+        "/etc/coinalyze-143", f"{tmp_path}/etc-sin")
     for d in ("copia/harness/bin", "arbol/harness/bin", "bin"):
         (tmp_path / d).mkdir(parents=True)
     _x(tmp_path / "copia/harness/bin/prod", texto)
+    _x(tmp_path / "copia/harness/bin/_entorno", entorno)
     _x(tmp_path / "copia/harness/bin/_corta", "#!/bin/sh\ncat\n")
     _x(tmp_path / "arbol/harness/bin/_corta", '#!/bin/sh\ntouch "$(dirname "$0")/testigo"\ncat\n')
     (tmp_path / "arbol/harness/env").write_text("PROD_SSH_USER=x\nPROD_HOST=x\nPROD_SSH_KEY=/dev/null\n"
