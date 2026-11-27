@@ -1,14 +1,23 @@
-"""SEGUIMIENTO R1: con una posicion abierta en Bybit, el bot sigue SU activo minuto a minuto y avisa solo cuando cambia algo.
+"""SEGUIMIENTO R2: con una posicion abierta en Bybit, el bot sigue SU activo y avisa con la especificacion MEDIDA de Fable I18.
 
-Pedido del dueno (11-26): liquidaciones, absorciones, un participante grande que entra, rupturas de soporte/resistencia y
-niveles cercanos mientras tiene una operacion abierta. Lo que el bot ya hace NO se repite aqui: las rafagas CASCADA/BARRIDO
-y los avisos de sin stop / stop cerca / liquidacion cerca son del centinela (centinela.py), y los giros de estructura de
-estructura.py. Este modulo es por POSICION y por el ACTIVO de la posicion.
+I18 (entregas/fable/fable-i18, 08-18..11-26, dos mitades y nulo emparejado): ninguna senal da DIRECCION (el retorno a 15 min
+no se separa del nulo); casi todas anuncian MAS MOVIMIENTO en 15 min (x1.3-2.4); el precio NO respeta ningun nivel mas que
+una linea al azar. Por eso los textos dicen «sin lado medido» y nunca «soporte» ni «resistencia»; A FAVOR / EN CONTRA solo
+describe hacia donde empuja la senal respecto de la posicion.
 
-Lee la base de 140 que el bot ya lee (ohlcv 1min, liquidations_realtime, open_interest 5min, orderflow_grande), SOLO
-lectura. Los textos describen y no predicen; cada uno dice si va A FAVOR o EN CONTRA de la posicion. Antiruido: un aviso
-solo al cambiar de estado, enfriamiento por senal, activo y subclave, tope por hora (lo que pasa del tope se cuenta en el
-resumen) y un resumen cada 30 min si hubo avisos. BOT_SEGUIMIENTO=apagado|sombra|enviar, por defecto sombra.
+AVISAN (la TABLA de I18): LIQ, GRA (perpetuo), OI, RUPTURA de ayer / 24 h / 7 dias y DIV. SOLO REGISTRO (journal, nunca al
+dueno): ABS (absorcion), GRA_CONT (grandes de contado) y RNG4 (ruptura del rango de 4 h). El nivel CERCA (<= 0.5 ATR) es una
+linea de contexto dentro del mensaje, nunca un aviso. Antiruido de I18: aviso = el estado pasa de NO a SI y han pasado >= 30
+min del anterior del mismo activo, senal y lado (ruptura: 60 min por nivel y sentido). Un solo mensaje por activo cada 30
+min que junta lo que coincida. Percentiles sobre los 30 d anteriores (grandes: 10 d), fijados a las 00:00Z.
+
+Trampas de los datos (I18, REGLAS COMUNES): liquidations y open_interest de 5 min llevan el ts de APERTURA (el bloque se
+conoce 5 min despues; sin fila = 0); oi_close va en USD, asi que el cambio se mide NETO del precio; spot_trades_agg y
+futures_trades_agg traen un exchange `combined` = binance + bybit que no se suma con los demas.
+
+Lee la base de 140 que el bot ya lee, SOLO lectura. Aproximaciones: el delta de 5 min va por bloques alineados (I18 lo
+mide al cierre de cada minuto) y el tramo viejo del nivel de 7 d se relee cada hora (puede incluir hasta 59 min de mas).
+BOT_SEGUIMIENTO=apagado|sombra|enviar, por defecto sombra.
 """
 
 from __future__ import annotations
@@ -18,64 +27,90 @@ from dataclasses import dataclass
 
 MODOS = ("apagado", "sombra", "enviar")
 
-# ---------- UMBRALES PROVISIONALES (R1, sin calibrar: la pasada de medicion I18 dira que senales y con que cifra) ----------
-ATR_VELAS = 60  # el ATR de 1 min de la ultima hora: la vara de «cerca», del margen de ruptura y del «precio quieto»
-VELAS_LEIDAS = 1500  # 24 h + la hora del ATR y los 5 min del delta: los niveles del dia y de 24 h salen de aqui
-LIQ_VENTANA = 5  # min: la rafaga se mide en la suma de 5 min (liquidations, la vela agregada, tambien es de 5)
-LIQ_COLA = 0.99  # percentil de 30 d de las sumas de 5 min CON liquidaciones, por lado (sin los ceros: la cola es mas alta)
-LIQ_SUELO = {"BTC": 1_000_000.0, "ETH": 500_000.0, "SOL": 250_000.0}  # USD: una cola de dias tranquilos no avisa de migajas
-ABS_VENTANA = 5  # min del delta agresivo
-ABS_COLA = 0.99  # percentil de |delta de 5 min| en las ultimas 24 h
-ABS_SUELO = {"BTC": 2_000_000.0, "ETH": 800_000.0, "SOL": 200_000.0}  # USD
-ABS_QUIETO_ATR = 1.0  # el precio de esos 5 min se movio menos de 1 ATR: el delta no lo arrastro
-GRANDE_USD = {"BTC": 5_000_000.0, "ETH": 2_000_000.0, "SOL": 1_000_000.0}  # una operacion o el racimo de 1 min
-OI_COLA = 0.98  # percentil de |cambio de OI de 5 min| en 7 d
-OI_SUELO_PCT = 0.3  # %: con un OI plano la cola es casi cero
-CERCA_ATR = 3.0  # un nivel a menos de 3 ATR del precio esta «cerca»
-RUPTURA_ATR = 0.5  # ruptura: un CIERRE de 1 min mas alla del nivel y de medio ATR (una mecha no rompe)
-MISMO_NIVEL_ATR = 0.25  # dos niveles a menos de esto son el mismo (se nombra el mas ancho: 7 d, 24 h, dia)
-R_HITOS = (-0.5, 0.5, 1.0, 2.0, 3.0)  # avance en R de la posicion: se avisa al cruzar uno
-ENFRIA = {"liquidaciones": 15, "absorcion": 15, "grande": 5, "oi": 15, "cerca": 60, "ruptura": 30, "avance": 10}  # min
-TOPE_HORA = 6  # mensajes por hora; los de mas, al resumen
-RESUMEN_MIN = 30
-CACHE_S = 3600  # las colas de 30 d / 7 d y el rango de 7 d se releen cada hora
-DEFECTO = "_"  # la clave de un activo que no esta en las tablas de arriba (usa el umbral de SOL)
+# ---------- la especificacion de Fable I18 (TABLA DE ESPECIFICACION) ----------
+LIQ_Q = 0.995  # LIQ: USD liquidados de un lado en el bloque de 5 min >= p99.5 de los bloques de 30 d (sin fila = 0)
+GRA_Q = 0.999  # GRA: USD de grandes de perpetuo (venues sin _spot) de un lado en 1 min >= p99.9 de TODOS los minutos de 10 d
+OI_Q = 0.99  # OI: |dOI| >= p99 de 30 d, dOI = dln(oi_close) - dln(precio) del bloque de 5 min
+DIV_Q = 0.90  # DIV: delta de 5 min de contado y de perpetuo con signos opuestos, cada uno >= su p90 de 30 d
+ABS_Q = 0.95  # ABS (solo registro): |delta de 5 min| >= p95 de 30 d ...
+ABS_QUIETO_ATR = 0.1  # ... y signo(delta) x (cierre - cierre de hace 5 min) <= 0.1 ATR
+RUPTURA_ATR = 0.25  # cierre de vela de 5 min mas alla del nivel + 0.25 ATR, sin cierre asi en los 15 min previos
+CERCA_ATR = 0.5  # linea de contexto
+MISMO_NIVEL_ATR = 0.25  # dos niveles a menos de esto son el mismo: se nombra el mas ancho (7 dias, 24 h, ayer)
+ATR_VELAS, ATR_MIN = 14, 15  # ATR = 14 velas de 15 min cerradas
+DIAS, DIAS_GRA = 30, 10
+ENFRIA_MIN, ENFRIA_RUPTURA_MIN = 30, 60
+MENSAJE_MIN = 30  # un mensaje por activo cada 30 min
+VELAS_LEIDAS = 1500  # 24 h + la hora que el nivel de 24 h deja fuera + el ATR
+AVISAN = ("LIQ", "GRA", "OI", "RUPTURA", "DIV")
+NIVELES = ("7 dias", "24 h", "ayer")  # del mas ancho al mas estrecho
 
 SQL_VELAS = """
 SELECT (extract(epoch FROM ts)::bigint / 60)::int, high, low, close, buy_volume, volume
   FROM ohlcv
- WHERE interval = '1min' AND symbol = $1 AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ WHERE interval = '1min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
  ORDER BY ts
 """
 SQL_RANGO = """
 SELECT max(high), min(low)
   FROM ohlcv
- WHERE interval = '1min' AND symbol = $1 AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ WHERE interval = '1min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
 """
-SQL_LIQ = """
-SELECT (extract(epoch FROM ts)::bigint / 60)::int, side, sum(notional_usd)
-  FROM liquidations_realtime
- WHERE symbol = $1 AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
- GROUP BY 1, 2
+SQL_CIERRES5 = """
+SELECT (extract(epoch FROM ts)::bigint / 60)::int, close
+  FROM ohlcv
+ WHERE interval = '1min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+   AND extract(epoch FROM ts)::bigint / 60 % 5 = 4
 """
-SQL_LIQ_COLA = """
-SELECT side, percentile_cont($4::float8) WITHIN GROUP (ORDER BY s)
-  FROM (SELECT side, extract(epoch FROM ts)::bigint / 300 b, sum(notional_usd) s
-          FROM liquidations_realtime
-         WHERE symbol = $1 AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
-         GROUP BY 1, 2) x
- GROUP BY side
+SQL_DELTA_OHLCV = """
+SELECT (extract(epoch FROM ts)::bigint / 300 * 5)::int, sum((2 * buy_volume - volume) * close)
+  FROM ohlcv
+ WHERE interval = '1min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ GROUP BY 1
+"""
+SQL_LIQ5 = """
+SELECT (extract(epoch FROM ts)::bigint / 60)::int, long_liq, short_liq
+  FROM liquidations
+ WHERE interval = '5min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
 """
 SQL_OI = """
 SELECT (extract(epoch FROM ts)::bigint / 60)::int, oi_close
   FROM open_interest
- WHERE symbol = $1 AND interval = '5min' AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
- ORDER BY ts
+ WHERE interval = '5min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
 """
 SQL_GRANDES = """
 SELECT (extract(epoch FROM ts)::bigint / 60)::int, venue, compra, usd::float8
   FROM orderflow_grande
- WHERE symbol = $1 AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ WHERE symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+"""
+SQL_GRANDES_COLA = """
+SELECT (extract(epoch FROM ts)::bigint / 60)::int, compra, sum(usd)::float8
+  FROM orderflow_grande
+ WHERE symbol = $1 AND right(venue, 5) <> '_spot'
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ GROUP BY 1, 2
+"""
+# por bloque de 5 min y exchange: el `combined` se descarta en Python (_por_bloque), donde lo ve la prueba
+SQL_FLUJO_PERP = """
+SELECT (extract(epoch FROM ts)::bigint / 300 * 5)::int, exchange, sum(buy_vol_usd - sell_vol_usd)
+  FROM futures_trades_agg
+ WHERE interval = '1min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ GROUP BY 1, 2
+"""
+SQL_FLUJO_CONT = """
+SELECT (extract(epoch FROM ts)::bigint / 300 * 5)::int, exchange, sum(buy_vol_usd - sell_vol_usd)
+  FROM spot_trades_agg
+ WHERE interval = '1min' AND symbol = $1
+   AND ts >= to_timestamp($2::bigint * 60) AND ts < to_timestamp($3::bigint * 60)
+ GROUP BY 1, 2
 """
 
 
@@ -93,47 +128,106 @@ class Config:
 
 
 def nuevo() -> dict:
-    """El estado (va a bot_estado): el ultimo valor de cada senal, el enfriamiento, los emitidos de la ultima hora, lo
-    que lleva el periodo del resumen y los avisos de 24 h ([t, enviada, tipo]) para /estado."""
-    return {"vivo": {}, "enfria": {}, "emitidos": [], "periodo": [], "resumen_t": None, "avisos": []}
+    """El estado (va a bot_estado): SI/NO de cada senal, el ultimo aviso de cada una, lo que espera al mensaje de su activo
+    ([t, senal, texto, lado]), la hora del ultimo mensaje por activo y los mensajes de 24 h ([t, enviado, «LIQ+OI»])."""
+    return {"vivo": {}, "enfria": {}, "pend": {}, "msg_t": {}, "avisos": []}
 
 
 def restaura(g) -> dict | None:
-    """Lo guardado, si se entiende; si no, None (se empieza de cero)."""
-    if not isinstance(g, dict) or not all(isinstance(g.get(k), d) for k, d in
-                                          (("vivo", dict), ("enfria", dict), ("emitidos", list), ("periodo", list), ("avisos", list))):
+    """Lo guardado, si se entiende; si no, None (se empieza de cero). Lo de R1 se entiende a medias: solo sus avisos."""
+    if not isinstance(g, dict):
         return None
-    return {"vivo": dict(g["vivo"]), "enfria": {str(k): float(v) for k, v in g["enfria"].items() if isinstance(v, (int, float))},
-            "emitidos": [float(t) for t in g["emitidos"] if isinstance(t, (int, float))],
-            "periodo": [list(x) for x in g["periodo"] if isinstance(x, list) and len(x) == 3],
-            "resumen_t": g["resumen_t"] if isinstance(g.get("resumen_t"), (int, float)) else None,
-            "avisos": [list(x) for x in g["avisos"] if isinstance(x, list) and len(x) == 3]}
+    num = (int, float)
+    d = {k: x if isinstance(x := g.get(k), dict) else {} for k in ("vivo", "enfria", "pend", "msg_t")}
+    return {"vivo": {str(k): v for k, v in d["vivo"].items() if isinstance(v, bool)},
+            "enfria": {str(k): float(v) for k, v in d["enfria"].items() if isinstance(v, num)},
+            "pend": {str(a): [list(x) for x in v if isinstance(x, list) and len(x) == 4] for a, v in d["pend"].items()
+                     if isinstance(v, list)},
+            "msg_t": {str(a): float(v) for a, v in d["msg_t"].items() if isinstance(v, num)},
+            "avisos": [list(x) for x in g.get("avisos") or [] if isinstance(x, list) and len(x) == 3 and isinstance(x[0], num)]}
 
 
-def cuenta(estado: dict, ahora_s: float, tipo: str, enviada: bool):
-    estado["avisos"] = [x for x in estado["avisos"] if ahora_s - x[0] < 86400] + [[ahora_s, enviada, tipo]]
+def cuenta(estado: dict, ahora_s: float, senales: list, enviado: bool):
+    estado["avisos"] = [x for x in estado["avisos"] if ahora_s - x[0] < 86400] + [[ahora_s, enviado, "+".join(senales)]]
+
+
+def por_senal(avisos: list) -> dict:
+    """Cuantas veces entro cada senal en un mensaje (para /estado)."""
+    n: dict = {}
+    for x in avisos:
+        for s in str(x[2]).split("+"):
+            n[s] = n.get(s, 0) + 1
+    return n
 
 
 # ---------- lectura ----------
-async def lee(db, activo: str, ahora: int, cache: dict, ahora_s: float) -> dict:
-    sym = f"{activo}USDT_PERP.A"
-    c = cache.get(activo)
-    if c is None or ahora_s - c["t"] >= CACHE_S:
-        r7 = await db.fetch(SQL_RANGO, sym, ahora - 7 * 1440, ahora)
-        cola = await db.fetch(SQL_LIQ_COLA, sym, ahora - 30 * 1440, ahora, LIQ_COLA)
-        oi = await db.fetch(SQL_OI, sym, ahora - 7 * 1440, ahora)
-        cambios = [abs(b[1] / a[1] - 1) * 100 for a, b in zip(oi, oi[1:], strict=False) if b[0] - a[0] == 5 and a[1]]
-        c = cache[activo] = {"t": ahora_s, "rango7": tuple(r7[0]) if r7 else (None, None),
-                             "liq_cola": {s: float(p) for s, p in cola if p is not None}, "oi_cola": _pctl(cambios, OI_COLA)}
-    return c | {"velas": await db.fetch(SQL_VELAS, sym, ahora - VELAS_LEIDAS, ahora),
-                "liq": await db.fetch(SQL_LIQ, sym, ahora - LIQ_VENTANA, ahora),
-                "oi": await db.fetch(SQL_OI, sym, ahora - 20, ahora),
-                "grandes": await db.fetch(SQL_GRANDES, activo, ahora - 2, ahora)}
-
-
 def _pctl(xs: list, q: float) -> float:
+    """El percentil q; sin historia, infinito (no se avisa de nada que no se pueda comparar)."""
     xs = sorted(xs)
-    return xs[min(len(xs) - 1, int(q * len(xs)))] if xs else 0.0
+    return xs[min(len(xs) - 1, int(q * len(xs)))] if xs else math.inf
+
+
+def _pctl0(xs: list, n: int, q: float) -> float:
+    """El percentil q de n casillas donde las que faltan valen 0 (bloque o minuto sin fila)."""
+    xs = [x for x in xs if x > 0]
+    if not xs:
+        return math.inf
+    xs = [0.0] * max(0, n - len(xs)) + sorted(xs)
+    return xs[min(len(xs) - 1, int(q * len(xs)))]
+
+
+def _por_bloque(filas) -> dict:
+    """{bloque: delta} sumando los exchanges SIN `combined` (= binance + bybit: sumarlo cuenta doble)."""
+    out: dict = {}
+    for b, ex, x in filas:
+        if ex != "combined":
+            out[int(b)] = out.get(int(b), 0.0) + float(x)
+    return out
+
+
+def _doi(oi: dict, px: dict, b: int) -> tuple[float, float] | None:
+    """(dOI, dln precio) del bloque que abre en b: oi_close de b frente al de b-5 y el cierre del minuto b+4 frente al b-1."""
+    xs = (oi.get(b), oi.get(b - 5), px.get(b + 4), px.get(b - 1))
+    if not all(xs):
+        return None
+    dp = math.log(xs[2] / xs[3])
+    return math.log(xs[0] / xs[1]) - dp, dp
+
+
+def _rng(filas) -> tuple:
+    return tuple(filas[0]) if filas else (None, None)
+
+
+async def _colas(db, activo: str, sym: str, dia: int) -> dict:
+    a30, n5 = dia - DIAS * 1440, DIAS * 288
+    liq = await db.fetch(SQL_LIQ5, sym, a30, dia)
+    gra = await db.fetch(SQL_GRANDES_COLA, activo, dia - DIAS_GRA * 1440, dia)
+    oi = {int(m): float(x) for m, x in await db.fetch(SQL_OI, sym, a30, dia)}
+    px = {int(m): float(x) for m, x in await db.fetch(SQL_CIERRES5, sym, a30, dia)}
+    doi = [abs(r[0]) for b in oi if (r := _doi(oi, px, b))]
+    perp = _por_bloque(await db.fetch(SQL_FLUJO_PERP, sym, a30, dia))
+    cont = _por_bloque(await db.fetch(SQL_FLUJO_CONT, activo, a30, dia))
+    ohl = [abs(float(x)) for _, x in await db.fetch(SQL_DELTA_OHLCV, sym, a30, dia)]
+    return {"liq": {"long": _pctl0([float(r[1]) for r in liq], n5, LIQ_Q), "short": _pctl0([float(r[2]) for r in liq], n5, LIQ_Q)},
+            "gra": {c: _pctl0([float(s) for _, cc, s in gra if bool(cc) is c], DIAS_GRA * 1440, GRA_Q) for c in (True, False)},
+            "oi": _pctl(doi, OI_Q),
+            "div_perp": _pctl([abs(x) for x in perp.values()], DIV_Q), "div_cont": _pctl([abs(x) for x in cont.values()], DIV_Q),
+            "abs_perp": _pctl(ohl, ABS_Q), "abs_cont": _pctl([abs(x) for x in cont.values()], ABS_Q)}
+
+
+async def lee(db, activo: str, ahora: int, cache: dict) -> dict:
+    """Las colas y el nivel de ayer se fijan a las 00:00Z; el tramo viejo del nivel de 7 d, cada hora; lo vivo, cada minuto.
+    b = el ultimo bloque de 5 min CERRADO (ts de apertura: [b, b + 5) se conoce a b + 5)."""
+    sym, c = f"{activo}USDT_PERP.A", cache.setdefault(activo, {})
+    dia, h, b = ahora // 1440 * 1440, ahora // 60 * 60, ahora // 5 * 5 - 5
+    if c.get("dia") != dia:
+        c.update(dia=dia, colas=await _colas(db, activo, sym, dia), ayer=_rng(await db.fetch(SQL_RANGO, sym, dia - 1440, dia)))
+    if c.get("h") != h:
+        c.update(h=h, viejo7=_rng(await db.fetch(SQL_RANGO, sym, h - 7 * 1440, h - 1440)))
+    return c | {"b": b, "velas": await db.fetch(SQL_VELAS, sym, ahora - VELAS_LEIDAS, ahora),
+                "liq": await db.fetch(SQL_LIQ5, sym, b, b + 5), "oi": await db.fetch(SQL_OI, sym, b - 5, b + 5),
+                "grandes": await db.fetch(SQL_GRANDES, activo, ahora - 1, ahora),
+                "perp": await db.fetch(SQL_FLUJO_PERP, sym, b, b + 5), "cont": await db.fetch(SQL_FLUJO_CONT, activo, b, b + 5)}
 
 
 def _serie(filas) -> tuple[dict, int] | None:
@@ -148,99 +242,130 @@ def _serie(filas) -> tuple[dict, int] | None:
     return out, max(f)
 
 
-def _usd(x: float) -> str:
-    return f"{x / 1e6:.2f} M USD" if x >= 1e6 else f"{x / 1e3:.0f} mil USD"
+def _atr(v: dict, i: int) -> float:
+    """La media del rango verdadero de las 14 velas de 15 min cerradas antes del minuto i."""
+    fin, trs = i // ATR_MIN * ATR_MIN, []
+    for t in range(fin - ATR_MIN * ATR_VELAS, fin, ATR_MIN):
+        if t - 1 not in v or t + ATR_MIN - 1 not in v:
+            return 0.0
+        ms, pc = [v[m] for m in range(t, t + ATR_MIN)], v[t - 1][2]
+        trs.append(max(pc, *(x[0] for x in ms)) - min(pc, *(x[1] for x in ms)))
+    return sum(trs) / len(trs)
 
 
-def _umbral(tabla: dict, activo: str) -> float:
-    return tabla.get(activo, tabla["SOL"])
+def _c(sen: str, clave: str, on: bool, lado: int | None, texto: str, registro: bool = False, enfria: int = ENFRIA_MIN):
+    return {"senal": sen, "clave": clave, "valor": bool(on), "lado": lado, "texto": texto, "registro": registro, "enfria": enfria}
 
 
-# ---------- senales: cada una da candidatos {clave, tipo, valor, lado, texto (None = no se avisa), no_desde} ----------
-def senales(d: dict, activo: str, p: dict, ahora: int) -> list[dict]:
-    out: list[dict] = []
-    # liquidaciones: la suma de 5 min de cada lado contra su cola de 30 d (con suelo)
-    for lado_liq, nombre, lado in (("long", "largos", -1), ("short", "cortos", 1)):
-        suma = sum(float(x[2]) for x in d["liq"] if x[1] == lado_liq)
-        um = max(d["liq_cola"].get(lado_liq, 0.0), _umbral(LIQ_SUELO, activo))
-        alto = suma >= um
-        out.append({"clave": f"{activo}|liq|{lado_liq}", "tipo": "liquidaciones", "valor": "alto" if alto else None, "lado": lado,
-                    "texto": f"{activo}: liquidaciones de {nombre}, {_usd(suma)} en {LIQ_VENTANA} min (su cola de 30 d:"
-                             f" {_usd(d['liq_cola'].get(lado_liq, 0.0))})" if alto else None})
-    # grandes: una operacion o el racimo de 1 min (mismo lado y mercado) por encima del umbral del activo
-    racimos: dict = {}
-    for m, venue, compra, usd in d["grandes"]:
-        k = (int(m), "contado" if str(venue).endswith("_spot") else "perpetuo", bool(compra))
-        suma, n = racimos.get(k, (0.0, 0))
-        racimos[k] = (suma + float(usd), n + 1)
-    for (m, mercado, compra), (suma, n) in sorted(racimos.items()):
-        if suma >= _umbral(GRANDE_USD, activo):
-            out.append({"clave": f"{activo}|grande|{mercado}|{int(compra)}", "tipo": "grande", "valor": m, "lado": 1 if compra else -1,
-                        "texto": f"{activo}: {'compra' if compra else 'venta'} grande en {mercado}, {_usd(suma)} en 1 min"
-                                 f" ({n} operacion{'es' if n > 1 else ''})"})
+# ---------- senales ----------
+def senales(d: dict, activo: str, ahora: int) -> tuple[list[dict], list[str]]:
+    """(candidatos, lineas de contexto). Un candidato: {senal, clave, valor (SI/NO), lado, texto (dos lineas con « / »),
+    registro (True: solo journal), enfria (min)}."""
+    out, ctx, co, b = [], [], d["colas"], d["b"]
+    # LIQ: el bloque [b, b + 5) por lado (sin fila = 0)
+    fila = next((r for r in d["liq"] if int(r[0]) == b), None)
+    for lado_liq, i, nombre, lado in (("long", 1, "largos", -1), ("short", 2, "cortos", 1)):
+        x = float(fila[i]) if fila else 0.0
+        out.append(_c("LIQ", f"LIQ|{lado_liq}", x > 0 and x >= co["liq"][lado_liq], lado,
+                      f"{activo}: {x / 1e6:.2f} M$ de {nombre} liquidados en 5 min, mas que el {LIQ_Q * 100:g} % de los bloques"
+                      " del ultimo mes. / Tras algo asi el precio se ha movido en 15 min casi el doble de lo normal; sin lado medido."))
+    # GRA: grandes de perpetuo del minuto cerrado, por lado; los de contado, solo registro
+    perp, cont = {True: 0.0, False: 0.0}, {True: [0.0, 0], False: [0.0, 0]}
+    for _, venue, compra, usd in d["grandes"]:
+        if str(venue).endswith("_spot"):
+            cont[bool(compra)][0] += float(usd)
+            cont[bool(compra)][1] += 1
+        else:
+            perp[bool(compra)] += float(usd)
+    for compra in (True, False):
+        x, que = perp[compra], "compra" if compra else "venta"
+        out.append(_c("GRA", f"GRA|{int(compra)}", x > 0 and x >= co["gra"][compra], 1 if compra else -1,
+                      f"{activo}: {x / 1e6:.2f} M$ de {que} agresiva en operaciones grandes de perpetuo en 1 min, de los minutos"
+                      " mas cargados de 10 dias. / Dice quien empuja ahora; despues hay mas movimiento del normal, sin lado medido."))
+        usd, n = cont[compra]
+        out.append(_c("GRA_CONT", f"GRA_CONT|{int(compra)}", n > 0, 1 if compra else -1,
+                      f"{activo}: {n} operaciones grandes de {que} de contado en 1 min ({usd / 1e6:.2f} M$)", registro=True))
+    # DIV: contado y perpetuo del bloque, sin `combined`
+    dc, dpp = _por_bloque(d["cont"]).get(b, 0.0), _por_bloque(d["perp"]).get(b, 0.0)
+    out.append(_c("DIV", "DIV", dc * dpp < 0 and abs(dc) >= co["div_cont"] and abs(dpp) >= co["div_perp"], None,
+                  f"{activo}: el contado {'compra' if dc > 0 else 'vende'} {abs(dc) / 1e6:.2f} M$ en 5 min y el perpetuo hace lo"
+                  f" contrario ({abs(dpp) / 1e6:.2f} M$). / Los dos mercados tiran en sentidos opuestos; despues hay algo mas de"
+                  " movimiento, sin lado medido."))
     s = _serie(d["velas"])
-    if s is None or ahora - s[1] > 3:  # sin velas frescas no se juzga el precio (el centinela ya avisa del retraso)
-        return out + _avance(activo, p)
+    if s is None or ahora - s[1] > 3 or s[1] < b + 4:  # sin velas frescas no se juzga el precio (el centinela avisa del retraso)
+        return out, ctx
     v, u = s
-    c = v[u][2]
-    trs = [max(v[m][0], v[m - 1][2]) - min(v[m][1], v[m - 1][2]) for m in range(u - ATR_VELAS + 1, u + 1) if m - 1 in v]
-    atr = sum(trs) / len(trs) if trs else 0.0
-    if atr <= 0:
-        return out + _avance(activo, p)
-    # absorcion: |delta agresivo de 5 min| en su cola de 24 h con el precio quieto (menos de ABS_QUIETO_ATR)
-    dl = {m: (2 * x[3] - x[4]) * x[2] for m, x in v.items()}
-    d5 = {m: sum(dl[k] for k in range(m - ABS_VENTANA + 1, m + 1)) for m in v if m - ABS_VENTANA in v}
-    if u in d5 and u - ABS_VENTANA in v:
-        ahora_d = d5[u]
-        um = max(_pctl([abs(x) for m, x in d5.items() if m <= u - ABS_VENTANA], ABS_COLA), _umbral(ABS_SUELO, activo))
-        mov = c - v[u - ABS_VENTANA][2]
-        hay = abs(ahora_d) >= um and abs(mov) <= ABS_QUIETO_ATR * atr
-        sg = 1 if ahora_d > 0 else -1
-        out.append({"clave": f"{activo}|absorcion", "tipo": "absorcion", "valor": sg if hay else None, "lado": -sg,
-                    "texto": f"{activo}: absorcion, {'compras' if sg > 0 else 'ventas'} agresivas de {_usd(abs(ahora_d))} en"
-                             f" {ABS_VENTANA} min y el precio no las sigue ({mov:+.4g}, {mov / atr:+.1f} ATR): hay"
-                             f" {'vendedor' if sg > 0 else 'comprador'} pasivo" if hay else None})
-    # OI: el cambio de la ultima barra de 5 min en su cola de 7 d, con el signo del precio de esa barra
-    oi = [(int(m), float(x)) for m, x in d["oi"]]
-    if len(oi) >= 2 and oi[-1][0] - oi[-2][0] == 5 and oi[-2][1] > 0:
-        b, pct = oi[-1][0], (oi[-1][1] / oi[-2][1] - 1) * 100
-        fin, ini = v.get(min(b + 4, u)), v.get(b - 1)
-        dp = (fin[2] - ini[2]) if fin and ini else 0.0
-        if abs(pct) >= max(d["oi_cola"], OI_SUELO_PCT) and dp:
-            clase, lado = {(1, 1): ("entran largos", 1), (1, -1): ("entran cortos", -1), (-1, 1): ("salen cortos", 1),
-                           (-1, -1): ("salen largos", -1)}[(1 if pct > 0 else -1, 1 if dp > 0 else -1)]
-            out.append({"clave": f"{activo}|oi", "tipo": "oi", "valor": f"{clase}@{b}", "lado": lado,
-                        "texto": f"{activo}: interes abierto {pct:+.2f} % en 5 min con el precio {'subiendo' if dp > 0 else 'bajando'}:"
-                                 f" {clase}"})
-    # niveles: maximos y minimos del dia, de 24 h y de 7 d, SIN la ultima vela (la que puede romperlos)
-    previas = [m for m in v if u - 1440 <= m < u]
-    hoy = [m for m in previas if m >= u // 1440 * 1440]
-    hi7, lo7 = d["rango7"]
-    for es_max in (True, False):
-        f = max if es_max else min
-        k = 0 if es_max else 1
-        cand = [("7 d", f([x for x in (hi7 if es_max else lo7, f(v[m][k] for m in previas) if previas else None) if x is not None],
-                          default=None)),
-                ("24 h", f((v[m][k] for m in previas), default=None)), ("dia", f((v[m][k] for m in hoy), default=None))]
-        vistos: list = []
-        for nombre, nivel in cand:
-            if nivel is None or any(abs(nivel - x) <= MISMO_NIVEL_ATR * atr for x in vistos):
+    i = b + 5  # el cierre del bloque
+    atr = _atr(v, i)
+    if atr <= 0 or b - 16 not in v:
+        return out, ctx
+    c5 = {k: v[k + 4][2] for k in range(b - 15, b + 1, 5)}
+    # OI: neto del precio; el estado sale del signo de dOI y del precio
+    oi = {int(m): float(x) for m, x in d["oi"]}
+    r = _doi(oi, {m: x[2] for m, x in v.items()}, b)
+    if r:
+        doi, dp = r
+        clase, lado = {(1, 1): ("entran largos", 1), (1, -1): ("entran cortos", -1), (-1, 1): ("salen cortos", 1),
+                       (-1, -1): ("salen largos", -1)}.get((1 if doi > 0 else -1, 1 if dp > 0 else -1 if dp < 0 else 0), ("", 0))
+        out.append(_c("OI", f"OI|{lado}", bool(lado) and abs(doi) >= co["oi"], lado,
+                      f"{activo}: el interes abierto {'sube' if doi > 0 else 'baja'} {abs(doi) * 100:.2f} % en 5 min (neto del"
+                      f" precio) con el precio {'subiendo' if dp > 0 else 'bajando'}: {clase}. / Cambio de los mayores del mes;"
+                      " despues hay mas movimiento del normal, sin lado medido."))
+    # ABS (solo registro): perpetuo (ohlcv) y contado (sin combined), con el precio que no sigue al delta
+    mov = c5[b] - v[b - 1][2]
+    dperp = sum((2 * v[m][3] - v[m][4]) * v[m][2] for m in range(b, b + 5))
+    for mercado, dl, um in (("perpetuo", dperp, co["abs_perp"]), ("contado", dc, co["abs_cont"])):
+        sg = 1 if dl > 0 else -1
+        out.append(_c("ABS", f"ABS|{mercado}|{sg}", dl != 0 and abs(dl) >= um and sg * mov <= ABS_QUIETO_ATR * atr, -sg,
+                      f"{activo}: absorcion en {mercado}, delta {dl / 1e6:+.2f} M$ en 5 min y el precio {mov / atr:+.2f} ATR",
+                      registro=True))
+    # niveles: ayer (dia UTC anterior), 24 h = [i-1440, i-60), 7 dias = [i-10080, i-60); RNG4 = [i-240, i-30), solo registro
+    h24 = [v[m] for m in range(i - 1440, i - 60) if m in v]
+    hasta60 = [v[m] for m in v if m < i - 60]
+    hi7, lo7 = d["viejo7"]
+    lv = {"ayer": d["ayer"], "24 h": (max((x[0] for x in h24), default=None), min((x[1] for x in h24), default=None)),
+          "7 dias": (max([x for x in (hi7, max((x[0] for x in hasta60), default=None)) if x is not None], default=None),
+                     min([x for x in (lo7, min((x[1] for x in hasta60), default=None)) if x is not None], default=None))}
+    r4 = [v[m] for m in range(i - 240, i - 30) if m in v]
+    rng4 = (max(x[0] for x in r4), min(x[1] for x in r4)) if r4 else (None, None)
+    c, mg = v[u][2], RUPTURA_ATR * atr
+    for k, es_max in ((0, True), (1, False)):
+        sg, vistos = 1 if es_max else -1, []
+        for nombre in NIVELES + ("RNG4",):
+            nivel = rng4[k] if nombre == "RNG4" else lv[nombre][k]
+            if nivel is None:
                 continue
-            vistos.append(nivel)
-            dist = (nivel - c) if es_max else (c - nivel)  # >0: el nivel aun no se ha cruzado
-            estado = "roto" if dist < -RUPTURA_ATR * atr else "cerca" if dist <= CERCA_ATR * atr else "lejos"
-            que = "maximo" if es_max else "minimo"
-            clave = f"{activo}|nivel|{que}|{nombre}"
-            if estado == "roto":
-                out.append({"clave": clave, "tipo": "ruptura", "valor": estado, "lado": 1 if es_max else -1,
-                            "texto": f"{activo}: ruptura del {que} de {nombre} ({nivel:g}), cierre de 1 min en {c:g}"
-                                     f" ({abs(dist) / atr:.1f} ATR mas alla)"})
-            else:
-                out.append({"clave": clave, "tipo": "cerca", "valor": estado, "lado": -1 if es_max else 1, "no_desde": ("roto",),
-                            "texto": None if estado == "lejos" else
-                            f"{activo}: {'resistencia' if es_max else 'soporte'} cerca, {que} de {nombre} en {nivel:g},"
-                            f" a {dist / atr:.1f} ATR ({abs(dist) / c * 100:.2f} %) del precio {c:g}"})
-    return out + _avance(activo, p)
+            if nombre != "RNG4":
+                if any(abs(float(nivel) - x) <= MISMO_NIVEL_ATR * atr for x in vistos):
+                    continue
+                vistos.append(nivel := float(nivel))
+            fuera = [sg * (c5[x] - nivel) > mg for x in (b - 15, b - 10, b - 5)]
+            dentro = [sg * (c5[x] - nivel) <= 0 for x in (b - 15, b - 10, b - 5)]
+            rompe = sg * (c5[b] - nivel) > mg and not any(fuera) and any(dentro)
+            que = "por encima del maximo" if es_max else "por debajo del minimo"
+            dist = abs(c5[b] - nivel) / atr
+            if nombre == "RNG4":
+                out.append(_c("RNG4", f"RNG4|{sg}", rompe, sg, f"{activo}: cierre de 5 min {que} del rango de 4 h ({nivel:g}),"
+                                                                f" a {dist:.2f} ATR", registro=True, enfria=ENFRIA_RUPTURA_MIN))
+                continue
+            out.append(_c("RUPTURA", f"RUPTURA|{nombre}|{sg}", rompe, sg,
+                          f"{activo}: cierre de 5 min {que} de {nombre} ({nivel:g}), a {dist:.2f} ATR. / Casi la mitad de estas"
+                          " rupturas vuelve a cerrar dentro en 15 min; sin lado medido.", enfria=ENFRIA_RUPTURA_MIN))
+            cerca = sg * (nivel - c) / atr
+            if 0 <= cerca <= CERCA_ATR:
+                ctx.append(f"{'Maximo' if es_max else 'Minimo'} de {nombre} en {nivel:g}, a {cerca:.2f} ATR.")
+    return out, ctx
+
+
+# ---------- antiruido y mensaje ----------
+def _decide(cand: dict, estado: dict, ahora_s: float, activo: str) -> bool:
+    """I18: aviso = el estado pasa de NO a SI y han pasado >= `enfria` min del anterior del mismo activo, senal y lado."""
+    k = f"{activo}|{cand['clave']}"
+    prev, estado["vivo"][k] = estado["vivo"].get(k, False), cand["valor"]
+    if not cand["valor"] or prev or ahora_s - estado["enfria"].get(k, -math.inf) < cand["enfria"] * 60:
+        return False
+    estado["enfria"][k] = ahora_s
+    return True
 
 
 def _r(p: dict) -> float | None:
@@ -250,84 +375,40 @@ def _r(p: dict) -> float | None:
     return (m - e) * lado / abs(e - s)
 
 
-def _avance(activo: str, p: dict) -> list[dict]:
-    """El avance en R (entrada, stop y objetivo de Bybit): se avisa al cruzar un hito; la primera lectura solo lo fija."""
-    r = _r(p)
-    if r is None:
-        return []
-    tramo = max((h for h in R_HITOS if r >= h), default=None)
-    e, s, m, o, lado = p["entrada"], p["stop"], p["marca"], p.get("objetivo"), p["lado"]
-    obj = f", objetivo {o:g} a {(o - m) * lado / abs(e - s):.1f} R" if o else ""
-    que = f"{tramo:+.1f} R" if tramo is not None else f"por debajo de {R_HITOS[0]:+.1f} R"
-    return [{"clave": f"{activo}|avance", "tipo": "avance", "valor": "bajo" if tramo is None else tramo,
-             "lado": lado if r > 0 else -lado, "no_desde": (None,),
-             "texto": f"{activo} {'largo' if lado > 0 else 'corto'}: {que} (precio {m:g}; entrada {e:g}, stop {s:g}{obj})"}]
-
-
-def _pie(lado: int | None, p: dict, activo: str) -> str:
-    pos = "LARGO" if p["lado"] > 0 else "CORTO"
-    r = _r(p)
-    ahora = f" · ahora {r:+.2f} R" if r is not None else ""
-    if not lado:
-        return f"tu {pos} en {activo}{ahora}"
-    return f"{'A FAVOR' if lado * p['lado'] > 0 else 'EN CONTRA'} de tu {pos} en {activo}{ahora}"
-
-
-# ---------- antiruido ----------
-def _decide(cand: dict, estado: dict, ahora_s: float) -> str | None:
-    """None: no se avisa · 'emite' · 'contiene' (pasa del tope por hora: al resumen). Solo al cambiar de estado; el que cae
-    en el enfriamiento NO pisa el estado, para que el cambio siga pendiente cuando acabe."""
-    vivo, k = estado["vivo"], cand["clave"]
-    prev = vivo.get(k)
-    if cand["valor"] == prev:
-        return None
-    if cand["texto"] is None or prev in cand.get("no_desde", ()):
-        vivo[k] = cand["valor"]
-        return None
-    ke = f"{cand['tipo']}|{k}"
-    if ahora_s - estado["enfria"].get(ke, -math.inf) < ENFRIA[cand["tipo"]] * 60:
-        return None
-    vivo[k], estado["enfria"][ke] = cand["valor"], ahora_s
-    estado["emitidos"] = [t for t in estado["emitidos"] if ahora_s - t < 3600]
-    if len(estado["emitidos"]) >= TOPE_HORA:
-        return "contiene"
-    estado["emitidos"].append(ahora_s)
-    return "emite"
+def _mensaje(activo: str, p: dict, pend: list, ctx: list) -> str:
+    pos, r = "LARGO" if p["lado"] > 0 else "CORTO", _r(p)
+    lineas = [f"{activo} · seguimiento de tu {pos}" + (f" ({r:+.2f} R)" if r is not None else "")]
+    for t, _, texto, lado in pend:
+        uno, _, dos = texto.partition(" / ")
+        tag = "" if not lado else ("A FAVOR" if lado * p["lado"] > 0 else "EN CONTRA") + f" de tu {pos} · "
+        lineas += [f"{int(t // 60) // 60 % 24:02d}:{int(t // 60) % 60:02d}Z {tag}{uno}", f"  {dos}"]
+    return "\n".join(lineas + [f"Contexto: {x}" for x in ctx])
 
 
 async def tic(db, posiciones: list, estado: dict, cache: dict, ahora_s: float) -> list[dict]:
-    """Los avisos de este minuto: [{tipo, activo, lado, texto, contenido}]. Sin posicion abierta no se lee ni se calcula
-    nada (y lo vivo se olvida: una posicion nueva empieza de cero)."""
+    """Lo de este minuto: [{tipo: «mensaje», activo, senales, texto}] (lo que iria al dueno) y [{tipo: «registro», senal,
+    activo, texto}] (solo journal). Sin posicion abierta no se lee ni se calcula nada y lo de cada activo se olvida."""
     por_activo = {}
     for p in posiciones or []:
         sym = str(p.get("symbol") or "")
         if sym.endswith("USDT") and p.get("lado") in (1, -1):
             por_activo.setdefault(sym[:-4], p)
-    estado["vivo"] = {k: x for k, x in estado["vivo"].items() if k.split("|")[0] in por_activo}
-    if not por_activo:
-        estado["periodo"], estado["resumen_t"] = [], None
-        return []
+    for k in ("vivo", "enfria"):
+        estado[k] = {x: y for x, y in estado[k].items() if x.split("|")[0] in por_activo}
+    for k in ("pend", "msg_t"):
+        estado[k] = {x: y for x, y in estado[k].items() if x in por_activo}
     ahora, out = int(ahora_s // 60), []
     for activo, p in por_activo.items():
-        d = await lee(db, activo, ahora, cache, ahora_s)
-        for cand in senales(d, activo, p, ahora):
-            que = _decide(cand, estado, ahora_s)
-            if que is None:
+        cands, ctx = senales(await lee(db, activo, ahora, cache), activo, ahora)
+        for cand in cands:
+            if not _decide(cand, estado, ahora_s, activo):
                 continue
-            out.append({"tipo": cand["tipo"], "activo": activo, "lado": cand["lado"], "contenido": que == "contiene",
-                        "texto": f"{cand['texto']}\n{_pie(cand['lado'], p, activo)}"})
-            estado["periodo"].append([cand["tipo"], activo, que == "contiene"])
-    if estado["resumen_t"] is None:
-        estado["resumen_t"] = ahora_s
-    elif ahora_s - estado["resumen_t"] >= RESUMEN_MIN * 60:
-        if estado["periodo"]:
-            n: dict = {}
-            for t, a, _ in estado["periodo"]:
-                n[f"{a} {t}"] = n.get(f"{a} {t}", 0) + 1
-            cont = sum(1 for x in estado["periodo"] if x[2])
-            out.append({"tipo": "resumen", "activo": None, "lado": None, "contenido": False,
-                        "texto": f"seguimiento, ultimos {RESUMEN_MIN} min: {len(estado['periodo'])} avisos ("
-                                 + ", ".join(f"{k} {x}" for k, x in n.items()) + ")"
-                                 + (f"\n{cont} no enviados por el tope de {TOPE_HORA} por hora" if cont else "")})
-        estado["periodo"], estado["resumen_t"] = [], ahora_s
+            if cand["registro"]:
+                out.append({"tipo": "registro", "senal": cand["senal"], "activo": activo, "texto": cand["texto"]})
+            else:
+                estado["pend"].setdefault(activo, []).append([ahora_s, cand["senal"], cand["texto"], cand["lado"]])
+        pend = estado["pend"].get(activo)
+        if pend and ahora_s - estado["msg_t"].get(activo, -math.inf) >= MENSAJE_MIN * 60:
+            out.append({"tipo": "mensaje", "activo": activo, "senales": [x[1] for x in pend], "texto": _mensaje(activo, p, pend, ctx)})
+            estado["pend"][activo], estado["msg_t"][activo] = [], ahora_s
     return out

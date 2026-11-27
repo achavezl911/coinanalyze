@@ -1,19 +1,23 @@
-"""SEGUIMIENTO R1: con una posicion abierta, el bot sigue SU activo en vivo y avisa solo cuando cambia algo (en sombra).
+"""SEGUIMIENTO R2: el seguimiento de una posicion abierta con la especificacion MEDIDA de Fable I18 (en sombra).
 
-Pedido del dueno (11-26): liquidaciones, absorciones, participantes grandes, rupturas y niveles cercanos mientras tiene una
-operacion abierta. Todo con dobles: minutos sinteticos de SOL y una posicion CORTO inventada; ni red ni filas del dueno.
+I18 (entregas/fable/fable-i18, 08-18..11-26, dos mitades y nulo emparejado): ninguna senal da DIRECCION, casi todas anuncian
+MAS MOVIMIENTO en 15 min y el precio no respeta ningun nivel mas que una linea al azar. Todo con dobles: minutos sinteticos
+de SOL y una posicion CORTO inventada; ni red ni filas del dueno.
 """
 
 from __future__ import annotations
 
 import math
 
+from app.bot import centinela as cen
 from app.bot import seguimiento as seg
 from app.bot import servicio as sv
 
-M0 = 29_000_000 // 1440 * 1440 + 720  # un mediodia UTC: el maximo del dia existe
+M0 = 29_000_000 // 1440 * 1440 + 720  # un mediodia UTC, multiplo de 5: el bloque [M0-5, M0) acaba de cerrar
 CORTO = {"clave": "SOLUSDT:Sell", "symbol": "SOLUSDT", "lado": -1, "entrada": 100.5, "marca": 100.0, "stop": 102.5,
          "objetivo": 96.5, "cantidad": 10.0}
+LIQ_HIST = [(M0 - 2000 - 5 * k, 1e6, 1e6) for k in range(100)]  # 100 bloques de 1 M$ en 30 d: el p99.5 es 1 M$
+GRA_HIST = [(M0 - 3000 - k, "binance_usdm", c, 1e6) for k in range(20) for c in (True, False)]  # p99.9 de 10 d: 1 M$
 
 
 def velas(ahora: int, cambia: dict | None = None) -> dict:
@@ -26,26 +30,60 @@ def velas(ahora: int, cambia: dict | None = None) -> dict:
     return out
 
 
+def plano(m: int, c: float, buy: float = 500.0) -> tuple:
+    return (c + 0.02, c - 0.02, c, buy, 1000.0)
+
+
 class Base:
-    """La base de 140 en dobles: cada SELECT del modulo contesta lo que el escenario dice; se cuentan las lecturas."""
+    """La base de 140 en dobles: cada SELECT contesta lo que el escenario dice; se cuentan las lecturas. Contesta tambien
+    las consultas de R1 (main) para que las pruebas caigan por lo que el codigo viejo HACE, no por un nombre que falta."""
 
     def __init__(self, ahora: int, **esc):
         self.ahora, self.lecturas, self.eventos = ahora, [], []
-        self.esc = {"velas": velas(ahora), "liq": [], "grandes": [], "liq_cola": [("long", 200_000.0), ("short", 200_000.0)],
-                    "rango7": [(130.0, 70.0)], "oi": [(m, 1e6) for m in range(ahora - 10080, ahora, 5)]} | esc
+        self.esc = {"velas": velas(ahora), "liq5": [], "grandes": [], "rango7": (130.0, 70.0), "perp": [], "cont": [],
+                    "oi": [(m, 1e6) for m in range(ahora - 43200, ahora, 5)]} | esc
+
+    def _es(self, sql, nombre):
+        return sql is getattr(seg, nombre, object())
 
     async def fetch(self, sql, *a):
         self.lecturas.append(sql)
-        e = self.esc
-        if sql is seg.SQL_VELAS:
-            return [(m, *x) for m, x in sorted(e["velas"].items()) if a[1] <= m < a[2]]
-        if sql is seg.SQL_LIQ:
-            return [x for x in e["liq"] if a[1] <= x[0] < a[2]]
-        if sql is seg.SQL_GRANDES:
-            return [x for x in e["grandes"] if a[1] <= x[0] < a[2]]
-        if sql is seg.SQL_OI:
+        e, v = self.esc, self.esc["velas"]
+        if self._es(sql, "SQL_VELAS"):
+            return [(m, *x) for m, x in sorted(v.items()) if a[1] <= m < a[2]]
+        if self._es(sql, "SQL_RANGO"):
+            d = [x for m, x in v.items() if a[1] <= m < a[2]]
+            return [(max(x[0] for x in d), min(x[1] for x in d))] if d else [e["rango7"]]
+        if self._es(sql, "SQL_OI"):
             return [x for x in e["oi"] if a[1] <= x[0] < a[2]]
-        return {seg.SQL_LIQ_COLA: e["liq_cola"], seg.SQL_RANGO: e["rango7"]}[sql]
+        if self._es(sql, "SQL_GRANDES"):
+            return [x for x in e["grandes"] if a[1] <= x[0] < a[2]]
+        # ---- R2 ----
+        if self._es(sql, "SQL_LIQ5"):
+            return [x for x in e["liq5"] if a[1] <= x[0] < a[2]]
+        if self._es(sql, "SQL_CIERRES5"):
+            return [(m, x[2]) for m, x in sorted(v.items()) if m % 5 == 4 and a[1] <= m < a[2]]
+        if self._es(sql, "SQL_GRANDES_COLA"):
+            n: dict = {}
+            for m, venue, compra, usd in e["grandes"]:
+                if a[1] <= m < a[2] and not venue.endswith("_spot"):
+                    n[(m, compra)] = n.get((m, compra), 0.0) + usd
+            return [(m, c, s) for (m, c), s in n.items()]
+        if self._es(sql, "SQL_FLUJO_PERP") or self._es(sql, "SQL_FLUJO_CONT"):
+            filas = e["perp"] if self._es(sql, "SQL_FLUJO_PERP") else e["cont"]
+            return [x for x in filas if a[1] <= x[0] < a[2]]
+        if self._es(sql, "SQL_DELTA_OHLCV"):
+            n = {}
+            for m, x in v.items():
+                if a[1] <= m < a[2]:
+                    n[m // 5 * 5] = n.get(m // 5 * 5, 0.0) + (2 * x[3] - x[4]) * x[2]
+            return sorted(n.items())
+        # ---- R1 (main): liquidations_realtime por minuto y lado, y su cola ----
+        if self._es(sql, "SQL_LIQ"):
+            return [(b, lado, x) for b, lg, sh in e["liq5"] if a[1] <= b < a[2] for lado, x in (("long", lg), ("short", sh)) if x]
+        if self._es(sql, "SQL_LIQ_COLA"):
+            return [("long", 1e6), ("short", 1e6)]
+        raise AssertionError(f"consulta sin doble: {sql[:80]}")
 
     async def execute(self, sql, *a):
         self.eventos.append((sql, a))
@@ -56,89 +94,139 @@ async def tic(base: Base, estado: dict, cache: dict, minuto: int, posiciones=(CO
     return await seg.tic(base, list(posiciones), estado, cache, minuto * 60 + 20)
 
 
-def de(evs: list[dict], tipo: str) -> list[dict]:
-    return [x for x in evs if x["tipo"] == tipo]
+def mensajes(evs: list[dict]) -> list[dict]:
+    """Lo que llegaria al dueno: todo lo que no es solo registro."""
+    return [x for x in evs if x["tipo"] != "registro"]
 
 
-async def test_a_una_rafaga_de_liquidaciones_de_largos_da_UN_evento_y_no_se_repite_en_el_enfriamiento():
-    b, estado, cache = Base(M0, liq=[(M0 - 2, "long", 600_000.0)]), seg.nuevo(), {}
-    ev = de(await tic(b, estado, cache, M0), "liquidaciones")
-    assert len(ev) == 1, ev
-    assert ev[0]["lado"] == -1 and "largos" in ev[0]["texto"] and "A FAVOR" in ev[0]["texto"], ev
-    assert len(ev[0]["texto"].split("\n")) <= 2
-    for m in (M0 + 1, M0 + 2, M0 + 3):  # sigue dentro de la ventana de 5 min: el estado no cambia
-        assert not de(await tic(b, estado, cache, m), "liquidaciones")
-    b.esc["liq"] = []
-    assert not de(await tic(b, estado, cache, M0 + 8), "liquidaciones")
-    b.esc["liq"] = [(M0 + 9, "long", 900_000.0)]  # otra rafaga dentro del enfriamiento: callada
-    assert not de(await tic(b, estado, cache, M0 + 10), "liquidaciones")
-    b.esc["liq"] = [(M0 + 30, "long", 900_000.0)]  # pasado el enfriamiento, vuelve a avisar
-    assert len(de(await tic(b, estado, cache, M0 + 31), "liquidaciones")) == 1
+def registro(evs: list[dict]) -> set:
+    return {x.get("senal") for x in evs if x["tipo"] == "registro"}
 
 
-async def test_a_bis_por_debajo_de_su_cola_no_avisa():
-    b = Base(M0, liq=[(M0 - 2, "long", 150_000.0)])
-    assert not de(await tic(b, seg.nuevo(), {}, M0), "liquidaciones")
+def textos(evs: list[dict]) -> str:
+    return "\n".join(x["texto"] for x in mensajes(evs))
 
 
-async def test_b_delta_agresivo_grande_con_el_precio_quieto_es_absorcion_con_su_lado():
+# ---------- (a) OI: el cambio se mide NETO del precio ----------
+async def test_a_un_oi_que_solo_sube_por_el_precio_no_es_entran_largos():
+    cambia = {M0 - 6: plano(M0 - 6, 100.0)} | {m: plano(m, 100.5) for m in range(M0 - 5, M0)}  # el precio +0.5 % en el bloque
+    oi = [(m, 1e6) for m in range(M0 - 43200, M0 - 5, 5)] + [(M0 - 5, 1.005e6)]  # oi_close en USD: +0.5 % por el precio
+    ev = await tic(Base(M0, velas=velas(M0, cambia), oi=oi), seg.nuevo(), {}, M0)
+    t = textos(ev)
+    assert "entran largos" not in t and "interes abierto" not in t, t
+
+
+async def test_a_bis_oi_neto_del_precio_da_el_estado_por_los_dos_signos():
+    cambia = {M0 - 6: plano(M0 - 6, 100.0)} | {m: plano(m, 99.95) for m in range(M0 - 5, M0)}
+    oi = [(m, 1e6) for m in range(M0 - 43200, M0 - 5, 5)] + [(M0 - 5, 1.01e6)]
+    t = textos(await tic(Base(M0, velas=velas(M0, cambia), oi=oi), seg.nuevo(), {}, M0))
+    assert "el interes abierto sube" in t and "precio bajando: entran cortos" in t and "sin lado medido" in t, t
+    linea = next(x for x in t.split("\n") if "interes abierto" in x)
+    assert "A FAVOR" in linea, linea  # entran cortos: a favor de un CORTO
+
+
+# ---------- (b) liq5m y oi5m: el bloque cuenta cuando ha CERRADO ----------
+async def test_b_un_bloque_de_5_min_abierto_no_cuenta_y_al_cerrar_si():
+    liq = LIQ_HIST + [(M0, 1.5e6, 0.0)]  # ts de APERTURA M0: el bloque se conoce a M0+5
+    b, estado, cache = Base(M0 + 3, liq5=liq), seg.nuevo(), {}
+    assert "liquid" not in textos(await tic(b, estado, cache, M0 + 3))
+    t = textos(await tic(b, estado, cache, M0 + 5))
+    assert "1.50 M$ de largos liquidados en 5 min" in t, t
+
+
+async def test_b_bis_el_oi_del_bloque_abierto_no_cuenta():
+    oi = [(m, 1e6) for m in range(M0 - 43200, M0, 5)] + [(M0, 1.05e6)]
+    # el bloque cerrado, sin cambio de OI ni de precio; el abierto [M0, M0+5), con el precio y el OI subiendo (main lo avisa)
+    quieto = velas(M0 + 3, {m: plano(m, 100.0) for m in range(M0 - 15, M0)} | {m: plano(m, 100.3) for m in range(M0, M0 + 3)})
+    t = textos(await tic(Base(M0 + 3, oi=oi, velas=quieto), seg.nuevo(), {}, M0 + 3))
+    assert "interes abierto" not in t, t
+
+
+# ---------- (c) el exchange `combined` no se suma con los demas ----------
+async def test_c_div_no_suma_combined_con_binance_y_bybit():
+    hist_c = [(M0 - 1000 - 5 * k, "binance", 1e5 if k % 2 else -1e5) for k in range(60)]
+    hist_p = [(M0 - 1000 - 5 * k, "binance", 1e5 if k % 2 else -1e5) for k in range(60)]
+    cont = hist_c + [(M0 - 5, "binance", 3e5), (M0 - 5, "bybit", 2e5), (M0 - 5, "combined", 5e5)]
+    perp = hist_p + [(M0 - 5, "binance", -4e5), (M0 - 5, "combined", -4e5)]
+    t = textos(await tic(Base(M0, cont=cont, perp=perp), seg.nuevo(), {}, M0))
+    assert "el contado compra 0.50 M$ en 5 min y el perpetuo hace lo contrario (0.40 M$)" in t, t
+
+
+# ---------- (d) absorcion, grandes de contado y rango de 4 h: solo registro ----------
+async def test_d_absorcion_y_grande_de_contado_no_avisan_solo_registro():
     cambia = {m: (100.05, 99.95, 100.0, 900.0 if m >= M0 - 5 else 500.0, 1000.0) for m in range(M0 - 6, M0)}  # precio quieto
-    ev = de(await tic(Base(M0, velas=velas(M0, cambia)), seg.nuevo(), {}, M0), "absorcion")
-    assert len(ev) == 1, ev
-    assert ev[0]["lado"] == -1 and "compras" in ev[0]["texto"] and "A FAVOR" in ev[0]["texto"], ev
-    # el mismo delta con el precio subiendo detras NO es absorcion
-    sube = {m: (100.0 + (m - M0 + 6) * 0.6 + 0.05, 99.9 + (m - M0 + 6) * 0.6, 100.0 + (m - M0 + 6) * 0.6, 900.0, 1000.0)
-            for m in range(M0 - 5, M0)}
-    assert not de(await tic(Base(M0, velas=velas(M0, sube)), seg.nuevo(), {}, M0), "absorcion")
+    b = Base(M0, velas=velas(M0, cambia), grandes=[(M0 - 1, "coinbase_spot", False, 1.2e6)])
+    ev = await tic(b, seg.nuevo(), {}, M0)
+    t = textos(ev)
+    assert "absorcion" not in t and "contado" not in t, t
+    assert {"ABS", "GRA_CONT"} <= registro(ev), ev
 
 
-async def test_c_una_operacion_grande_da_grande_con_lado_y_mercado():
-    b = Base(M0, grandes=[(M0 - 1, "binance_usdm", True, 1_500_000.0), (M0 - 1, "coinbase_spot", False, 1_200_000.0),
-                          (M0 - 1, "okx_swap", False, 50_000.0)])
-    ev = de(await tic(b, seg.nuevo(), {}, M0), "grande")
-    assert len(ev) == 2, ev
-    perp = next(x for x in ev if "perpetuo" in x["texto"])
-    contado = next(x for x in ev if "contado" in x["texto"])
-    assert perp["lado"] == 1 and "compra" in perp["texto"] and "EN CONTRA" in perp["texto"], perp
-    assert contado["lado"] == -1 and "venta" in contado["texto"] and "A FAVOR" in contado["texto"], contado
+async def test_d_bis_ruptura_del_rango_de_4_h_solo_registro():
+    # el rango de [i-240, i-30) se estrecha a 100 +-0.02; las 24 h siguen con su maximo en ~100.15 y el cierre queda debajo
+    cambia = {m: plano(m, 100.0) for m in range(M0 - 240, M0 - 5)} | {m: plano(m, 100.11) for m in range(M0 - 5, M0)}
+    oi = [(m, 1e6) for m in range(M0 - 43200, M0 - 5, 5)] + [(M0 - 5, 1.0011e6)]  # oi en USD sigue al precio: dOI ~ 0
+    ev = await tic(Base(M0, velas=velas(M0, cambia), oi=oi), seg.nuevo(), {}, M0)
+    assert "RNG4" in registro(ev), ev
+    assert not mensajes(ev), ev
 
 
-async def test_d_cerrar_1_min_mas_alla_del_maximo_con_margen_es_ruptura_y_la_mecha_no():
+# ---------- (e) ningun texto dice soporte ni resistencia ----------
+async def test_e_ningun_texto_dice_soporte_ni_resistencia_y_el_nivel_cerca_va_de_contexto():
+    liq = LIQ_HIST + [(M0 - 5, 1.5e6, 0.0)]
+    rompe = {m: plano(m, 101.0) for m in range(M0 - 5, M0)}
+    todo = ""
+    for b in (Base(M0), Base(M0, liq5=liq), Base(M0, velas=velas(M0, rompe))):
+        todo += textos(await tic(b, seg.nuevo(), {}, M0)) + "\n"
+    assert "soporte" not in todo.lower() and "resistencia" not in todo.lower(), todo
+    arriba = velas(M0, {m: plano(m, 100.1) for m in range(M0 - 5, M0)})
+    t = textos(await tic(Base(M0, liq5=liq, velas=arriba), seg.nuevo(), {}, M0))
+    # el maximo (~100.15, el mismo en 7 d, 24 h y ayer: se nombra el mas ancho) a <= 0.5 ATR: linea de contexto, no aviso
+    assert "Contexto: Maximo de 7 dias en 100.15, a " in t and t.count("seguimiento de tu") == 1, t
+    assert len(mensajes(await tic(Base(M0), seg.nuevo(), {}, M0))) == 0  # el nivel cerca solo, sin aviso
+
+
+# ---------- (f) un solo mensaje por activo cada 30 min que junta lo que coincida ----------
+async def test_f_un_mensaje_por_activo_cada_30_min_junta_lo_que_coincide():
+    liq = LIQ_HIST + [(M0 - 5, 1.5e6, 0.0)]
+    b = Base(M0, liq5=liq, grandes=GRA_HIST + [(M0 - 1, "binance_usdm", True, 2e6)])
+    estado, cache = seg.nuevo(), {}
+    ev = mensajes(await tic(b, estado, cache, M0))
+    assert len(ev) == 1 and ev[0]["activo"] == "SOL", ev
+    assert "liquidados" in ev[0]["texto"] and "operaciones grandes de perpetuo" in ev[0]["texto"], ev
+    b.esc["grandes"] = GRA_HIST + [(M0 + 9, "bybit_linear", False, 3e6)]
+    assert not mensajes(await tic(b, estado, cache, M0 + 10))  # dentro de los 30 min: se guarda
+    for m in range(M0 + 11, M0 + 30):
+        assert not mensajes(await tic(b, estado, cache, m))
+    ev = mensajes(await tic(b, estado, cache, M0 + 30))
+    assert len(ev) == 1 and "venta agresiva" in ev[0]["texto"] and "liquidados" not in ev[0]["texto"], ev
+
+
+async def test_ruptura_es_un_cierre_de_5_min_con_margen_y_la_mecha_no():
     mecha = {M0 - 1: (101.0, 99.95, 100.0, 500.0, 1000.0)}
-    assert not de(await tic(Base(M0, velas=velas(M0, mecha)), seg.nuevo(), {}, M0), "ruptura")
-    rompe = {M0 - 1: (101.0, 100.0, 100.9, 500.0, 1000.0)}
-    ev = de(await tic(Base(M0, velas=velas(M0, rompe)), seg.nuevo(), {}, M0), "ruptura")
-    assert len(ev) == 1, ev
-    assert ev[0]["lado"] == 1 and "maximo" in ev[0]["texto"] and "EN CONTRA" in ev[0]["texto"], ev
+    assert "por encima del maximo" not in textos(await tic(Base(M0, velas=velas(M0, mecha)), seg.nuevo(), {}, M0))
+    rompe = {m: plano(m, 101.0) for m in range(M0 - 5, M0)}
+    t = textos(await tic(Base(M0, velas=velas(M0, rompe)), seg.nuevo(), {}, M0))
+    assert "cierre de 5 min por encima del maximo de" in t and "vuelve a cerrar dentro" in t, t
+    linea = next(x for x in t.split("\n") if "por encima del maximo" in x)
+    assert "EN CONTRA" in linea, linea
 
 
-async def test_d_bis_un_nivel_cercano_avisa_una_vez():
-    b, estado, cache = Base(M0), seg.nuevo(), {}
-    ev = de(await tic(b, estado, cache, M0), "cerca")
-    assert {x["lado"] for x in ev} == {1, -1}, ev  # el maximo (resistencia) y el minimo (soporte) de 24 h, una vez
-    assert not de(await tic(b, estado, cache, M0 + 1), "cerca")
-
-
-async def test_e_sin_posicion_abierta_no_se_calcula_nada():
-    b = Base(M0, liq=[(M0 - 2, "long", 600_000.0)])
+async def test_sin_posicion_abierta_no_se_calcula_nada():
+    b = Base(M0, liq5=LIQ_HIST + [(M0 - 5, 1.5e6, 0.0)])
     assert await tic(b, seg.nuevo(), {}, M0, posiciones=()) == []
     assert b.lecturas == []
 
 
-async def test_avance_en_r_avisa_al_cruzar_un_hito():
-    b, estado, cache = Base(M0), seg.nuevo(), {}
-    assert not de(await tic(b, estado, cache, M0), "avance")  # la primera lectura solo fija el tramo
-    ev = de(await tic(b, estado, cache, M0 + 1, posiciones=(CORTO | {"marca": 98.4},)), "avance")
-    assert len(ev) == 1 and "+1.0 R" in ev[0]["texto"] and "A FAVOR" in ev[0]["texto"], ev
-
-
-async def test_tope_por_hora_y_resumen():
-    b, estado, cache = Base(M0), seg.nuevo(), {}
-    estado["emitidos"] = [M0 * 60 - 60] * seg.TOPE_HORA
-    ev = await tic(b, estado, cache, M0, posiciones=(CORTO,))
-    assert ev and all(x["contenido"] for x in ev), ev
-    res = de(await tic(b, estado, cache, M0 + 31), "resumen")
-    assert len(res) == 1 and "SOL" in res[0]["texto"], res
+# ---------- (g) el centinela con el stop movido a beneficio ----------
+def test_g_stop_en_beneficio_cerca_si_avisa():
+    largo = {"symbol": "BTCUSDT", "lado": 1, "entrada": 100.0, "stop": 101.0, "marca": 101.2}
+    corto = {"symbol": "BTCUSDT", "lado": -1, "entrada": 100.0, "stop": 99.0, "marca": 98.9}
+    control = {"symbol": "BTCUSDT", "lado": 1, "entrada": 100.0, "stop": 99.0, "marca": 99.2}
+    for p in (largo, corto, control):
+        assert [t for t, _ in cen.alertas_posicion(p)] == ["stop"], p
+    lejos = {"symbol": "BTCUSDT", "lado": 1, "entrada": 100.0, "stop": 101.0, "marca": 103.0}
+    assert cen.alertas_posicion(lejos) == []
 
 
 def montado(modo: str | None, base: Base):
@@ -153,8 +241,8 @@ def montado(modo: str | None, base: Base):
     return bot, mandados
 
 
-async def test_f_en_sombra_no_se_envia_nada_y_se_cuenta_en_el_estado(monkeypatch, caplog):
-    b = Base(M0, liq=[(M0 - 2, "long", 600_000.0)])
+async def test_en_sombra_no_se_envia_nada_y_estado_cuenta_por_senal(monkeypatch, caplog):
+    b = Base(M0, liq5=LIQ_HIST + [(M0 - 5, 1.5e6, 0.0)])
     bot, mandados = montado(None, b)
     assert bot.seguimiento_c.modo == "sombra"
     monkeypatch.setattr(sv.time, "time", lambda: M0 * 60 + 20)
@@ -165,15 +253,16 @@ async def test_f_en_sombra_no_se_envia_nada_y_se_cuenta_en_el_estado(monkeypatch
     av = sv.json.loads(sv.js(bot.estado))["seguimiento"]["avisos"]
     assert av and not any(x[1] for x in av), av
     assert not [x for x in b.eventos if "bot_evento" in x[0]]  # sin tipo nuevo en bot_evento
-    assert "seguimiento" in bot.texto_seguimiento() and "sombra" in bot.texto_seguimiento()
+    txt = bot.texto_seguimiento()
+    assert "sombra" in txt and "1 mensajes en 24 h" in txt and "LIQ 1" in txt, txt
 
 
-async def test_f_bis_enviar_manda_y_apagado_no_lee(monkeypatch):
+async def test_enviar_manda_y_apagado_no_lee(monkeypatch):
     monkeypatch.setattr(sv.time, "time", lambda: M0 * 60 + 20)
-    b = Base(M0, liq=[(M0 - 2, "long", 600_000.0)])
+    b = Base(M0, liq5=LIQ_HIST + [(M0 - 5, 1.5e6, 0.0)])
     bot, mandados = montado("enviar", b)
     await bot.tic_seguimiento()
-    assert any("liquidaciones" in t for t in mandados), mandados
+    assert len(mandados) == 1 and "liquidados" in mandados[0], mandados
     b2 = Base(M0)
     bot2, mandados2 = montado("apagado", b2)
     await bot2.tic_seguimiento()
