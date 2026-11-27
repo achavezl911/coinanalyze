@@ -1,6 +1,7 @@
 #!/bin/sh
 # filtro de corte. Ninguna herramienta del arnes escupe mas de MAX_BYTES.
-. /srv/coinanalyze/harness/env
+# El env, por _entorno: lo llaman api, prod y prodsql tambien desde la copia de root de 143 (V45 N3).
+. "$(dirname "$(readlink -f "$0")")/_entorno"
 [ "${TODO:-0}" = "1" ] && exec cat
 tmp=$(mktemp); cat > "$tmp"
 n=$(wc -c < "$tmp")

@@ -1,0 +1,57 @@
+# _entorno · deja cargado el env del arnes. Se carga, no se ejecuta:
+#   . "$(dirname "$(readlink -f "$0")")/_entorno"
+# (desde el propio directorio del guion: no anade ninguna ruta que el guion no tuviera ya).
+#
+# POR QUE NO ES `. /srv/coinanalyze/harness/env` A SECAS (Fable V45 N3, 2026-11). La unit coinalyze-diario-cuarto de
+# 143 corre como ROOT la copia /opt/coinalyze-143/current (root:root 755), y su api cargaba ese env. /srv/coinanalyze
+# es devops:devops 755 sin bit pegajoso: devops no escribe en harness/ (root) pero SI puede RENOMBRARLO y poner otro
+# con su `env`, que root ejecutaba cada 15 min. La regla, sin casos especiales:
+#
+#   · si el guion YA vive en una cadena que otro usuario puede cambiar (el arnes del dia: /srv/coinanalyze/...),
+#     cargar un env de esa misma cadena no anade nada: se carga ENTORNO_DIA como siempre;
+#   · si el guion vive en una cadena SEGURA (la copia de root), el env tambien tiene que estarlo: el primero de
+#     ENTORNO_DIA, ENTORNO_ROOT cuya cadena entera es segura; si ninguno, FALLA CERRADO (rc 4) y dice que crear.
+#
+# SEGURA = cada componente de la ruta canonica, hasta /, es de root o de quien ejecuta, y nadie mas puede escribir
+# en el (grupo/otros sin w; un directorio con w de otros solo vale con bit pegajoso, como /tmp).
+# Se carga la ruta CANONICA ya comprobada, no la original: entre mirar y cargar no queda un enlace por el medio.
+ENTORNO_DIA=/srv/coinanalyze/harness/env
+ENTORNO_ROOT=/etc/coinalyze-143/env
+
+# _ajeno <ruta canonica>: imprime el primer componente que otro usuario puede cambiar; nada si la cadena es segura.
+_ajeno() {
+  _p=$1
+  _yo=$(id -u)
+  while :; do
+    _s=$(stat -c '%u %a' "$_p" 2>/dev/null) || { echo "$_p (no se puede leer)"; return 0; }
+    _u=${_s% *}
+    _m=$((0${_s#* }))
+    if [ "$_u" != 0 ] && [ "$_u" != "$_yo" ]; then echo "$_p (dueno uid $_u)"; return 0; fi
+    if [ $((_m & 022)) != 0 ] && { [ ! -d "$_p" ] || [ $((_m & 01000)) = 0 ]; }; then
+      echo "$_p (modo ${_s#* })"; return 0
+    fi
+    [ "$_p" = / ] && return 0
+    _p=$(dirname "$_p")
+  done
+}
+
+_guion=$(readlink -f "$0")
+if [ -n "$(_ajeno "$_guion")" ]; then
+  . "$ENTORNO_DIA"
+else
+  _hecho=
+  _por=
+  for _c in "$ENTORNO_DIA" "$ENTORNO_ROOT"; do
+    _r=$(readlink -f "$_c" 2>/dev/null) || _r=
+    if [ -z "$_r" ] || [ ! -f "$_r" ]; then _por="$_por $_c: no existe;"; continue; fi
+    _x=$(_ajeno "$_r")
+    if [ -z "$_x" ]; then . "$_r"; _hecho=1; break; fi
+    _por="$_por $_c: lo puede cambiar otro usuario por $_x;"
+  done
+  if [ -z "$_hecho" ]; then
+    echo "$(basename "$0"): no cargo ningun env. Este guion corre desde un arbol de root ($_guion) y no ejecuta" >&2
+    echo "un env que otro usuario puede cambiar:$_por" >&2
+    echo "crea $ENTORNO_ROOT (root:root 644 en un directorio root:root 755): deploy/143/LEEME-diario.txt" >&2
+    exit 4
+  fi
+fi
