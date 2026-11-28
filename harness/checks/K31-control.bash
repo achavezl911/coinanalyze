@@ -53,8 +53,15 @@ caso "N1 las 11 dispuestas: VERDE" 0 "TIENEN DUE" "$REAL"
 # como consumidor de esa ruta -medido contra origin/main tras regenerar: llamadas 0 -> 2-.
 # Es la sexta autocontaminacion de estas campañas y la segunda en un control mio. Aqui no hace
 # falta inventar nombres como en K02-control: basta con no escribirlos.
-victima=$(grep -E '^/api/' "$REAL" | awk -F'\t' '$2=="ENCHUFAR"{print $1; exit}')
-[ -n "$victima" ] || { echo "NO MEDIDO: no hay ninguna linea ENCHUFAR de la que quitar el dueño"; exit 2; }
+# Por grupo y en orden de preferencia: desde 2026-11 no queda ninguna ENCHUFAR (main@3587b21:
+# 17 EXENTA, 4 RELOJ, 1 ENCHUFAR_CON_CONDICION) y el control salia NO MEDIDO. Toda linea del
+# fichero es de una HUECO (N1 exige «sin huerfanas»), asi que cualquier grupo vale de victima.
+victima=""
+for g in ENCHUFAR ENCHUFAR_CON_CONDICION RELOJ EXENTA; do
+  victima=$(grep -E '^/api/' "$REAL" | awk -F'\t' -v g="$g" '$2==g{print $1; exit}')
+  [ -n "$victima" ] && break
+done
+[ -n "$victima" ] || { echo "NO MEDIDO: no hay ninguna disposicion de la que quitar el dueño"; exit 2; }
 grep -v -F "$victima	" "$REAL" > "$DIR/sin-una.tsv"
 caso "P1 una HUECO pierde su disposicion: ROJO" 1 "sin disposicion" "$DIR/sin-una.tsv"
 caso "P2 y la nombra" 1 "$victima" "$DIR/sin-una.tsv"

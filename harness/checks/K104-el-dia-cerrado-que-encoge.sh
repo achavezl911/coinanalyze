@@ -78,7 +78,7 @@ done
 EN_SUJETO=$(printf '%s\n' "$CAT" | tr ' ' '\n' | sort -u)
 
 # --- 2 · LAS RETENCIONES, DEL SUJETO Y NO DE UNA COPIA ----------------------------------
-VARS=$(awk -F'\t' 'NR==FNR {hay[$1]=1; next} $3 ~ /^(horas|dias):[A-Z]/ && hay[$1] {split($3,p,":"); print p[2]}' \
+VARS=$(awk -F'\t' 'NR==FNR {hay[$1]=1; next} $3 ~ /^(horas|dias):[A-Z]/ && hay[$1] {split($3,p,":"); sub(/@.*/,"",p[2]); print p[2]}' \
        <(printf '%s\n' "$EN_SUJETO") "$DECL" | sort -u)
 VALORES=""
 if [ -n "$VARS" ]; then
@@ -125,9 +125,21 @@ while IFS=$'\t' read -r t col ret _; do
     sin_poda) piso=1970-01-01 ;;
     horas:*|dias:*)
       n=${ret#*:}
+      # `@<dia>`: SUELO FIJO Y CITADO. Hasta ese dia (incluido) la tabla se podo con una retencion
+      # ANTERIOR, mas corta, que ya no esta en el env: lo de antes no puede volver y no es una
+      # perdida. Es una constante de la declaracion, nunca min(ts), que se moveria con el dato.
+      suelo=""
+      case "$n" in *@*) suelo=${n#*@}; n=${n%%@*} ;; esac
       case "$n" in [0-9]*) val=$n ;; *) val=$(printf '%s\n' "$VALORES" | awk -v n="$n" -F= 'c<1 && $1==n {print $2; c++}') ;; esac
       case "$ret" in dias:*) horas=$((val*24)) ;; *) horas=$val ;; esac
-      piso=$(date -u -d "$(date -u -d "-$horas hours" +%F) +1 day" +%F) ;;
+      piso=$(date -u -d "$(date -u -d "-$horas hours" +%F) +1 day" +%F)
+      if [ -n "$suelo" ]; then
+        s1=$(date -u -d "$suelo +1 day" +%F 2>/dev/null) || s1=""
+        case "$s1" in
+          [0-9]*) [ "$s1" \> "$piso" ] && piso=$s1 ;;
+          *) piso="suelo ilegible '$suelo'" ;;
+        esac
+      fi ;;
     *) NO_JUZGADAS="$NO_JUZGADAS $t(retencion ilegible '$ret')"; continue ;;
   esac
   case "$piso" in

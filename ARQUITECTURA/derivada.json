@@ -38985,7 +38985,7 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K114-control.bash:101"
+            "harness/checks/K114-control.bash:125"
           ],
           "menciones": [
             "harness/checks/K110-el-libro.sh:18",
@@ -40783,8 +40783,9 @@
           "llamadas": [
             "harness/checks/K02-cobertura-hueco.sh:81",
             "harness/checks/K03-hueco-declarado.sh:46",
-            "harness/checks/K20-cincoxx.sh:68",
-            "harness/checks/K20-cincoxx.sh:83",
+            "harness/checks/K20-cincoxx.sh:79",
+            "harness/checks/K20-cincoxx.sh:94",
+            "harness/checks/K20-control.bash:103",
             "harness/checks/K31-eslabon5.sh:69",
             "harness/checks/K43-control.bash:186",
             "harness/checks/K43-control.bash:204",
@@ -40796,6 +40797,9 @@
           "menciones": [
             "harness/checks/K02-cobertura-hueco.sh:78",
             "harness/checks/K03-hueco-declarado.sh:7",
+            "harness/checks/K20-control.bash:12",
+            "harness/checks/K20-control.bash:14",
+            "harness/checks/K20-control.bash:97",
             "harness/checks/K43-foto-unica.sh:569"
           ]
         },
@@ -40820,8 +40824,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 12,
-        "n_menciones": 10,
+        "n_llamadas": 13,
+        "n_menciones": 13,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -43896,10 +43900,13 @@
       "consumidores": {
         "checks": {
           "llamadas": [
+            "harness/checks/K20-control.bash:69",
             "harness/checks/K43-foto-unica.sh:168",
             "harness/checks/K43-foto-unica.sh:462"
           ],
           "menciones": [
+            "harness/checks/K20-control.bash:5",
+            "harness/checks/K20-rellena.py:7",
             "harness/checks/K43-foto-unica.sh:98"
           ]
         },
@@ -43922,8 +43929,8 @@
       },
       "consumo": {
         "llamada_desde_el_panel": true,
-        "n_llamadas": 5,
-        "n_menciones": 3,
+        "n_llamadas": 6,
+        "n_menciones": 5,
         "sin_ninguno": false,
         "solo_mencion": false
       },
@@ -46925,12 +46932,12 @@
       "consumidores": {
         "checks": {
           "llamadas": [
-            "harness/checks/K20-cincoxx.sh:126",
+            "harness/checks/K20-cincoxx.sh:140",
             "harness/checks/K31-eslabon5.sh:65",
             "harness/checks/K43-foto-unica.sh:170"
           ],
           "menciones": [
-            "harness/checks/K20-cincoxx.sh:124",
+            "harness/checks/K20-cincoxx.sh:138",
             "harness/checks/K31-eslabon5.sh:57"
           ]
         },
@@ -48932,9 +48939,9 @@
             "harness/checks/K111-libro.py:1676",
             "harness/checks/K111-libro.py:1681",
             "harness/checks/K111-libro.py:1684",
-            "harness/checks/K114-raton-libro.py:154",
-            "harness/checks/K114-raton-libro.py:768",
-            "harness/checks/K114-raton-libro.py:773",
+            "harness/checks/K114-raton-libro.py:178",
+            "harness/checks/K114-raton-libro.py:788",
+            "harness/checks/K114-raton-libro.py:793",
             "harness/checks/K120-control.bash:68",
             "harness/checks/K120-control.bash:76",
             "harness/checks/K120-liq.py:226",
@@ -48959,7 +48966,7 @@
             "harness/checks/K114-el-raton-del-libro.sh:2",
             "harness/checks/K114-el-raton-del-libro.sh:4",
             "harness/checks/K114-raton-libro.py:1",
-            "harness/checks/K114-raton-libro.py:100",
+            "harness/checks/K114-raton-libro.py:101",
             "harness/checks/K120-banco.py:2",
             "harness/checks/K120-banco.py:78",
             "harness/checks/K120-control.bash:6",

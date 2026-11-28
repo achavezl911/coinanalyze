@@ -10,6 +10,7 @@
 #   sin_poda                 no hay DELETE ni retencion en el release: se juzga toda su historia
 #   horas:<VAR> / dias:<VAR> se juzgan solo los dias CERRADOS que caben enteros en la ventana
 #   dias:<n>                 la ventana esta escrita en el propio codigo, con su linea
+#   dias:<VAR>@<dia>         ademas, SUELO fijo y citado: hasta <dia> incluido se podo con una retencion ANTERIOR mas corta; se juzga desde <dia>+1. Constante, nunca min(ts)
 #   no_juzgada:<razon>       y la razon, para que no sea un silencio
 #
 signal_observation	created_at	sin_poda	cero DELETE FROM signal_% en app/ y sql/ del release (grep 2026-10-02)
@@ -38,14 +39,14 @@ futures_trades_realtime	ts	horas:SCALP_TRADE_RETENTION_HOURS	app/scalp_collector
 liquidations_realtime	ts	dias:LIQ_REALTIME_RETENTION_DAYS	app/scalp_collector.py:1693
 orderbook_snapshot	ts	horas:SCALP_ORDERBOOK_RETENTION_HOURS	app/scalp_collector.py:1688
 spot_trades_realtime	ts	horas:REALTIME_RETENTION_HOURS	app/daily_agg.py:695
-ohlcv	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:655 · el MAS RESTRICTIVO de sus tres intervalos (1min hard, 5min y 4hour htf, daily sin poda): asi no condena lo que la poda del 1min se llevo
-open_interest	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:663
-oi_bybit	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:666
-funding_rate	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:669
-predicted_funding_rate	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:672
-liquidations	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:675
-long_short_ratio	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:678
-spot_trades_agg	ts	dias:HARD_DATA_RETENTION_DAYS	app/daily_agg.py:681
+ohlcv	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:655 · el MAS RESTRICTIVO de sus tres intervalos (1min hard, 5min y 4hour htf, daily sin poda): asi no condena lo que la poda del 1min se llevo · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+open_interest	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:663 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+oi_bybit	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:666 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+funding_rate	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:669 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+predicted_funding_rate	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:672 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+liquidations	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:675 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+long_short_ratio	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:678 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
+spot_trades_agg	ts	dias:HARD_DATA_RETENTION_DAYS@2026-08-18	app/daily_agg.py:681 · SUELO 2026-08-18: hasta ese dia se podo con HARD_DATA_RETENTION_DAYS=90 (hechos.tsv:274 y :873); el env de 140 se reescribio el 2026-11-16T00:14:30Z (stat) y hoy dice 365; 11-16T00:14Z - 90 d = 08-18T00:14Z y min(ts) de 140 el 2026-11-27 = 08-18 00:01..00:30Z (spot_trades_agg, predicted_funding_rate, funding_rate, liquidations, ohlcv 1min). Lo de antes no puede volver: no es perdida
 metrics_snapshot	ts	dias:SNAPSHOT_RETENTION_DAYS	app/daily_agg.py:684
 market_feed_health	-	no_juzgada:columna_mutable	sus tres columnas de tiempo (healthy_since, last_loss_at, updated_at) se reescriben en el upsert
 market_feed_health_shard	-	no_juzgada:columna_mutable	igual que market_feed_health
@@ -60,3 +61,25 @@ external_api_rate_event	-	no_juzgada:ventana_sin_medir	app/coinalyze.py:68 la po
 entrada_reglamento	registered_at	sin_poda	append-only por disparador (UPDATE/DELETE/TRUNCATE rechazados, sql/schema.sql bloque de la campana 135) y cero DELETE FROM entrada_% en app/ y sql/ (git grep 2026-10-03); registered_at lo pone la base al insertar y no cambia
 entrada_registro	registered_at	sin_poda	append-only por disparador (UPDATE/DELETE/TRUNCATE rechazados, sql/schema.sql bloque de la campana 135) y cero DELETE FROM entrada_% en app/ y sql/ (git grep 2026-10-03); registered_at lo pone la base al insertar y no cambia
 entrada_latido	registered_at	sin_poda	append-only por disparador (UPDATE/DELETE/TRUNCATE rechazados, sql/schema.sql bloque de la campana 135) y cero DELETE FROM entrada_% en app/ y sql/ (git grep 2026-10-03); registered_at lo pone la base al insertar y no cambia
+#
+# Las 19 del catalogo de 140 que K104 listaba «EN EL CATALOGO Y SIN DECLARAR» (2026-11-27). Naturaleza medida en el
+# repo (main@3587b21): disparadores de sql/schema.sql y los DELETE/UPDATE de app/ y scripts/ (git grep).
+bot_crudo	ts	dias:90	app/bot/servicio.py:1011 DELETE ts < now()-90 d; append-only salvo esa poda (disparador sql/schema.sql:3479-3495)
+bot_estado	-	no_juzgada:columna_mutable	2 filas (clave bot/vigia), ts reescrito en el upsert: app/bot/servicio.py:584, app/bot/vigia.py:340
+bot_evaluacion	ts	sin_poda	append-only por disparador (sql/schema.sql:3449) y cero DELETE FROM bot_evaluacion en app/ y scripts/
+bot_evento	ts	sin_poda	append-only por disparador (sql/schema.sql:3445) y cero DELETE FROM bot_evento en app/ y scripts/
+bot_llamada	ts	sin_poda	append-only por disparador (sql/schema.sql:3453) y cero DELETE FROM bot_llamada en app/ y scripts/
+bot_operacion	ts	sin_poda	append-only por disparador (sql/schema.sql:3457) y cero DELETE FROM bot_operacion en app/ y scripts/
+bot_sombra	minuto	sin_poda	DELETE y TRUNCATE rechazados; UPDATE solo resuelve y no mueve minuto (sql/schema.sql:3546-3580, app/bot/sombra.py:316)
+bot_sombra_candidata	ts	sin_poda	DELETE y TRUNCATE rechazados (sql/schema.sql:3581-3584); el unico UPDATE mueve hasta, no ts (app/bot/sombra.py:325)
+entrada_resultado	registered_at	sin_poda	append-only por disparador (sql/schema.sql:2952) y cero DELETE FROM entrada_resultado en app/ y scripts/
+libro_cobertura	ts	dias:LIBRO_RETENTION_DAYS	app/libro.py:1030-1032 DELETE de los minutos completos (segundos=60) pasada la retencion; los incompletos se quedan
+libro_foto	ts	dias:LIBRO_RETENTION_DAYS	app/libro.py:1028 apply_temporal_retention(LIBRO_RETENTION_DAYS*24)
+libro_honda	ts	dias:LIBRO_RETENTION_DAYS	app/libro.py:1029 apply_temporal_retention(LIBRO_RETENTION_DAYS*24)
+orderflow_cinta	ts	horas:ORDERFLOW_TAPE_RETENTION_HOURS	app/orderflow.py:863 particionada(ORDERFLOW_TAPE_RETENTION_HOURS)
+orderflow_celda	ts	dias:ORDERFLOW_CELL_RETENTION_DAYS	app/orderflow.py:858-860 particionada(ORDERFLOW_CELL_RETENTION_DAYS*24, tope); scripts/orderflow_repone_binance.py:126 la repone a mano
+orderflow_grande	ts	dias:ORDERFLOW_LARGE_RETENTION_DAYS	app/orderflow.py:865-866 DELETE ts < now()-ORDERFLOW_LARGE_RETENTION_DAYS
+orderflow_cobertura	ts	dias:ORDERFLOW_CELL_RETENTION_DAYS	app/orderflow.py:867-869 DELETE segundos=60 pasada la retencion; los UPDATE (:621, :665) no mueven ts
+orderflow_celda_hora	ts	dias:ORDERFLOW_CELL_HOUR_RETENTION_DAYS	app/orderflow.py:870-871 particionada; app/orderflow.py:902 la re-deriva (DELETE+INSERT de la hora) desde los minutos, que solo crecen
+orderflow_hora_hecha	-	no_juzgada:borrado_legitimo	marcas de hora que se QUITAN para re-sumar (DESMARCA_SQL, app/orderflow.py:85-87) y retencion en :872-874: encoger es su oficio
+orderflow_paso	-	no_juzgada:sin_columna_de_tiempo	3 filas de configuracion (symbol, paso) sin tiempo: sql/schema.sql:2986-2991
